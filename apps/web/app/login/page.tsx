@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabaseBrowser } from '@/lib/supabase';
 import { phoneSchema, otpSchema } from '@soutra/shared';
+import { DevLoginPanel } from '@/components/DevLoginPanel';
+import { IS_DEV } from '@/lib/dev-auth';
 
 type Step = 'phone' | 'otp' | 'done';
 type Channel = 'whatsapp' | 'sms';
@@ -103,6 +105,8 @@ export default function LoginPage() {
             </button>
           </div>
         )}
+
+        {IS_DEV && step === 'phone' && <DevLoginPanel />}
 
         {step === 'otp' && (
           <div className="mt-6 space-y-4">

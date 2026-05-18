@@ -1,0 +1,31 @@
+# ============================================================================
+# Supabase — configuration du stack LOCAL de développement (`supabase start`).
+#
+# ⚠️ Ce fichier ne configure QUE l'instance Docker locale.
+# Il n'a AUCUN effet sur le projet Supabase cloud de production
+# (pjtmmzxcitbcwbbgtpdj). Les numéros de test ci-dessous ne peuvent donc
+# JAMAIS servir à se connecter au site de production.
+# ============================================================================
+project_id = "soutra-paiya"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.sms]
+# Aucun fournisseur SMS configuré en local : aucun message n'est envoyé.
+enable_signup = true
+enable_confirmations = false
+
+# ----------------------------------------------------------------------------
+# DEV UNIQUEMENT — numéros de test OTP (zéro SMS, code fixe).
+# Chaque couple `numéro = "code"` permet de valider l'OTP sans fournisseur.
+# Cette section n'existe QUE dans ce fichier local → le projet cloud de
+# production ne la connaît pas → exploitation en production impossible.
+# ----------------------------------------------------------------------------
+[auth.sms.test_otp]
+2250700000001 = "424242"
+2250700000002 = "424242"
+2250700000099 = "424242"
