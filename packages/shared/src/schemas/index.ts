@@ -27,6 +27,12 @@ export const transferSchema = z.object({
   note: z.string().max(140).optional(),
 });
 
+export const reservationFormSchema = z.object({
+  date: z.date().min(new Date()),
+  party_size: z.number().int().min(1).max(50),
+  notes: z.string().max(280).optional(),
+});
+
 export const reservationSchema = z.object({
   venue_id: z.string().uuid(),
   date_time: z.string().datetime(),
@@ -46,5 +52,6 @@ export const reviewSchema = z.object({
 
 export type TopupInput = z.infer<typeof topupSchema>;
 export type TransferInput = z.infer<typeof transferSchema>;
+export type ReservationFormInput = z.infer<typeof reservationFormSchema>;
 export type ReservationInput = z.infer<typeof reservationSchema>;
 export type ReviewInput = z.infer<typeof reviewSchema>;

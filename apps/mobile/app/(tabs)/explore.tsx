@@ -1,95 +1,223 @@
-import { useState } from 'react';
-import { ScrollView, View, Text, TextInput, StyleSheet, Pressable, Image } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ScrollView, View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { supabase } from '@/lib/supabase';
 import { MapboxMap, type MapVenue, ABIDJAN } from '@/components/MapboxMap';
 
-// Mock data — venues avec coordonnées réelles d'Abidjan
-const MOCK: Array<MapVenue & { rating: number; dist: string; img: string }> = [
-  { id: '1', name: 'Le Mékaféba',       category: 'maquis',     price: 8000,  rating: 4.7, dist: '800 m', coordinate: [-3.999, 5.359], img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600' },
-  { id: '2', name: 'Saka Saka',         category: 'restaurant', price: 12000, rating: 4.5, dist: '1.2 km', coordinate: [-3.991, 5.371], img: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600' },
-  { id: '3', name: 'VIP Lounge',        category: 'club',       price: 25000, rating: 4.9, dist: '2 km',  coordinate: [-3.999, 5.298], img: 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=600' },
-  { id: '4', name: 'Chez Tantie Adjoua',category: 'maquis',     price: 3500,  rating: 4.4, dist: '5 km',  coordinate: [-4.090, 5.337], img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600' },
-  { id: '5', name: 'Le Plateau Café',   category: 'cafe',       price: 6000,  rating: 4.3, dist: '3.5 km',coordinate: [-4.024, 5.323], img: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600' },
+interface Venue {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  cover_url: string | null;
+  avg_price_xof: number | null;
+  rating_avg: number | null;
+  rating_count: number | null;
+  district: string | null;
+  city: string | null;
+}
+
+// Coordonnées hardcoded par venue ID (en attendant le seed PostGIS)
+const VENUE_COORDINATES: Record<string, [number, number]> = {
+  '550e8400-e29b-41d4-a716-446655440001': [-3.999, 5.359], // Cocody
+  '550e8400-e29b-41d4-a716-446655440002': [-3.991, 5.371], // Marcory
+  '550e8400-e29b-41d4-a716-446655440003': [-3.999, 5.298], // Yopougon
+  '550e8400-e29b-41d4-a716-446655440004': [-4.090, 5.337], // Abobo
+  '550e8400-e29b-41d4-a716-446655440005': [-4.024, 5.323], // Le Plateau
+};
+
+const CHIPS: { label: string; category: string | null }[] = [
+  { label: 'Tout', category: null },
+  { label: 'Maquis', category: 'maquis' },
+  { label: 'Restaurants', category: 'restaurant' },
+  { label: 'Soirée', category: 'club' },
+  { label: 'Cafés', category: 'cafe' },
+  { label: 'Hôtels', category: 'hotel' },
+  { label: 'Sport', category: 'sport' },
 ];
 
-const CHIPS = ['Tout', 'Maquis', 'Restaurants', 'Soirée', 'Hôtels', 'Sport'];
-
 export default function Explore() {
-  const [selectedChip, setSelectedChip] = useState('Tout');
+  const router = useRouter();
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedChip, setSelectedChip] = useState<string>('Tout');
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredVenues = selectedChip === 'Tout'
-    ? MOCK
-    : MOCK.filter((v) => {
-        if (selectedChip === 'Maquis') return v.category === 'maquis';
-        if (selectedChip === 'Restaurants') return v.category === 'restaurant';
-        if (selectedChip === 'Soirée') return v.category === 'club';
-        return true;
-      });
+  useEffect(() => {
+    loadVenues();
+  }, []);
+
+  async function loadVenues() {
+    try {
+      const { data, error } = await supabase
+        .from('venues')
+        .select('id, name, slug, category, cover_url, avg_price_xof, rating_avg, rating_count, district, city')
+        .eq('status', 'active')
+        .order('rating_avg', { ascending: false });
+
+      if (error) {
+        console.error('[explore] load venues error:', error);
+        Alert.alert('Erreur', 'Impossible de charger les lieux. Vérifiez votre connexion.');
+        setVenues([]);
+      } else {
+        setVenues((data ?? []) as Venue[]);
+      }
+    } catch (err) {
+      console.error('[explore] unexpected error:', err);
+      setVenues([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  const selectedCategory = CHIPS.find((c) => c.label === selectedChip)?.category;
+  const filteredVenues = venues.filter((v) => {
+    if (selectedCategory && v.category !== selectedCategory) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return v.name.toLowerCase().includes(q) || (v.district ?? '').toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const mapVenues: MapVenue[] = filteredVenues.map((v) => ({
+    id: v.id,
+    name: v.name,
+    category: v.category,
+    price: v.avg_price_xof ?? 0,
+    coordinate: VENUE_COORDINATES[v.id] ?? ABIDJAN,
+  }));
+
+  function goToVenue(id: string) {
+    setSelectedVenueId(id);
+    router.push({ pathname: '/venue/[id]', params: { id } });
+  }
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={{ paddingBottom: spacing['2xl'] }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              loadVenues();
+            }}
+          />
+        }
+      >
         <View style={s.header}>
           <View>
             <Text style={s.locLabel}>Position actuelle</Text>
             <Text style={s.loc}>📍 Cocody, Abidjan</Text>
           </View>
-          <Pressable hitSlop={10}><Ionicons name="notifications-outline" size={24} color={colors.dark} /></Pressable>
+          <Pressable
+            hitSlop={10}
+            onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
+          >
+            <Ionicons name="notifications-outline" size={24} color={colors.dark} />
+          </Pressable>
         </View>
 
         <View style={s.searchBox}>
           <Ionicons name="search" size={18} color={colors.neutral[500]} />
           <TextInput
-            placeholder="« Sortie avec 15 000 FCFA ce soir »"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Rechercher un lieu, un quartier…"
             placeholderTextColor={colors.neutral[500]}
             style={s.searchInput}
+            returnKeyType="search"
           />
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
           {CHIPS.map((c) => (
-            <Pressable key={c} onPress={() => setSelectedChip(c)} style={[s.chip, selectedChip === c && s.chipActive]}>
-              <Text style={[s.chipText, selectedChip === c && s.chipTextActive]}>{c}</Text>
+            <Pressable
+              key={c.label}
+              onPress={() => setSelectedChip(c.label)}
+              style={[s.chip, selectedChip === c.label && s.chipActive]}
+            >
+              <Text style={[s.chipText, selectedChip === c.label && s.chipTextActive]}>
+                {c.label}
+              </Text>
             </Pressable>
           ))}
         </ScrollView>
 
         <MapboxMap
-          venues={filteredVenues}
+          venues={mapVenues}
           center={ABIDJAN}
           zoom={11.5}
-          onMarkerPress={(v) => setSelectedVenueId(v.id)}
+          onMarkerPress={(v) => goToVenue(v.id)}
         />
 
-        <Text style={s.sectionTitle}>
-          {filteredVenues.length} {filteredVenues.length > 1 ? 'lieux' : 'lieu'} près de toi
-        </Text>
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.primary[500]} style={{ marginTop: spacing['2xl'] }} />
+        ) : (
+          <>
+            <Text style={s.sectionTitle}>
+              {filteredVenues.length} {filteredVenues.length > 1 ? 'lieux' : 'lieu'}
+              {selectedCategory ? ` · ${selectedChip}` : ''}
+            </Text>
 
-        {filteredVenues.map((v) => (
-          <Pressable
-            key={v.id}
-            style={({ pressed }) => [s.card, pressed && { opacity: 0.9 }, selectedVenueId === v.id && s.cardSelected]}
-            onPress={() => setSelectedVenueId(v.id)}
-          >
-            <Image source={{ uri: v.img }} style={s.cardImg} />
-            <View style={{ flex: 1, padding: spacing.md }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={s.cardName}>{v.name}</Text>
-                <Text style={s.rating}>★ {v.rating}</Text>
+            {filteredVenues.length === 0 ? (
+              <View style={s.empty}>
+                <Ionicons name="search-outline" size={48} color={colors.neutral[300]} />
+                <Text style={s.emptyText}>Aucun lieu trouvé pour ces critères</Text>
               </View>
-              <Text style={s.cardCat}>
-                {v.category === 'maquis' ? 'Maquis' : v.category === 'restaurant' ? 'Restaurant' : v.category === 'club' ? 'Club' : v.category === 'cafe' ? 'Café' : 'Lieu'} · {v.dist}
-              </Text>
-              <Text style={s.cardPrice}>~ {formatXOF(v.price ?? 0)}/pers</Text>
-            </View>
-          </Pressable>
-        ))}
+            ) : (
+              filteredVenues.map((v) => (
+                <Pressable
+                  key={v.id}
+                  style={({ pressed }) => [
+                    s.card,
+                    pressed && { opacity: 0.85 },
+                    selectedVenueId === v.id && s.cardSelected,
+                  ]}
+                  onPress={() => goToVenue(v.id)}
+                >
+                  {v.cover_url && (
+                    <Image source={{ uri: v.cover_url }} style={s.cardImg} />
+                  )}
+                  <View style={{ flex: 1, padding: spacing.md }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={s.cardName}>{v.name}</Text>
+                      <Text style={s.rating}>★ {v.rating_avg?.toFixed(1) ?? '–'}</Text>
+                    </View>
+                    <Text style={s.cardCat}>
+                      {labelForCategory(v.category)} · {v.district ?? v.city ?? 'Abidjan'}
+                    </Text>
+                    <Text style={s.cardPrice}>~ {formatXOF(v.avg_price_xof ?? 0)}/pers</Text>
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function labelForCategory(c: string): string {
+  switch (c) {
+    case 'maquis': return 'Maquis';
+    case 'restaurant': return 'Restaurant';
+    case 'club': return 'Club';
+    case 'cafe': return 'Café';
+    case 'hotel': return 'Hôtel';
+    case 'sport': return 'Sport';
+    case 'event_space': return 'Espace événementiel';
+    default: return c;
+  }
 }
 
 const s = StyleSheet.create({
@@ -109,14 +237,16 @@ const s = StyleSheet.create({
   chipText: { fontSize: typography.fontSize.sm, color: colors.neutral[600], fontWeight: '500' },
   chipTextActive: { color: '#fff' },
   sectionTitle: { marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.md, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
+  empty: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  emptyText: { marginTop: spacing.base, fontSize: typography.fontSize.sm, color: colors.neutral[500] },
   card: {
     marginHorizontal: spacing.lg, marginBottom: spacing.md,
     backgroundColor: '#fff', borderRadius: radius.lg, overflow: 'hidden',
     elevation: 2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
   },
   cardSelected: { borderWidth: 2, borderColor: colors.primary[500] },
-  cardImg: { width: '100%', height: 160 },
-  cardName: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
+  cardImg: { width: '100%', height: 160, backgroundColor: colors.neutral[200] },
+  cardName: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark, flex: 1, marginRight: spacing.sm },
   rating: { color: colors.warning, fontWeight: '600' },
   cardCat: { marginTop: 2, fontSize: typography.fontSize.sm, color: colors.neutral[500] },
   cardPrice: { marginTop: spacing.sm, fontSize: typography.fontSize.sm, color: colors.secondary[500], fontWeight: '600' },

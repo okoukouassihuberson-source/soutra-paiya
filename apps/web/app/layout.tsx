@@ -1,14 +1,21 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'Soutra-Paiya — Sortir, réserver, payer en toute sécurité',
+  title: 'Soutra-Paiya — Sors, réserve, paie. Zéro galère.',
   description:
-    "La plateforme tout-en-un pour découvrir, réserver et payer vos sorties en Côte d'Ivoire. Mobile Money intégré (Orange, MTN, Wave).",
-  keywords: ['Abidjan', 'sortie', 'réservation', 'Mobile Money', 'maquis', 'événement', 'Côte d\'Ivoire'],
+    "Découvre les meilleurs maquis, restos et événements à Abidjan. Paie avec Orange Money, Wave, MTN MoMo. Réservation garantie.",
+  keywords: ['Abidjan', 'réservation', 'restaurant', 'maquis', 'paiement mobile', 'Orange Money', 'Wave', "Côte d'Ivoire"],
   openGraph: {
     title: 'Soutra-Paiya',
-    description: 'Sortir, réserver, payer.',
+    description: 'Sors, réserve, paie — zéro galère.',
     locale: 'fr_CI',
     type: 'website',
   },
@@ -16,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={inter.variable}>
       <body>{children}</body>
     </html>
   );

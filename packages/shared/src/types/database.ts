@@ -1,8 +1,5 @@
 // Types DB — version manuelle minimale.
 // Régénérer avec : pnpm db:types (Supabase CLI requis)
-//
-// Note : chaque table porte `Relationships: []` — supabase-js v2 exige cette
-// clé pour que le query builder typé infère correctement les résultats.
 
 export type Json = string | number | boolean | null | { [k: string]: Json } | Json[];
 
@@ -29,7 +26,6 @@ export interface Database {
         };
         Insert: Partial<Database['public']['Tables']['profiles']['Row']> & { id: string };
         Update: Partial<Database['public']['Tables']['profiles']['Row']>;
-        Relationships: [];
       };
       wallets: {
         Row: {
@@ -43,7 +39,6 @@ export interface Database {
         };
         Insert: Partial<Database['public']['Tables']['wallets']['Row']> & { user_id: string };
         Update: Partial<Database['public']['Tables']['wallets']['Row']>;
-        Relationships: [];
       };
       venues: {
         Row: {
@@ -73,7 +68,6 @@ export interface Database {
           owner_id: string; name: string; slug: string; category: Database['public']['Tables']['venues']['Row']['category']; address: string;
         };
         Update: Partial<Database['public']['Tables']['venues']['Row']>;
-        Relationships: [];
       };
       transactions: {
         Row: {
@@ -97,7 +91,6 @@ export interface Database {
           user_id: string; type: Database['public']['Tables']['transactions']['Row']['type']; amount_xof: number;
         };
         Update: Partial<Database['public']['Tables']['transactions']['Row']>;
-        Relationships: [];
       };
       reservations: {
         Row: {
@@ -119,36 +112,18 @@ export interface Database {
           user_id: string; venue_id: string; date_time: string; party_size: number;
         };
         Update: Partial<Database['public']['Tables']['reservations']['Row']>;
-        Relationships: [];
       };
-      notifications: {
-        Row: {
-          id: string;
-          user_id: string;
-          type: string;
-          title: string;
-          body: string | null;
-          metadata: Json;
-          read: boolean;
-          created_at: string;
-        };
-        Insert: Partial<Database['public']['Tables']['notifications']['Row']> & {
-          user_id: string; title: string;
-        };
-        Update: Partial<Database['public']['Tables']['notifications']['Row']>;
-        Relationships: [];
-      };
-      events: { Row: any; Insert: any; Update: any; Relationships: [] };
-      tickets: { Row: any; Insert: any; Update: any; Relationships: [] };
-      reviews: { Row: any; Insert: any; Update: any; Relationships: [] };
-      stories: { Row: any; Insert: any; Update: any; Relationships: [] };
-      follows: { Row: any; Insert: any; Update: any; Relationships: [] };
-      chats: { Row: any; Insert: any; Update: any; Relationships: [] };
-      chat_members: { Row: any; Insert: any; Update: any; Relationships: [] };
-      messages: { Row: any; Insert: any; Update: any; Relationships: [] };
-      sos_contacts: { Row: any; Insert: any; Update: any; Relationships: [] };
-      sos_alerts: { Row: any; Insert: any; Update: any; Relationships: [] };
-      sos_pings: { Row: any; Insert: any; Update: any; Relationships: [] };
+      events: { Row: any; Insert: any; Update: any };
+      tickets: { Row: any; Insert: any; Update: any };
+      reviews: { Row: any; Insert: any; Update: any };
+      stories: { Row: any; Insert: any; Update: any };
+      follows: { Row: any; Insert: any; Update: any };
+      chats: { Row: any; Insert: any; Update: any };
+      chat_members: { Row: any; Insert: any; Update: any };
+      messages: { Row: any; Insert: any; Update: any };
+      sos_contacts: { Row: any; Insert: any; Update: any };
+      sos_alerts: { Row: any; Insert: any; Update: any };
+      sos_pings: { Row: any; Insert: any; Update: any };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -156,6 +131,5 @@ export interface Database {
       user_role: 'user' | 'venue_owner' | 'organizer' | 'staff' | 'admin';
       venue_category: 'maquis' | 'restaurant' | 'hotel' | 'club' | 'sport' | 'cafe' | 'event_space';
     };
-    CompositeTypes: Record<string, never>;
   };
 }

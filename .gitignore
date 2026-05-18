@@ -20,6 +20,9 @@ out/
 .idea/
 *.swp
 
+# Claude Code (worktrees & fichiers agent locaux)
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db

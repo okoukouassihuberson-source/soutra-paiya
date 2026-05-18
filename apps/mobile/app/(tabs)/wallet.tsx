@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
@@ -7,47 +7,107 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 
 export default function Wallet() {
-  const { session } = useAuth();
+  const { user } = useAuth();
   const [balance, setBalance] = useState<number>(0);
   const [locked, setLocked] = useState<number>(0);
+  const [walletLoading, setWalletLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [hidden, setHidden] = useState(false);
 
-  async function load() {
-    if (!session) return;
-    const { data } = await supabase
-      .from('wallets').select('balance_xof, locked_xof').eq('user_id', session.user.id).maybeSingle();
-    const row = data as { balance_xof: number; locked_xof: number } | null;
-    if (row) { setBalance(row.balance_xof); setLocked(row.locked_xof); }
-  }
+  const loadWallet = useCallback(async () => {
+    if (!user?.id) {
+      setWalletLoading(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('wallets')
+        .select('balance_xof, locked_xof')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-  useEffect(() => { load(); }, [session]);
+      if (error) {
+        console.error('[wallet] load error:', error);
+        return;
+      }
+      if (data) {
+        setBalance((data as any).balance_xof ?? 0);
+        setLocked((data as any).locked_xof ?? 0);
+      }
+    } catch (err) {
+      console.error('[wallet] unexpected error:', err);
+    } finally {
+      setWalletLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadWallet();
+  }, [loadWallet]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadWallet();
+  };
+
+  const handleTopup = () => {
+    Alert.alert(
+      'Recharger Paiya-Pay',
+      'Choisis ton moyen de paiement pour recharger ton wallet',
+      [
+        { text: 'Orange Money', onPress: () => Alert.alert('Bientôt', 'Intégration CinetPay en cours') },
+        { text: 'MTN MoMo', onPress: () => Alert.alert('Bientôt', 'Intégration CinetPay en cours') },
+        { text: 'Wave', onPress: () => Alert.alert('Bientôt', 'Intégration CinetPay en cours') },
+        { text: 'Annuler', style: 'cancel' },
+      ]
+    );
+  };
+
+  const handleWithdraw = () => {
+    if (balance <= 0) {
+      Alert.alert('Solde insuffisant', 'Vous devez avoir un solde positif pour retirer.');
+      return;
+    }
+    Alert.alert('Retirer', 'Fonctionnalité de retrait disponible bientôt (KYC requis).');
+  };
+
+  const handleQuickAction = (action: string) => {
+    Alert.alert(action, `Fonctionnalité « ${action} » bientôt disponible.`);
+  };
 
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={s.header}>
           <Text style={s.headerTitle}>Mon Paiya-Pay</Text>
-          <Pressable hitSlop={10}><Ionicons name="settings-outline" size={22} color={colors.dark} /></Pressable>
+          <Pressable
+            hitSlop={10}
+            onPress={() => Alert.alert('Paramètres', 'Réglages wallet bientôt disponibles.')}
+          >
+            <Ionicons name="settings-outline" size={22} color={colors.dark} />
+          </Pressable>
         </View>
 
         <View style={s.balanceCard}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={s.balanceLabel}>💰 Solde disponible</Text>
-            <Pressable onPress={() => setHidden(!hidden)}>
+            <Pressable hitSlop={10} onPress={() => setHidden(!hidden)}>
               <Ionicons name={hidden ? 'eye-off-outline' : 'eye-outline'} size={20} color="#fff" />
             </Pressable>
           </View>
-          <Text style={s.balanceValue}>{hidden ? '••••• FCFA' : formatXOF(balance)}</Text>
+          <Text style={s.balanceValue}>
+            {walletLoading ? '…' : hidden ? '••••• FCFA' : formatXOF(balance)}
+          </Text>
           {locked > 0 && <Text style={s.locked}>🔒 {formatXOF(locked)} en séquestre</Text>}
 
           <View style={s.balanceActions}>
-            <ActionBtn label="Recharger" icon="arrow-up-outline" onPress={() => {}} />
+            <ActionBtn label="Recharger" icon="arrow-up-outline" onPress={handleTopup} />
             <View style={s.vsep} />
-            <ActionBtn label="Retirer" icon="arrow-down-outline" onPress={() => {}} />
+            <ActionBtn label="Retirer" icon="arrow-down-outline" onPress={handleWithdraw} />
           </View>
         </View>
 
@@ -58,18 +118,21 @@ export default function Wallet() {
             { label: 'Split Bill', icon: 'people-outline' as const },
             { label: 'Scanner QR', icon: 'qr-code-outline' as const },
           ].map((q) => (
-            <Pressable key={q.label} style={s.quickItem}>
-              <View style={s.quickIcon}><Ionicons name={q.icon} size={22} color={colors.primary[500]} /></View>
+            <Pressable
+              key={q.label}
+              style={({ pressed }) => [s.quickItem, pressed && { opacity: 0.6 }]}
+              onPress={() => handleQuickAction(q.label)}
+            >
+              <View style={s.quickIcon}>
+                <Ionicons name={q.icon} size={22} color={colors.primary[500]} />
+              </View>
               <Text style={s.quickLabel}>{q.label}</Text>
             </Pressable>
           ))}
         </View>
 
-        <Text style={s.sectionTitle}>Activité récente</Text>
-        <View style={s.emptyState}>
-          <Text style={s.emptyText}>Aucune transaction pour le moment.</Text>
-          <Text style={[s.emptyText, { fontSize: typography.fontSize.xs, marginTop: 4 }]}>Recharge ton wallet pour commencer 🚀</Text>
-        </View>
+        <Text style={s.sectionTitle}>Transactions récentes</Text>
+        <TransactionHistory userId={user?.id} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -82,6 +145,118 @@ function ActionBtn({ label, icon, onPress }: { label: string; icon: any; onPress
       <Text style={s.actionBtnText}>{label}</Text>
     </Pressable>
   );
+}
+
+interface Transaction {
+  id: string;
+  type: string;
+  amount_xof: number;
+  status: string;
+  created_at: string;
+  description?: string;
+}
+
+function TransactionHistory({ userId }: { userId?: string }) {
+  const [txs, setTxs] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (!userId) {
+      setLoading(false);
+      setTxs([]);
+      return;
+    }
+
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('id, type, amount_xof, status, created_at, description')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (!mounted) return;
+
+        if (error) {
+          console.error('[wallet] tx error:', error);
+          setTxs([]);
+        } else {
+          setTxs((data as Transaction[]) ?? []);
+        }
+      } catch (err) {
+        console.error('[wallet] tx unexpected:', err);
+        if (mounted) setTxs([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [userId]);
+
+  if (loading) {
+    return (
+      <View style={s.emptyState}>
+        <Text style={s.emptyText}>Chargement…</Text>
+      </View>
+    );
+  }
+  if (!txs.length) {
+    return (
+      <View style={s.emptyState}>
+        <Text style={s.emptyText}>Aucune transaction pour le moment.</Text>
+        <Text style={[s.emptyText, { fontSize: typography.fontSize.xs, marginTop: 4 }]}>
+          Recharge ton wallet pour commencer 🚀
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
+      {txs.map((tx) => (
+        <View key={tx.id} style={s.txItem}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.txType}>{labelForTxType(tx.type)}</Text>
+            <Text style={s.txDate}>{new Date(tx.created_at).toLocaleDateString('fr-FR')}</Text>
+          </View>
+          <Text
+            style={[
+              s.txAmount,
+              isCreditType(tx.type) ? { color: colors.success } : { color: colors.danger },
+            ]}
+          >
+            {isCreditType(tx.type) ? '+' : '-'}
+            {formatXOF(tx.amount_xof)}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function isCreditType(t: string) {
+  return t === 'topup' || t === 'refund' || t === 'escrow_release';
+}
+
+function labelForTxType(t: string): string {
+  switch (t) {
+    case 'topup': return 'Rechargement';
+    case 'withdraw': return 'Retrait';
+    case 'payment': return 'Paiement';
+    case 'transfer': return 'Transfert';
+    case 'refund': return 'Remboursement';
+    case 'split': return 'Split Bill';
+    case 'escrow_hold': return 'Séquestre';
+    case 'escrow_release': return 'Libération séquestre';
+    case 'fee': return 'Frais';
+    default: return t;
+  }
 }
 
 const s = StyleSheet.create({
@@ -107,4 +282,8 @@ const s = StyleSheet.create({
   sectionTitle: { marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.sm, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
   emptyState: { margin: spacing.lg, padding: spacing.xl, backgroundColor: '#fff', borderRadius: radius.lg, alignItems: 'center' },
   emptyText: { color: colors.neutral[500], textAlign: 'center' },
+  txItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.neutral[100] },
+  txType: { fontSize: typography.fontSize.sm, fontWeight: '600', color: colors.dark },
+  txDate: { fontSize: typography.fontSize.xs, color: colors.neutral[500], marginTop: 2 },
+  txAmount: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.dark },
 });

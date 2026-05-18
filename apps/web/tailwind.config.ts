@@ -14,6 +14,7 @@ const config: Config = {
         danger: colors.danger,
         warning: colors.warning,
         success: colors.success,
+        neutral: colors.neutral,
       },
       fontFamily: {
         display: typography.fontFamily.display.split(',').map(s => s.trim()),
@@ -25,6 +26,20 @@ const config: Config = {
         md: `${radius.md}px`,
         lg: `${radius.lg}px`,
         xl: `${radius.xl}px`,
+      },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+        'glow-pulse': 'glowPulse 3s ease-in-out infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-12px)' },
+        },
+        glowPulse: {
+          '0%, 100%': { opacity: '0.5' },
+          '50%': { opacity: '1' },
+        },
       },
     },
   },

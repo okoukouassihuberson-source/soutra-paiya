@@ -3,28 +3,23 @@
 @tailwind utilities;
 
 @layer base {
-  html { font-family: 'Inter', system-ui, sans-serif; }
-  body { @apply bg-light text-dark antialiased; }
+  html {
+    font-family: var(--font-inter, 'Inter', system-ui, sans-serif);
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-light text-dark antialiased;
+  }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md bg-primary-500 px-5 py-3 font-semibold text-white shadow-md transition hover:bg-primary-600 active:scale-95;
+    @apply inline-flex items-center justify-center rounded-full bg-primary-500 px-6 py-3 font-semibold text-white shadow-lg shadow-primary-500/25 transition-all duration-200 hover:bg-primary-400 hover:shadow-xl hover:shadow-primary-500/30 active:scale-[0.98];
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-md bg-white px-5 py-3 font-semibold text-dark ring-1 ring-neutral-200 transition hover:bg-neutral-50;
+    @apply inline-flex items-center justify-center rounded-full border border-neutral-200 bg-white px-6 py-3 font-semibold text-dark transition-all duration-200 hover:border-neutral-300 hover:shadow-md active:scale-[0.98];
   }
-  .card { @apply rounded-lg bg-white p-6 shadow-md; }
-  .toast-enter { animation: toast-in 220ms ease-out; }
-  .row-flash { animation: row-flash 1.6s ease-out; }
-}
-
-@keyframes toast-in {
-  from { opacity: 0; transform: translateX(16px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes row-flash {
-  0%   { background-color: rgba(0, 184, 148, 0.18); }
-  100% { background-color: transparent; }
+  .card {
+    @apply rounded-2xl bg-white p-6 shadow-md transition-all duration-300 hover:shadow-xl;
+  }
 }

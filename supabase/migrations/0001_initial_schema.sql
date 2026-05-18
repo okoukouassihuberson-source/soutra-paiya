@@ -3,10 +3,15 @@
 -- Migration 0001 : tables, enums, RLS, fonctions
 -- ============================================================================
 
--- Extensions
-create extension if not exists "uuid-ossp";
-create extension if not exists "postgis";
-create extension if not exists "pgcrypto";
+-- Extensions (Supabase les installe dans le schéma "extensions" par défaut)
+create schema if not exists extensions;
+create extension if not exists "uuid-ossp" schema extensions;
+create extension if not exists "postgis" schema extensions;
+create extension if not exists "pgcrypto" schema extensions;
+
+-- Permet d'utiliser uuid_generate_v4(), gen_random_bytes(), geography(...), etc.
+-- sans devoir préfixer par "extensions." partout dans le reste du script.
+set search_path to public, extensions, pg_catalog;
 
 -- ============================================================================
 -- ENUMS
@@ -62,7 +67,7 @@ create table wallets (
 -- TRANSACTIONS
 -- ============================================================================
 create table transactions (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id),
   counterparty_id uuid references profiles(id), -- pour les transferts P2P
   type tx_type not null,
@@ -86,7 +91,7 @@ create index idx_tx_provider_ref on transactions(provider_ref);
 -- VENUES (établissements)
 -- ============================================================================
 create table venues (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references profiles(id),
   name text not null,
   slug text unique not null,
@@ -117,7 +122,7 @@ create index idx_venues_owner on venues(owner_id);
 -- EVENTS
 -- ============================================================================
 create table events (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   organizer_id uuid not null references profiles(id),
   venue_id uuid references venues(id),
   title text not null,
@@ -139,7 +144,7 @@ create index idx_events_organizer on events(organizer_id);
 -- RESERVATIONS
 -- ============================================================================
 create table reservations (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id),
   venue_id uuid not null references venues(id),
   date_time timestamptz not null,
@@ -147,7 +152,7 @@ create table reservations (
   deposit_xof bigint not null default 0,
   escrow_tx_id uuid references transactions(id),
   status reservation_status not null default 'pending',
-  qr_code text unique not null default encode(gen_random_bytes(16), 'hex'),
+  qr_code text unique not null default replace(gen_random_uuid()::text, '-', ''),
   notes text,
   created_at timestamptz not null default now(),
   arrived_at timestamptz,
@@ -163,12 +168,12 @@ alter table transactions
 -- TICKETS
 -- ============================================================================
 create table tickets (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   event_id uuid not null references events(id),
   user_id uuid not null references profiles(id),
   tier_name text not null,
   price_xof bigint not null,
-  qr_code text unique not null default encode(gen_random_bytes(16), 'hex'),
+  qr_code text unique not null default replace(gen_random_uuid()::text, '-', ''),
   status ticket_status not null default 'valid',
   scanned_at timestamptz,
   scanned_by uuid references profiles(id),
@@ -185,7 +190,7 @@ alter table transactions
 -- REVIEWS (avis vérifiés — uniquement après transaction confirmée)
 -- ============================================================================
 create table reviews (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id),
   venue_id uuid references venues(id),
   event_id uuid references events(id),
@@ -205,7 +210,7 @@ create unique index uniq_review_per_resa on reviews(reservation_id) where reserv
 -- STORIES (24h)
 -- ============================================================================
 create table stories (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id),
   venue_id uuid references venues(id),
   event_id uuid references events(id),
@@ -231,7 +236,7 @@ create table follows (
 );
 
 create table chats (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   type text not null check (type in ('dm','group')),
   title text,
   created_at timestamptz not null default now()
@@ -245,7 +250,7 @@ create table chat_members (
 );
 
 create table messages (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   chat_id uuid not null references chats(id) on delete cascade,
   sender_id uuid not null references profiles(id),
   body text,
@@ -266,7 +271,7 @@ create table sos_contacts (
 );
 
 create table sos_alerts (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id),
   started_at timestamptz not null default now(),
   ended_at timestamptz,
