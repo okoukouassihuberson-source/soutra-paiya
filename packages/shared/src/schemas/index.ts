@@ -5,7 +5,12 @@ export const phoneSchema = z
   .string()
   .regex(/^\+225[0-9]{10}$/, 'Numéro invalide. Format attendu : +225XXXXXXXXXX');
 
-export const otpSchema = z.string().length(6, 'Le code doit faire 6 chiffres').regex(/^\d{6}$/);
+// Mot de passe : 8 caractères minimum (priorité à la longueur — NIST 800-63B).
+// Plafond 72 octets : bcrypt tronque silencieusement au-delà.
+export const passwordSchema = z
+  .string()
+  .min(8, 'Mot de passe : 8 caractères minimum')
+  .max(72, 'Mot de passe : 72 caractères maximum');
 
 export const pinSchema = z.string().length(4, 'PIN à 4 chiffres').regex(/^\d{4}$/);
 
