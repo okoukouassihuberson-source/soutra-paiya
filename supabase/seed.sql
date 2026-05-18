@@ -1,0 +1,11 @@
+-- Seed data — 5 établissements de démo à Abidjan
+-- Note : nécessite un user existant. Adapter owner_id avant d'exécuter.
+
+-- Exemple (remplacer 'OWNER_UUID' par un vrai uuid de profiles) :
+-- insert into venues (owner_id, name, slug, category, description, address, city, district, location, avg_price_xof, status)
+-- values
+--   ('OWNER_UUID', 'Le Mékaféba', 'le-mekafeba', 'maquis', 'Maquis convivial spécialisé poisson braisé.', 'Rue des Jardins, Cocody', 'Abidjan', 'Cocody', ST_GeogFromText('POINT(-3.999 5.359)'), 8000, 'active'),
+--   ('OWNER_UUID', 'Saka Saka', 'saka-saka', 'restaurant', 'Cuisine ivoirienne moderne.', 'II Plateaux, Cocody', 'Abidjan', 'Cocody', ST_GeogFromText('POINT(-3.991 5.371)'), 12000, 'active'),
+--   ('OWNER_UUID', 'VIP Lounge', 'vip-lounge', 'club', 'Boîte de nuit haut de gamme.', 'Zone 4, Marcory', 'Abidjan', 'Marcory', ST_GeogFromText('POINT(-3.999 5.298)'), 25000, 'active'),
+--   ('OWNER_UUID', 'Chez Tantie Adjoua', 'chez-tantie-adjoua', 'maquis', 'Garba et poulet braisé.', 'Yopougon Niangon', 'Abidjan', 'Yopougon', ST_GeogFromText('POINT(-4.090 5.337)'), 3500, 'active'),
+--   ('OWNER_UUID', 'Le Plateau Café', 'plateau-cafe', 'cafe', 'Café-restaurant business.', 'Plateau, Avenue Chardy', 'Abidjan', 'Plateau', ST_GeogFromText('POINT(-4.024 5.323)'), 6000, 'active');

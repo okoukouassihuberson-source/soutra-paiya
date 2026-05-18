@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Soutra-Paiya",
+    "slug": "soutra-paiya",
+    "scheme": "soutrapaiya",
+    "version": "0.1.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF6B1A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ci.soutra.paiya"
+    },
+    "android": {
+      "package": "ci.soutra.paiya",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#FF6B1A"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsImpl": "mapbox",
+          "RNMapboxMapsDownloadToken": ""
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "supabaseUrl": "https://pjtmmzxcitbcwbbgtpdj.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqdG1tenhjaXRiY3diYmd0cGRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NjU5MDgsImV4cCI6MjA5NDQ0MTkwOH0.x3HmW32Bu9GgIVrLbhlcAVdm3YLYSyp292NRarC2WFI",
+      "mapboxPublicToken": "",
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "a530c184-6d1b-4b0f-a3f4-3793b4f999e5"
+      }
+    },
+    "owner": "lingot225"
+  }
+}
