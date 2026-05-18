@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+.expo/
+dist/
+build/
+out/
+
+# Env (never commit secrets)
+.env
+.env.local
+.env*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+
+# Mobile
+*.keystore
+*.jks
+ios/
+android/
+google-services.json
+GoogleService-Info.plist
+
+# TypeScript
+*.tsbuildinfo

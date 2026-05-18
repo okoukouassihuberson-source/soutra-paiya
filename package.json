@@ -1,0 +1,23 @@
+{
+  "name": "soutra-paiya",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Soutra-Paiya — Plateforme fintech & loisirs pour la Côte d'Ivoire",
+  "scripts": {
+    "web": "pnpm --filter @soutra/web dev",
+    "mobile": "pnpm --filter @soutra/mobile start",
+    "build:web": "pnpm --filter @soutra/web build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:reset": "supabase db reset",
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript --project-id pjtmmzxcitbcwbbgtpdj --schema public > packages/shared/src/types/database.ts"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
