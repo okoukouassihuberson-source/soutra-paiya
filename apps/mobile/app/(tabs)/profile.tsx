@@ -74,6 +74,9 @@ export default function Profile() {
       case 'Mes contacts SOS':
         router.push('/sos-contacts' as any);
         break;
+      case 'Mes favoris':
+        router.push('/favorites' as any);
+        break;
       case 'Code de parrainage':
         Alert.alert(
           'Code de parrainage',
@@ -121,6 +124,7 @@ export default function Profile() {
             { label: 'Modifier le profil', icon: 'person-outline' as const },
             { label: 'Vérification KYC', icon: 'shield-checkmark-outline' as const },
             { label: 'Mes contacts SOS', icon: 'medkit-outline' as const },
+            { label: 'Mes favoris', icon: 'heart-outline' as const },
             { label: 'Code de parrainage', icon: 'gift-outline' as const },
             { label: "Centre d'aide", icon: 'help-circle-outline' as const },
             { label: 'Conditions & Confidentialité', icon: 'document-text-outline' as const },

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, TextInput, Pressable, StyleSheet, ScrollView,
+  View, Text, TextInput, Pressable, StyleSheet, ScrollView, Image,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { decode } from 'base64-arraybuffer';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
@@ -21,6 +23,8 @@ export default function Kyc() {
   const [legalName, setLegalName] = useState('');
   const [idType, setIdType] = useState<string>('CNI');
   const [idNumber, setIdNumber] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -45,6 +49,28 @@ export default function Kyc() {
     return () => { mounted = false; };
   }, [user?.id]);
 
+  async function pickPhoto() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permission requise', 'Autorise l\'accès aux photos pour ajouter ta pièce.');
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.6,
+      base64: true,
+      allowsEditing: true,
+    });
+    if (res.canceled || !res.assets?.[0]) return;
+    const asset = res.assets[0];
+    if (!asset.base64) {
+      Alert.alert('Erreur', 'Image illisible. Réessaie avec une autre photo.');
+      return;
+    }
+    setPhotoUri(asset.uri);
+    setPhotoBase64(asset.base64);
+  }
+
   async function submit() {
     if (!user?.id) return;
     if (legalName.trim().length < 2) {
@@ -55,27 +81,51 @@ export default function Kyc() {
       Alert.alert('Numéro requis', 'Indique le numéro de ta pièce d\'identité.');
       return;
     }
-    setSaving(true);
-    const { error } = await sb
-      .from('profiles')
-      .update({
-        full_name: legalName.trim(),
-        kyc_id_type: idType,
-        kyc_id_number: idNumber.trim(),
-        kyc_submitted_at: new Date().toISOString(),
-        kyc_status: 'pending',
-      })
-      .eq('id', user.id);
-    setSaving(false);
-    if (error) {
-      Alert.alert('Erreur', error.message ?? 'Envoi impossible.');
+    if (!photoBase64) {
+      Alert.alert('Photo requise', 'Ajoute une photo de ta pièce d\'identité.');
       return;
     }
-    setStatus('pending');
-    Alert.alert(
-      'Demande envoyée',
-      'Ta vérification KYC est en cours d\'examen. Tu seras notifié du résultat.',
-    );
+
+    setSaving(true);
+    try {
+      // 1. Upload de la photo dans le bucket privé `kyc` (chemin: <user_id>/...).
+      const path = `${user.id}/id-${Date.now()}.jpg`;
+      const { error: upErr } = await supabase.storage
+        .from('kyc')
+        .upload(path, decode(photoBase64), { contentType: 'image/jpeg', upsert: true });
+      if (upErr) {
+        Alert.alert(
+          'Envoi du document impossible',
+          'Vérifie que le bucket Storage « kyc » existe (migration 0006). ' + upErr.message,
+        );
+        return;
+      }
+
+      // 2. Mise à jour du profil + passage en statut « pending ».
+      const { error } = await sb
+        .from('profiles')
+        .update({
+          full_name: legalName.trim(),
+          kyc_id_type: idType,
+          kyc_id_number: idNumber.trim(),
+          kyc_doc_url: path,
+          kyc_submitted_at: new Date().toISOString(),
+          kyc_status: 'pending',
+        })
+        .eq('id', user.id);
+      if (error) {
+        Alert.alert('Erreur', error.message ?? 'Envoi impossible.');
+        return;
+      }
+
+      setStatus('pending');
+      Alert.alert(
+        'Demande envoyée',
+        'Ta vérification KYC est en cours d\'examen. Tu seras notifié du résultat.',
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   const canSubmit = status === 'none' || status === 'rejected';
@@ -167,6 +217,22 @@ export default function Kyc() {
                   autoCapitalize="characters"
                 />
 
+                <Text style={[s.label, s.spaced]}>Photo de la pièce</Text>
+                {photoUri ? (
+                  <Pressable onPress={pickPhoto} style={s.photoPreviewWrap}>
+                    <Image source={{ uri: photoUri }} style={s.photoPreview} />
+                    <View style={s.photoOverlay}>
+                      <Ionicons name="camera-reverse-outline" size={18} color="#fff" />
+                      <Text style={s.photoOverlayText}>Changer la photo</Text>
+                    </View>
+                  </Pressable>
+                ) : (
+                  <Pressable onPress={pickPhoto} style={s.photoPicker}>
+                    <Ionicons name="camera-outline" size={28} color={colors.primary[500]} />
+                    <Text style={s.photoPickerText}>Ajouter une photo de ta pièce</Text>
+                  </Pressable>
+                )}
+
                 <Pressable
                   onPress={submit}
                   disabled={saving}
@@ -217,6 +283,20 @@ const s = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary[500], borderColor: colors.primary[500] },
   chipText: { fontSize: typography.fontSize.sm, color: colors.neutral[700] },
   chipTextActive: { color: '#fff', fontWeight: '600' },
+  photoPicker: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    borderWidth: 1, borderStyle: 'dashed', borderColor: colors.neutral[300],
+    borderRadius: radius.md, paddingVertical: spacing.lg,
+  },
+  photoPickerText: { fontSize: typography.fontSize.sm, color: colors.primary[500], fontWeight: '600' },
+  photoPreviewWrap: { borderRadius: radius.md, overflow: 'hidden' },
+  photoPreview: { width: '100%', height: 200 },
+  photoOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    backgroundColor: 'rgba(0,0,0,0.55)', paddingVertical: spacing.sm,
+  },
+  photoOverlayText: { color: '#fff', fontSize: typography.fontSize.sm, fontWeight: '600' },
   cta: {
     marginTop: spacing.xl, backgroundColor: colors.primary[500],
     paddingVertical: spacing.base, borderRadius: radius.md, alignItems: 'center', elevation: 2,

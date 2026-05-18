@@ -43,6 +43,12 @@
             "kotlinVersion": "1.9.25"
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Soutra-Paiya accède à tes photos pour ta vérification d'identité (KYC)."
+        }
       ]
     ],
     "experiments": {
