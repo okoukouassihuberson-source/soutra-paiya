@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth-context';
 
 interface Venue {
   id: string;
@@ -26,12 +27,35 @@ interface Venue {
 export default function VenueDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favBusy, setFavBusy] = useState(false);
 
   useEffect(() => {
     loadVenue();
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !user?.id) {
+      setIsFavorite(false);
+      return;
+    }
+    let active = true;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('favorites')
+        .select('venue_id')
+        .eq('user_id', user.id)
+        .eq('venue_id', id)
+        .maybeSingle();
+      if (active) setIsFavorite(!!data);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id, user?.id]);
 
   const loadVenue = async () => {
     if (!id) {
@@ -57,6 +81,35 @@ export default function VenueDetail() {
       setVenue(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    if (!user?.id || !id) {
+      Alert.alert('Connexion requise', 'Connecte-toi pour gérer tes favoris.');
+      return;
+    }
+    const sb = supabase as any;
+    const next = !isFavorite;
+    setFavBusy(true);
+    setIsFavorite(next);
+    try {
+      if (next) {
+        const { error } = await sb.from('favorites').insert({ user_id: user.id, venue_id: id });
+        if (error) throw error;
+      } else {
+        const { error } = await sb
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('venue_id', id);
+        if (error) throw error;
+      }
+    } catch {
+      setIsFavorite(!next);
+      Alert.alert('Erreur', 'Action sur les favoris impossible. Réessaie.');
+    } finally {
+      setFavBusy(false);
     }
   };
 
@@ -86,11 +139,12 @@ export default function VenueDetail() {
           <Pressable hitSlop={10} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={colors.dark} />
           </Pressable>
-          <Pressable
-            hitSlop={10}
-            onPress={() => Alert.alert('Favoris', 'Bientôt disponible : ajoute ce lieu à tes favoris.')}
-          >
-            <Ionicons name="heart-outline" size={24} color={colors.dark} />
+          <Pressable hitSlop={10} onPress={toggleFavorite} disabled={favBusy}>
+            <Ionicons
+              name={isFavorite ? 'heart' : 'heart-outline'}
+              size={24}
+              color={isFavorite ? colors.danger : colors.dark}
+            />
           </Pressable>
         </View>
 

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
@@ -18,28 +19,32 @@ interface ProfileRow {
 
 export default function Profile() {
   const { user, signOut } = useAuth();
+  const router = useRouter();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    let mounted = true;
-    (async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone, email, kyc_status, referral_code, role')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (!mounted) return;
-      if (error) {
-        console.error('[profile] load error:', error);
-      } else {
-        setProfile(data as ProfileRow | null);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [user?.id]);
+  // Rechargé à chaque focus de l'écran -> données fraîches après édition.
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      let active = true;
+      (async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, phone, email, kyc_status, referral_code, role')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (!active) return;
+        if (error) {
+          console.error('[profile] load error:', error);
+        } else {
+          setProfile(data as ProfileRow | null);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [user?.id]),
+  );
 
   const displayName = profile?.full_name?.trim() || profile?.phone || user?.phone || 'Utilisateur';
   const initial = (profile?.full_name?.trim()?.[0] ?? user?.phone?.replace(/[+\s]/g, '')?.slice(-2, -1) ?? 'U').toUpperCase();
@@ -61,16 +66,13 @@ export default function Profile() {
   const handleMenuPress = (label: string) => {
     switch (label) {
       case 'Modifier le profil':
-        Alert.alert('Bientôt disponible', 'Modification du profil en construction.');
+        router.push('/profile-edit' as any);
         break;
       case 'Vérification KYC':
-        Alert.alert(
-          'Vérification KYC',
-          'Le KYC est nécessaire pour augmenter tes limites au-delà de 200 000 FCFA. Bientôt disponible.'
-        );
+        router.push('/kyc' as any);
         break;
       case 'Mes contacts SOS':
-        Alert.alert('Contacts SOS', 'Gestion des contacts SOS en construction.');
+        router.push('/sos-contacts' as any);
         break;
       case 'Code de parrainage':
         Alert.alert(
