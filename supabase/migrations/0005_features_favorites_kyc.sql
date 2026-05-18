@@ -66,5 +66,9 @@ begin
 end;
 $$;
 
--- Le trigger `protect_profile_role` (migration 0004) appelle déjà cette
--- fonction — aucune recréation de trigger nécessaire.
+-- Trigger (idempotent) : garantit que la protection est active, même si la
+-- migration 0004 n'a pas été appliquée séparément.
+drop trigger if exists protect_profile_role on profiles;
+create trigger protect_profile_role
+  before update on profiles
+  for each row execute function public.tg_protect_profile_role();
