@@ -5,21 +5,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, radius, spacing, phoneSchema } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 
+type Channel = 'whatsapp' | 'sms';
+
 export default function Login() {
   const router = useRouter();
   const [phone, setPhone] = useState('+225');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<Channel | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function send() {
+  async function send(channel: Channel) {
     setError(null);
     const r = phoneSchema.safeParse(phone);
     if (!r.success) { setError(r.error.issues[0].message); return; }
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    setLoading(false);
+    setLoading(channel);
+    // Canal `whatsapp` : nécessite Twilio configuré côté Supabase.
+    const { error } = await supabase.auth.signInWithOtp({ phone, options: { channel } });
+    setLoading(null);
     if (error) setError(error.message);
-    else router.push({ pathname: '/(auth)/otp', params: { phone } });
+    else router.push({ pathname: '/(auth)/otp', params: { phone, channel } });
   }
 
   return (
@@ -41,12 +44,28 @@ export default function Login() {
               autoCapitalize="none"
               autoComplete="tel"
             />
-            <Text style={s.hint}>Tu vas recevoir un code par SMS</Text>
+            <Text style={s.hint}>Tu vas recevoir un code sur WhatsApp</Text>
 
             {error && <Text style={s.error}>{error}</Text>}
 
-            <Pressable onPress={send} disabled={loading} style={({ pressed }) => [s.cta, pressed && { opacity: 0.85 }]}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.ctaText}>Recevoir le code</Text>}
+            <Pressable
+              onPress={() => send('whatsapp')}
+              disabled={loading !== null}
+              style={({ pressed }) => [s.cta, pressed && { opacity: 0.85 }]}
+            >
+              {loading === 'whatsapp'
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={s.ctaText}>Recevoir sur WhatsApp</Text>}
+            </Pressable>
+
+            <Pressable
+              onPress={() => send('sms')}
+              disabled={loading !== null}
+              style={({ pressed }) => [s.smsBtn, pressed && { opacity: 0.6 }]}
+            >
+              {loading === 'sms'
+                ? <ActivityIndicator color={colors.neutral[600]} />
+                : <Text style={s.smsText}>Recevoir par SMS à la place</Text>}
             </Pressable>
           </View>
 
@@ -80,12 +99,14 @@ const s = StyleSheet.create({
   error: { marginTop: spacing.md, color: colors.danger, fontSize: typography.fontSize.sm },
   cta: {
     marginTop: spacing.lg,
-    backgroundColor: colors.primary[500],
+    backgroundColor: '#25D366',
     paddingVertical: spacing.base,
     borderRadius: radius.md,
     alignItems: 'center',
     elevation: 2,
   },
   ctaText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.base },
+  smsBtn: { marginTop: spacing.md, paddingVertical: spacing.md, alignItems: 'center' },
+  smsText: { color: colors.neutral[500], fontWeight: '500', fontSize: typography.fontSize.sm },
   terms: { marginTop: 'auto', fontSize: typography.fontSize.xs, color: colors.neutral[500], textAlign: 'center', paddingBottom: spacing.base },
 });

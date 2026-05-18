@@ -6,11 +6,13 @@ import { colors, typography, radius, spacing, otpSchema } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 
 export default function Otp() {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { phone, channel } = useLocalSearchParams<{ phone: string; channel?: string }>();
   const router = useRouter();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const via = channel === 'sms' ? 'par SMS' : 'sur WhatsApp';
 
   async function verify() {
     setError(null);
@@ -30,7 +32,7 @@ export default function Otp() {
           <Text style={s.back}>← Retour</Text>
         </Pressable>
         <Text style={s.title}>Entre ton code</Text>
-        <Text style={s.subtitle}>Envoyé au {phone}</Text>
+        <Text style={s.subtitle}>Envoyé {via} au {phone}</Text>
 
         <TextInput
           value={code}

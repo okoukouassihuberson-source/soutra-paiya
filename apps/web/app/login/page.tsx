@@ -6,24 +6,30 @@ import { supabaseBrowser } from '@/lib/supabase';
 import { phoneSchema, otpSchema } from '@soutra/shared';
 
 type Step = 'phone' | 'otp' | 'done';
+type Channel = 'whatsapp' | 'sms';
 
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('+225');
   const [otp, setOtp] = useState('');
+  const [sentChannel, setSentChannel] = useState<Channel>('whatsapp');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const supabase = supabaseBrowser();
 
-  async function sendOtp() {
+  async function sendOtp(channel: Channel) {
     setError(null);
     const parsed = phoneSchema.safeParse(phone);
     if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone });
+    // Le code OTP part via le canal choisi. Le canal `whatsapp` exige que le
+    // fournisseur Twilio soit configuré côté Supabase (Auth > Phone provider).
+    const { error } = await supabase.auth.signInWithOtp({ phone, options: { channel } });
     setLoading(false);
-    if (error) setError(error.message); else setStep('otp');
+    if (error) { setError(error.message); return; }
+    setSentChannel(channel);
+    setStep('otp');
   }
 
   async function verifyOtp() {
@@ -66,12 +72,13 @@ export default function LoginPage() {
         </Link>
         <p className="mt-2 text-neutral-500">
           {step === 'phone' && 'Connecte-toi avec ton numéro ivoirien'}
-          {step === 'otp' && `Entre le code reçu au ${phone}`}
+          {step === 'otp' &&
+            `Entre le code reçu ${sentChannel === 'whatsapp' ? 'sur WhatsApp' : 'par SMS'} au ${phone}`}
           {step === 'done' && 'Connexion réussie'}
         </p>
 
         {step === 'phone' && (
-          <div className="mt-6 space-y-4">
+          <div className="mt-6 space-y-3">
             <input
               type="tel"
               value={phone}
@@ -80,11 +87,19 @@ export default function LoginPage() {
               placeholder="+225XXXXXXXXXX"
             />
             <button
-              onClick={sendOtp}
+              onClick={() => sendOtp('whatsapp')}
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 font-semibold text-white shadow-md transition hover:bg-[#20bd5a] active:scale-95 disabled:opacity-50"
             >
-              {loading ? 'Envoi…' : 'Recevoir le code'}
+              <span aria-hidden>🟢</span>
+              {loading ? 'Envoi…' : 'Recevoir le code sur WhatsApp'}
+            </button>
+            <button
+              onClick={() => sendOtp('sms')}
+              disabled={loading}
+              className="block w-full text-center text-sm text-neutral-400 transition hover:text-neutral-600 disabled:opacity-50"
+            >
+              Recevoir par SMS à la place
             </button>
           </div>
         )}
