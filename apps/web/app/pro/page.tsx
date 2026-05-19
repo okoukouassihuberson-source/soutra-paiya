@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabaseBrowser } from '@/lib/supabase';
-import { formatXOF } from '@soutra/shared';
+import { formatXOF, slugify } from '@soutra/shared';
 
 type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'finances' | 'marketing' | 'settings';
 type ResStatus = 'pending' | 'confirmed' | 'arrived' | 'no_show' | 'cancelled' | 'refunded';
@@ -29,6 +29,20 @@ const SIDEBAR: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'finances', label: 'Finances', icon: <IcoWallet /> },
   { id: 'marketing', label: 'Marketing', icon: <IcoMegaphone /> },
   { id: 'settings', label: 'Paramètres', icon: <IcoGear /> },
+];
+
+// Catégories d'établissement — valeurs de l'enum venue_category (migration 0013).
+const VENUE_CATEGORIES: { v: string; l: string }[] = [
+  { v: 'maquis', l: 'Maquis' },
+  { v: 'restaurant', l: 'Restaurant' },
+  { v: 'bar', l: 'Bar' },
+  { v: 'lounge', l: 'Lounge' },
+  { v: 'club', l: 'Club / Boîte de nuit' },
+  { v: 'hotel', l: 'Hôtel' },
+  { v: 'cafe', l: 'Café' },
+  { v: 'sport', l: 'Complexe sportif' },
+  { v: 'beach', l: 'Plage privée' },
+  { v: 'event_space', l: 'Espace événementiel' },
 ];
 
 export default function ProDashboard() {
@@ -78,6 +92,10 @@ export default function ProDashboard() {
   const [settingsPhone, setSettingsPhone] = useState('');
   const [settingsDesc, setSettingsDesc] = useState('');
   const [settingsCategory, setSettingsCategory] = useState('');
+
+  // Création d'un établissement (espace pro en autonomie)
+  const [creating, setCreating] = useState(false);
+  const [nv, setNv] = useState({ name: '', category: 'maquis', city: 'Abidjan', address: '', phone: '', whatsapp: '', description: '' });
 
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -197,6 +215,28 @@ export default function ProDashboard() {
     else { flash('Paramètres sauvegardés'); const { data } = await (supabase as any).from('venues').select('id, name, category, city, address, phone, status, rating_avg, rating_count, description').eq('owner_id', userId); if (data) setVenues(data); }
   }
 
+  async function createVenue() {
+    if (!nv.name.trim() || !nv.address.trim()) { flash('Nom et adresse requis', 'error'); return; }
+    setCreating(true);
+    const slug = `${slugify(nv.name)}-${Math.random().toString(36).slice(2, 7)}`;
+    const { error } = await (supabase as any).from('venues').insert({
+      owner_id: userId,
+      name: nv.name.trim(),
+      slug,
+      category: nv.category,
+      city: nv.city.trim() || 'Abidjan',
+      address: nv.address.trim(),
+      phone: nv.phone.trim() || null,
+      whatsapp: nv.whatsapp.trim() || null,
+      description: nv.description.trim() || null,
+      status: 'draft',
+    });
+    setCreating(false);
+    if (error) { flash(error.message, 'error'); return; }
+    flash('Établissement créé — en attente de validation');
+    await loadInitialData();
+  }
+
   // KPIs
   const todayStr = new Date().toISOString().split('T')[0];
   const todayRes = reservations.filter((r) => r.date_time?.startsWith(todayStr));
@@ -283,13 +323,39 @@ export default function ProDashboard() {
         </header>
 
         <div className="p-8">
-          {/* Empty state */}
+          {/* Création d'établissement (aucun venue rattaché) */}
           {venues.length === 0 && (
-            <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-primary-50"><IcoGrid className="h-10 w-10 text-primary-500" /></div>
-              <h2 className="mt-6 font-display text-2xl font-bold text-dark">Aucun établissement</h2>
-              <p className="mt-2 max-w-md text-neutral-500">Vous n&apos;avez pas encore d&apos;établissement rattaché à votre compte. Contactez l&apos;équipe Soutra-Paiya pour créer votre espace pro.</p>
-              <a href="mailto:pro@soutra-paiya.com" className="btn-primary mt-6">Nous contacter</a>
+            <div className="mx-auto max-w-2xl">
+              <div className="mb-6 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-50"><IcoGrid className="h-8 w-8 text-primary-500" /></div>
+                <h2 className="mt-4 font-display text-2xl font-bold text-dark">Crée ton établissement</h2>
+                <p className="mt-1 text-sm text-neutral-500">Renseigne les infos de base — tu pourras tout compléter ensuite dans Paramètres.</p>
+              </div>
+              <div className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6">
+                <ProInput label="Nom de l'établissement" value={nv.name} onChange={(v) => setNv((p) => ({ ...p, name: v }))} placeholder="Le Maquis du Coin" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-neutral-500">Catégorie</label>
+                    <select value={nv.category} onChange={(e) => setNv((p) => ({ ...p, category: e.target.value }))} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
+                      {VENUE_CATEGORIES.map((c) => <option key={c.v} value={c.v}>{c.l}</option>)}
+                    </select>
+                  </div>
+                  <ProInput label="Ville / commune" value={nv.city} onChange={(v) => setNv((p) => ({ ...p, city: v }))} placeholder="Abidjan" />
+                </div>
+                <ProInput label="Adresse" value={nv.address} onChange={(v) => setNv((p) => ({ ...p, address: v }))} placeholder="Rue, quartier..." />
+                <div className="grid grid-cols-2 gap-3">
+                  <ProInput label="Téléphone" value={nv.phone} onChange={(v) => setNv((p) => ({ ...p, phone: v }))} placeholder="+225XXXXXXXXXX" />
+                  <ProInput label="WhatsApp" value={nv.whatsapp} onChange={(v) => setNv((p) => ({ ...p, whatsapp: v }))} placeholder="+225XXXXXXXXXX" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-neutral-500">Description</label>
+                  <textarea value={nv.description} onChange={(e) => setNv((p) => ({ ...p, description: e.target.value }))} rows={3} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none" placeholder="Présente ton établissement en quelques lignes..." />
+                </div>
+                <button onClick={createVenue} disabled={creating} className="btn-primary w-full disabled:opacity-50">
+                  {creating ? 'Création...' : 'Créer mon établissement'}
+                </button>
+                <p className="text-center text-xs text-neutral-400">Ton établissement sera vérifié par l&apos;équipe Soutra-Paiya avant d&apos;apparaître dans l&apos;application.</p>
+              </div>
             </div>
           )}
 
@@ -579,7 +645,7 @@ export default function ProDashboard() {
                         <div>
                           <label className="mb-1 block text-xs font-medium text-neutral-500">Catégorie</label>
                           <select value={settingsCategory} onChange={(e) => setSettingsCategory(e.target.value)} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
-                            {['restaurant', 'bar', 'lounge', 'club', 'maquis', 'hotel', 'cafe', 'autre'].map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+                            {VENUE_CATEGORIES.map((c) => <option key={c.v} value={c.v}>{c.l}</option>)}
                           </select>
                         </div>
                         <ProInput label="Ville" value={settingsCity} onChange={setSettingsCity} />
