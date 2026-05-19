@@ -9,7 +9,7 @@ import { formatXOF, slugify } from '@soutra/shared';
 type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'finances' | 'marketing' | 'settings';
 type ResStatus = 'pending' | 'confirmed' | 'arrived' | 'no_show' | 'cancelled' | 'refunded';
 
-interface Venue { id: string; name: string; category: string; city: string; address: string; phone: string; status: string; rating_avg: number; rating_count: number; description: string; }
+interface Venue { id: string; name: string; category: string; city: string; address: string; phone: string; status: string; rating_avg: number; rating_count: number; description: string; logo_url: string | null; cover_url: string | null; gallery_urls: string[] | null; }
 interface Reservation { id: string; user_id: string; venue_id: string; date_time: string; party_size: number; deposit_xof: number; status: ResStatus; notes: string | null; created_at: string; customer_name: string | null; customer_phone: string | null; }
 
 const STATUS_META: Record<ResStatus, { label: string; color: string; bg: string }> = {
@@ -97,6 +97,10 @@ export default function ProDashboard() {
   const [creating, setCreating] = useState(false);
   const [nv, setNv] = useState({ name: '', category: 'maquis', city: 'Abidjan', address: '', phone: '', whatsapp: '', description: '' });
 
+  // Médias de l'établissement (logo, bannière, galerie)
+  const [media, setMedia] = useState<{ logo: string | null; cover: string | null; gallery: string[] }>({ logo: null, cover: null, gallery: [] });
+  const [uploading, setUploading] = useState<string | null>(null);
+
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   function flash(message: string, type: 'success' | 'error' = 'success') {
@@ -114,7 +118,7 @@ export default function ProDashboard() {
     const { data: profile } = await (supabase as any).from('profiles').select('full_name, phone').eq('id', user.id).single();
     setUserName(profile?.full_name || profile?.phone || 'Pro');
 
-    const { data: ownedVenues } = await (supabase as any).from('venues').select('id, name, category, city, address, phone, status, rating_avg, rating_count, description').eq('owner_id', user.id);
+    const { data: ownedVenues } = await (supabase as any).from('venues').select('id, name, category, city, address, phone, status, rating_avg, rating_count, description, logo_url, cover_url, gallery_urls').eq('owner_id', user.id);
 
     if (ownedVenues && ownedVenues.length > 0) {
       setVenues(ownedVenues as Venue[]);
@@ -126,6 +130,7 @@ export default function ProDashboard() {
       setSettingsPhone(v.phone || '');
       setSettingsDesc(v.description || '');
       setSettingsCategory(v.category || '');
+      setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [] });
     }
 
     // Load wallet
@@ -174,7 +179,7 @@ export default function ProDashboard() {
   // When venue changes, update settings
   useEffect(() => {
     const v = venues.find((x) => x.id === selectedVenueId);
-    if (v) { setSettingsName(v.name || ''); setSettingsCity(v.city || ''); setSettingsAddress(v.address || ''); setSettingsPhone(v.phone || ''); setSettingsDesc(v.description || ''); setSettingsCategory(v.category || ''); }
+    if (v) { setSettingsName(v.name || ''); setSettingsCity(v.city || ''); setSettingsAddress(v.address || ''); setSettingsPhone(v.phone || ''); setSettingsDesc(v.description || ''); setSettingsCategory(v.category || ''); setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [] }); }
   }, [selectedVenueId, venues]);
 
   async function updateStatus(id: string, newStatus: ResStatus) {
@@ -212,7 +217,7 @@ export default function ProDashboard() {
   async function saveSettings() {
     const { error } = await (supabase as any).from('venues').update({ name: settingsName, city: settingsCity, address: settingsAddress, phone: settingsPhone, description: settingsDesc, category: settingsCategory }).eq('id', selectedVenueId);
     if (error) flash(error.message, 'error');
-    else { flash('Paramètres sauvegardés'); const { data } = await (supabase as any).from('venues').select('id, name, category, city, address, phone, status, rating_avg, rating_count, description').eq('owner_id', userId); if (data) setVenues(data); }
+    else { flash('Paramètres sauvegardés'); const { data } = await (supabase as any).from('venues').select('id, name, category, city, address, phone, status, rating_avg, rating_count, description, logo_url, cover_url, gallery_urls').eq('owner_id', userId); if (data) setVenues(data); }
   }
 
   async function createVenue() {
@@ -235,6 +240,38 @@ export default function ProDashboard() {
     if (error) { flash(error.message, 'error'); return; }
     flash('Établissement créé — en attente de validation');
     await loadInitialData();
+  }
+
+  async function uploadMedia(file: File, kind: 'logo' | 'cover' | 'gallery') {
+    if (!selectedVenueId) return;
+    if (file.size > 8 * 1024 * 1024) { flash('Image trop lourde (8 Mo max)', 'error'); return; }
+    setUploading(kind);
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${selectedVenueId}/${kind}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('venue-media').upload(path, file, { contentType: file.type });
+    if (upErr) { flash(upErr.message, 'error'); setUploading(null); return; }
+    const url = supabase.storage.from('venue-media').getPublicUrl(path).data.publicUrl;
+    const patch =
+      kind === 'logo' ? { logo_url: url }
+      : kind === 'cover' ? { cover_url: url }
+      : { gallery_urls: [...media.gallery, url] };
+    const { error: updErr } = await (supabase as any).from('venues').update(patch).eq('id', selectedVenueId);
+    if (updErr) { flash(updErr.message, 'error'); setUploading(null); return; }
+    setMedia((m) =>
+      kind === 'logo' ? { ...m, logo: url }
+      : kind === 'cover' ? { ...m, cover: url }
+      : { ...m, gallery: [...m.gallery, url] },
+    );
+    flash(kind === 'gallery' ? 'Photo ajoutée' : kind === 'logo' ? 'Logo mis à jour' : 'Bannière mise à jour');
+    setUploading(null);
+  }
+
+  async function removeGalleryImage(url: string) {
+    const next = media.gallery.filter((u) => u !== url);
+    const { error } = await (supabase as any).from('venues').update({ gallery_urls: next }).eq('id', selectedVenueId);
+    if (error) { flash(error.message, 'error'); return; }
+    setMedia((m) => ({ ...m, gallery: next }));
+    flash('Photo retirée');
   }
 
   // KPIs
@@ -637,6 +674,64 @@ export default function ProDashboard() {
               {/* ═══════════ SETTINGS ═══════════ */}
               {tab === 'settings' && (
                 <>
+                  {/* Médias de la vitrine */}
+                  <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6">
+                    <h3 className="mb-5 font-display text-lg font-bold text-dark">Médias de la vitrine</h3>
+                    <div className="grid gap-6 lg:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-xs font-medium text-neutral-500">Logo</label>
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+                            {media.logo ? <img src={media.logo} alt="logo" className="h-full w-full object-cover" /> : <IcoGrid className="h-7 w-7 text-neutral-300" />}
+                          </div>
+                          <label className="cursor-pointer rounded-xl border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition hover:border-primary-500/30 hover:text-primary-500">
+                            {uploading === 'logo' ? 'Envoi…' : 'Choisir un logo'}
+                            <input type="file" accept="image/*" className="hidden" disabled={!!uploading}
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMedia(f, 'logo'); e.target.value = ''; }} />
+                          </label>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-medium text-neutral-500">Bannière</label>
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-20 w-32 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+                            {media.cover ? <img src={media.cover} alt="bannière" className="h-full w-full object-cover" /> : <IcoGrid className="h-7 w-7 text-neutral-300" />}
+                          </div>
+                          <label className="cursor-pointer rounded-xl border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition hover:border-primary-500/30 hover:text-primary-500">
+                            {uploading === 'cover' ? 'Envoi…' : 'Choisir une bannière'}
+                            <input type="file" accept="image/*" className="hidden" disabled={!!uploading}
+                              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMedia(f, 'cover'); e.target.value = ''; }} />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-6">
+                      <div className="mb-2 flex items-center justify-between">
+                        <label className="text-xs font-medium text-neutral-500">Galerie photos ({media.gallery.length})</label>
+                        <label className="cursor-pointer rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-600">
+                          {uploading === 'gallery' ? 'Envoi…' : '+ Ajouter une photo'}
+                          <input type="file" accept="image/*" className="hidden" disabled={!!uploading}
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMedia(f, 'gallery'); e.target.value = ''; }} />
+                        </label>
+                      </div>
+                      {media.gallery.length === 0 ? (
+                        <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400">Aucune photo — ajoute des visuels pour attirer les clients</p>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                          {media.gallery.map((url) => (
+                            <div key={url} className="group relative aspect-square overflow-hidden rounded-xl border border-neutral-200">
+                              <img src={url} alt="" className="h-full w-full object-cover" />
+                              <button onClick={() => removeGalleryImage(url)} title="Retirer"
+                                className="absolute right-1 top-1 rounded-lg bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="grid gap-6 lg:grid-cols-2">
                     <div className="rounded-2xl border border-neutral-200 bg-white p-6">
                       <h3 className="mb-5 font-display text-lg font-bold text-dark">Informations générales</h3>
