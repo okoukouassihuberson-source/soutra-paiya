@@ -66,10 +66,6 @@ export default function Wallet() {
 
   const handleWithdraw = () => router.push('/withdraw');
 
-  const handleQuickAction = (action: string) => {
-    Alert.alert(action, `Fonctionnalité « ${action} » bientôt disponible.`);
-  };
-
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView
@@ -109,7 +105,7 @@ export default function Wallet() {
           {[
             { label: 'Envoyer', icon: 'send-outline' as const, onPress: () => router.push('/send') },
             { label: 'Demander', icon: 'download-outline' as const, onPress: () => router.push('/requests') },
-            { label: 'Split Bill', icon: 'people-outline' as const, onPress: () => handleQuickAction('Split Bill') },
+            { label: 'Split Bill', icon: 'people-outline' as const, onPress: () => router.push('/splits') },
             { label: 'Scanner QR', icon: 'qr-code-outline' as const, onPress: () => router.push('/scan') },
           ].map((q) => (
             <Pressable
