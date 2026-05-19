@@ -9,7 +9,7 @@ import { formatXOF, slugify } from '@soutra/shared';
 type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'finances' | 'marketing' | 'settings';
 type ResStatus = 'pending' | 'confirmed' | 'arrived' | 'no_show' | 'cancelled' | 'refunded';
 
-interface Venue { id: string; name: string; category: string; city: string; address: string; phone: string; status: string; rating_avg: number; rating_count: number; description: string; logo_url: string | null; cover_url: string | null; gallery_urls: string[] | null; }
+interface Venue { id: string; name: string; category: string; city: string; address: string; phone: string; status: string; rating_avg: number; rating_count: number; description: string; logo_url: string | null; cover_url: string | null; gallery_urls: string[] | null; whatsapp: string | null; email: string | null; district: string | null; avg_price_xof: number | null; opening_hours: any; amenities: string[] | null; ambiance: string[] | null; socials: any; }
 interface Reservation { id: string; user_id: string; venue_id: string; date_time: string; party_size: number; deposit_xof: number; status: ResStatus; notes: string | null; created_at: string; customer_name: string | null; customer_phone: string | null; }
 
 const STATUS_META: Record<ResStatus, { label: string; color: string; bg: string }> = {
@@ -44,6 +44,30 @@ const VENUE_CATEGORIES: { v: string; l: string }[] = [
   { v: 'beach', l: 'Plage privée' },
   { v: 'event_space', l: 'Espace événementiel' },
 ];
+
+const HOURS_DAYS: { k: string; l: string }[] = [
+  { k: 'mon', l: 'Lundi' }, { k: 'tue', l: 'Mardi' }, { k: 'wed', l: 'Mercredi' },
+  { k: 'thu', l: 'Jeudi' }, { k: 'fri', l: 'Vendredi' }, { k: 'sat', l: 'Samedi' },
+  { k: 'sun', l: 'Dimanche' },
+];
+const EMPTY_HOURS: Record<string, string> = { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '' };
+const EMPTY_SOCIALS = { instagram: '', facebook: '', tiktok: '' };
+const AMENITY_SUGGESTIONS = ['Wifi', 'Parking', 'Climatisation', 'Terrasse', 'Privatisable', 'Karaoké', 'Écran géant', 'Piscine'];
+const AMBIANCE_SUGGESTIONS = ['VIP', 'Chill', 'Familial', 'Festif', 'Romantique', 'Branché'];
+
+// Mappe une ligne venue vers l'état du formulaire de profil riche.
+function vxFromVenue(v: any) {
+  return {
+    whatsapp: v?.whatsapp || '',
+    email: v?.email || '',
+    district: v?.district || '',
+    price: v?.avg_price_xof ? String(v.avg_price_xof) : '',
+    hours: { ...EMPTY_HOURS, ...(v?.opening_hours || {}) } as Record<string, string>,
+    amenities: (v?.amenities || []) as string[],
+    ambiance: (v?.ambiance || []) as string[],
+    socials: { ...EMPTY_SOCIALS, ...(v?.socials || {}) },
+  };
+}
 
 export default function ProDashboard() {
   const supabase = supabaseBrowser();
@@ -101,6 +125,9 @@ export default function ProDashboard() {
   const [media, setMedia] = useState<{ logo: string | null; cover: string | null; gallery: string[] }>({ logo: null, cover: null, gallery: [] });
   const [uploading, setUploading] = useState<string | null>(null);
 
+  // Profil riche de l'établissement (horaires, contacts, réseaux, services…)
+  const [vx, setVx] = useState(vxFromVenue(null));
+
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   function flash(message: string, type: 'success' | 'error' = 'success') {
@@ -118,7 +145,7 @@ export default function ProDashboard() {
     const { data: profile } = await (supabase as any).from('profiles').select('full_name, phone').eq('id', user.id).single();
     setUserName(profile?.full_name || profile?.phone || 'Pro');
 
-    const { data: ownedVenues } = await (supabase as any).from('venues').select('id, name, category, city, address, phone, status, rating_avg, rating_count, description, logo_url, cover_url, gallery_urls').eq('owner_id', user.id);
+    const { data: ownedVenues } = await (supabase as any).from('venues').select('id, name, category, city, address, phone, status, rating_avg, rating_count, description, logo_url, cover_url, gallery_urls, whatsapp, email, district, avg_price_xof, opening_hours, amenities, ambiance, socials').eq('owner_id', user.id);
 
     if (ownedVenues && ownedVenues.length > 0) {
       setVenues(ownedVenues as Venue[]);
@@ -131,6 +158,7 @@ export default function ProDashboard() {
       setSettingsDesc(v.description || '');
       setSettingsCategory(v.category || '');
       setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [] });
+      setVx(vxFromVenue(v));
     }
 
     // Load wallet
@@ -179,7 +207,7 @@ export default function ProDashboard() {
   // When venue changes, update settings
   useEffect(() => {
     const v = venues.find((x) => x.id === selectedVenueId);
-    if (v) { setSettingsName(v.name || ''); setSettingsCity(v.city || ''); setSettingsAddress(v.address || ''); setSettingsPhone(v.phone || ''); setSettingsDesc(v.description || ''); setSettingsCategory(v.category || ''); setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [] }); }
+    if (v) { setSettingsName(v.name || ''); setSettingsCity(v.city || ''); setSettingsAddress(v.address || ''); setSettingsPhone(v.phone || ''); setSettingsDesc(v.description || ''); setSettingsCategory(v.category || ''); setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [] }); setVx(vxFromVenue(v)); }
   }, [selectedVenueId, venues]);
 
   async function updateStatus(id: string, newStatus: ResStatus) {
@@ -215,9 +243,17 @@ export default function ProDashboard() {
   }
 
   async function saveSettings() {
-    const { error } = await (supabase as any).from('venues').update({ name: settingsName, city: settingsCity, address: settingsAddress, phone: settingsPhone, description: settingsDesc, category: settingsCategory }).eq('id', selectedVenueId);
+    const { error } = await (supabase as any).from('venues').update({
+      name: settingsName, city: settingsCity, address: settingsAddress,
+      phone: settingsPhone, description: settingsDesc, category: settingsCategory,
+      whatsapp: vx.whatsapp.trim() || null, email: vx.email.trim() || null,
+      district: vx.district.trim() || null,
+      avg_price_xof: vx.price ? parseInt(vx.price, 10) : null,
+      opening_hours: vx.hours, amenities: vx.amenities, ambiance: vx.ambiance,
+      socials: vx.socials,
+    }).eq('id', selectedVenueId);
     if (error) flash(error.message, 'error');
-    else { flash('Paramètres sauvegardés'); const { data } = await (supabase as any).from('venues').select('id, name, category, city, address, phone, status, rating_avg, rating_count, description, logo_url, cover_url, gallery_urls').eq('owner_id', userId); if (data) setVenues(data); }
+    else { flash('Paramètres sauvegardés'); const { data } = await (supabase as any).from('venues').select('id, name, category, city, address, phone, status, rating_avg, rating_count, description, logo_url, cover_url, gallery_urls, whatsapp, email, district, avg_price_xof, opening_hours, amenities, ambiance, socials').eq('owner_id', userId); if (data) setVenues(data); }
   }
 
   async function createVenue() {
@@ -744,6 +780,7 @@ export default function ProDashboard() {
                           </select>
                         </div>
                         <ProInput label="Ville" value={settingsCity} onChange={setSettingsCity} />
+                        <ProInput label="Quartier / commune" value={vx.district} onChange={(v) => setVx((p) => ({ ...p, district: v }))} placeholder="Cocody, Marcory…" />
                         <ProInput label="Adresse" value={settingsAddress} onChange={setSettingsAddress} />
                       </div>
                     </div>
@@ -752,12 +789,45 @@ export default function ProDashboard() {
                       <h3 className="mb-5 font-display text-lg font-bold text-dark">Contact & description</h3>
                       <div className="space-y-4">
                         <ProInput label="Téléphone" value={settingsPhone} onChange={setSettingsPhone} />
+                        <ProInput label="WhatsApp" value={vx.whatsapp} onChange={(v) => setVx((p) => ({ ...p, whatsapp: v }))} placeholder="+225XXXXXXXXXX" />
+                        <ProInput label="Email" value={vx.email} onChange={(v) => setVx((p) => ({ ...p, email: v }))} placeholder="contact@etablissement.ci" />
                         <div>
                           <label className="mb-1 block text-xs font-medium text-neutral-500">Description</label>
                           <textarea value={settingsDesc} onChange={(e) => setSettingsDesc(e.target.value)} rows={4}
                             className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none" placeholder="Décrivez votre établissement..." />
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Horaires d'ouverture */}
+                  <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6">
+                    <h3 className="mb-4 font-display text-lg font-bold text-dark">Horaires d&apos;ouverture</h3>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {HOURS_DAYS.map((d) => (
+                        <div key={d.k} className="flex items-center gap-3">
+                          <span className="w-24 shrink-0 text-sm text-neutral-500">{d.l}</span>
+                          <input value={vx.hours[d.k] || ''} onChange={(e) => setVx((p) => ({ ...p, hours: { ...p.hours, [d.k]: e.target.value } }))}
+                            placeholder="12:00 - 23:00 / Fermé"
+                            className="min-w-0 flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm text-dark transition focus:border-primary-500 focus:outline-none" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Services, ambiance, réseaux & tarif */}
+                  <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                    <div className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-6">
+                      <h3 className="font-display text-lg font-bold text-dark">Services & ambiance</h3>
+                      <TagEditor label="Services proposés" tags={vx.amenities} suggestions={AMENITY_SUGGESTIONS} placeholder="Ajouter un service…" onChange={(t) => setVx((p) => ({ ...p, amenities: t }))} />
+                      <TagEditor label="Ambiance" tags={vx.ambiance} suggestions={AMBIANCE_SUGGESTIONS} placeholder="Ajouter une ambiance…" onChange={(t) => setVx((p) => ({ ...p, ambiance: t }))} />
+                    </div>
+                    <div className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6">
+                      <h3 className="font-display text-lg font-bold text-dark">Tarif & réseaux sociaux</h3>
+                      <ProInput label="Prix moyen par personne (FCFA)" type="number" value={vx.price} onChange={(v) => setVx((p) => ({ ...p, price: v }))} placeholder="5000" />
+                      <ProInput label="Instagram" value={vx.socials.instagram} onChange={(v) => setVx((p) => ({ ...p, socials: { ...p.socials, instagram: v } }))} placeholder="@monetablissement" />
+                      <ProInput label="Facebook" value={vx.socials.facebook} onChange={(v) => setVx((p) => ({ ...p, socials: { ...p.socials, facebook: v } }))} placeholder="facebook.com/monetablissement" />
+                      <ProInput label="TikTok" value={vx.socials.tiktok} onChange={(v) => setVx((p) => ({ ...p, socials: { ...p.socials, tiktok: v } }))} placeholder="@monetablissement" />
                     </div>
                   </div>
 
@@ -876,6 +946,45 @@ function ProInput({ label, value, onChange, type = 'text', placeholder }: { labe
     <div>
       <label className="mb-1 block text-xs font-medium text-neutral-500">{label}</label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none" />
+    </div>
+  );
+}
+
+function TagEditor({ label, tags, onChange, suggestions, placeholder }: { label: string; tags: string[]; onChange: (t: string[]) => void; suggestions?: string[]; placeholder?: string }) {
+  const [input, setInput] = useState('');
+  const add = (raw: string) => {
+    const v = raw.trim();
+    if (v && !tags.includes(v)) onChange([...tags, v]);
+    setInput('');
+  };
+  const remaining = (suggestions || []).filter((s) => !tags.includes(s));
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-neutral-500">{label}</label>
+      {tags.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {tags.map((t) => (
+            <span key={t} className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-600">
+              {t}
+              <button type="button" onClick={() => onChange(tags.filter((x) => x !== t))} className="text-primary-400 transition hover:text-primary-600">×</button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input value={input} onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(input); } }}
+          placeholder={placeholder}
+          className="min-w-0 flex-1 rounded-xl border border-neutral-200 px-4 py-2 text-sm text-dark focus:border-primary-500 focus:outline-none" />
+        <button type="button" onClick={() => add(input)} className="shrink-0 rounded-xl border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition hover:text-primary-500">Ajouter</button>
+      </div>
+      {remaining.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {remaining.map((s) => (
+            <button key={s} type="button" onClick={() => add(s)} className="rounded-full border border-neutral-200 px-2.5 py-0.5 text-xs text-neutral-500 transition hover:border-primary-500/40 hover:text-primary-500">+ {s}</button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
