@@ -4,7 +4,7 @@
 // Supabase, ouvre la page de paiement Paystack, puis demande la vérification.
 // ============================================================================
 import * as WebBrowser from 'expo-web-browser';
-import { supabase } from './supabase';
+import { invokeEdge } from './edge';
 
 // Deep link de retour : Paystack y redirige (via la page web /paystack/callback),
 // ce qui referme automatiquement le navigateur in-app.
@@ -28,29 +28,6 @@ export interface WithdrawParams {
   amountXof: number;
   provider: 'orange' | 'mtn' | 'wave';
   phone: string;
-}
-
-// Appelle une Edge Function et fait remonter le message d'erreur serveur.
-async function invokeEdge<T = any>(
-  name: string,
-  body: Record<string, unknown>,
-): Promise<T> {
-  const { data, error } = await supabase.functions.invoke<T>(name, { body });
-  if (error) {
-    let message = error.message || 'Erreur réseau';
-    // Le vrai message est dans le corps de la réponse ({ error: "..." }).
-    const ctx = (error as any).context;
-    if (ctx && typeof ctx.json === 'function') {
-      try {
-        const payload = await ctx.json();
-        if (payload?.error) message = String(payload.error);
-      } catch {
-        // corps non-JSON : on garde le message générique
-      }
-    }
-    throw new Error(message);
-  }
-  return data as T;
 }
 
 // Démarre un paiement Paystack : initialise la transaction côté serveur,

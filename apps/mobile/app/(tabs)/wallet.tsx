@@ -107,15 +107,15 @@ export default function Wallet() {
 
         <View style={s.quickRow}>
           {[
-            { label: 'Envoyer', icon: 'send-outline' as const },
-            { label: 'Demander', icon: 'download-outline' as const },
-            { label: 'Split Bill', icon: 'people-outline' as const },
-            { label: 'Scanner QR', icon: 'qr-code-outline' as const },
+            { label: 'Envoyer', icon: 'send-outline' as const, onPress: () => router.push('/send') },
+            { label: 'Demander', icon: 'download-outline' as const, onPress: () => handleQuickAction('Demander') },
+            { label: 'Split Bill', icon: 'people-outline' as const, onPress: () => handleQuickAction('Split Bill') },
+            { label: 'Scanner QR', icon: 'qr-code-outline' as const, onPress: () => handleQuickAction('Scanner QR') },
           ].map((q) => (
             <Pressable
               key={q.label}
               style={({ pressed }) => [s.quickItem, pressed && { opacity: 0.6 }]}
-              onPress={() => handleQuickAction(q.label)}
+              onPress={q.onPress}
             >
               <View style={s.quickIcon}>
                 <Ionicons name={q.icon} size={22} color={colors.primary[500]} />
@@ -148,6 +148,8 @@ interface Transaction {
   status: string;
   created_at: string;
   description?: string;
+  user_id: string;
+  counterparty_id: string | null;
 }
 
 function TransactionHistory({
@@ -173,8 +175,12 @@ function TransactionHistory({
       try {
         const { data, error } = await supabase
           .from('transactions')
-          .select('id, type, amount_xof, status, created_at, description')
-          .eq('user_id', userId)
+          .select(
+            'id, type, amount_xof, status, created_at, description, user_id, counterparty_id',
+          )
+          // L'utilisateur voit les transactions où il est émetteur OU
+          // destinataire (transferts P2P reçus inclus).
+          .or(`user_id.eq.${userId},counterparty_id.eq.${userId}`)
           .order('created_at', { ascending: false })
           .limit(10);
 
@@ -219,43 +225,47 @@ function TransactionHistory({
 
   return (
     <View style={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
-      {txs.map((tx) => (
-        <View key={tx.id} style={s.txItem}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.txType}>{labelForTxType(tx.type)}</Text>
-            <Text style={s.txDate}>{new Date(tx.created_at).toLocaleDateString('fr-FR')}</Text>
+      {txs.map((tx) => {
+        const credit = isCredit(tx, userId);
+        return (
+          <View key={tx.id} style={s.txItem}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.txType}>{txLabel(tx, userId)}</Text>
+              <Text style={s.txDate}>
+                {new Date(tx.created_at).toLocaleDateString('fr-FR')}
+              </Text>
+            </View>
+            <Text style={[s.txAmount, { color: credit ? colors.success : colors.danger }]}>
+              {credit ? '+' : '-'}
+              {formatXOF(tx.amount_xof)}
+            </Text>
           </View>
-          <Text
-            style={[
-              s.txAmount,
-              isCreditType(tx.type) ? { color: colors.success } : { color: colors.danger },
-            ]}
-          >
-            {isCreditType(tx.type) ? '+' : '-'}
-            {formatXOF(tx.amount_xof)}
-          </Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
 
-function isCreditType(t: string) {
-  return t === 'topup' || t === 'refund' || t === 'escrow_release';
+// Un transfert P2P est un crédit pour le destinataire, un débit pour l'émetteur.
+function isCredit(tx: Transaction, userId?: string): boolean {
+  if (tx.type === 'transfer') return tx.counterparty_id === userId;
+  return tx.type === 'topup' || tx.type === 'refund' || tx.type === 'escrow_release';
 }
 
-function labelForTxType(t: string): string {
-  switch (t) {
+function txLabel(tx: Transaction, userId?: string): string {
+  if (tx.type === 'transfer') {
+    return tx.counterparty_id === userId ? 'Transfert reçu' : 'Transfert envoyé';
+  }
+  switch (tx.type) {
     case 'topup': return 'Rechargement';
     case 'withdraw': return 'Retrait';
     case 'payment': return 'Paiement';
-    case 'transfer': return 'Transfert';
     case 'refund': return 'Remboursement';
     case 'split': return 'Split Bill';
     case 'escrow_hold': return 'Séquestre';
     case 'escrow_release': return 'Libération séquestre';
     case 'fee': return 'Frais';
-    default: return t;
+    default: return tx.type;
   }
 }
 
