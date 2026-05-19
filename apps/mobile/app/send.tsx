@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
@@ -25,12 +25,14 @@ const PHONE_RE = /^\+225[0-9]{10}$/;
 export default function Send() {
   const router = useRouter();
   const { user } = useAuth();
+  // Pré-remplissage possible depuis le scanner QR (/scan -> /send).
+  const params = useLocalSearchParams<{ phone?: string; amount?: string }>();
 
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
 
-  const [phone, setPhone] = useState('+225');
-  const [amount, setAmount] = useState('');
+  const [phone, setPhone] = useState(params.phone || '+225');
+  const [amount, setAmount] = useState(params.amount || '');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
