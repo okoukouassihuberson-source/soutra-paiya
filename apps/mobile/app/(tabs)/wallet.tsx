@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl, Alert } from 'react-native';
+import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,10 +74,7 @@ export default function Wallet() {
       >
         <View style={s.header}>
           <Text style={s.headerTitle}>Mon Paiya-Pay</Text>
-          <Pressable
-            hitSlop={10}
-            onPress={() => Alert.alert('Paramètres', 'Réglages wallet bientôt disponibles.')}
-          >
+          <Pressable hitSlop={10} onPress={() => router.push('/settings')}>
             <Ionicons name="settings-outline" size={22} color={colors.dark} />
           </Pressable>
         </View>

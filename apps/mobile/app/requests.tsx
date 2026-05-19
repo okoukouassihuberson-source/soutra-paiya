@@ -16,6 +16,8 @@ import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { respondToRequest, type RequestAction } from '@/lib/requests';
+import { hasPaymentPin } from '@/lib/security';
+import { PinPrompt } from '@/components/PinPrompt';
 
 interface Req {
   id: string;
@@ -44,6 +46,8 @@ export default function Requests() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [hasPin, setHasPin] = useState(false);
+  const [pinReq, setPinReq] = useState<Req | null>(null);
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -76,6 +80,7 @@ export default function Requests() {
   useFocusEffect(
     useCallback(() => {
       load();
+      hasPaymentPin().then(setHasPin);
     }, [load]),
   );
 
@@ -118,13 +123,19 @@ export default function Requests() {
     }
   };
 
+  // Si un PIN de paiement est défini, on le demande avant de payer.
+  const gatedAccept = (req: Req) => {
+    if (hasPin) setPinReq(req);
+    else respond(req, 'accept');
+  };
+
   const confirmAccept = (req: Req) => {
     Alert.alert(
       'Confirmer le paiement',
       `Payer ${formatXOF(req.amount_xof)} à ${req.requester?.full_name || 'ce contact'} ?`,
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Payer', onPress: () => respond(req, 'accept') },
+        { text: 'Payer', onPress: () => gatedAccept(req) },
       ],
     );
   };
@@ -199,6 +210,16 @@ export default function Requests() {
           )}
         </ScrollView>
       )}
+      <PinPrompt
+        visible={!!pinReq}
+        title="Confirme le paiement"
+        onSuccess={() => {
+          const r = pinReq;
+          setPinReq(null);
+          if (r) respond(r, 'accept');
+        }}
+        onCancel={() => setPinReq(null)}
+      />
     </SafeAreaView>
   );
 }

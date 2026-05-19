@@ -18,6 +18,8 @@ import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { lookupRecipient, sendMoney } from '@/lib/wallet';
+import { hasPaymentPin } from '@/lib/security';
+import { PinPrompt } from '@/components/PinPrompt';
 
 const MIN_XOF = 100;
 const PHONE_RE = /^\+225[0-9]{10}$/;
@@ -35,6 +37,8 @@ export default function Send() {
   const [amount, setAmount] = useState(params.amount || '');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [hasPin, setHasPin] = useState(false);
+  const [pinVisible, setPinVisible] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -44,14 +48,20 @@ export default function Send() {
         return;
       }
       try {
-        const { data } = await supabase
-          .from('wallets')
-          .select('balance_xof')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (mounted) setBalance((data as any)?.balance_xof ?? 0);
+        const [walletRes, pin] = await Promise.all([
+          supabase
+            .from('wallets')
+            .select('balance_xof')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          hasPaymentPin(),
+        ]);
+        if (mounted) {
+          setBalance((walletRes.data as any)?.balance_xof ?? 0);
+          setHasPin(pin);
+        }
       } catch (err) {
-        console.error('[send] load balance:', err);
+        console.error('[send] load:', err);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -86,6 +96,12 @@ export default function Send() {
     }
   };
 
+  // Si un PIN de paiement est défini, on le demande avant d'exécuter l'envoi.
+  const gatedSend = () => {
+    if (hasPin) setPinVisible(true);
+    else doSend();
+  };
+
   const handleContinue = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
@@ -104,7 +120,7 @@ export default function Send() {
       `Envoyer ${formatXOF(amountNum)} à ${recipient.name} ?`,
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Envoyer', onPress: doSend },
+        { text: 'Envoyer', onPress: gatedSend },
       ],
     );
   };
@@ -217,6 +233,15 @@ export default function Send() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+      <PinPrompt
+        visible={pinVisible}
+        title="Confirme ton envoi"
+        onSuccess={() => {
+          setPinVisible(false);
+          doSend();
+        }}
+        onCancel={() => setPinVisible(false)}
+      />
     </SafeAreaView>
   );
 }
