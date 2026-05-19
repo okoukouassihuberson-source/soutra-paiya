@@ -100,8 +100,8 @@ reservation/
 ### Next Steps
 
 #### Immediate (Payment Integration)
-- [ ] Implement deposit payment via CinetPay
-- [ ] Handle payment success/failure flows
+- [x] Paiements Paystack — recharge wallet, retrait, acompte de réservation
+- [x] Flux succès / échec (webhook signé HMAC + verify idempotent)
 - [ ] Send confirmation SMS to user
 
 #### Short-term (Restaurant Workflow)

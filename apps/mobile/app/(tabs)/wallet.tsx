@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl, Alert } from 'react-native';
+import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
@@ -8,11 +9,15 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function Wallet() {
   const { user } = useAuth();
+  const router = useRouter();
   const [balance, setBalance] = useState<number>(0);
   const [locked, setLocked] = useState<number>(0);
   const [walletLoading, setWalletLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [hidden, setHidden] = useState(false);
+  // Incrémenté à chaque focus de l'écran : force le rechargement de
+  // l'historique des transactions (ex. après une recharge / un retrait).
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   const loadWallet = useCallback(async () => {
     if (!user?.id) {
@@ -42,39 +47,24 @@ export default function Wallet() {
     }
   }, [user?.id]);
 
-  useEffect(() => {
-    loadWallet();
-  }, [loadWallet]);
+  // Recharge le solde et l'historique chaque fois que l'écran reprend le
+  // focus — notamment au retour des écrans Recharger / Retirer.
+  useFocusEffect(
+    useCallback(() => {
+      loadWallet();
+      setRefreshNonce((n) => n + 1);
+    }, [loadWallet]),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
+    setRefreshNonce((n) => n + 1);
     loadWallet();
   };
 
-  const handleTopup = () => {
-    Alert.alert(
-      'Recharger Paiya-Pay',
-      'Choisis ton moyen de paiement pour recharger ton wallet',
-      [
-        { text: 'Orange Money', onPress: () => Alert.alert('Bientôt', 'Intégration CinetPay en cours') },
-        { text: 'MTN MoMo', onPress: () => Alert.alert('Bientôt', 'Intégration CinetPay en cours') },
-        { text: 'Wave', onPress: () => Alert.alert('Bientôt', 'Intégration CinetPay en cours') },
-        { text: 'Annuler', style: 'cancel' },
-      ]
-    );
-  };
+  const handleTopup = () => router.push('/recharge');
 
-  const handleWithdraw = () => {
-    if (balance <= 0) {
-      Alert.alert('Solde insuffisant', 'Vous devez avoir un solde positif pour retirer.');
-      return;
-    }
-    Alert.alert('Retirer', 'Fonctionnalité de retrait disponible bientôt (KYC requis).');
-  };
-
-  const handleQuickAction = (action: string) => {
-    Alert.alert(action, `Fonctionnalité « ${action} » bientôt disponible.`);
-  };
+  const handleWithdraw = () => router.push('/withdraw');
 
   return (
     <SafeAreaView style={s.safe}>
@@ -84,10 +74,7 @@ export default function Wallet() {
       >
         <View style={s.header}>
           <Text style={s.headerTitle}>Mon Paiya-Pay</Text>
-          <Pressable
-            hitSlop={10}
-            onPress={() => Alert.alert('Paramètres', 'Réglages wallet bientôt disponibles.')}
-          >
+          <Pressable hitSlop={10} onPress={() => router.push('/settings')}>
             <Ionicons name="settings-outline" size={22} color={colors.dark} />
           </Pressable>
         </View>
@@ -113,15 +100,15 @@ export default function Wallet() {
 
         <View style={s.quickRow}>
           {[
-            { label: 'Envoyer', icon: 'send-outline' as const },
-            { label: 'Demander', icon: 'download-outline' as const },
-            { label: 'Split Bill', icon: 'people-outline' as const },
-            { label: 'Scanner QR', icon: 'qr-code-outline' as const },
+            { label: 'Envoyer', icon: 'send-outline' as const, onPress: () => router.push('/send') },
+            { label: 'Demander', icon: 'download-outline' as const, onPress: () => router.push('/requests') },
+            { label: 'Split Bill', icon: 'people-outline' as const, onPress: () => router.push('/splits') },
+            { label: 'Scanner QR', icon: 'qr-code-outline' as const, onPress: () => router.push('/scan') },
           ].map((q) => (
             <Pressable
               key={q.label}
               style={({ pressed }) => [s.quickItem, pressed && { opacity: 0.6 }]}
-              onPress={() => handleQuickAction(q.label)}
+              onPress={q.onPress}
             >
               <View style={s.quickIcon}>
                 <Ionicons name={q.icon} size={22} color={colors.primary[500]} />
@@ -132,7 +119,7 @@ export default function Wallet() {
         </View>
 
         <Text style={s.sectionTitle}>Transactions récentes</Text>
-        <TransactionHistory userId={user?.id} />
+        <TransactionHistory userId={user?.id} refreshNonce={refreshNonce} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -154,9 +141,17 @@ interface Transaction {
   status: string;
   created_at: string;
   description?: string;
+  user_id: string;
+  counterparty_id: string | null;
 }
 
-function TransactionHistory({ userId }: { userId?: string }) {
+function TransactionHistory({
+  userId,
+  refreshNonce,
+}: {
+  userId?: string;
+  refreshNonce: number;
+}) {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -173,8 +168,12 @@ function TransactionHistory({ userId }: { userId?: string }) {
       try {
         const { data, error } = await supabase
           .from('transactions')
-          .select('id, type, amount_xof, status, created_at, description')
-          .eq('user_id', userId)
+          .select(
+            'id, type, amount_xof, status, created_at, description, user_id, counterparty_id',
+          )
+          // L'utilisateur voit les transactions où il est émetteur OU
+          // destinataire (transferts P2P reçus inclus).
+          .or(`user_id.eq.${userId},counterparty_id.eq.${userId}`)
           .order('created_at', { ascending: false })
           .limit(10);
 
@@ -197,7 +196,7 @@ function TransactionHistory({ userId }: { userId?: string }) {
     return () => {
       mounted = false;
     };
-  }, [userId]);
+  }, [userId, refreshNonce]);
 
   if (loading) {
     return (
@@ -219,43 +218,47 @@ function TransactionHistory({ userId }: { userId?: string }) {
 
   return (
     <View style={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
-      {txs.map((tx) => (
-        <View key={tx.id} style={s.txItem}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.txType}>{labelForTxType(tx.type)}</Text>
-            <Text style={s.txDate}>{new Date(tx.created_at).toLocaleDateString('fr-FR')}</Text>
+      {txs.map((tx) => {
+        const credit = isCredit(tx, userId);
+        return (
+          <View key={tx.id} style={s.txItem}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.txType}>{txLabel(tx, userId)}</Text>
+              <Text style={s.txDate}>
+                {new Date(tx.created_at).toLocaleDateString('fr-FR')}
+              </Text>
+            </View>
+            <Text style={[s.txAmount, { color: credit ? colors.success : colors.danger }]}>
+              {credit ? '+' : '-'}
+              {formatXOF(tx.amount_xof)}
+            </Text>
           </View>
-          <Text
-            style={[
-              s.txAmount,
-              isCreditType(tx.type) ? { color: colors.success } : { color: colors.danger },
-            ]}
-          >
-            {isCreditType(tx.type) ? '+' : '-'}
-            {formatXOF(tx.amount_xof)}
-          </Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
 
-function isCreditType(t: string) {
-  return t === 'topup' || t === 'refund' || t === 'escrow_release';
+// Un transfert P2P est un crédit pour le destinataire, un débit pour l'émetteur.
+function isCredit(tx: Transaction, userId?: string): boolean {
+  if (tx.type === 'transfer') return tx.counterparty_id === userId;
+  return tx.type === 'topup' || tx.type === 'refund' || tx.type === 'escrow_release';
 }
 
-function labelForTxType(t: string): string {
-  switch (t) {
+function txLabel(tx: Transaction, userId?: string): string {
+  if (tx.type === 'transfer') {
+    return tx.counterparty_id === userId ? 'Transfert reçu' : 'Transfert envoyé';
+  }
+  switch (tx.type) {
     case 'topup': return 'Rechargement';
     case 'withdraw': return 'Retrait';
     case 'payment': return 'Paiement';
-    case 'transfer': return 'Transfert';
     case 'refund': return 'Remboursement';
     case 'split': return 'Split Bill';
     case 'escrow_hold': return 'Séquestre';
     case 'escrow_release': return 'Libération séquestre';
     case 'fee': return 'Frais';
-    default: return t;
+    default: return tx.type;
   }
 }
 

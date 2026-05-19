@@ -134,11 +134,51 @@ Pour les **secrets server-side** (Mobile Money, Twilio…), copier `.env.example
 
 ---
 
+## 💳 Paiements (Paystack)
+
+Recharge du wallet, retrait et acompte de réservation passent par **Paystack**
+via des Edge Functions Supabase. Le secret key ne vit que côté serveur.
+
+### Déployer
+
+```bash
+# 1. Migration : ajoute le fournisseur paystack, les fonctions de règlement
+#    atomiques, et durcit la RLS de la table wallets.
+supabase db push
+
+# 2. Edge Functions
+supabase functions deploy paystack-initialize
+supabase functions deploy paystack-verify
+supabase functions deploy paystack-withdraw
+supabase functions deploy paystack-webhook   # verify_jwt=false (cf. config.toml)
+
+# 3. Secrets (clés de TEST pour démarrer)
+supabase secrets set \
+  PAYSTACK_SECRET_KEY=sk_test_xxx \
+  PAYSTACK_CALLBACK_URL=https://soutra-paiya.vercel.app/paystack/callback
+```
+
+### Configurer le webhook
+
+Dashboard Paystack → **Settings → API Keys & Webhooks** → URL du webhook :
+`https://pjtmmzxcitbcwbbgtpdj.supabase.co/functions/v1/paystack-webhook`
+
+### Tester la clé en local
+
+```bash
+# Prouve que la clé fonctionne et que le montant XOF est bien converti.
+PAYSTACK_SECRET_KEY=sk_test_xxx node scripts/test-paystack.mjs 1000
+```
+
+> ⚠️ Les **retraits** (Paystack Transfers) nécessitent en plus, côté compte
+> Paystack : Transfers activés, solde approvisionné et OTP des transferts
+> désactivé. En mode test, les transferts sont simulés.
+
 ## 🗺️ Roadmap (cf. plan détaillé)
 
 - **Sprint 0** (en cours) : foundation, schéma DB, screens placeholder ✅
 - **Sprint 1-2** : auth OTP fonctionnelle + profil + KYC
-- **Sprint 3-4** : Paiya-Pay (recharge Mobile Money via CinetPay)
+- **Sprint 3-4** : Paiya-Pay (recharge / retrait / acompte via Paystack)
 - **Sprint 5-6** : Découverte (carte Mapbox) + réservations + séquestre
 - **Sprint 7-8** : Billetterie + scanner QR
 - **Sprint 9-10** : Polish + beta privée + stores
@@ -169,7 +209,7 @@ pnpm lint        # à venir
 | Mobile | Expo SDK 52 + expo-router 4 |
 | Web | Next.js 14 (App Router) + Tailwind 3 |
 | Backend | Supabase (Postgres 15 + Auth + Storage + Realtime + Edge Functions) |
-| Paiement | CinetPay (Orange / MTN / Wave / Moov / Carte) |
+| Paiement | Paystack (Carte / Orange / MTN / Wave / Moov) |
 | Maps | Mapbox |
 | Notifs | Expo Push + Twilio SMS |
 | Analytics | PostHog |

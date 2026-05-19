@@ -49,6 +49,12 @@
         {
           "photosPermission": "Soutra-Paiya accède à tes photos pour ta vérification d'identité (KYC)."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Soutra-Paiya utilise la caméra pour scanner les QR codes de paiement."
+        }
       ]
     ],
     "experiments": {

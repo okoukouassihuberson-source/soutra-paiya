@@ -35,6 +35,9 @@ pnpm-debug.log*
 # Supabase
 supabase/.branches/
 supabase/.temp/
+# Lockfile généré par `deno check` — les Edge Functions résolvent les
+# specifiers npm: directement, pas besoin de le versionner.
+supabase/functions/deno.lock
 
 # Mobile
 *.keystore

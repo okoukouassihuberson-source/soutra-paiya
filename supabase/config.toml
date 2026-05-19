@@ -19,3 +19,13 @@ minimum_password_length = 8
 # OTP est désactivée -> signUp({ phone, password }) crée le compte sans SMS.
 enable_signup = true
 enable_confirmations = false
+
+# ============================================================================
+# Edge Functions
+# ============================================================================
+# Le webhook Paystack est appelé par Paystack lui-même, sans JWT utilisateur.
+# Son authenticité est garantie par la vérification de signature HMAC-SHA512
+# dans le code (cf. supabase/functions/paystack-webhook). Les autres fonctions
+# (initialize, verify, withdraw) gardent verify_jwt = true par défaut.
+[functions.paystack-webhook]
+verify_jwt = false
