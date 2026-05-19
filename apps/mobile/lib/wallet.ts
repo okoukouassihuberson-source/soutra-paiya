@@ -10,19 +10,20 @@ export interface SendMoneyResult {
   recipientName: string;
 }
 
-// Recherche le nom d'un destinataire par numéro — sert à confirmer avant
-// d'envoyer (éviter une erreur de numéro). Renvoie null si non inscrit.
+// Recherche un utilisateur par numéro — sert à confirmer un transfert ou à
+// cibler une demande d'argent. Renvoie null si le numéro n'est pas inscrit.
 export async function lookupRecipient(
   phone: string,
-): Promise<{ name: string } | null> {
+): Promise<{ id: string; name: string } | null> {
   // Supabase Auth stocke le numéro sans le « + » — on interroge les 2 formats.
   const { data, error } = await supabase
     .from('profiles')
-    .select('full_name')
+    .select('id, full_name')
     .in('phone', [phone, phone.replace(/^\+/, '')])
     .maybeSingle();
   if (error || !data) return null;
-  return { name: (data as { full_name: string | null }).full_name || phone };
+  const row = data as { id: string; full_name: string | null };
+  return { id: row.id, name: row.full_name || phone };
 }
 
 // Envoie de l'argent à un autre utilisateur. Le débit/crédit atomique est

@@ -50,6 +50,13 @@ export const withdrawSchema = z.object({
   phone: phoneSchema,
 });
 
+// Demande d'argent (bouton « Demander »).
+export const paymentRequestSchema = z.object({
+  payer_phone: phoneSchema,
+  amount_xof: amountSchema,
+  note: z.string().max(140).optional(),
+});
+
 export const reservationFormSchema = z.object({
   date: z.date().min(new Date()),
   party_size: z.number().int().min(1).max(50),
@@ -77,6 +84,7 @@ export type TopupInput = z.infer<typeof topupSchema>;
 export type TransferInput = z.infer<typeof transferSchema>;
 export type PaystackInitInput = z.infer<typeof paystackInitSchema>;
 export type WithdrawInput = z.infer<typeof withdrawSchema>;
+export type PaymentRequestInput = z.infer<typeof paymentRequestSchema>;
 export type ReservationFormInput = z.infer<typeof reservationFormSchema>;
 export type ReservationInput = z.infer<typeof reservationSchema>;
 export type ReviewInput = z.infer<typeof reviewSchema>;

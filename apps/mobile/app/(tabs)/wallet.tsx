@@ -108,7 +108,7 @@ export default function Wallet() {
         <View style={s.quickRow}>
           {[
             { label: 'Envoyer', icon: 'send-outline' as const, onPress: () => router.push('/send') },
-            { label: 'Demander', icon: 'download-outline' as const, onPress: () => handleQuickAction('Demander') },
+            { label: 'Demander', icon: 'download-outline' as const, onPress: () => router.push('/requests') },
             { label: 'Split Bill', icon: 'people-outline' as const, onPress: () => handleQuickAction('Split Bill') },
             { label: 'Scanner QR', icon: 'qr-code-outline' as const, onPress: () => router.push('/scan') },
           ].map((q) => (
