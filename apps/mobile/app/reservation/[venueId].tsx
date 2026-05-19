@@ -8,6 +8,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { colors, typography, radius, spacing, formatXOF, reservationFormSchema } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { payWithPaystack } from '@/lib/paystack';
 
 interface Venue {
   id: string;
@@ -34,6 +35,9 @@ export default function ReservationForm() {
   const [partySize, setPartySize] = useState('2');
   const [notes, setNotes] = useState('');
   const [qrCode, setQrCode] = useState<string>('');
+  // Conservé entre deux tentatives : on ne recrée pas la réservation si le
+  // paiement de l'acompte a échoué et que l'utilisateur réessaie.
+  const [reservationId, setReservationId] = useState<string | null>(null);
 
   useEffect(() => {
     loadVenue();
@@ -113,39 +117,72 @@ export default function ReservationForm() {
 
     try {
       setSubmitting(true);
+      const deposit = calculateDeposit();
 
-      // Combine date and time
-      const dateTime = new Date(selectedDate);
-      dateTime.setHours(selectedTime.getHours(), selectedTime.getMinutes(), 0, 0);
+      // 1. Crée la réservation « pending » — une seule fois, même si le
+      //    paiement échoue et que l'utilisateur réessaie.
+      let resaId = reservationId;
+      if (!resaId) {
+        const dateTime = new Date(selectedDate);
+        dateTime.setHours(selectedTime.getHours(), selectedTime.getMinutes(), 0, 0);
 
-      // Generate QR code content
-      const qrContent = `${venue.id.slice(0, 8)}-${user.id.slice(0, 8)}-${Date.now()}`;
-      setQrCode(qrContent);
+        const qrContent = `${venue.id.slice(0, 8)}-${user.id.slice(0, 8)}-${Date.now()}`;
+        setQrCode(qrContent);
 
-      const payload = {
-        user_id: user.id,
-        venue_id: venue.id,
-        date_time: dateTime.toISOString(),
-        party_size: parseInt(partySize, 10),
-        deposit_xof: calculateDeposit(),
-        notes: notes || null,
-        qr_code: qrContent.replace(/-/g, ''),
-        status: 'pending' as const,
-      };
+        const payload = {
+          user_id: user.id,
+          venue_id: venue.id,
+          date_time: dateTime.toISOString(),
+          party_size: parseInt(partySize, 10),
+          deposit_xof: deposit,
+          notes: notes || null,
+          qr_code: qrContent.replace(/-/g, ''),
+          status: 'pending' as const,
+        };
 
-      const { error: resError } = await (supabase as any)
-        .from('reservations')
-        .insert(payload)
-        .select()
-        .single();
+        const { data: created, error: resError } = await (supabase as any)
+          .from('reservations')
+          .insert(payload)
+          .select('id')
+          .single();
 
-      if (resError) {
-        console.error('[reservation] insert error:', resError);
-        Alert.alert('Erreur réservation', resError.message);
+        if (resError || !created) {
+          console.error('[reservation] insert error:', resError);
+          Alert.alert('Erreur réservation', resError?.message ?? 'Création impossible');
+          return;
+        }
+        resaId = created.id as string;
+        setReservationId(resaId);
+      }
+
+      // 2. Réservation sans acompte : confirmation directe.
+      if (deposit < 100) {
+        setStep('confirmation');
         return;
       }
 
-      setStep('confirmation');
+      // 3. Paiement de l'acompte via Paystack. Le montant est déterminé
+      //    côté serveur à partir de la réservation.
+      const result = await payWithPaystack({
+        purpose: 'reservation_deposit',
+        reservationId: resaId,
+      });
+
+      if (result.status === 'success') {
+        setStep('confirmation');
+      } else if (result.status === 'pending') {
+        Alert.alert(
+          'Paiement en cours',
+          'Ton acompte est en cours de validation. Ta réservation est enregistrée.',
+          [{ text: 'OK', onPress: () => setStep('confirmation') }],
+        );
+      } else {
+        Alert.alert(
+          'Acompte non payé',
+          "Ta réservation est enregistrée mais l'acompte n'a pas été réglé. " +
+            'Touche « Continuer vers le paiement » pour réessayer.',
+        );
+      }
     } catch (err: any) {
       console.error('[reservation] unexpected:', err);
       Alert.alert('Erreur', err?.message ?? 'Impossible de créer la réservation');

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
@@ -8,11 +9,15 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function Wallet() {
   const { user } = useAuth();
+  const router = useRouter();
   const [balance, setBalance] = useState<number>(0);
   const [locked, setLocked] = useState<number>(0);
   const [walletLoading, setWalletLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [hidden, setHidden] = useState(false);
+  // Incrémenté à chaque focus de l'écran : force le rechargement de
+  // l'historique des transactions (ex. après une recharge / un retrait).
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   const loadWallet = useCallback(async () => {
     if (!user?.id) {
@@ -42,35 +47,24 @@ export default function Wallet() {
     }
   }, [user?.id]);
 
-  useEffect(() => {
-    loadWallet();
-  }, [loadWallet]);
+  // Recharge le solde et l'historique chaque fois que l'écran reprend le
+  // focus — notamment au retour des écrans Recharger / Retirer.
+  useFocusEffect(
+    useCallback(() => {
+      loadWallet();
+      setRefreshNonce((n) => n + 1);
+    }, [loadWallet]),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
+    setRefreshNonce((n) => n + 1);
     loadWallet();
   };
 
-  const handleTopup = () => {
-    Alert.alert(
-      'Recharger Paiya-Pay',
-      'Choisis ton moyen de paiement pour recharger ton wallet',
-      [
-        { text: 'Orange Money', onPress: () => Alert.alert('Bientôt', 'Intégration CinetPay en cours') },
-        { text: 'MTN MoMo', onPress: () => Alert.alert('Bientôt', 'Intégration CinetPay en cours') },
-        { text: 'Wave', onPress: () => Alert.alert('Bientôt', 'Intégration CinetPay en cours') },
-        { text: 'Annuler', style: 'cancel' },
-      ]
-    );
-  };
+  const handleTopup = () => router.push('/recharge');
 
-  const handleWithdraw = () => {
-    if (balance <= 0) {
-      Alert.alert('Solde insuffisant', 'Vous devez avoir un solde positif pour retirer.');
-      return;
-    }
-    Alert.alert('Retirer', 'Fonctionnalité de retrait disponible bientôt (KYC requis).');
-  };
+  const handleWithdraw = () => router.push('/withdraw');
 
   const handleQuickAction = (action: string) => {
     Alert.alert(action, `Fonctionnalité « ${action} » bientôt disponible.`);
@@ -132,7 +126,7 @@ export default function Wallet() {
         </View>
 
         <Text style={s.sectionTitle}>Transactions récentes</Text>
-        <TransactionHistory userId={user?.id} />
+        <TransactionHistory userId={user?.id} refreshNonce={refreshNonce} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -156,7 +150,13 @@ interface Transaction {
   description?: string;
 }
 
-function TransactionHistory({ userId }: { userId?: string }) {
+function TransactionHistory({
+  userId,
+  refreshNonce,
+}: {
+  userId?: string;
+  refreshNonce: number;
+}) {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -197,7 +197,7 @@ function TransactionHistory({ userId }: { userId?: string }) {
     return () => {
       mounted = false;
     };
-  }, [userId]);
+  }, [userId, refreshNonce]);
 
   if (loading) {
     return (
