@@ -107,10 +107,15 @@ export default function ProDashboard() {
   const [txs, setTxs] = useState<any[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
 
-  // Marketing state
+  // Marketing state — persistance réelle via la table promo_codes (migration 0015).
+  type Promo = { id: string; code: string; discount_pct: number; max_uses: number | null; uses_count: number; valid_until: string | null; active: boolean; created_at: string };
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState('10');
-  const [promos, setPromos] = useState<{ code: string; discount: number; created: string }[]>([]);
+  const [promoMaxUses, setPromoMaxUses] = useState('');
+  const [promoValidUntil, setPromoValidUntil] = useState('');
+  const [promos, setPromos] = useState<Promo[]>([]);
+  const [promosLoading, setPromosLoading] = useState(false);
+  const [promoSaving, setPromoSaving] = useState(false);
 
   // Settings state
   const [settingsName, setSettingsName] = useState('');
@@ -194,6 +199,18 @@ export default function ProDashboard() {
     setTxs(data || []);
   }, [supabase, userId]);
 
+  const loadPromos = useCallback(async (venueId: string) => {
+    setPromosLoading(true);
+    const { data, error } = await (supabase as any)
+      .from('promo_codes')
+      .select('id, code, discount_pct, max_uses, uses_count, valid_until, active, created_at')
+      .eq('venue_id', venueId)
+      .order('created_at', { ascending: false });
+    if (error) { flash(error.message, 'error'); setPromos([]); }
+    else setPromos((data || []) as Promo[]);
+    setPromosLoading(false);
+  }, [supabase]);
+
   const loadMenu = useCallback(async (venueId: string) => {
     setMenuLoading(true);
     const { data, error } = await (supabase as any)
@@ -212,6 +229,7 @@ export default function ProDashboard() {
     loadReservations(selectedVenueId);
     loadEvents(selectedVenueId);
     loadMenu(selectedVenueId);
+    loadPromos(selectedVenueId);
     if (userId) loadTxs();
   }, [selectedVenueId, loading]);
 
@@ -294,11 +312,57 @@ export default function ProDashboard() {
     }
   }
 
-  function createPromo() {
-    if (!promoCode) { flash('Code requis', 'error'); return; }
-    setPromos((prev) => [{ code: promoCode.toUpperCase(), discount: parseInt(promoDiscount), created: new Date().toISOString() }, ...prev]);
-    flash(`Promo ${promoCode.toUpperCase()} créée`);
-    setPromoCode('');
+  async function createPromo() {
+    if (!selectedVenueId) { flash('Sélectionne un établissement', 'error'); return; }
+    const code = promoCode.trim().toUpperCase();
+    if (!/^[A-Z0-9_-]{2,32}$/.test(code)) { flash('Code invalide (2-32 caractères, A-Z 0-9 _ -)', 'error'); return; }
+    const discount = parseInt(promoDiscount, 10);
+    const maxUses = promoMaxUses.trim() ? parseInt(promoMaxUses, 10) : null;
+    if (maxUses !== null && (!Number.isFinite(maxUses) || maxUses <= 0)) { flash('Nombre d\'utilisations invalide', 'error'); return; }
+    const validUntilIso = promoValidUntil ? new Date(promoValidUntil).toISOString() : null;
+    setPromoSaving(true);
+    const { data, error } = await (supabase as any)
+      .from('promo_codes')
+      .insert({
+        venue_id: selectedVenueId,
+        code,
+        discount_pct: discount,
+        max_uses: maxUses,
+        valid_until: validUntilIso,
+        active: true,
+      })
+      .select('id, code, discount_pct, max_uses, uses_count, valid_until, active, created_at')
+      .single();
+    setPromoSaving(false);
+    if (error) {
+      // 23505 = unique_violation (déjà code identique sur cet établissement)
+      flash(error.code === '23505' ? `Le code ${code} existe déjà` : error.message, 'error');
+      return;
+    }
+    setPromos((prev) => [data as Promo, ...prev]);
+    setPromoCode(''); setPromoMaxUses(''); setPromoValidUntil('');
+    flash(`Promo ${code} créée`);
+  }
+
+  async function togglePromo(id: string, next: boolean) {
+    setPromos((prev) => prev.map((p) => p.id === id ? { ...p, active: next } : p));
+    const { error } = await (supabase as any).from('promo_codes').update({ active: next }).eq('id', id);
+    if (error) {
+      setPromos((prev) => prev.map((p) => p.id === id ? { ...p, active: !next } : p));
+      flash(error.message, 'error');
+    }
+  }
+
+  async function deletePromo(id: string) {
+    const prev = promos;
+    setPromos((curr) => curr.filter((p) => p.id !== id));
+    const { error } = await (supabase as any).from('promo_codes').delete().eq('id', id);
+    if (error) {
+      setPromos(prev);
+      flash(error.message, 'error');
+    } else {
+      flash('Promo supprimée');
+    }
   }
 
   async function saveSettings() {
@@ -739,7 +803,7 @@ export default function ProDashboard() {
                   <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-600" label="Note moyenne" value={`★ ${selectedVenue?.rating_avg?.toFixed(1) || '—'}`} sub={`${selectedVenue?.rating_count || 0} avis`} />
                     <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-600" label="Réservations" value={String(reservations.length)} sub="toutes confondues" />
-                    <KpiCard icon={<IcoMegaphone className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-600" label="Promos actives" value={String(promos.length)} sub="codes créés" />
+                    <KpiCard icon={<IcoMegaphone className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-600" label="Promos actives" value={String(promos.filter((p) => p.active).length)} sub={`${promos.length} codes au total`} />
                     <KpiCard icon={<IcoTrend className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-600" label="Taux conversion" value={`${reservations.length > 0 ? Math.round((reservations.filter((r) => r.status === 'arrived').length / reservations.length) * 100) : 0}%`} sub="arrivés / total" />
                   </div>
 
@@ -755,28 +819,61 @@ export default function ProDashboard() {
                             {['5', '10', '15', '20', '25', '30', '50'].map((v) => <option key={v} value={v}>{v}%</option>)}
                           </select>
                         </div>
-                        <button onClick={createPromo} className="btn-primary w-full">Créer le code</button>
+                        <ProInput label="Nombre max d'utilisations (optionnel)" value={promoMaxUses} onChange={setPromoMaxUses} type="number" placeholder="laisser vide = illimité" />
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-neutral-500">Date d'expiration (optionnelle)</label>
+                          <input type="date" value={promoValidUntil} onChange={(e) => setPromoValidUntil(e.target.value)} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none" />
+                        </div>
+                        <button onClick={createPromo} disabled={promoSaving || !selectedVenueId} className="btn-primary w-full disabled:opacity-50">
+                          {promoSaving ? 'Création…' : 'Créer le code'}
+                        </button>
+                        {!selectedVenueId && <p className="text-xs text-neutral-400">Crée d'abord un établissement.</p>}
                       </div>
                     </div>
 
                     {/* Promo list */}
                     <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-                      <h3 className="mb-4 font-display text-lg font-bold text-dark">Codes promos actifs</h3>
-                      {promos.length === 0 ? (
+                      <h3 className="mb-4 font-display text-lg font-bold text-dark">Codes promos ({promos.length})</h3>
+                      {promosLoading ? (
+                        <div className="py-12 text-center text-sm text-neutral-400">Chargement…</div>
+                      ) : promos.length === 0 ? (
                         <div className="py-12 text-center text-neutral-400">Aucun code promo</div>
                       ) : (
                         <div className="space-y-2">
-                          {promos.map((p, i) => (
-                            <div key={i} className="flex items-center justify-between rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
-                              <div><p className="font-mono font-bold text-primary-600">{p.code}</p><p className="text-xs text-neutral-400">{fmtDateTime(p.created)}</p></div>
-                              <div className="flex items-center gap-3">
-                                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">-{p.discount}%</span>
-                                <button onClick={() => { setPromos((prev) => prev.filter((_, j) => j !== i)); flash('Promo supprimée'); }} className="rounded-lg p-1 text-neutral-400 hover:bg-red-50 hover:text-red-500">
-                                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
+                          {promos.map((p) => {
+                            const expired = p.valid_until ? new Date(p.valid_until) < new Date() : false;
+                            const exhausted = p.max_uses !== null && p.uses_count >= p.max_uses;
+                            const live = p.active && !expired && !exhausted;
+                            return (
+                              <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-mono font-bold text-primary-600">{p.code}</p>
+                                    {!p.active && <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">désactivé</span>}
+                                    {expired && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">expiré</span>}
+                                    {exhausted && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">épuisé</span>}
+                                  </div>
+                                  <p className="mt-0.5 text-xs text-neutral-400">
+                                    {p.uses_count}{p.max_uses !== null ? ` / ${p.max_uses}` : ''} utilisation{p.uses_count === 1 ? '' : 's'}
+                                    {p.valid_until && ` · jusqu'au ${fmtShort(p.valid_until.slice(0, 10))}`}
+                                  </p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-2">
+                                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${live ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-200 text-neutral-500'}`}>-{p.discount_pct}%</span>
+                                  <button onClick={() => togglePromo(p.id, !p.active)} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-200" title={p.active ? 'Désactiver' : 'Activer'}>
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                      {p.active
+                                        ? <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                        : <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />}
+                                    </svg>
+                                  </button>
+                                  <button onClick={() => deletePromo(p.id)} className="rounded-lg p-1 text-neutral-400 hover:bg-red-50 hover:text-red-500" title="Supprimer">
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
