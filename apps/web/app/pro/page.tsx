@@ -94,11 +94,14 @@ export default function ProDashboard() {
   const [evtCapacity, setEvtCapacity] = useState('');
   const [evtDesc, setEvtDesc] = useState('');
 
-  // Menu state
-  const [menuItems, setMenuItems] = useState<{ id: string; name: string; category: string; price: number; available: boolean }[]>([]);
+  // Menu state — persistance réelle via la table menu_items (migration 0014).
+  const [menuItems, setMenuItems] = useState<{ id: string; name: string; category: string; price_xof: number; available: boolean; description: string | null; position: number }[]>([]);
+  const [menuLoading, setMenuLoading] = useState(false);
   const [menuName, setMenuName] = useState('');
-  const [menuCat, setMenuCat] = useState('Entrée');
+  const [menuCat, setMenuCat] = useState('Plat principal');
   const [menuPrice, setMenuPrice] = useState('');
+  const [menuDesc, setMenuDesc] = useState('');
+  const [menuSaving, setMenuSaving] = useState(false);
 
   // Finances state
   const [txs, setTxs] = useState<any[]>([]);
@@ -191,10 +194,24 @@ export default function ProDashboard() {
     setTxs(data || []);
   }, [supabase, userId]);
 
+  const loadMenu = useCallback(async (venueId: string) => {
+    setMenuLoading(true);
+    const { data, error } = await (supabase as any)
+      .from('menu_items')
+      .select('id, name, category, price_xof, available, description, position')
+      .eq('venue_id', venueId)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: false });
+    if (error) { flash(error.message, 'error'); setMenuItems([]); }
+    else setMenuItems((data || []) as any);
+    setMenuLoading(false);
+  }, [supabase]);
+
   useEffect(() => {
     if (!selectedVenueId || loading) return;
     loadReservations(selectedVenueId);
     loadEvents(selectedVenueId);
+    loadMenu(selectedVenueId);
     if (userId) loadTxs();
   }, [selectedVenueId, loading]);
 
@@ -228,11 +245,53 @@ export default function ProDashboard() {
     else { flash('Événement créé'); setEvtName(''); setEvtDate(''); setEvtPrice(''); setEvtCapacity(''); setEvtDesc(''); await loadEvents(selectedVenueId); }
   }
 
-  function addMenuItem() {
-    if (!menuName || !menuPrice) { flash('Nom et prix requis', 'error'); return; }
-    setMenuItems((prev) => [{ id: crypto.randomUUID(), name: menuName, category: menuCat, price: parseInt(menuPrice), available: true }, ...prev]);
+  async function addMenuItem() {
+    if (!selectedVenueId) { flash('Sélectionne un établissement', 'error'); return; }
+    const name = menuName.trim();
+    const price = parseInt(menuPrice, 10);
+    if (!name) { flash('Nom requis', 'error'); return; }
+    if (!Number.isFinite(price) || price < 0) { flash('Prix invalide', 'error'); return; }
+    setMenuSaving(true);
+    const { data, error } = await (supabase as any)
+      .from('menu_items')
+      .insert({
+        venue_id: selectedVenueId,
+        name,
+        category: menuCat,
+        price_xof: price,
+        description: menuDesc.trim() || null,
+        available: true,
+        position: menuItems.length,
+      })
+      .select('id, name, category, price_xof, available, description, position')
+      .single();
+    setMenuSaving(false);
+    if (error) { flash(error.message, 'error'); return; }
+    setMenuItems((prev) => [...prev, data as any]);
+    setMenuName(''); setMenuPrice(''); setMenuDesc('');
     flash('Article ajouté');
-    setMenuName(''); setMenuPrice('');
+  }
+
+  async function toggleMenuItem(id: string, next: boolean) {
+    // Optimistic flip — rollback en cas d'erreur RLS.
+    setMenuItems((prev) => prev.map((m) => m.id === id ? { ...m, available: next } : m));
+    const { error } = await (supabase as any).from('menu_items').update({ available: next }).eq('id', id);
+    if (error) {
+      setMenuItems((prev) => prev.map((m) => m.id === id ? { ...m, available: !next } : m));
+      flash(error.message, 'error');
+    }
+  }
+
+  async function deleteMenuItem(id: string) {
+    const prev = menuItems;
+    setMenuItems((curr) => curr.filter((m) => m.id !== id));
+    const { error } = await (supabase as any).from('menu_items').delete().eq('id', id);
+    if (error) {
+      setMenuItems(prev);
+      flash(error.message, 'error');
+    } else {
+      flash('Article supprimé');
+    }
   }
 
   function createPromo() {
@@ -549,14 +608,33 @@ export default function ProDashboard() {
                           </select>
                         </div>
                         <ProInput label="Prix (FCFA)" value={menuPrice} onChange={setMenuPrice} type="number" placeholder="3000" />
-                        <button onClick={addMenuItem} className="btn-primary w-full">Ajouter au menu</button>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-neutral-500">Description (optionnelle)</label>
+                          <textarea
+                            value={menuDesc}
+                            onChange={(e) => setMenuDesc(e.target.value)}
+                            placeholder="Ingrédients, portion, accompagnement..."
+                            rows={2}
+                            className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          onClick={addMenuItem}
+                          disabled={menuSaving || !selectedVenueId}
+                          className="btn-primary w-full disabled:opacity-50"
+                        >
+                          {menuSaving ? 'Ajout…' : 'Ajouter au menu'}
+                        </button>
+                        {!selectedVenueId && <p className="text-xs text-neutral-400">Crée d'abord un établissement.</p>}
                       </div>
                     </div>
 
                     {/* Menu list */}
                     <div className="lg:col-span-2 rounded-2xl border border-neutral-200 bg-white p-6">
                       <h3 className="mb-4 font-display text-lg font-bold text-dark">Menu ({menuItems.length} articles)</h3>
-                      {menuItems.length === 0 ? (
+                      {menuLoading ? (
+                        <div className="py-12 text-center text-sm text-neutral-400">Chargement…</div>
+                      ) : menuItems.length === 0 ? (
                         <div className="py-12 text-center text-neutral-400">Aucun article dans le menu</div>
                       ) : (
                         <div className="space-y-4">
@@ -566,14 +644,24 @@ export default function ProDashboard() {
                               <div className="space-y-2">
                                 {menuItems.filter((m) => m.category === cat).map((item) => (
                                   <div key={item.id} className="flex items-center justify-between rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
-                                    <div className="flex items-center gap-3">
-                                      <button onClick={() => setMenuItems((prev) => prev.map((m) => m.id === item.id ? { ...m, available: !m.available } : m))}
-                                        className={`h-3 w-3 rounded-full ${item.available ? 'bg-emerald-500' : 'bg-neutral-300'}`} title={item.available ? 'Disponible' : 'Indisponible'} />
-                                      <span className={`text-sm font-medium ${item.available ? 'text-dark' : 'text-neutral-400 line-through'}`}>{item.name}</span>
+                                    <div className="flex min-w-0 items-center gap-3">
+                                      <button
+                                        onClick={() => toggleMenuItem(item.id, !item.available)}
+                                        className={`h-3 w-3 shrink-0 rounded-full ${item.available ? 'bg-emerald-500' : 'bg-neutral-300'}`}
+                                        title={item.available ? 'Disponible — clic pour rendre indispo' : 'Indisponible — clic pour activer'}
+                                      />
+                                      <div className="min-w-0">
+                                        <div className={`truncate text-sm font-medium ${item.available ? 'text-dark' : 'text-neutral-400 line-through'}`}>{item.name}</div>
+                                        {item.description && <div className="mt-0.5 truncate text-xs text-neutral-500">{item.description}</div>}
+                                      </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                      <span className="font-mono text-sm font-medium text-primary-600">{formatXOF(item.price)}</span>
-                                      <button onClick={() => setMenuItems((prev) => prev.filter((m) => m.id !== item.id))} className="rounded-lg p-1 text-neutral-400 transition hover:bg-red-50 hover:text-red-500">
+                                    <div className="flex shrink-0 items-center gap-3">
+                                      <span className="font-mono text-sm font-medium text-primary-600">{formatXOF(item.price_xof)}</span>
+                                      <button
+                                        onClick={() => deleteMenuItem(item.id)}
+                                        className="rounded-lg p-1 text-neutral-400 transition hover:bg-red-50 hover:text-red-500"
+                                        title="Supprimer"
+                                      >
                                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                                       </button>
                                     </div>
