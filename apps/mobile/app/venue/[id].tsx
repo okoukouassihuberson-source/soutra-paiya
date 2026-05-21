@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { openDirections, dialPhone, openWhatsApp } from '@/lib/maps';
 
 interface Venue {
   id: string;
@@ -16,6 +17,7 @@ interface Venue {
   address: string;
   city: string;
   phone: string;
+  whatsapp: string | null;
   email: string;
   opening_hours: Record<string, [string, string]>;
   avg_price_xof: number;
@@ -32,6 +34,9 @@ export default function VenueDetail() {
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favBusy, setFavBusy] = useState(false);
+  // Coordonnées GPS lues depuis la RPC get_venue_location (migration 0019)
+  // — la colonne PostGIS `location` ne se lit pas proprement via supabase-js.
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     loadVenue();
@@ -64,21 +69,28 @@ export default function VenueDetail() {
       return;
     }
     try {
-      const { data, error } = await supabase
-        .from('venues')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
+      const [venueRes, coordsRes] = await Promise.all([
+        supabase.from('venues').select('*').eq('id', id).maybeSingle(),
+        (supabase as any).rpc('get_venue_location', { p_venue_id: id }),
+      ]);
 
-      if (error) {
-        console.error('[venue] supabase error:', error);
+      if (venueRes.error) {
+        console.error('[venue] supabase error:', venueRes.error);
         setVenue(null);
       } else {
-        setVenue(data as Venue | null);
+        setVenue(venueRes.data as Venue | null);
+      }
+
+      const c = coordsRes?.data;
+      if (c && typeof c.lat === 'number' && typeof c.lng === 'number') {
+        setCoords({ lat: c.lat, lng: c.lng });
+      } else {
+        setCoords(null);
       }
     } catch (error) {
       console.error('[venue] unexpected error:', error);
       setVenue(null);
+      setCoords(null);
     } finally {
       setLoading(false);
     }
@@ -172,19 +184,53 @@ export default function VenueDetail() {
             <Text style={s.description}>{venue.description}</Text>
           )}
 
-          {/* Info Cards */}
+          {/* Actions rapides — itinéraire, appel, WhatsApp */}
+          <View style={s.actionRow}>
+            <Pressable
+              style={({ pressed }) => [s.actionBtn, !coords && s.actionBtnDisabled, pressed && coords && { opacity: 0.85 }]}
+              onPress={() => coords && openDirections({ lat: coords.lat, lng: coords.lng, label: venue.name })}
+              disabled={!coords}
+            >
+              <Ionicons name="navigate" size={22} color={coords ? colors.primary[500] : colors.neutral[400]} />
+              <Text style={[s.actionLabel, !coords && s.actionLabelDisabled]}>Itinéraire</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [s.actionBtn, !venue.phone && s.actionBtnDisabled, pressed && venue.phone && { opacity: 0.85 }]}
+              onPress={() => venue.phone && dialPhone(venue.phone)}
+              disabled={!venue.phone}
+            >
+              <Ionicons name="call" size={22} color={venue.phone ? colors.primary[500] : colors.neutral[400]} />
+              <Text style={[s.actionLabel, !venue.phone && s.actionLabelDisabled]}>Appeler</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [s.actionBtn, !venue.whatsapp && s.actionBtnDisabled, pressed && venue.whatsapp && { opacity: 0.85 }]}
+              onPress={() => venue.whatsapp && openWhatsApp(venue.whatsapp, `Bonjour, je vous contacte au sujet de ${venue.name} via Soutra-Paiya.`)}
+              disabled={!venue.whatsapp}
+            >
+              <Ionicons name="logo-whatsapp" size={22} color={venue.whatsapp ? '#25D366' : colors.neutral[400]} />
+              <Text style={[s.actionLabel, !venue.whatsapp && s.actionLabelDisabled]}>WhatsApp</Text>
+            </Pressable>
+          </View>
+
+          {/* Info Cards — l'adresse est cliquable et lance l'itinéraire */}
           <View style={s.infoGrid}>
             {venue.address && (
-              <View style={s.infoCard}>
+              <Pressable
+                style={({ pressed }) => [s.infoCard, pressed && coords && { opacity: 0.7 }]}
+                onPress={() => coords && openDirections({ lat: coords.lat, lng: coords.lng, label: venue.name })}
+                disabled={!coords}
+              >
                 <Ionicons name="location" size={20} color={colors.primary[500]} />
                 <Text style={s.infoText}>{venue.address}</Text>
-              </View>
+                {coords && <Ionicons name="chevron-forward" size={18} color={colors.neutral[400]} />}
+              </Pressable>
             )}
             {venue.phone && (
-              <View style={s.infoCard}>
+              <Pressable style={({ pressed }) => [s.infoCard, pressed && { opacity: 0.7 }]} onPress={() => dialPhone(venue.phone)}>
                 <Ionicons name="call" size={20} color={colors.primary[500]} />
                 <Text style={s.infoText}>{venue.phone}</Text>
-              </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.neutral[400]} />
+              </Pressable>
             )}
             {venue.email && (
               <View style={s.infoCard}>
@@ -282,6 +328,22 @@ const s = StyleSheet.create({
   ratingCount: { fontSize: typography.fontSize.sm, color: colors.neutral[500] },
   price: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.primary[500] },
   description: { fontSize: typography.fontSize.sm, color: colors.neutral[600], lineHeight: 20, marginBottom: spacing.lg },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  actionBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    backgroundColor: colors.primary[50],
+    borderRadius: radius.lg,
+    gap: spacing.xs,
+  },
+  actionBtnDisabled: { backgroundColor: colors.neutral[100] },
+  actionLabel: { fontSize: typography.fontSize.xs, fontWeight: '600', color: colors.primary[600] },
+  actionLabelDisabled: { color: colors.neutral[400] },
   infoGrid: { marginBottom: spacing.lg, gap: spacing.md },
   infoCard: {
     flexDirection: 'row',
