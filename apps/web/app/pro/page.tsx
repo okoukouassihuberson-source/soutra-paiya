@@ -548,23 +548,33 @@ export default function ProDashboard() {
       .upload(path, file, { contentType: file.type, upsert: false });
 
     if (upErr) {
-      // Diagnostic actionnable selon le message Supabase renvoie.
       const msg = upErr.message || '';
       if (/row-level security/i.test(msg)) {
-        // Sonde immédiate : est-ce que l'utilisateur possède effectivement ce venue ?
-        const { data: vCheck } = await (supabase as any)
-          .from('venues')
-          .select('id, owner_id')
-          .eq('id', selectedVenueId)
-          .maybeSingle();
-        if (!vCheck) {
-          flash('Établissement introuvable côté serveur (RLS). Recharge la page.', 'error');
-        } else if (vCheck.owner_id !== user.id) {
-          flash('Cet établissement ne t\'appartient pas — owner_id ne correspond pas à ta session.', 'error');
+        // Sonde directe : la RPC simule la policy dans le contexte authentifié
+        // réel (migration 0017). Plus de devinettes — on sait précisément
+        // quelle clause matche ou pas.
+        const { data: dbg, error: dbgErr } = await (supabase as any).rpc('debug_storage_policy', { p_path: path });
+        console.error('[uploadMedia][RLS][debug]', { path, dbg, dbgErr, supabaseErr: upErr });
+        if (dbgErr) {
+          flash('Diagnostic RPC indisponible — rejoue la migration 0017.', 'error');
+        } else if (dbg && typeof dbg === 'object') {
+          // Format attendu : { auth_uid, folder_split_part, venue_visible,
+          // venue_owner_id, is_owner, is_admin, policy_would_pass }
+          if (!dbg.auth_uid) {
+            flash('Session non transmise au serveur (auth.uid = NULL). Reconnecte-toi.', 'error');
+          } else if (!dbg.venue_visible) {
+            flash(`Venue ${String(dbg.folder_split_part || '').slice(0, 8)}… invisible côté serveur.`, 'error');
+          } else if (!dbg.policy_would_pass) {
+            flash(`Policy refuse : owner=${String(dbg.venue_owner_id || '').slice(0, 8)}… toi=${String(dbg.auth_uid).slice(0, 8)}… admin=${dbg.is_admin}`, 'error');
+          } else {
+            // policy_would_pass=true côté sonde, mais l'INSERT a échoué quand
+            // même -> path passé à Supabase storage diffère probablement de
+            // celui passé à la RPC. Voir console pour comparer.
+            flash('Sonde dit OK mais Storage refuse. Voir la console (cause Supabase).', 'error');
+          }
         } else {
-          flash('Policies storage non appliquées. Rejoue la migration 0016.', 'error');
+          flash('RPC debug renvoyé un format inattendu — voir console.', 'error');
         }
-        console.error('[uploadMedia][RLS]', { selectedVenueId, userId: user.id, vCheck, supabaseErr: upErr });
       } else {
         flash(msg || 'Upload échoué', 'error');
       }
