@@ -21,6 +21,15 @@ const STATUS_META: Record<ResStatus, { label: string; color: string; bg: string 
   refunded: { label: 'Remboursé', color: 'text-purple-700', bg: 'bg-purple-50' },
 };
 
+// Mêmes badges visuels pour les statuts d'événement (enum event_status).
+const STATUS_META_EVT: Record<'draft' | 'published' | 'sold_out' | 'cancelled' | 'done', { label: string; color: string; bg: string }> = {
+  draft: { label: 'Brouillon', color: 'text-neutral-600', bg: 'bg-neutral-100' },
+  published: { label: 'Publié', color: 'text-emerald-700', bg: 'bg-emerald-50' },
+  sold_out: { label: 'Complet', color: 'text-amber-700', bg: 'bg-amber-50' },
+  cancelled: { label: 'Annulé', color: 'text-red-700', bg: 'bg-red-50' },
+  done: { label: 'Terminé', color: 'text-blue-700', bg: 'bg-blue-50' },
+};
+
 const SIDEBAR: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <IcoGrid /> },
   { id: 'reservations', label: 'Réservations', icon: <IcoCalendar /> },
@@ -86,13 +95,26 @@ export default function ProDashboard() {
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  // Events state
-  const [events, setEvents] = useState<any[]>([]);
+  // Events state — table `events` (migration 0001) : starts_at/ends_at,
+  // ticket_tiers jsonb [{name,price_xof,qty,sold}], slug unique, organizer_id.
+  type EventRow = {
+    id: string; title: string; description: string | null; status: 'draft' | 'published' | 'sold_out' | 'cancelled' | 'done';
+    starts_at: string; ends_at: string; capacity: number | null;
+    ticket_tiers: { name: string; price_xof: number; qty: number; sold: number }[];
+    cover_url: string | null; slug: string;
+  };
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [evtSaving, setEvtSaving] = useState(false);
   const [evtName, setEvtName] = useState('');
   const [evtDate, setEvtDate] = useState('');
+  const [evtDuration, setEvtDuration] = useState('4'); // heures
   const [evtPrice, setEvtPrice] = useState('');
   const [evtCapacity, setEvtCapacity] = useState('');
   const [evtDesc, setEvtDesc] = useState('');
+
+  // Modal d'édition événement
+  const [editingEvent, setEditingEvent] = useState<EventRow | null>(null);
+  const [editEvtSaving, setEditEvtSaving] = useState(false);
 
   // Menu state — persistance réelle via la table menu_items (migration 0014).
   const [menuItems, setMenuItems] = useState<{ id: string; name: string; category: string; price_xof: number; available: boolean; description: string | null; position: number }[]>([]);
@@ -190,8 +212,14 @@ export default function ProDashboard() {
   }, [supabase]);
 
   const loadEvents = useCallback(async (venueId: string) => {
-    const { data } = await (supabase as any).from('events').select('*').eq('venue_id', venueId).order('date_time', { ascending: false }).limit(100);
-    setEvents(data || []);
+    const { data, error } = await (supabase as any)
+      .from('events')
+      .select('id, title, description, status, starts_at, ends_at, capacity, ticket_tiers, cover_url, slug')
+      .eq('venue_id', venueId)
+      .order('starts_at', { ascending: false })
+      .limit(100);
+    if (error) { flash(error.message, 'error'); setEvents([]); }
+    else setEvents((data || []) as EventRow[]);
   }, [supabase]);
 
   const loadTxs = useCallback(async () => {
@@ -257,10 +285,95 @@ export default function ProDashboard() {
   }
 
   async function createEvent() {
-    if (!evtName || !evtDate) { flash('Nom et date requis', 'error'); return; }
-    const { error } = await (supabase as any).from('events').insert({ venue_id: selectedVenueId, title: evtName, date_time: evtDate, price_xof: parseInt(evtPrice) || 0, capacity: parseInt(evtCapacity) || 50, description: evtDesc, status: 'published' });
-    if (error) flash(error.message, 'error');
-    else { flash('Événement créé'); setEvtName(''); setEvtDate(''); setEvtPrice(''); setEvtCapacity(''); setEvtDesc(''); await loadEvents(selectedVenueId); }
+    if (!selectedVenueId) { flash('Sélectionne un établissement', 'error'); return; }
+    const title = evtName.trim();
+    if (!title) { flash('Nom requis', 'error'); return; }
+    if (!evtDate) { flash('Date et heure requises', 'error'); return; }
+    const startsAt = new Date(evtDate);
+    if (isNaN(startsAt.getTime())) { flash('Date invalide', 'error'); return; }
+    const durationHours = parseFloat(evtDuration);
+    const endsAt = new Date(startsAt.getTime() + (Number.isFinite(durationHours) && durationHours > 0 ? durationHours : 4) * 3600 * 1000);
+    const price = parseInt(evtPrice, 10) || 0;
+    const capacity = parseInt(evtCapacity, 10) || 0;
+    if (capacity < 0) { flash('Capacité invalide', 'error'); return; }
+    const slug = `${slugify(title)}-${Math.random().toString(36).slice(2, 7)}`;
+    setEvtSaving(true);
+    const { data, error } = await (supabase as any)
+      .from('events')
+      .insert({
+        organizer_id: userId,
+        venue_id: selectedVenueId,
+        title,
+        slug,
+        description: evtDesc.trim() || null,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        capacity: capacity || null,
+        ticket_tiers: capacity > 0 ? [{ name: 'Standard', price_xof: price, qty: capacity, sold: 0 }] : [],
+        status: 'draft',
+        city: settingsCity || 'Abidjan',
+      })
+      .select('id, title, description, status, starts_at, ends_at, capacity, ticket_tiers, cover_url, slug')
+      .single();
+    setEvtSaving(false);
+    if (error) { flash(error.code === '23505' ? 'Conflit de slug — réessaie' : error.message, 'error'); return; }
+    setEvents((prev) => [data as EventRow, ...prev]);
+    setEvtName(''); setEvtDate(''); setEvtPrice(''); setEvtCapacity(''); setEvtDesc(''); setEvtDuration('4');
+    flash('Événement créé en brouillon — passe-le en publié quand il est prêt');
+  }
+
+  async function updateEventStatus(id: string, next: EventRow['status']) {
+    const prev = events;
+    setEvents((curr) => curr.map((e) => e.id === id ? { ...e, status: next } : e));
+    const { error } = await (supabase as any).from('events').update({ status: next }).eq('id', id);
+    if (error) { setEvents(prev); flash(error.message, 'error'); }
+    else flash(`Statut → ${next}`);
+  }
+
+  async function deleteEvent(id: string) {
+    const prev = events;
+    setEvents((curr) => curr.filter((e) => e.id !== id));
+    // RLS : events_organizer_all autorise le delete au seul organisateur.
+    const { error } = await (supabase as any).from('events').delete().eq('id', id);
+    if (error) {
+      setEvents(prev);
+      // 23503 = foreign_key_violation (tickets vendus) -> proposer l'annulation à la place
+      flash(error.code === '23503' ? 'Des tickets sont déjà vendus — annule plutôt l\'événement.' : error.message, 'error');
+    } else {
+      flash('Événement supprimé');
+    }
+  }
+
+  async function saveEventEdit() {
+    if (!editingEvent) return;
+    const e = editingEvent;
+    const startsAt = new Date(e.starts_at);
+    const endsAt = new Date(e.ends_at);
+    if (isNaN(startsAt.getTime()) || isNaN(endsAt.getTime())) { flash('Dates invalides', 'error'); return; }
+    if (endsAt <= startsAt) { flash('La fin doit être après le début', 'error'); return; }
+    setEditEvtSaving(true);
+    const { error } = await (supabase as any)
+      .from('events')
+      .update({
+        title: e.title.trim(),
+        description: e.description?.trim() || null,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        capacity: e.capacity,
+        ticket_tiers: e.ticket_tiers,
+      })
+      .eq('id', e.id);
+    setEditEvtSaving(false);
+    if (error) { flash(error.message, 'error'); return; }
+    setEvents((prev) => prev.map((x) => x.id === e.id ? e : x));
+    setEditingEvent(null);
+    flash('Événement mis à jour');
+  }
+
+  // Calcule les places restantes à partir des paliers (qty - sold).
+  function remainingSeats(e: EventRow): number | null {
+    if (!e.ticket_tiers?.length) return e.capacity ?? null;
+    return e.ticket_tiers.reduce((s, t) => s + Math.max(0, (t.qty || 0) - (t.sold || 0)), 0);
   }
 
   async function addMenuItem() {
@@ -616,13 +729,22 @@ export default function ProDashboard() {
                       <h3 className="mb-4 font-display text-lg font-bold text-dark">Créer un événement</h3>
                       <div className="space-y-4">
                         <ProInput label="Nom de l'événement" value={evtName} onChange={setEvtName} placeholder="Soirée DJ, Brunch dominical..." />
-                        <ProInput label="Date et heure" value={evtDate} onChange={setEvtDate} type="datetime-local" />
+                        <div className="grid grid-cols-2 gap-3">
+                          <ProInput label="Début" value={evtDate} onChange={setEvtDate} type="datetime-local" />
+                          <ProInput label="Durée (heures)" value={evtDuration} onChange={setEvtDuration} type="number" placeholder="4" />
+                        </div>
                         <div className="grid grid-cols-2 gap-3">
                           <ProInput label="Prix (FCFA)" value={evtPrice} onChange={setEvtPrice} type="number" placeholder="5000" />
                           <ProInput label="Capacité" value={evtCapacity} onChange={setEvtCapacity} type="number" placeholder="50" />
                         </div>
-                        <ProInput label="Description" value={evtDesc} onChange={setEvtDesc} placeholder="Décrivez l'événement..." />
-                        <button onClick={createEvent} className="btn-primary w-full">Créer l'événement</button>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-neutral-500">Description</label>
+                          <textarea value={evtDesc} onChange={(e) => setEvtDesc(e.target.value)} rows={3} placeholder="Décris l'événement, le programme, l'ambiance..." className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none" />
+                        </div>
+                        <button onClick={createEvent} disabled={evtSaving || !selectedVenueId} className="btn-primary w-full disabled:opacity-50">
+                          {evtSaving ? 'Création…' : 'Créer l\'événement (brouillon)'}
+                        </button>
+                        {!selectedVenueId && <p className="text-xs text-neutral-400">Crée d'abord un établissement.</p>}
                       </div>
                     </div>
 
@@ -633,26 +755,99 @@ export default function ProDashboard() {
                         <div className="py-12 text-center text-neutral-400">Aucun événement créé</div>
                       ) : (
                         <div className="space-y-3">
-                          {events.map((e: any) => (
-                            <div key={e.id} className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 transition hover:shadow-sm">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <p className="font-medium text-dark">{e.title}</p>
-                                  <p className="mt-1 text-xs text-neutral-500">{fmtDateTime(e.date_time)}</p>
+                          {events.map((e) => {
+                            const tier = e.ticket_tiers?.[0];
+                            const remaining = remainingSeats(e);
+                            const sold = tier ? tier.sold : 0;
+                            const statusMeta = STATUS_META_EVT[e.status];
+                            return (
+                              <div key={e.id} className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="truncate font-medium text-dark">{e.title}</p>
+                                    <p className="mt-1 text-xs text-neutral-500">{fmtDateTime(e.starts_at)}</p>
+                                    {e.description && <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{e.description}</p>}
+                                  </div>
+                                  <div className="shrink-0 text-right">
+                                    <p className="font-mono text-sm font-medium text-primary-600">{formatXOF(tier?.price_xof || 0)}</p>
+                                    <p className="text-xs text-neutral-400">
+                                      {remaining !== null ? `${remaining} place${remaining === 1 ? '' : 's'}` : 'illimité'}
+                                      {sold > 0 && ` · ${sold} vendu${sold === 1 ? '' : 's'}`}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="text-right">
-                                  <p className="font-mono text-sm font-medium text-primary-600">{formatXOF(e.price_xof || 0)}</p>
-                                  <p className="text-xs text-neutral-400">{e.capacity || 0} places</p>
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                  <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusMeta.bg} ${statusMeta.color}`}>{statusMeta.label}</span>
+                                  {e.status === 'draft' && <button onClick={() => updateEventStatus(e.id, 'published')} className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">Publier</button>}
+                                  {e.status === 'published' && <>
+                                    <button onClick={() => updateEventStatus(e.id, 'sold_out')} className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100">Marquer complet</button>
+                                    <button onClick={() => updateEventStatus(e.id, 'done')} className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100">Terminer</button>
+                                    <button onClick={() => updateEventStatus(e.id, 'cancelled')} className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 transition hover:bg-red-100">Annuler</button>
+                                  </>}
+                                  {e.status === 'sold_out' && <button onClick={() => updateEventStatus(e.id, 'published')} className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">Rouvrir</button>}
+                                  <button onClick={() => setEditingEvent({ ...e })} className="ml-auto rounded-lg p-1 text-neutral-400 transition hover:bg-neutral-200 hover:text-neutral-700" title="Modifier">
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                  </button>
+                                  <button onClick={() => { if (confirm(`Supprimer « ${e.title} » ?`)) deleteEvent(e.id); }} className="rounded-lg p-1 text-neutral-400 transition hover:bg-red-50 hover:text-red-500" title="Supprimer">
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                  </button>
                                 </div>
                               </div>
-                              {e.description && <p className="mt-2 text-xs text-neutral-500">{e.description}</p>}
-                              <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${e.status === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-600'}`}>{e.status === 'published' ? 'Publié' : e.status}</span>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
                   </div>
+
+                  {/* Modal d'édition événement */}
+                  {editingEvent && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditingEvent(null)}>
+                      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="mb-4 flex items-center justify-between">
+                          <h3 className="font-display text-lg font-bold text-dark">Modifier l'événement</h3>
+                          <button onClick={() => setEditingEvent(null)} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100">
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                        <div className="space-y-4">
+                          <ProInput label="Nom" value={editingEvent.title} onChange={(v) => setEditingEvent((prev) => prev && { ...prev, title: v })} />
+                          <div className="grid grid-cols-2 gap-3">
+                            <ProInput label="Début" type="datetime-local" value={editingEvent.starts_at.slice(0, 16)} onChange={(v) => setEditingEvent((prev) => prev && { ...prev, starts_at: new Date(v).toISOString() })} />
+                            <ProInput label="Fin" type="datetime-local" value={editingEvent.ends_at.slice(0, 16)} onChange={(v) => setEditingEvent((prev) => prev && { ...prev, ends_at: new Date(v).toISOString() })} />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <ProInput label="Prix Standard (FCFA)" type="number" value={String(editingEvent.ticket_tiers?.[0]?.price_xof ?? 0)} onChange={(v) => setEditingEvent((prev) => {
+                              if (!prev) return prev;
+                              const tiers = prev.ticket_tiers?.length ? [...prev.ticket_tiers] : [{ name: 'Standard', price_xof: 0, qty: prev.capacity || 0, sold: 0 }];
+                              tiers[0] = { ...tiers[0], price_xof: parseInt(v, 10) || 0 };
+                              return { ...prev, ticket_tiers: tiers };
+                            })} />
+                            <ProInput label="Capacité" type="number" value={String(editingEvent.capacity ?? 0)} onChange={(v) => setEditingEvent((prev) => {
+                              if (!prev) return prev;
+                              const cap = parseInt(v, 10) || 0;
+                              const tiers = prev.ticket_tiers?.length ? [...prev.ticket_tiers] : [{ name: 'Standard', price_xof: 0, qty: 0, sold: 0 }];
+                              tiers[0] = { ...tiers[0], qty: cap };
+                              return { ...prev, capacity: cap || null, ticket_tiers: tiers };
+                            })} />
+                          </div>
+                          {editingEvent.ticket_tiers?.[0]?.sold > 0 && (
+                            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                              {editingEvent.ticket_tiers[0].sold} ticket{editingEvent.ticket_tiers[0].sold > 1 ? 's' : ''} déjà vendu{editingEvent.ticket_tiers[0].sold > 1 ? 's' : ''} — ne descends pas la capacité en-dessous.
+                            </p>
+                          )}
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-neutral-500">Description</label>
+                            <textarea rows={3} value={editingEvent.description || ''} onChange={(e) => setEditingEvent((prev) => prev && { ...prev, description: e.target.value })} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none" />
+                          </div>
+                          <div className="flex gap-3">
+                            <button onClick={() => setEditingEvent(null)} className="flex-1 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-50">Annuler</button>
+                            <button onClick={saveEventEdit} disabled={editEvtSaving} className="btn-primary flex-1 disabled:opacity-50">{editEvtSaving ? 'Sauvegarde…' : 'Enregistrer'}</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -748,7 +943,7 @@ export default function ProDashboard() {
                     <KpiCard icon={<IcoWallet className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-600" label="Solde wallet" value={formatXOF(walletBalance)} sub="disponible" />
                     <KpiCard icon={<IcoTrend className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-600" label="Revenus acomptes" value={formatXOF(revenue)} sub="confirmés + arrivés" />
                     <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-600" label="Transactions" value={String(txs.length)} sub="historique" />
-                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-600" label="Revenus événements" value={formatXOF(events.reduce((s: number, e: any) => s + (e.price_xof || 0), 0))} sub={`${events.length} événements`} />
+                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-600" label="Revenus événements" value={formatXOF(events.reduce((s, e) => s + (e.ticket_tiers || []).reduce((ts, t) => ts + (t.price_xof || 0) * (t.sold || 0), 0), 0))} sub={`${events.length} événements`} />
                   </div>
 
                   {/* Revenue chart (simple bar) */}
