@@ -7,6 +7,8 @@ import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { MapboxMap, type MapVenue, ABIDJAN } from '@/components/MapboxMap';
 
+// Aligné sur la vue `venues_public` (migration 0020). `lat`/`lng` proviennent
+// du point PostGIS `venues.location` projeté en colonnes simples.
 interface Venue {
   id: string;
   name: string;
@@ -18,16 +20,9 @@ interface Venue {
   rating_count: number | null;
   district: string | null;
   city: string | null;
+  lat: number | null;
+  lng: number | null;
 }
-
-// Coordonnées hardcoded par venue ID (en attendant le seed PostGIS)
-const VENUE_COORDINATES: Record<string, [number, number]> = {
-  '550e8400-e29b-41d4-a716-446655440001': [-3.999, 5.359], // Cocody
-  '550e8400-e29b-41d4-a716-446655440002': [-3.991, 5.371], // Marcory
-  '550e8400-e29b-41d4-a716-446655440003': [-3.999, 5.298], // Yopougon
-  '550e8400-e29b-41d4-a716-446655440004': [-4.090, 5.337], // Abobo
-  '550e8400-e29b-41d4-a716-446655440005': [-4.024, 5.323], // Le Plateau
-};
 
 const CHIPS: { label: string; category: string | null }[] = [
   { label: 'Tout', category: null },
@@ -54,10 +49,11 @@ export default function Explore() {
 
   async function loadVenues() {
     try {
+      // Vue `venues_public` : filtrée à status=active, lat/lng projetés
+      // depuis le point PostGIS. Source de vérité unique pour la carte.
       const { data, error } = await supabase
-        .from('venues')
-        .select('id, name, slug, category, cover_url, avg_price_xof, rating_avg, rating_count, district, city')
-        .eq('status', 'active')
+        .from('venues_public')
+        .select('id, name, slug, category, cover_url, avg_price_xof, rating_avg, rating_count, district, city, lat, lng')
         .order('rating_avg', { ascending: false });
 
       if (error) {
@@ -86,13 +82,18 @@ export default function Explore() {
     return true;
   });
 
-  const mapVenues: MapVenue[] = filteredVenues.map((v) => ({
-    id: v.id,
-    name: v.name,
-    category: v.category,
-    price: v.avg_price_xof ?? 0,
-    coordinate: VENUE_COORDINATES[v.id] ?? ABIDJAN,
-  }));
+  // Seuls les venues avec coordonnées valides apparaissent sur la carte.
+  // Les autres restent dans la liste en bas (le pro doit aller poser son pin
+  // depuis le dashboard PRO -> Paramètres -> Localisation GPS).
+  const mapVenues: MapVenue[] = filteredVenues
+    .filter((v) => typeof v.lat === 'number' && typeof v.lng === 'number')
+    .map((v) => ({
+      id: v.id,
+      name: v.name,
+      category: v.category,
+      price: v.avg_price_xof ?? 0,
+      coordinate: [v.lng as number, v.lat as number],
+    }));
 
   function goToVenue(id: string) {
     setSelectedVenueId(id);
@@ -166,6 +167,9 @@ export default function Explore() {
             <Text style={s.sectionTitle}>
               {filteredVenues.length} {filteredVenues.length > 1 ? 'lieux' : 'lieu'}
               {selectedCategory ? ` · ${selectedChip}` : ''}
+              {mapVenues.length < filteredVenues.length && (
+                <Text style={s.sectionHint}> · {mapVenues.length} sur la carte</Text>
+              )}
             </Text>
 
             {filteredVenues.length === 0 ? (
@@ -237,6 +241,7 @@ const s = StyleSheet.create({
   chipText: { fontSize: typography.fontSize.sm, color: colors.neutral[600], fontWeight: '500' },
   chipTextActive: { color: '#fff' },
   sectionTitle: { marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.md, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
+  sectionHint: { fontSize: typography.fontSize.xs, fontWeight: '500', color: colors.neutral[500] },
   empty: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   emptyText: { marginTop: spacing.base, fontSize: typography.fontSize.sm, color: colors.neutral[500] },
   card: {
