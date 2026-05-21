@@ -3,8 +3,15 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF, slugify } from '@soutra/shared';
+
+// Picker GPS — chargé en client only (leaflet utilise window au montage).
+const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPicker'), {
+  ssr: false,
+  loading: () => <div className="py-12 text-center text-sm text-neutral-400">Chargement de la carte…</div>,
+});
 
 type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'finances' | 'marketing' | 'settings';
 type ResStatus = 'pending' | 'confirmed' | 'arrived' | 'no_show' | 'cancelled' | 'refunded';
@@ -155,6 +162,10 @@ export default function ProDashboard() {
   const [media, setMedia] = useState<{ logo: string | null; cover: string | null; gallery: string[] }>({ logo: null, cover: null, gallery: [] });
   const [uploading, setUploading] = useState<string | null>(null);
 
+  // Localisation GPS — lat/lng lus depuis la RPC get_venue_location au changement
+  // de venue. `null` tant que le venue n'a pas de point PostGIS.
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
+
   // Profil riche de l'établissement (horaires, contacts, réseaux, services…)
   const [vx, setVx] = useState(vxFromVenue(null));
 
@@ -272,6 +283,42 @@ export default function ProDashboard() {
     const v = venues.find((x) => x.id === selectedVenueId);
     if (v) { setSettingsName(v.name || ''); setSettingsCity(v.city || ''); setSettingsAddress(v.address || ''); setSettingsPhone(v.phone || ''); setSettingsDesc(v.description || ''); setSettingsCategory(v.category || ''); setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [] }); setVx(vxFromVenue(v)); }
   }, [selectedVenueId, venues]);
+
+  // Charge la position GPS courante du venue (la colonne PostGIS n'est pas
+  // exposée proprement par supabase-js — on passe par la RPC get_venue_location).
+  useEffect(() => {
+    if (!selectedVenueId) { setGeo(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any).rpc('get_venue_location', { p_venue_id: selectedVenueId });
+      if (cancelled) return;
+      if (error || !data || typeof data.lat !== 'number' || typeof data.lng !== 'number') {
+        setGeo(null);
+      } else {
+        setGeo({ lat: data.lat, lng: data.lng });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedVenueId, supabase]);
+
+  async function saveVenueLocation(p: { lat: number; lng: number; address?: string; district?: string; city?: string }) {
+    const { data, error } = await (supabase as any).rpc('set_venue_location', {
+      p_venue_id: selectedVenueId,
+      p_lat: p.lat,
+      p_lng: p.lng,
+      p_address: p.address || null,
+      p_district: p.district || null,
+      p_city: p.city || null,
+    });
+    if (error) return { ok: false, error: error.message };
+    setGeo({ lat: p.lat, lng: p.lng });
+    // Synchronise les inputs adresse/ville/quartier du formulaire courant.
+    if (data?.address) setSettingsAddress(data.address);
+    if (data?.city) setSettingsCity(data.city);
+    if (data?.district) setVx((prev) => ({ ...prev, district: data.district }));
+    flash('Localisation GPS enregistrée');
+    return { ok: true };
+  }
 
   async function updateStatus(id: string, newStatus: ResStatus) {
     setActionLoading(id);
@@ -1207,6 +1254,30 @@ export default function ProDashboard() {
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  {/* Localisation GPS */}
+                  <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6">
+                    <div className="mb-2 flex items-baseline justify-between">
+                      <h3 className="font-display text-lg font-bold text-dark">Localisation GPS</h3>
+                      <span className={`text-xs ${geo ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {geo ? '✓ Position enregistrée' : '⚠ Pas encore positionné sur la carte'}
+                      </span>
+                    </div>
+                    <p className="mb-5 text-sm text-neutral-500">
+                      Place ton établissement sur la carte. Sans coordonnées GPS, ta vitrine n'apparaîtra pas dans la recherche par proximité et tes clients ne pourront pas obtenir d'itinéraire.
+                    </p>
+                    {selectedVenueId ? (
+                      <VenueLocationPicker
+                        initialLat={geo?.lat ?? null}
+                        initialLng={geo?.lng ?? null}
+                        onSave={saveVenueLocation}
+                      />
+                    ) : (
+                      <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400">
+                        Crée d'abord un établissement.
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid gap-6 lg:grid-cols-2">
