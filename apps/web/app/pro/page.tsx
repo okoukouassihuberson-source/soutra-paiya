@@ -515,13 +515,63 @@ export default function ProDashboard() {
   }
 
   async function uploadMedia(file: File, kind: 'logo' | 'cover' | 'gallery') {
-    if (!selectedVenueId) return;
+    // Guards visibles -> on n'absorbe plus le `selectedVenueId` vide en silence,
+    // sinon le user voit le toast RLS sans comprendre d'où il vient.
+    if (!selectedVenueId) {
+      flash('Aucun établissement sélectionné — crée-le d\'abord, puis recharge la page.', 'error');
+      return;
+    }
+    if (!/^[0-9a-f-]{36}$/i.test(selectedVenueId)) {
+      flash('ID d\'établissement invalide — recharge la page.', 'error');
+      return;
+    }
+    const okMime = /^image\/(jpe?g|png|webp|gif)$/i.test(file.type);
+    if (!okMime) { flash('Format non supporté (JPG, PNG, WebP, GIF uniquement)', 'error'); return; }
     if (file.size > 8 * 1024 * 1024) { flash('Image trop lourde (8 Mo max)', 'error'); return; }
+
+    // Vérifie côté client que la session est encore vivante. Un JWT expiré
+    // donne « new row violates row-level security policy » côté storage car
+    // auth.uid() = NULL -> aucune policy ne matche.
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) {
+      flash('Session expirée — reconnecte-toi.', 'error');
+      setTimeout(() => router.push('/login'), 1500);
+      return;
+    }
+
     setUploading(kind);
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = `${selectedVenueId}/${kind}-${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from('venue-media').upload(path, file, { contentType: file.type });
-    if (upErr) { flash(upErr.message, 'error'); setUploading(null); return; }
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const path = `${selectedVenueId}/${kind}-${Date.now()}.${ext || 'jpg'}`;
+
+    const { error: upErr } = await supabase.storage
+      .from('venue-media')
+      .upload(path, file, { contentType: file.type, upsert: false });
+
+    if (upErr) {
+      // Diagnostic actionnable selon le message Supabase renvoie.
+      const msg = upErr.message || '';
+      if (/row-level security/i.test(msg)) {
+        // Sonde immédiate : est-ce que l'utilisateur possède effectivement ce venue ?
+        const { data: vCheck } = await (supabase as any)
+          .from('venues')
+          .select('id, owner_id')
+          .eq('id', selectedVenueId)
+          .maybeSingle();
+        if (!vCheck) {
+          flash('Établissement introuvable côté serveur (RLS). Recharge la page.', 'error');
+        } else if (vCheck.owner_id !== user.id) {
+          flash('Cet établissement ne t\'appartient pas — owner_id ne correspond pas à ta session.', 'error');
+        } else {
+          flash('Policies storage non appliquées. Rejoue la migration 0016.', 'error');
+        }
+        console.error('[uploadMedia][RLS]', { selectedVenueId, userId: user.id, vCheck, supabaseErr: upErr });
+      } else {
+        flash(msg || 'Upload échoué', 'error');
+      }
+      setUploading(null);
+      return;
+    }
+
     const url = supabase.storage.from('venue-media').getPublicUrl(path).data.publicUrl;
     const patch =
       kind === 'logo' ? { logo_url: url }
@@ -529,6 +579,7 @@ export default function ProDashboard() {
       : { gallery_urls: [...media.gallery, url] };
     const { error: updErr } = await (supabase as any).from('venues').update(patch).eq('id', selectedVenueId);
     if (updErr) { flash(updErr.message, 'error'); setUploading(null); return; }
+
     setMedia((m) =>
       kind === 'logo' ? { ...m, logo: url }
       : kind === 'cover' ? { ...m, cover: url }
