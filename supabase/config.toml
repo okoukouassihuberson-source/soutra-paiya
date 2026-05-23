@@ -29,3 +29,9 @@ enable_confirmations = false
 # (initialize, verify, withdraw) gardent verify_jwt = true par défaut.
 [functions.paystack-webhook]
 verify_jwt = false
+
+# Déclenchée par les Database Webhooks Supabase, qui s'authentifient via
+# l'en-tête Authorization = Bearer <service_role_key>. La fonction vérifie
+# ce header avant d'agir -> aucune source publique n'est acceptée.
+[functions.send-push]
+verify_jwt = false
