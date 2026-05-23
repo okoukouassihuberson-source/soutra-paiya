@@ -14,6 +14,7 @@ import {
   type Candidate,
   type MyMatchingProfile,
 } from '@/lib/discover';
+import { openDm } from '@/lib/chat';
 
 export default function Discover() {
   const router = useRouter();
@@ -180,9 +181,27 @@ export default function Discover() {
             <Text style={s.matchEmoji}>🎉</Text>
             <Text style={s.matchTitle}>C'est un match !</Text>
             <Text style={s.matchSub}>Toi et {matchModal?.full_name || 'cette personne'} vous êtes likés mutuellement.</Text>
-            <Pressable onPress={() => setMatchModal(null)} style={s.matchBtn}>
-              <Text style={s.matchBtnText}>Continuer</Text>
-            </Pressable>
+            <View style={s.matchActions}>
+              <Pressable onPress={() => setMatchModal(null)} style={[s.matchBtn, s.matchBtnSecondary]}>
+                <Text style={[s.matchBtnText, s.matchBtnSecondaryText]}>Plus tard</Text>
+              </Pressable>
+              <Pressable
+                onPress={async () => {
+                  const target = matchModal;
+                  setMatchModal(null);
+                  if (!target) return;
+                  try {
+                    const chatId = await openDm(target.id);
+                    router.push({ pathname: '/chat/[id]', params: { id: chatId } });
+                  } catch (err: any) {
+                    Alert.alert('Erreur', err?.message ?? 'Impossible d\'ouvrir le chat.');
+                  }
+                }}
+                style={s.matchBtn}
+              >
+                <Text style={s.matchBtnText}>Lui parler</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -387,8 +406,11 @@ const s = StyleSheet.create({
   matchEmoji: { fontSize: 72 },
   matchTitle: { fontSize: typography.fontSize.xl, fontWeight: '700', color: colors.primary[500], marginTop: spacing.sm },
   matchSub: { fontSize: typography.fontSize.sm, color: colors.neutral[600], marginTop: spacing.sm, textAlign: 'center' },
-  matchBtn: { marginTop: spacing.lg, backgroundColor: colors.primary[500], paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.lg },
+  matchActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg, width: '100%' },
+  matchBtn: { flex: 1, backgroundColor: colors.primary[500], paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.lg, alignItems: 'center' },
   matchBtnText: { color: '#fff', fontWeight: '700' },
+  matchBtnSecondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.neutral[300] },
+  matchBtnSecondaryText: { color: colors.neutral[700] },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.neutral[200] },
   label: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark, marginTop: spacing.md, marginBottom: spacing.xs },
   hint: { fontSize: typography.fontSize.xs, color: colors.neutral[500] },
