@@ -7,6 +7,7 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { listFeed, toggleLike, deletePost, type Post } from '@/lib/social';
+import { StoriesStrip } from '@/components/StoriesStrip';
 
 export default function Social() {
   const router = useRouter();
@@ -114,14 +115,17 @@ export default function Social() {
           <ActivityIndicator size="large" color={colors.primary[500]} />
         </View>
       ) : posts.length === 0 ? (
-        <View style={s.center}>
-          <Ionicons name="chatbubbles-outline" size={64} color={colors.neutral[300]} />
-          <Text style={s.emptyTitle}>Le fil est encore vide</Text>
-          <Text style={s.emptyText}>Sois le premier à partager une sortie, un événement ou un coup de cœur.</Text>
-          <Pressable onPress={() => router.push('/post-create')} style={s.emptyBtn}>
-            <Text style={s.emptyBtnText}>Publier un post</Text>
-          </Pressable>
-        </View>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <StoriesStrip />
+          <View style={s.center}>
+            <Ionicons name="chatbubbles-outline" size={64} color={colors.neutral[300]} />
+            <Text style={s.emptyTitle}>Le fil est encore vide</Text>
+            <Text style={s.emptyText}>Sois le premier à partager une sortie, un événement ou un coup de cœur.</Text>
+            <Pressable onPress={() => router.push('/post-create')} style={s.emptyBtn}>
+              <Text style={s.emptyBtnText}>Publier un post</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
       ) : (
         <ScrollView
           contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
@@ -132,6 +136,7 @@ export default function Social() {
             />
           }
         >
+          <StoriesStrip />
           {posts.map((p) => (
             <View key={p.id} style={s.card}>
               <View style={s.cardHeader}>
