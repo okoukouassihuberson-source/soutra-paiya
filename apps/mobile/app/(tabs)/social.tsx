@@ -96,9 +96,14 @@ export default function Social() {
     <SafeAreaView style={s.safe}>
       <View style={s.header}>
         <Text style={s.title}>Communauté</Text>
-        <Pressable onPress={() => router.push('/post-create')} style={s.fab} hitSlop={10}>
-          <Ionicons name="add" size={22} color="#fff" />
-        </Pressable>
+        <View style={s.headerActions}>
+          <Pressable onPress={() => router.push('/discover')} style={s.headerIcon} hitSlop={10}>
+            <Ionicons name="people" size={22} color={colors.dark} />
+          </Pressable>
+          <Pressable onPress={() => router.push('/post-create')} style={s.fab} hitSlop={10}>
+            <Ionicons name="add" size={22} color="#fff" />
+          </Pressable>
+        </View>
       </View>
 
       {loading ? (
@@ -191,6 +196,12 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: colors.neutral[200],
   },
   title: { fontSize: typography.fontSize.xl, fontWeight: '700', color: colors.dark },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  headerIcon: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.neutral[100],
+    alignItems: 'center', justifyContent: 'center',
+  },
   fab: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: colors.primary[500],
