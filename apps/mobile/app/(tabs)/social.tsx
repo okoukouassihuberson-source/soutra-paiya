@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { listFeed, toggleLike, deletePost, type Post } from '@/lib/social';
 import { StoriesStrip } from '@/components/StoriesStrip';
+import { CommentsSheet } from '@/components/CommentsSheet';
 
 export default function Social() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function Social() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyLike, setBusyLike] = useState<string | null>(null);
+  const [openSheetFor, setOpenSheetFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -174,11 +176,27 @@ export default function Social() {
                     {p.like_count > 0 ? p.like_count : ''}
                   </Text>
                 </Pressable>
+                <Pressable onPress={() => setOpenSheetFor(p.id)} style={s.actionBtn} hitSlop={8}>
+                  <Ionicons name="chatbubble-outline" size={20} color={colors.neutral[600]} />
+                  <Text style={s.actionLabel}>{p.comment_count > 0 ? p.comment_count : ''}</Text>
+                </Pressable>
               </View>
             </View>
           ))}
         </ScrollView>
       )}
+
+      {/* Bottom sheet partagé pour tous les posts */}
+      <CommentsSheet
+        postId={openSheetFor}
+        visible={!!openSheetFor}
+        onClose={() => setOpenSheetFor(null)}
+        onCountChange={(postId, delta) => {
+          setPosts((prev) => prev.map((p) =>
+            p.id === postId ? { ...p, comment_count: Math.max(0, (p.comment_count || 0) + delta) } : p
+          ));
+        }}
+      />
     </SafeAreaView>
   );
 }
