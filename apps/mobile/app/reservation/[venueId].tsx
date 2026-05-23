@@ -9,6 +9,7 @@ import { colors, typography, radius, spacing, formatXOF, reservationFormSchema }
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { payWithPaystack } from '@/lib/paystack';
+import { validatePromoCode, applyDiscount, reasonLabel } from '@/lib/promo';
 
 interface Venue {
   id: string;
@@ -35,6 +36,13 @@ export default function ReservationForm() {
   const [partySize, setPartySize] = useState('2');
   const [notes, setNotes] = useState('');
   const [qrCode, setQrCode] = useState<string>('');
+
+  // Code promo : saisie + validation côté serveur. `applied` est rempli
+  // uniquement quand le code a passé `validate_promo_code`.
+  const [promoInput, setPromoInput] = useState('');
+  const [promoChecking, setPromoChecking] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [applied, setApplied] = useState<{ id: string; code: string; discount_pct: number } | null>(null);
   // Conservé entre deux tentatives : on ne recrée pas la réservation si le
   // paiement de l'acompte a échoué et que l'utilisateur réessaie.
   const [reservationId, setReservationId] = useState<string | null>(null);
@@ -80,12 +88,45 @@ export default function ReservationForm() {
     setShowTimePicker(false);
   };
 
-  const calculateDeposit = (): number => {
+  const calculateBaseDeposit = (): number => {
     if (!venue) return 0;
     const perPerson = venue.avg_price_xof ?? 0;
     const total = perPerson * parseInt(partySize || '1');
     return Math.ceil(total * DEPOSIT_PERCENTAGE);
   };
+
+  const calculateDeposit = (): number => {
+    const base = calculateBaseDeposit();
+    if (!applied) return base;
+    return applyDiscount(base, applied.discount_pct);
+  };
+
+  async function checkPromo() {
+    if (!venue) return;
+    setPromoError(null);
+    if (!promoInput.trim()) { setApplied(null); return; }
+    setPromoChecking(true);
+    try {
+      const res = await validatePromoCode(venue.id, promoInput.trim());
+      if (res.ok) {
+        setApplied({ id: res.promo_id, code: res.code, discount_pct: res.discount_pct });
+      } else {
+        setApplied(null);
+        setPromoError(reasonLabel(res.reason));
+      }
+    } catch (err: any) {
+      setApplied(null);
+      setPromoError(err?.message ?? 'Validation impossible');
+    } finally {
+      setPromoChecking(false);
+    }
+  }
+
+  function clearPromo() {
+    setApplied(null);
+    setPromoInput('');
+    setPromoError(null);
+  }
 
   const validateForm = () => {
     const formData = {
@@ -138,6 +179,9 @@ export default function ReservationForm() {
           notes: notes || null,
           qr_code: qrContent.replace(/-/g, ''),
           status: 'pending' as const,
+          // Le trigger `consume_promo_on_confirm` (migration 0028) incrémente
+          // `uses_count` au passage en `confirmed`. Aucune action client requise.
+          promo_code_id: applied?.id ?? null,
         };
 
         const { data: created, error: resError } = await (supabase as any)
@@ -356,6 +400,42 @@ export default function ReservationForm() {
             />
           </View>
 
+          {/* Code promo */}
+          <View style={s.fieldGroup}>
+            <Text style={s.label}>Code promo (optionnel)</Text>
+            {applied ? (
+              <View style={s.promoApplied}>
+                <Ionicons name="pricetag" size={18} color={colors.success ?? colors.primary[500]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.promoAppliedCode}>{applied.code}</Text>
+                  <Text style={s.promoAppliedHint}>-{applied.discount_pct}% sur l'acompte</Text>
+                </View>
+                <Pressable onPress={clearPromo} hitSlop={10}>
+                  <Ionicons name="close-circle" size={22} color={colors.neutral[500]} />
+                </Pressable>
+              </View>
+            ) : (
+              <View style={s.promoRow}>
+                <TextInput
+                  style={s.promoInput}
+                  placeholder="ETE2026"
+                  placeholderTextColor={colors.neutral[400]}
+                  value={promoInput}
+                  onChangeText={(v) => { setPromoInput(v.toUpperCase()); setPromoError(null); }}
+                  autoCapitalize="characters"
+                />
+                <Pressable
+                  style={[s.promoBtn, (!promoInput.trim() || promoChecking) && s.promoBtnDisabled]}
+                  onPress={checkPromo}
+                  disabled={!promoInput.trim() || promoChecking}
+                >
+                  {promoChecking ? <ActivityIndicator color="#fff" /> : <Text style={s.promoBtnText}>Appliquer</Text>}
+                </Pressable>
+              </View>
+            )}
+            {promoError && <Text style={s.promoError}>{promoError}</Text>}
+          </View>
+
           {/* Price Summary */}
           <View style={s.summary}>
             <SummaryRow
@@ -371,8 +451,16 @@ export default function ReservationForm() {
               value={formatXOF((venue.avg_price_xof ?? 0) * parseInt(partySize))}
             />
             <View style={s.summaryDivider} />
+            <SummaryRow label="Acompte (20%)" value={formatXOF(calculateBaseDeposit())} />
+            {applied && (
+              <SummaryRow
+                label={`Promo ${applied.code} (-${applied.discount_pct}%)`}
+                value={`- ${formatXOF(calculateBaseDeposit() - deposit)}`}
+              />
+            )}
+            <View style={s.summaryDivider} />
             <SummaryRow
-              label="Dépôt à payer (20%)"
+              label="À payer"
               value={formatXOF(deposit)}
               bold
             />
@@ -499,6 +587,15 @@ const s = StyleSheet.create({
   summaryValue: { fontSize: typography.fontSize.sm, fontWeight: '600', color: colors.dark },
   summaryValueBold: { fontSize: typography.fontSize.lg, color: colors.primary[500] },
   summaryDivider: { height: 1, backgroundColor: colors.neutral[200], marginVertical: spacing.md },
+  promoRow: { flexDirection: 'row', gap: spacing.sm },
+  promoInput: { flex: 1, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.neutral[200], paddingHorizontal: spacing.md, paddingVertical: spacing.md, fontSize: typography.fontSize.sm, color: colors.dark },
+  promoBtn: { backgroundColor: colors.primary[500], borderRadius: radius.lg, paddingHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center', minWidth: 100 },
+  promoBtnDisabled: { backgroundColor: colors.neutral[300] },
+  promoBtnText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.sm },
+  promoError: { marginTop: spacing.xs, fontSize: typography.fontSize.xs, color: colors.danger ?? '#dc2626' },
+  promoApplied: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, backgroundColor: '#dcfce7', borderRadius: radius.lg },
+  promoAppliedCode: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark, fontFamily: 'monospace' },
+  promoAppliedHint: { fontSize: typography.fontSize.xs, color: colors.success ?? colors.primary[500], fontWeight: '600' },
   button: {
     backgroundColor: colors.primary[500],
     borderRadius: radius.lg,
