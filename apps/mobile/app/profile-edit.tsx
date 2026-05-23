@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, ScrollView,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { pickAvatarFromGallery, pickAvatarFromCamera, uploadAvatar, removeAvatar } from '@/lib/profile-photo';
 
 export default function ProfileEdit() {
   const router = useRouter();
@@ -18,8 +19,10 @@ export default function ProfileEdit() {
   const [fullName, setFullName] = useState('');
   const [city, setCity] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return; }
@@ -27,7 +30,7 @@ export default function ProfileEdit() {
     (async () => {
       const { data } = await sb
         .from('profiles')
-        .select('full_name, city, bio')
+        .select('full_name, city, bio, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
       if (!mounted) return;
@@ -35,11 +38,51 @@ export default function ProfileEdit() {
         setFullName(data.full_name ?? '');
         setCity(data.city ?? 'Abidjan');
         setBio(data.bio ?? '');
+        setAvatarUrl(data.avatar_url ?? null);
       }
       setLoading(false);
     })();
     return () => { mounted = false; };
   }, [user?.id]);
+
+  async function changePhoto(source: 'gallery' | 'camera') {
+    if (!user?.id || photoBusy) return;
+    const asset = source === 'gallery' ? await pickAvatarFromGallery() : await pickAvatarFromCamera();
+    if (!asset) return;
+    setPhotoBusy(true);
+    try {
+      const url = await uploadAvatar(user.id, asset);
+      setAvatarUrl(url);
+    } catch (err: any) {
+      Alert.alert('Erreur', err?.message ?? 'Upload impossible.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  function askChangePhoto() {
+    Alert.alert('Changer ma photo', undefined, [
+      { text: 'Galerie', onPress: () => changePhoto('gallery') },
+      { text: 'Caméra', onPress: () => changePhoto('camera') },
+      ...(avatarUrl ? [{ text: 'Retirer la photo', style: 'destructive' as const, onPress: () => removePhoto() }] : []),
+      { text: 'Annuler', style: 'cancel' as const },
+    ]);
+  }
+
+  async function removePhoto() {
+    if (!user?.id) return;
+    setPhotoBusy(true);
+    try {
+      await removeAvatar(user.id);
+      setAvatarUrl(null);
+    } catch (err: any) {
+      Alert.alert('Erreur', err?.message ?? 'Suppression impossible.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  const initial = (fullName?.trim()?.[0] || user?.phone?.replace(/[+\s]/g, '')?.slice(-2, -1) || 'U').toUpperCase();
 
   async function save() {
     if (!user?.id) return;
@@ -84,6 +127,29 @@ export default function ProfileEdit() {
           style={{ flex: 1 }}
         >
           <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+            {/* Avatar block */}
+            <View style={s.avatarBlock}>
+              <Pressable onPress={askChangePhoto} style={s.avatarWrap} disabled={photoBusy}>
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={s.avatarImg} />
+                ) : (
+                  <View style={[s.avatarImg, s.avatarPlaceholder]}>
+                    <Text style={s.avatarLetter}>{initial}</Text>
+                  </View>
+                )}
+                {photoBusy ? (
+                  <View style={s.avatarOverlay}><ActivityIndicator color="#fff" /></View>
+                ) : (
+                  <View style={s.avatarBadge}>
+                    <Ionicons name="camera" size={16} color="#fff" />
+                  </View>
+                )}
+              </Pressable>
+              <Pressable onPress={askChangePhoto} disabled={photoBusy} hitSlop={6}>
+                <Text style={s.avatarHint}>{avatarUrl ? 'Changer la photo' : 'Ajouter une photo'}</Text>
+              </Pressable>
+            </View>
+
             <Text style={s.label}>Nom complet</Text>
             <TextInput
               value={fullName}
@@ -139,6 +205,24 @@ const s = StyleSheet.create({
   },
   headerTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  avatarBlock: { alignItems: 'center', marginBottom: spacing.xl, gap: spacing.sm },
+  avatarWrap: { width: 120, height: 120, position: 'relative' },
+  avatarImg: { width: 120, height: 120, borderRadius: 60, backgroundColor: colors.primary[500] },
+  avatarPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  avatarLetter: { color: '#fff', fontSize: 48, fontWeight: '700' },
+  avatarBadge: {
+    position: 'absolute', right: 4, bottom: 4,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primary[500],
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: colors.light,
+  },
+  avatarOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 60, backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  avatarHint: { fontSize: typography.fontSize.sm, fontWeight: '600', color: colors.primary[500] },
   label: { fontSize: typography.fontSize.sm, fontWeight: '600', color: colors.neutral[700], marginBottom: spacing.sm },
   spaced: { marginTop: spacing.base },
   input: {
