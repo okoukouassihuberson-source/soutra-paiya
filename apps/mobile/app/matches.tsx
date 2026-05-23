@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { listMatches, type Match } from '@/lib/discover';
+import { openDm } from '@/lib/chat';
 
 export default function Matches() {
   const router = useRouter();
@@ -46,7 +47,18 @@ export default function Matches() {
       ) : (
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           {matches.map((m) => (
-            <View key={m.id} style={s.row}>
+            <Pressable
+              key={m.id}
+              style={({ pressed }) => [s.row, pressed && { backgroundColor: colors.neutral[100] }]}
+              onPress={async () => {
+                try {
+                  const chatId = await openDm(m.id);
+                  router.push({ pathname: '/chat/[id]', params: { id: chatId } });
+                } catch (err: any) {
+                  Alert.alert('Erreur', err?.message ?? 'Impossible d\'ouvrir la conversation.');
+                }
+              }}
+            >
               <View style={s.avatar}>
                 {m.avatar_url ? (
                   <Image source={{ uri: m.avatar_url }} style={s.avatarImg} />
@@ -58,9 +70,9 @@ export default function Matches() {
                 <Text style={s.name}>{m.full_name || 'Anonyme'}</Text>
                 <Text style={s.meta}>📍 {m.district || m.city || 'Abidjan'} · ❤️ {relativeTime(m.matched_at)}</Text>
               </View>
-            </View>
+              <Ionicons name="chatbubble-outline" size={22} color={colors.primary[500]} />
+            </Pressable>
           ))}
-          <Text style={s.footer}>Le chat 1-on-1 arrive dans une prochaine brique.</Text>
         </ScrollView>
       )}
     </SafeAreaView>

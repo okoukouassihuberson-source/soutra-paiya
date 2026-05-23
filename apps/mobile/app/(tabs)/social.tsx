@@ -97,6 +97,9 @@ export default function Social() {
       <View style={s.header}>
         <Text style={s.title}>Communauté</Text>
         <View style={s.headerActions}>
+          <Pressable onPress={() => router.push('/chats')} style={s.headerIcon} hitSlop={10}>
+            <Ionicons name="chatbubbles-outline" size={22} color={colors.dark} />
+          </Pressable>
           <Pressable onPress={() => router.push('/discover')} style={s.headerIcon} hitSlop={10}>
             <Ionicons name="people" size={22} color={colors.dark} />
           </Pressable>
