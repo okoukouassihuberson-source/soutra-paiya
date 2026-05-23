@@ -18,8 +18,11 @@
 
 -- ----------------------------------------------------------------------------
 -- 1) Colonnes additionnelles sur profiles (idempotent).
+--    `district` existait sur venues (migration 0001) mais pas sur profiles —
+--    on l'ajoute pour le filtrage de découverte par quartier.
 -- ----------------------------------------------------------------------------
 alter table public.profiles
+  add column if not exists district     text,
   add column if not exists interests    text[] not null default '{}',
   add column if not exists birth_year   integer check (birth_year is null or birth_year between 1900 and extract(year from now())::int - 13),
   add column if not exists gender       text check (gender is null or gender in ('m','f','x')),
