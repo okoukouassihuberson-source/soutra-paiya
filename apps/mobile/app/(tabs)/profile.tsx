@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ interface ProfileRow {
   kyc_status: string | null;
   referral_code: string | null;
   role: string | null;
+  avatar_url: string | null;
 }
 
 export default function Profile() {
@@ -30,7 +31,7 @@ export default function Profile() {
       (async () => {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, full_name, phone, email, kyc_status, referral_code, role')
+          .select('id, full_name, phone, email, kyc_status, referral_code, role, avatar_url')
           .eq('id', user.id)
           .maybeSingle();
         if (!active) return;
@@ -110,13 +111,23 @@ export default function Profile() {
     <SafeAreaView style={s.safe}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <View style={s.avatarRow}>
-          <View style={s.avatar}>
-            <Text style={s.avatarLetter}>{initial}</Text>
-          </View>
+          <Pressable onPress={() => router.push('/profile-edit' as any)} hitSlop={8}>
+            <View style={s.avatar}>
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={s.avatarImg} />
+              ) : (
+                <Text style={s.avatarLetter}>{initial}</Text>
+              )}
+            </View>
+          </Pressable>
           <View style={{ marginLeft: spacing.base, flex: 1 }}>
             <Text style={s.name}>{displayName}</Text>
+            {profile?.phone && <Text style={s.phone}>{profile.phone}</Text>}
             <Text style={[s.kyc, { color: kycColor }]}>KYC : {kycLabel}</Text>
           </View>
+          <Pressable onPress={() => router.push('/profile-edit' as any)} hitSlop={10}>
+            <Ionicons name="create-outline" size={22} color={colors.neutral[500]} />
+          </Pressable>
         </View>
 
         <View style={s.menu}>
@@ -156,9 +167,11 @@ export default function Profile() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.light },
   avatarRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl },
-  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary[500], alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary[500], alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImg: { width: '100%', height: '100%' },
   avatarLetter: { color: '#fff', fontSize: 24, fontWeight: '700' },
   name: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
+  phone: { fontSize: typography.fontSize.xs, color: colors.neutral[600], marginTop: 2 },
   kyc: { fontSize: typography.fontSize.xs, marginTop: 2 },
   menu: { backgroundColor: '#fff', borderRadius: radius.lg, overflow: 'hidden' },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.base, padding: spacing.base, borderBottomColor: colors.neutral[100], borderBottomWidth: 1 },
