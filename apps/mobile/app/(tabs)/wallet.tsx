@@ -67,7 +67,7 @@ export default function Wallet() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <TabHeader
-          subtitle="Ton portefeuille Paiya-Pay"
+          subtitle="Ton portefeuille Soutra-Pay"
           trailing={(
             <Pressable hitSlop={10} onPress={() => router.push('/settings')} style={s.iconBtn}>
               <Ionicons name="settings-outline" size={20} color={colors.dark} />

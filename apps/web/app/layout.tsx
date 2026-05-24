@@ -9,12 +9,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Soutra-Paiya — Sors, réserve, paie. Zéro galère.',
+  title: 'Soutra-Playce — Sors, réserve, paie. Zéro galère.',
   description:
     "Découvre les meilleurs maquis, restos et événements à Abidjan. Paie avec Orange Money, Wave, MTN MoMo. Réservation garantie.",
   keywords: ['Abidjan', 'réservation', 'restaurant', 'maquis', 'paiement mobile', 'Orange Money', 'Wave', "Côte d'Ivoire"],
   openGraph: {
-    title: 'Soutra-Paiya',
+    title: 'Soutra-Playce',
     description: 'Sors, réserve, paie — zéro galère.',
     locale: 'fr_CI',
     type: 'website',

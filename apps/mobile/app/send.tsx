@@ -82,7 +82,7 @@ export default function Send() {
     const recipient = await lookupRecipient(phone);
     setSubmitting(false);
     if (!recipient) {
-      Alert.alert('Destinataire introuvable', 'Aucun compte Soutra-Paiya n\'est associé à ce numéro.');
+      Alert.alert('Destinataire introuvable', 'Aucun compte Soutra-Playce n\'est associé à ce numéro.');
       return;
     }
     Alert.alert('Confirmer le transfert', `Envoyer ${formatXOF(amountNum)} à ${recipient.name} ?`, [

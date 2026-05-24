@@ -35,7 +35,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="wallet"
         options={{
-          title: 'Paiya-Pay',
+          title: 'Soutra-Pay',
           tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size + 4} color={color} />,
           tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
         }}

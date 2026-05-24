@@ -701,7 +701,7 @@ export default function ProDashboard() {
       {/* ════════ SIDEBAR ════════ */}
       <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-dark">
         <div className="flex items-center gap-2 border-b border-neutral-800 px-6 py-5">
-          <Link href="/" className="font-display text-lg font-bold"><span className="text-white">Soutra</span><span className="text-primary-400">-Paiya</span></Link>
+          <Link href="/" className="font-display text-lg font-bold"><span className="text-white">Soutra</span><span className="text-primary-400">-Playce</span></Link>
           <span className="ml-auto rounded-md bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-400">Pro</span>
         </div>
 
@@ -771,7 +771,7 @@ export default function ProDashboard() {
                 <button onClick={createVenue} disabled={creating} className="btn-primary w-full disabled:opacity-50">
                   {creating ? 'Création...' : 'Créer mon établissement'}
                 </button>
-                <p className="text-center text-xs text-neutral-400">Ton établissement sera vérifié par l&apos;équipe Soutra-Paiya avant d&apos;apparaître dans l&apos;application.</p>
+                <p className="text-center text-xs text-neutral-400">Ton établissement sera vérifié par l&apos;équipe Soutra-Playce avant d&apos;apparaître dans l&apos;application.</p>
               </div>
             </div>
           )}

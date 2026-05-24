@@ -67,7 +67,7 @@ export default function Request() {
     if (!payer) {
       Alert.alert(
         'Destinataire introuvable',
-        "Aucun compte Soutra-Paiya n'est associé à ce numéro.",
+        "Aucun compte Soutra-Playce n'est associé à ce numéro.",
       );
       return;
     }
