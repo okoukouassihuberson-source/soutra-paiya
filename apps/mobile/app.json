@@ -63,6 +63,13 @@
           "speechRecognitionPermission": "Soutra-Playce transcrit ta voix en local pour rechercher des établissements.",
           "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#FF6B1A"
+        }
       ]
     ],
     "experiments": {

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { registerForPush, unregisterForPush } from './notifications';
 
 interface AuthCtx {
   session: Session | null;
@@ -36,8 +37,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) setLoading(false);
       });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (mounted) setSession(newSession);
+      // Push notifications : enregistre le token au login, désenregistre au logout.
+      // En cas d'échec on log juste -- pas bloquant pour l'app.
+      if (event === 'SIGNED_IN' && newSession) {
+        registerForPush().then((r) => {
+          if (!r.ok) console.warn('[auth] push register skipped:', r.reason);
+        });
+      } else if (event === 'SIGNED_OUT') {
+        unregisterForPush().catch(() => { /* best effort */ });
+      }
     });
 
     return () => {
