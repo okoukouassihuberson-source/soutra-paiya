@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, Text, TextInput, StyleSheet, Pressable, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { MapboxMap, type MapVenue, ABIDJAN } from '@/components/MapboxMap';
 import { TabHeader } from '@/components/TabHeader';
 import { VenueCardSkeleton } from '@/components/Skeleton';
 import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/VoiceSearchSheet';
+import { useColors } from '@/lib/theme';
 
 // Aligné sur la vue `venues_public` (migration 0020). `lat`/`lng` proviennent
 // du point PostGIS `venues.location` projeté en colonnes simples.
@@ -52,6 +53,8 @@ const CHIPS: { label: string; category: string | null; icon: keyof typeof Ionico
 
 export default function Explore() {
   const router = useRouter();
+  const palette = useColors();
+  const s = useMemo(() => makeStyles(palette), [palette]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -204,24 +207,24 @@ export default function Explore() {
               onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
               style={s.bellBtn}
             >
-              <Ionicons name="notifications-outline" size={22} color={colors.dark} />
+              <Ionicons name="notifications-outline" size={22} color={palette.dark} />
             </Pressable>
           )}
         />
 
         <View style={s.searchBox}>
-          <Ionicons name="search" size={18} color={colors.neutral[500]} />
+          <Ionicons name="search" size={18} color={palette.neutral[500]} />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Rechercher un lieu, un quartier…"
-            placeholderTextColor={colors.neutral[500]}
+            placeholderTextColor={palette.neutral[500]}
             style={s.searchInput}
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
             <Pressable onPress={() => setSearchQuery('')} hitSlop={6} style={s.searchAction}>
-              <Ionicons name="close-circle" size={18} color={colors.neutral[400]} />
+              <Ionicons name="close-circle" size={18} color={palette.neutral[400]} />
             </Pressable>
           )}
           {voiceAvailable && (
@@ -230,7 +233,7 @@ export default function Explore() {
               hitSlop={6}
               style={({ pressed }) => [s.micBtn, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}
             >
-              <Ionicons name="mic" size={16} color={colors.primary[500]} />
+              <Ionicons name="mic" size={16} color={palette.primary[500]} />
             </Pressable>
           )}
         </View>
@@ -244,7 +247,7 @@ export default function Explore() {
                 onPress={() => setSelectedChip(c.label)}
                 style={[s.chip, isActive && s.chipActive]}
               >
-                <Ionicons name={c.icon} size={14} color={isActive ? '#fff' : colors.neutral[700]} />
+                <Ionicons name={c.icon} size={14} color={isActive ? '#fff' : palette.neutral[700]} />
                 <Text style={[s.chipText, isActive && s.chipTextActive]}>{c.label}</Text>
               </Pressable>
             );
@@ -254,13 +257,13 @@ export default function Explore() {
         {/* Filtres géographiques */}
         <View style={s.geoRow}>
           <Pressable onPress={toggleNearMe} style={[s.geoBtn, nearMe && s.geoBtnActive]}>
-            <Ionicons name={nearMe ? 'navigate' : 'navigate-outline'} size={14} color={nearMe ? '#fff' : colors.primary[600]} />
+            <Ionicons name={nearMe ? 'navigate' : 'navigate-outline'} size={14} color={nearMe ? '#fff' : palette.primary[600]} />
             <Text style={[s.geoBtnText, nearMe && s.geoBtnTextActive]}>
               {nearMe ? `Près de moi (${radiusKm} km)` : 'Près de moi'}
             </Text>
           </Pressable>
           <Pressable onPress={() => setOpenNow((v) => !v)} style={[s.geoBtn, openNow && s.geoBtnActive]}>
-            <Ionicons name="time-outline" size={14} color={openNow ? '#fff' : colors.primary[600]} />
+            <Ionicons name="time-outline" size={14} color={openNow ? '#fff' : palette.primary[600]} />
             <Text style={[s.geoBtnText, openNow && s.geoBtnTextActive]}>Ouvert maintenant</Text>
           </Pressable>
         </View>
@@ -312,7 +315,7 @@ export default function Explore() {
             {filteredVenues.length === 0 ? (
               <View style={s.empty}>
                 <View style={s.emptyIconWrap}>
-                  <Ionicons name="search-outline" size={48} color={colors.primary[400]} />
+                  <Ionicons name="search-outline" size={48} color={palette.primary[400]} />
                 </View>
                 <Text style={s.emptyTitle}>Aucun lieu trouvé</Text>
                 <Text style={s.emptyText}>
@@ -347,7 +350,7 @@ export default function Explore() {
                         <Image source={{ uri: v.cover_url }} style={s.cardImg} />
                       ) : (
                         <View style={[s.cardImg, s.cardImgPlaceholder]}>
-                          <Ionicons name="image-outline" size={36} color={colors.neutral[400]} />
+                          <Ionicons name="image-outline" size={36} color={palette.neutral[400]} />
                         </View>
                       )}
                       {isFeatured && (
@@ -372,7 +375,7 @@ export default function Explore() {
                       <View style={s.cardTitleRow}>
                         <Text style={s.cardName} numberOfLines={1}>{v.name}</Text>
                         <View style={s.ratingPill}>
-                          <Ionicons name="star" size={11} color={colors.warning} />
+                          <Ionicons name="star" size={11} color={palette.warning} />
                           <Text style={s.ratingPillText}>{v.rating_avg?.toFixed(1) ?? '–'}</Text>
                         </View>
                       </View>
@@ -383,7 +386,7 @@ export default function Explore() {
                         <Text style={s.cardPrice}>{formatXOF(v.avg_price_xof ?? 0)}<Text style={s.cardPriceUnit}>/pers</Text></Text>
                         {typeof v.distance_km === 'number' && (
                           <View style={s.metaChip}>
-                            <Ionicons name="location" size={11} color={colors.neutral[600]} />
+                            <Ionicons name="location" size={11} color={palette.neutral[600]} />
                             <Text style={s.metaChipText}>
                               {v.distance_km < 1 ? `${Math.round(v.distance_km * 1000)} m` : `${v.distance_km.toFixed(1)} km`}
                             </Text>
@@ -422,95 +425,97 @@ function labelForCategory(c: string): string {
   }
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light },
-  bellBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.neutral[200],
-  },
-  searchBox: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    marginHorizontal: spacing.lg, paddingHorizontal: spacing.base, paddingVertical: spacing.md,
-    backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.neutral[200],
-  },
-  searchInput: { flex: 1, fontSize: typography.fontSize.sm, color: colors.dark },
-  searchAction: { paddingHorizontal: 4 },
-  micBtn: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: colors.primary[50],
-    alignItems: 'center', justifyContent: 'center',
-  },
-  chipsRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-    paddingHorizontal: spacing.base, paddingVertical: spacing.sm,
-    backgroundColor: colors.neutral[100], borderRadius: radius.full, marginRight: spacing.sm,
-  },
-  chipActive: { backgroundColor: colors.primary[500] },
-  chipText: { fontSize: typography.fontSize.sm, color: colors.neutral[700], fontWeight: '600' },
-  chipTextActive: { color: '#fff' },
-  geoRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
-  geoBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-    paddingHorizontal: spacing.base, paddingVertical: spacing.sm,
-    backgroundColor: colors.primary[50], borderRadius: radius.full,
-  },
-  geoBtnActive: { backgroundColor: colors.primary[500] },
-  geoBtnText: { fontSize: typography.fontSize.xs, fontWeight: '600', color: colors.primary[600] },
-  geoBtnTextActive: { color: '#fff' },
-  radiiRow: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, gap: spacing.sm },
-  radiusPill: {
-    paddingHorizontal: spacing.base, paddingVertical: spacing.xs,
-    backgroundColor: '#fff', borderRadius: radius.full,
-    borderWidth: 1, borderColor: colors.neutral[200], marginRight: spacing.sm,
-  },
-  radiusPillActive: { backgroundColor: colors.dark, borderColor: colors.dark },
-  radiusPillText: { fontSize: typography.fontSize.xs, color: colors.neutral[700], fontWeight: '600' },
-  radiusPillTextActive: { color: '#fff' },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.md },
-  sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: colors.primary[500] },
-  sectionTitle: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
-  sectionHint: { fontSize: typography.fontSize.xs, fontWeight: '600', color: colors.neutral[500] },
-  empty: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing['2xl'] },
-  emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.primary[50], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.base },
-  emptyTitle: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.dark, marginBottom: spacing.xs },
-  emptyText: { fontSize: typography.fontSize.sm, color: colors.neutral[500], textAlign: 'center', maxWidth: 280 },
-  emptyBtn: { marginTop: spacing.lg, backgroundColor: colors.primary[500], paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.full },
-  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.sm },
-  card: {
-    marginHorizontal: spacing.lg, marginBottom: spacing.md,
-    backgroundColor: '#fff', borderRadius: radius.lg, overflow: 'hidden',
-    elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
-  },
-  cardSelected: { borderWidth: 2, borderColor: colors.primary[500] },
-  cardImgWrap: { position: 'relative' },
-  cardImg: { width: '100%', height: 180, backgroundColor: colors.neutral[100] },
-  cardImgPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-  featuredBadge: {
-    position: 'absolute', top: spacing.sm, left: spacing.sm,
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: colors.primary[500], paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full,
-  },
-  featuredText: { color: '#fff', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  statusBadge: {
-    position: 'absolute', top: spacing.sm, right: spacing.sm,
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full,
-  },
-  openBadge: { backgroundColor: 'rgba(255,255,255,0.95)' },
-  closedBadgeBg: { backgroundColor: 'rgba(0,0,0,0.65)' },
-  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
-  statusText: { fontSize: 10, fontWeight: '700', color: colors.success, textTransform: 'uppercase', letterSpacing: 0.3 },
-  cardBody: { padding: spacing.md, gap: 4 },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  cardName: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
-  ratingPill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.neutral[100], paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
-  ratingPillText: { fontSize: typography.fontSize.xs, fontWeight: '700', color: colors.dark },
-  cardCat: { fontSize: typography.fontSize.sm, color: colors.neutral[500] },
-  cardMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
-  cardPrice: { fontSize: typography.fontSize.base, color: colors.primary[600], fontWeight: '700' },
-  cardPriceUnit: { fontSize: typography.fontSize.xs, color: colors.neutral[500], fontWeight: '500' },
-  metaChip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.neutral[100], paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
-  metaChipText: { fontSize: typography.fontSize.xs, color: colors.neutral[700], fontWeight: '600' },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.light },
+    bellBtn: {
+      width: 40, height: 40, borderRadius: 20,
+      backgroundColor: c.neutral[50], alignItems: 'center', justifyContent: 'center',
+      borderWidth: 1, borderColor: c.neutral[200],
+    },
+    searchBox: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+      marginHorizontal: spacing.lg, paddingHorizontal: spacing.base, paddingVertical: spacing.md,
+      backgroundColor: c.neutral[50], borderRadius: radius.lg, borderWidth: 1, borderColor: c.neutral[200],
+    },
+    searchInput: { flex: 1, fontSize: typography.fontSize.sm, color: c.dark },
+    searchAction: { paddingHorizontal: 4 },
+    micBtn: {
+      width: 32, height: 32, borderRadius: 16,
+      backgroundColor: c.primary[50],
+      alignItems: 'center', justifyContent: 'center',
+    },
+    chipsRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
+    chip: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+      paddingHorizontal: spacing.base, paddingVertical: spacing.sm,
+      backgroundColor: c.neutral[100], borderRadius: radius.full, marginRight: spacing.sm,
+    },
+    chipActive: { backgroundColor: c.primary[500] },
+    chipText: { fontSize: typography.fontSize.sm, color: c.neutral[700], fontWeight: '600' },
+    chipTextActive: { color: '#fff' },
+    geoRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+    geoBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+      paddingHorizontal: spacing.base, paddingVertical: spacing.sm,
+      backgroundColor: c.primary[50], borderRadius: radius.full,
+    },
+    geoBtnActive: { backgroundColor: c.primary[500] },
+    geoBtnText: { fontSize: typography.fontSize.xs, fontWeight: '600', color: c.primary[600] },
+    geoBtnTextActive: { color: '#fff' },
+    radiiRow: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, gap: spacing.sm },
+    radiusPill: {
+      paddingHorizontal: spacing.base, paddingVertical: spacing.xs,
+      backgroundColor: c.neutral[50], borderRadius: radius.full,
+      borderWidth: 1, borderColor: c.neutral[200], marginRight: spacing.sm,
+    },
+    radiusPillActive: { backgroundColor: c.dark, borderColor: c.dark },
+    radiusPillText: { fontSize: typography.fontSize.xs, color: c.neutral[700], fontWeight: '600' },
+    radiusPillTextActive: { color: c.light },
+    sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.md },
+    sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: c.primary[500] },
+    sectionTitle: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: c.dark },
+    sectionHint: { fontSize: typography.fontSize.xs, fontWeight: '600', color: c.neutral[500] },
+    empty: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing['2xl'] },
+    emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: c.primary[50], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.base },
+    emptyTitle: { fontSize: typography.fontSize.base, fontWeight: '700', color: c.dark, marginBottom: spacing.xs },
+    emptyText: { fontSize: typography.fontSize.sm, color: c.neutral[500], textAlign: 'center', maxWidth: 280 },
+    emptyBtn: { marginTop: spacing.lg, backgroundColor: c.primary[500], paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.full },
+    emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.sm },
+    card: {
+      marginHorizontal: spacing.lg, marginBottom: spacing.md,
+      backgroundColor: c.neutral[50], borderRadius: radius.lg, overflow: 'hidden',
+      elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    },
+    cardSelected: { borderWidth: 2, borderColor: c.primary[500] },
+    cardImgWrap: { position: 'relative' },
+    cardImg: { width: '100%', height: 180, backgroundColor: c.neutral[100] },
+    cardImgPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+    featuredBadge: {
+      position: 'absolute', top: spacing.sm, left: spacing.sm,
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      backgroundColor: c.primary[500], paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full,
+    },
+    featuredText: { color: '#fff', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+    statusBadge: {
+      position: 'absolute', top: spacing.sm, right: spacing.sm,
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full,
+    },
+    openBadge: { backgroundColor: 'rgba(255,255,255,0.95)' },
+    closedBadgeBg: { backgroundColor: 'rgba(0,0,0,0.65)' },
+    statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.success },
+    statusText: { fontSize: 10, fontWeight: '700', color: c.success, textTransform: 'uppercase', letterSpacing: 0.3 },
+    cardBody: { padding: spacing.md, gap: 4 },
+    cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    cardName: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: c.dark },
+    ratingPill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: c.neutral[100], paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
+    ratingPillText: { fontSize: typography.fontSize.xs, fontWeight: '700', color: c.dark },
+    cardCat: { fontSize: typography.fontSize.sm, color: c.neutral[500] },
+    cardMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+    cardPrice: { fontSize: typography.fontSize.base, color: c.primary[600], fontWeight: '700' },
+    cardPriceUnit: { fontSize: typography.fontSize.xs, color: c.neutral[500], fontWeight: '500' },
+    metaChip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: c.neutral[100], paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
+    metaChipText: { fontSize: typography.fontSize.xs, color: c.neutral[700], fontWeight: '600' },
+  });
+}

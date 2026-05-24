@@ -1,14 +1,12 @@
 /**
  * Skeleton — placeholder animé pendant un chargement.
- *
- * Animation simple opacity 0.4 ↔ 0.8, driver natif -> 60 fps même
- * pendant le travail JS. Pas de dépendance externe (Animated standard
- * de React Native).
+ * Compatible thème : utilise useColors() pour la couleur de base.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Animated, View, StyleSheet, type ViewStyle } from 'react-native';
-import { colors, radius } from '@soutra/shared';
+import { radius, type ColorPalette } from '@soutra/shared';
+import { useColors } from '@/lib/theme';
 
 type Props = {
   width?: number | `${number}%`;
@@ -18,6 +16,7 @@ type Props = {
 };
 
 export function Skeleton({ width = '100%', height = 16, style, borderRadius: br }: Props) {
+  const c = useColors();
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -34,15 +33,16 @@ export function Skeleton({ width = '100%', height = 16, style, borderRadius: br 
   return (
     <Animated.View
       style={[
-        { width, height, opacity, backgroundColor: colors.neutral[200], borderRadius: br ?? radius.md },
+        { width, height, opacity, backgroundColor: c.neutral[200], borderRadius: br ?? radius.md },
         style,
       ]}
     />
   );
 }
 
-/** Skeleton spécifique d'une card venue (cover + titre + sous-titre + meta). */
 export function VenueCardSkeleton() {
+  const c = useColors();
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={s.card}>
       <Skeleton width="100%" height={160} borderRadius={0} />
@@ -55,11 +55,13 @@ export function VenueCardSkeleton() {
   );
 }
 
-const s = StyleSheet.create({
-  card: {
-    marginHorizontal: 24, marginBottom: 16,
-    backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden',
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
-  },
-  body: { padding: 12 },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    card: {
+      marginHorizontal: 24, marginBottom: 16,
+      backgroundColor: c.neutral[50], borderRadius: 16, overflow: 'hidden',
+      elevation: 2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    },
+    body: { padding: 12 },
+  });
+}
