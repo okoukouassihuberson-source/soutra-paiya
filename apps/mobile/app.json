@@ -55,6 +55,14 @@
         {
           "cameraPermission": "Soutra-Playce utilise la caméra pour scanner les QR codes de paiement."
         }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Soutra-Playce utilise le micro pour la recherche vocale.",
+          "speechRecognitionPermission": "Soutra-Playce transcrit ta voix en local pour rechercher des établissements.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
       ]
     ],
     "experiments": {
