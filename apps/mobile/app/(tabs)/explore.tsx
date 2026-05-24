@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { MapboxMap, type MapVenue, ABIDJAN } from '@/components/MapboxMap';
 import { TabHeader } from '@/components/TabHeader';
 import { VenueCardSkeleton } from '@/components/Skeleton';
+import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/VoiceSearchSheet';
 
 // Aligné sur la vue `venues_public` (migration 0020). `lat`/`lng` proviennent
 // du point PostGIS `venues.location` projeté en colonnes simples.
@@ -65,6 +66,10 @@ export default function Explore() {
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState<number>(5);
   const [openNow, setOpenNow] = useState(false);
+
+  // Recherche vocale (modal d'écoute).
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const voiceAvailable = isVoiceRecognitionAvailable();
 
   useEffect(() => {
     loadVenues();
@@ -215,8 +220,17 @@ export default function Explore() {
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')} hitSlop={6}>
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={6} style={s.searchAction}>
               <Ionicons name="close-circle" size={18} color={colors.neutral[400]} />
+            </Pressable>
+          )}
+          {voiceAvailable && (
+            <Pressable
+              onPress={() => setVoiceOpen(true)}
+              hitSlop={6}
+              style={({ pressed }) => [s.micBtn, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}
+            >
+              <Ionicons name="mic" size={16} color={colors.primary[500]} />
             </Pressable>
           )}
         </View>
@@ -384,6 +398,13 @@ export default function Explore() {
           </>
         )}
       </ScrollView>
+
+      <VoiceSearchSheet
+        visible={voiceOpen}
+        onClose={() => setVoiceOpen(false)}
+        onResult={(text) => { setSearchQuery(text); setVoiceOpen(false); }}
+        locale="fr-FR"
+      />
     </SafeAreaView>
   );
 }
@@ -414,6 +435,12 @@ const s = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.neutral[200],
   },
   searchInput: { flex: 1, fontSize: typography.fontSize.sm, color: colors.dark },
+  searchAction: { paddingHorizontal: 4 },
+  micBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: colors.primary[50],
+    alignItems: 'center', justifyContent: 'center',
+  },
   chipsRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
