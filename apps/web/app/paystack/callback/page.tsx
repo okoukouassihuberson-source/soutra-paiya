@@ -25,7 +25,7 @@ export default function PaystackCallbackPage() {
           Paiement terminé
         </h1>
         <p className="mt-2 text-sm text-neutral-600">
-          Tu peux retourner dans l&apos;application Soutra-Paiya. Si rien ne se
+          Tu peux retourner dans l&apos;application Soutra-Playce. Si rien ne se
           passe automatiquement, touche le bouton ci-dessous.
         </p>
         <a

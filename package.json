@@ -1,8 +1,8 @@
 {
-  "name": "soutra-paiya",
+  "name": "soutra-playce",
   "version": "0.1.0",
   "private": true,
-  "description": "Soutra-Paiya — Plateforme fintech & loisirs pour la Côte d'Ivoire",
+  "description": "Soutra-Playce — Plateforme fintech & loisirs pour la Côte d'Ivoire (paiements Soutra-Pay)",
   "scripts": {
     "web": "pnpm --filter @soutra/web dev",
     "mobile": "pnpm --filter @soutra/mobile start",

@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!recipient) {
       return jsonResponse(
-        { error: "Aucun compte Soutra-Paiya avec ce numéro" },
+        { error: "Aucun compte Soutra-Playce avec ce numéro" },
         404,
       );
     }

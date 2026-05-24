@@ -97,7 +97,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
         <Link href="/" className="font-display text-2xl font-bold">
           <span className="text-dark">Soutra</span>
-          <span className="text-primary-500">-Paiya</span>
+          <span className="text-primary-500">-Playce</span>
         </Link>
         <p className="mt-2 text-neutral-500">
           {mode === 'login'

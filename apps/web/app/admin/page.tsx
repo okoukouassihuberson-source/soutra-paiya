@@ -399,7 +399,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2 px-5 py-5">
           <Link href="/" className="font-display text-lg font-bold">
             <span className="text-white">Soutra</span>
-            <span className="text-primary-400">-Paiya</span>
+            <span className="text-primary-400">-Playce</span>
           </Link>
           <span className="ml-auto rounded-md bg-gradient-to-r from-red-500/20 to-orange-500/20 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-red-400 ring-1 ring-red-500/30">
             Admin
@@ -448,7 +448,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-display text-xl font-bold">{TABS.find((t) => t.id === tab)?.label || 'Admin'}</h1>
-              <p className="mt-0.5 text-sm text-neutral-500">Centre de contrôle Soutra-Paiya</p>
+              <p className="mt-0.5 text-sm text-neutral-500">Centre de contrôle Soutra-Playce</p>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={async () => { setLoading(true); await loadAll(); setLoading(false); flash('Données actualisées'); }}

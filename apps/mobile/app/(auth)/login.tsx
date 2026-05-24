@@ -66,7 +66,7 @@ export default function Login() {
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={s.container}>
-          <Text style={s.brand}>Soutra<Text style={{ color: colors.primary[500] }}>-Paiya</Text></Text>
+          <Text style={s.brand}>Soutra<Text style={{ color: colors.primary[500] }}>-Playce</Text></Text>
           <Text style={s.tagline}>
             {mode === 'login' ? 'Connecte-toi à ton compte' : 'Crée ton compte en 30 secondes'}
           </Text>

@@ -1,4 +1,4 @@
-// Design tokens — Soutra-Paiya
+// Design tokens — Soutra-Playce
 // Source unique pour Tailwind (web) et StyleSheet (mobile).
 
 export const colors = {
@@ -17,7 +17,7 @@ export const colors = {
   },
   secondary: {
     50:  '#E6FAF6',
-    500: '#00B894', // Paiya Green — paiement, confiance
+    500: '#00B894', // Soutra-Pay Green — paiement, confiance
     600: '#009A7B',
     700: '#007A60',
   },

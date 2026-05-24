@@ -1,7 +1,9 @@
-# Soutra-Paiya
+# Soutra-Playce
 
 > Plateforme fintech & loisirs pour la Côte d'Ivoire.
 > Sortir, réserver, payer — sans la galère.
+>
+> Module de paiement intégré : **Soutra-Pay** (wallet + Paystack).
 
 ---
 
@@ -178,7 +180,7 @@ PAYSTACK_SECRET_KEY=sk_test_xxx node scripts/test-paystack.mjs 1000
 
 - **Sprint 0** (en cours) : foundation, schéma DB, screens placeholder ✅
 - **Sprint 1-2** : auth OTP fonctionnelle + profil + KYC
-- **Sprint 3-4** : Paiya-Pay (recharge / retrait / acompte via Paystack)
+- **Sprint 3-4** : Soutra-Pay (recharge / retrait / acompte via Paystack)
 - **Sprint 5-6** : Découverte (carte Mapbox) + réservations + séquestre
 - **Sprint 7-8** : Billetterie + scanner QR
 - **Sprint 9-10** : Polish + beta privée + stores

@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
         provider_ref: reference,
         reservation_id: reservationId,
         description: txType === "topup"
-          ? "Recharge Paiya-Pay"
+          ? "Recharge Soutra-Pay"
           : "Acompte de réservation",
         metadata: { purpose },
       })

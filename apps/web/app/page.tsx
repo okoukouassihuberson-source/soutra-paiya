@@ -11,7 +11,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="font-display text-xl font-bold tracking-tight">
             <span className="text-white">Soutra</span>
-            <span className="text-primary-400">-Paiya</span>
+            <span className="text-primary-400">-Playce</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -223,7 +223,7 @@ export default function HomePage() {
                 <div className="mb-4 inline-flex rounded-2xl bg-secondary-500/20 p-3">
                   <IconWallet />
                 </div>
-                <h3 className="font-display text-xl font-bold">Paiya-Pay</h3>
+                <h3 className="font-display text-xl font-bold">Soutra-Pay</h3>
                 <p className="mt-2 text-sm leading-relaxed text-neutral-400">
                   Wallet rechargeable. Orange Money, Wave, MTN. QR Pay et Split Bill
                   entre amis.
@@ -406,7 +406,7 @@ export default function HomePage() {
             <div className="md:col-span-1">
               <span className="font-display text-xl font-bold">
                 <span className="text-white">Soutra</span>
-                <span className="text-primary-400">-Paiya</span>
+                <span className="text-primary-400">-Playce</span>
               </span>
               <p className="mt-4 text-sm leading-relaxed text-neutral-500">
                 Conçu à Abidjan, pour la Côte d&apos;Ivoire.
@@ -484,7 +484,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-neutral-800 pt-8 text-sm md:flex-row">
-            <span>© {new Date().getFullYear()} Soutra-Paiya. Tous droits réservés.</span>
+            <span>© {new Date().getFullYear()} Soutra-Playce. Tous droits réservés.</span>
             <div className="flex gap-6">
               <a href="#" className="transition hover:text-white">
                 Instagram

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Soutra-Paiya",
+    "name": "Soutra-Playce",
     "slug": "soutra-paiya",
     "scheme": "soutrapaiya",
     "version": "0.1.2",
@@ -47,13 +47,13 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Soutra-Paiya accède à tes photos pour ta vérification d'identité (KYC)."
+          "photosPermission": "Soutra-Playce accède à tes photos pour ta vérification d'identité (KYC)."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Soutra-Paiya utilise la caméra pour scanner les QR codes de paiement."
+          "cameraPermission": "Soutra-Playce utilise la caméra pour scanner les QR codes de paiement."
         }
       ]
     ],

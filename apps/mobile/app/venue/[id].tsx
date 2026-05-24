@@ -204,7 +204,7 @@ export default function VenueDetail() {
             </Pressable>
             <Pressable
               style={({ pressed }) => [s.actionBtn, !venue.whatsapp && s.actionBtnDisabled, pressed && venue.whatsapp && { opacity: 0.85 }]}
-              onPress={() => venue.whatsapp && openWhatsApp(venue.whatsapp, `Bonjour, je vous contacte au sujet de ${venue.name} via Soutra-Paiya.`)}
+              onPress={() => venue.whatsapp && openWhatsApp(venue.whatsapp, `Bonjour, je vous contacte au sujet de ${venue.name} via Soutra-Playce.`)}
               disabled={!venue.whatsapp}
             >
               <Ionicons name="logo-whatsapp" size={22} color={venue.whatsapp ? '#25D366' : colors.neutral[400]} />

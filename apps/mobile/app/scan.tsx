@@ -54,7 +54,7 @@ export default function Scan() {
     if (!qr) {
       Alert.alert(
         'QR non reconnu',
-        "Ce code n'est pas un QR de paiement Soutra-Paiya.",
+        "Ce code n'est pas un QR de paiement Soutra-Playce.",
         [
           { text: 'Réessayer', onPress: () => setScanned(false) },
           { text: 'Annuler', style: 'cancel', onPress: () => router.back() },
@@ -170,7 +170,7 @@ function ScanArea({
         </View>
         <View style={s.scanHintWrap}>
           <Ionicons name="qr-code" size={16} color="#fff" />
-          <Text style={s.scanHint}>Vise un QR de paiement Soutra-Paiya</Text>
+          <Text style={s.scanHint}>Vise un QR de paiement Soutra-Playce</Text>
         </View>
       </View>
     </View>
