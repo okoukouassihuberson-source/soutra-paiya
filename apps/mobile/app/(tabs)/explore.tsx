@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, View, Text, TextInput, StyleSheet, Pressable, Image, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { ScrollView, View, Text, TextInput, StyleSheet, Pressable, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import * as Location from 'expo-location';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { MapboxMap, type MapVenue, ABIDJAN } from '@/components/MapboxMap';
+import { TabHeader } from '@/components/TabHeader';
+import { VenueCardSkeleton } from '@/components/Skeleton';
 
 // Aligné sur la vue `venues_public` (migration 0020). `lat`/`lng` proviennent
 // du point PostGIS `venues.location` projeté en colonnes simples.
@@ -36,14 +38,15 @@ const RADII_KM: { label: string; v: number }[] = [
   { label: '25 km', v: 25 },
 ];
 
-const CHIPS: { label: string; category: string | null }[] = [
-  { label: 'Tout', category: null },
-  { label: 'Maquis', category: 'maquis' },
-  { label: 'Restaurants', category: 'restaurant' },
-  { label: 'Soirée', category: 'club' },
-  { label: 'Cafés', category: 'cafe' },
-  { label: 'Hôtels', category: 'hotel' },
-  { label: 'Sport', category: 'sport' },
+// Chips de catégorie : icône + label pour rythme visuel.
+const CHIPS: { label: string; category: string | null; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { label: 'Tout', category: null, icon: 'apps' },
+  { label: 'Maquis', category: 'maquis', icon: 'restaurant' },
+  { label: 'Restaurants', category: 'restaurant', icon: 'pizza' },
+  { label: 'Soirée', category: 'club', icon: 'wine' },
+  { label: 'Cafés', category: 'cafe', icon: 'cafe' },
+  { label: 'Hôtels', category: 'hotel', icon: 'bed' },
+  { label: 'Sport', category: 'sport', icon: 'football' },
 ];
 
 export default function Explore() {
@@ -188,18 +191,18 @@ export default function Explore() {
           />
         }
       >
-        <View style={s.header}>
-          <View>
-            <Text style={s.locLabel}>Position actuelle</Text>
-            <Text style={s.loc}>📍 Cocody, Abidjan</Text>
-          </View>
-          <Pressable
-            hitSlop={10}
-            onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
-          >
-            <Ionicons name="notifications-outline" size={24} color={colors.dark} />
-          </Pressable>
-        </View>
+        <TabHeader
+          subtitle={`${filteredVenues.length} lieux à découvrir près de toi`}
+          trailing={(
+            <Pressable
+              hitSlop={10}
+              onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
+              style={s.bellBtn}
+            >
+              <Ionicons name="notifications-outline" size={22} color={colors.dark} />
+            </Pressable>
+          )}
+        />
 
         <View style={s.searchBox}>
           <Ionicons name="search" size={18} color={colors.neutral[500]} />
@@ -211,20 +214,27 @@ export default function Explore() {
             style={s.searchInput}
             returnKeyType="search"
           />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={6}>
+              <Ionicons name="close-circle" size={18} color={colors.neutral[400]} />
+            </Pressable>
+          )}
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
-          {CHIPS.map((c) => (
-            <Pressable
-              key={c.label}
-              onPress={() => setSelectedChip(c.label)}
-              style={[s.chip, selectedChip === c.label && s.chipActive]}
-            >
-              <Text style={[s.chipText, selectedChip === c.label && s.chipTextActive]}>
-                {c.label}
-              </Text>
-            </Pressable>
-          ))}
+          {CHIPS.map((c) => {
+            const isActive = selectedChip === c.label;
+            return (
+              <Pressable
+                key={c.label}
+                onPress={() => setSelectedChip(c.label)}
+                style={[s.chip, isActive && s.chipActive]}
+              >
+                <Ionicons name={c.icon} size={14} color={isActive ? '#fff' : colors.neutral[700]} />
+                <Text style={[s.chipText, isActive && s.chipTextActive]}>{c.label}</Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
         {/* Filtres géographiques */}
@@ -263,59 +273,113 @@ export default function Explore() {
         />
 
         {loading ? (
-          <ActivityIndicator size="large" color={colors.primary[500]} style={{ marginTop: spacing['2xl'] }} />
+          <>
+            <View style={s.sectionTitleRow}>
+              <View style={s.sectionAccent} />
+              <Text style={s.sectionTitle}>Chargement…</Text>
+            </View>
+            <VenueCardSkeleton />
+            <VenueCardSkeleton />
+            <VenueCardSkeleton />
+          </>
         ) : (
           <>
-            <Text style={s.sectionTitle}>
-              {filteredVenues.length} {filteredVenues.length > 1 ? 'lieux' : 'lieu'}
-              {selectedCategory ? ` · ${selectedChip}` : ''}
+            <View style={s.sectionTitleRow}>
+              <View style={s.sectionAccent} />
+              <Text style={s.sectionTitle}>
+                {filteredVenues.length} {filteredVenues.length > 1 ? 'lieux' : 'lieu'}
+                {selectedCategory ? ` · ${selectedChip}` : ''}
+              </Text>
               {mapVenues.length < filteredVenues.length && (
-                <Text style={s.sectionHint}> · {mapVenues.length} sur la carte</Text>
+                <Text style={s.sectionHint}>{mapVenues.length} sur la carte</Text>
               )}
-            </Text>
+            </View>
 
             {filteredVenues.length === 0 ? (
               <View style={s.empty}>
-                <Ionicons name="search-outline" size={48} color={colors.neutral[300]} />
-                <Text style={s.emptyText}>Aucun lieu trouvé pour ces critères</Text>
+                <View style={s.emptyIconWrap}>
+                  <Ionicons name="search-outline" size={48} color={colors.primary[400]} />
+                </View>
+                <Text style={s.emptyTitle}>Aucun lieu trouvé</Text>
+                <Text style={s.emptyText}>
+                  {searchQuery || selectedCategory
+                    ? 'Essaie un autre filtre ou élargis le rayon.'
+                    : 'Aucun établissement actif pour l\'instant — reviens bientôt.'}
+                </Text>
+                {(searchQuery || selectedCategory) && (
+                  <Pressable
+                    style={s.emptyBtn}
+                    onPress={() => { setSearchQuery(''); setSelectedChip('Tout'); setOpenNow(false); }}
+                  >
+                    <Text style={s.emptyBtnText}>Réinitialiser les filtres</Text>
+                  </Pressable>
+                )}
               </View>
             ) : (
-              filteredVenues.map((v) => (
-                <Pressable
-                  key={v.id}
-                  style={({ pressed }) => [
-                    s.card,
-                    pressed && { opacity: 0.85 },
-                    selectedVenueId === v.id && s.cardSelected,
-                  ]}
-                  onPress={() => goToVenue(v.id)}
-                >
-                  {v.cover_url && (
-                    <Image source={{ uri: v.cover_url }} style={s.cardImg} />
-                  )}
-                  <View style={{ flex: 1, padding: spacing.md }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text style={s.cardName}>{v.name}</Text>
-                      <Text style={s.rating}>★ {v.rating_avg?.toFixed(1) ?? '–'}</Text>
-                    </View>
-                    <Text style={s.cardCat}>
-                      {labelForCategory(v.category)} · {v.district ?? v.city ?? 'Abidjan'}
-                    </Text>
-                    <View style={s.cardMetaRow}>
-                      <Text style={s.cardPrice}>~ {formatXOF(v.avg_price_xof ?? 0)}/pers</Text>
-                      {typeof v.distance_km === 'number' && (
-                        <Text style={s.cardDistance}>📍 {v.distance_km < 1 ? `${Math.round(v.distance_km * 1000)} m` : `${v.distance_km.toFixed(1)} km`}</Text>
+              filteredVenues.map((v, idx) => {
+                const isFeatured = idx === 0 && (v.rating_avg ?? 0) >= 4.5;
+                return (
+                  <Pressable
+                    key={v.id}
+                    style={({ pressed }) => [
+                      s.card,
+                      pressed && { transform: [{ scale: 0.98 }], opacity: 0.92 },
+                      selectedVenueId === v.id && s.cardSelected,
+                    ]}
+                    onPress={() => goToVenue(v.id)}
+                  >
+                    <View style={s.cardImgWrap}>
+                      {v.cover_url ? (
+                        <Image source={{ uri: v.cover_url }} style={s.cardImg} />
+                      ) : (
+                        <View style={[s.cardImg, s.cardImgPlaceholder]}>
+                          <Ionicons name="image-outline" size={36} color={colors.neutral[400]} />
+                        </View>
+                      )}
+                      {isFeatured && (
+                        <View style={s.featuredBadge}>
+                          <Ionicons name="flame" size={11} color="#fff" />
+                          <Text style={s.featuredText}>Tendance</Text>
+                        </View>
                       )}
                       {v.is_open_now === true && (
-                        <Text style={s.openNowBadge}>Ouvert</Text>
+                        <View style={[s.statusBadge, s.openBadge]}>
+                          <View style={s.statusDot} />
+                          <Text style={s.statusText}>Ouvert</Text>
+                        </View>
                       )}
                       {v.is_open_now === false && (
-                        <Text style={s.closedBadge}>Fermé</Text>
+                        <View style={[s.statusBadge, s.closedBadgeBg]}>
+                          <Text style={[s.statusText, { color: '#fff' }]}>Fermé</Text>
+                        </View>
                       )}
                     </View>
-                  </View>
-                </Pressable>
-              ))
+                    <View style={s.cardBody}>
+                      <View style={s.cardTitleRow}>
+                        <Text style={s.cardName} numberOfLines={1}>{v.name}</Text>
+                        <View style={s.ratingPill}>
+                          <Ionicons name="star" size={11} color={colors.warning} />
+                          <Text style={s.ratingPillText}>{v.rating_avg?.toFixed(1) ?? '–'}</Text>
+                        </View>
+                      </View>
+                      <Text style={s.cardCat} numberOfLines={1}>
+                        {labelForCategory(v.category)} · {v.district ?? v.city ?? 'Abidjan'}
+                      </Text>
+                      <View style={s.cardMetaRow}>
+                        <Text style={s.cardPrice}>{formatXOF(v.avg_price_xof ?? 0)}<Text style={s.cardPriceUnit}>/pers</Text></Text>
+                        {typeof v.distance_km === 'number' && (
+                          <View style={s.metaChip}>
+                            <Ionicons name="location" size={11} color={colors.neutral[600]} />
+                            <Text style={s.metaChipText}>
+                              {v.distance_km < 1 ? `${Math.round(v.distance_km * 1000)} m` : `${v.distance_km.toFixed(1)} km`}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })
             )}
           </>
         )}
@@ -339,9 +403,11 @@ function labelForCategory(c: string): string {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.light },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
-  locLabel: { fontSize: typography.fontSize.xs, color: colors.neutral[500] },
-  loc: { fontSize: typography.fontSize.base, fontWeight: '600', color: colors.dark },
+  bellBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.neutral[200],
+  },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     marginHorizontal: spacing.lg, paddingHorizontal: spacing.base, paddingVertical: spacing.md,
@@ -349,9 +415,13 @@ const s = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: typography.fontSize.sm, color: colors.dark },
   chipsRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
-  chip: { paddingHorizontal: spacing.base, paddingVertical: spacing.sm, backgroundColor: colors.neutral[100], borderRadius: radius.full, marginRight: spacing.sm },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+    paddingHorizontal: spacing.base, paddingVertical: spacing.sm,
+    backgroundColor: colors.neutral[100], borderRadius: radius.full, marginRight: spacing.sm,
+  },
   chipActive: { backgroundColor: colors.primary[500] },
-  chipText: { fontSize: typography.fontSize.sm, color: colors.neutral[600], fontWeight: '500' },
+  chipText: { fontSize: typography.fontSize.sm, color: colors.neutral[700], fontWeight: '600' },
   chipTextActive: { color: '#fff' },
   geoRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   geoBtn: {
@@ -371,23 +441,49 @@ const s = StyleSheet.create({
   radiusPillActive: { backgroundColor: colors.dark, borderColor: colors.dark },
   radiusPillText: { fontSize: typography.fontSize.xs, color: colors.neutral[700], fontWeight: '600' },
   radiusPillTextActive: { color: '#fff' },
-  cardMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
-  cardDistance: { fontSize: typography.fontSize.xs, color: colors.neutral[600], fontWeight: '600' },
-  openNowBadge: { fontSize: typography.fontSize.xs, fontWeight: '700', color: colors.success, backgroundColor: '#dcfce7', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
-  closedBadge: { fontSize: typography.fontSize.xs, fontWeight: '700', color: colors.danger, backgroundColor: '#fee2e2', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
-  sectionTitle: { marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.md, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
-  sectionHint: { fontSize: typography.fontSize.xs, fontWeight: '500', color: colors.neutral[500] },
-  empty: { alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  emptyText: { marginTop: spacing.base, fontSize: typography.fontSize.sm, color: colors.neutral[500] },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.md },
+  sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: colors.primary[500] },
+  sectionTitle: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
+  sectionHint: { fontSize: typography.fontSize.xs, fontWeight: '600', color: colors.neutral[500] },
+  empty: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing['2xl'] },
+  emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.primary[50], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.base },
+  emptyTitle: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.dark, marginBottom: spacing.xs },
+  emptyText: { fontSize: typography.fontSize.sm, color: colors.neutral[500], textAlign: 'center', maxWidth: 280 },
+  emptyBtn: { marginTop: spacing.lg, backgroundColor: colors.primary[500], paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.full },
+  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.sm },
   card: {
     marginHorizontal: spacing.lg, marginBottom: spacing.md,
     backgroundColor: '#fff', borderRadius: radius.lg, overflow: 'hidden',
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    elevation: 3, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
   },
   cardSelected: { borderWidth: 2, borderColor: colors.primary[500] },
-  cardImg: { width: '100%', height: 160, backgroundColor: colors.neutral[200] },
-  cardName: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark, flex: 1, marginRight: spacing.sm },
-  rating: { color: colors.warning, fontWeight: '600' },
-  cardCat: { marginTop: 2, fontSize: typography.fontSize.sm, color: colors.neutral[500] },
-  cardPrice: { marginTop: spacing.sm, fontSize: typography.fontSize.sm, color: colors.secondary[500], fontWeight: '600' },
+  cardImgWrap: { position: 'relative' },
+  cardImg: { width: '100%', height: 180, backgroundColor: colors.neutral[100] },
+  cardImgPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  featuredBadge: {
+    position: 'absolute', top: spacing.sm, left: spacing.sm,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.primary[500], paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full,
+  },
+  featuredText: { color: '#fff', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  statusBadge: {
+    position: 'absolute', top: spacing.sm, right: spacing.sm,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full,
+  },
+  openBadge: { backgroundColor: 'rgba(255,255,255,0.95)' },
+  closedBadgeBg: { backgroundColor: 'rgba(0,0,0,0.65)' },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
+  statusText: { fontSize: 10, fontWeight: '700', color: colors.success, textTransform: 'uppercase', letterSpacing: 0.3 },
+  cardBody: { padding: spacing.md, gap: 4 },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  cardName: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
+  ratingPill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.neutral[100], paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
+  ratingPillText: { fontSize: typography.fontSize.xs, fontWeight: '700', color: colors.dark },
+  cardCat: { fontSize: typography.fontSize.sm, color: colors.neutral[500] },
+  cardMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+  cardPrice: { fontSize: typography.fontSize.base, color: colors.primary[600], fontWeight: '700' },
+  cardPriceUnit: { fontSize: typography.fontSize.xs, color: colors.neutral[500], fontWeight: '500' },
+  metaChip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.neutral[100], paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
+  metaChipText: { fontSize: typography.fontSize.xs, color: colors.neutral[700], fontWeight: '600' },
 });
