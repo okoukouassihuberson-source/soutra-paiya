@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -9,6 +9,8 @@ import { useAuth } from '@/lib/auth-context';
 import { listFeed, toggleLike, deletePost, type Post } from '@/lib/social';
 import { StoriesStrip } from '@/components/StoriesStrip';
 import { CommentsSheet } from '@/components/CommentsSheet';
+import { TabHeader } from '@/components/TabHeader';
+import { Skeleton } from '@/components/Skeleton';
 
 export default function Social() {
   const router = useRouter();
@@ -97,33 +99,43 @@ export default function Social() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <View style={s.header}>
-        <Text style={s.title}>Communauté</Text>
-        <View style={s.headerActions}>
-          <Pressable onPress={() => router.push('/chats')} style={s.headerIcon} hitSlop={10}>
-            <Ionicons name="chatbubbles-outline" size={22} color={colors.dark} />
-          </Pressable>
-          <Pressable onPress={() => router.push('/discover')} style={s.headerIcon} hitSlop={10}>
-            <Ionicons name="people" size={22} color={colors.dark} />
-          </Pressable>
-          <Pressable onPress={() => router.push('/post-create')} style={s.fab} hitSlop={10}>
-            <Ionicons name="add" size={22} color="#fff" />
-          </Pressable>
-        </View>
-      </View>
+      <TabHeader
+        subtitle="Tendances, posts & matchs"
+        trailing={(
+          <View style={s.headerActions}>
+            <Pressable onPress={() => router.push('/chats')} style={s.iconBtn} hitSlop={6}>
+              <Ionicons name="chatbubbles-outline" size={20} color={colors.dark} />
+            </Pressable>
+            <Pressable onPress={() => router.push('/discover')} style={s.iconBtn} hitSlop={6}>
+              <Ionicons name="people" size={20} color={colors.dark} />
+            </Pressable>
+            <Pressable onPress={() => router.push('/post-create')} style={s.fab} hitSlop={6}>
+              <Ionicons name="add" size={22} color="#fff" />
+            </Pressable>
+          </View>
+        )}
+      />
 
       {loading ? (
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={colors.primary[500]} />
-        </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: spacing['2xl'] }}>
+          <StoriesStrip />
+          <PostSkeleton />
+          <PostSkeleton />
+        </ScrollView>
       ) : posts.length === 0 ? (
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <StoriesStrip />
-          <View style={s.center}>
-            <Ionicons name="chatbubbles-outline" size={64} color={colors.neutral[300]} />
+          <View style={s.emptyBody}>
+            <View style={s.emptyIconWrap}>
+              <Ionicons name="chatbubbles" size={48} color={colors.primary[400]} />
+            </View>
             <Text style={s.emptyTitle}>Le fil est encore vide</Text>
             <Text style={s.emptyText}>Sois le premier à partager une sortie, un événement ou un coup de cœur.</Text>
-            <Pressable onPress={() => router.push('/post-create')} style={s.emptyBtn}>
+            <Pressable
+              onPress={() => router.push('/post-create')}
+              style={({ pressed }) => [s.emptyBtn, pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] }]}
+            >
+              <Ionicons name="add" size={18} color="#fff" />
               <Text style={s.emptyBtnText}>Publier un post</Text>
             </Pressable>
           </View>
@@ -154,7 +166,7 @@ export default function Social() {
                   <Text style={s.time}>{relativeTime(p.created_at)}</Text>
                 </View>
                 {p.user_id === user?.id && (
-                  <Pressable onPress={() => handleDelete(p)} hitSlop={10}>
+                  <Pressable onPress={() => handleDelete(p)} hitSlop={10} style={s.menuBtn}>
                     <Ionicons name="ellipsis-horizontal" size={20} color={colors.neutral[500]} />
                   </Pressable>
                 )}
@@ -166,19 +178,31 @@ export default function Social() {
               ) : null}
 
               <View style={s.actions}>
-                <Pressable onPress={() => handleLike(p)} style={s.actionBtn} hitSlop={8}>
+                <Pressable
+                  onPress={() => handleLike(p)}
+                  style={({ pressed }) => [s.actionBtn, pressed && { opacity: 0.7 }]}
+                  hitSlop={8}
+                >
                   <Ionicons
                     name={p.liked_by_me ? 'heart' : 'heart-outline'}
                     size={22}
                     color={p.liked_by_me ? colors.danger : colors.neutral[600]}
                   />
-                  <Text style={[s.actionLabel, p.liked_by_me && { color: colors.danger }]}>
-                    {p.like_count > 0 ? p.like_count : ''}
-                  </Text>
+                  {p.like_count > 0 && (
+                    <Text style={[s.actionLabel, p.liked_by_me && { color: colors.danger }]}>
+                      {p.like_count}
+                    </Text>
+                  )}
                 </Pressable>
-                <Pressable onPress={() => setOpenSheetFor(p.id)} style={s.actionBtn} hitSlop={8}>
+                <Pressable
+                  onPress={() => setOpenSheetFor(p.id)}
+                  style={({ pressed }) => [s.actionBtn, pressed && { opacity: 0.7 }]}
+                  hitSlop={8}
+                >
                   <Ionicons name="chatbubble-outline" size={20} color={colors.neutral[600]} />
-                  <Text style={s.actionLabel}>{p.comment_count > 0 ? p.comment_count : ''}</Text>
+                  {p.comment_count > 0 && (
+                    <Text style={s.actionLabel}>{p.comment_count}</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -201,6 +225,29 @@ export default function Social() {
   );
 }
 
+function PostSkeleton() {
+  return (
+    <View style={s.card}>
+      <View style={s.cardHeader}>
+        <Skeleton width={38} height={38} borderRadius={19} />
+        <View style={{ flex: 1 }}>
+          <Skeleton width="50%" height={14} />
+          <Skeleton width="30%" height={11} style={{ marginTop: 6 }} />
+        </View>
+      </View>
+      <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+        <Skeleton width="90%" height={12} />
+        <Skeleton width="70%" height={12} style={{ marginTop: 6 }} />
+      </View>
+      <Skeleton width="100%" height={220} borderRadius={0} />
+      <View style={{ flexDirection: 'row', gap: spacing.lg, padding: spacing.md }}>
+        <Skeleton width={50} height={20} />
+        <Skeleton width={50} height={20} />
+      </View>
+    </View>
+  );
+}
+
 function relativeTime(iso: string): string {
   const d = new Date(iso);
   const diff = Math.max(0, Date.now() - d.getTime());
@@ -216,47 +263,51 @@ function relativeTime(iso: string): string {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.light },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors.neutral[200],
-  },
-  title: { fontSize: typography.fontSize.xl, fontWeight: '700', color: colors.dark },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  headerIcon: {
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  iconBtn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors.neutral[100],
-    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.neutral[200],
   },
   fab: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: colors.primary[500],
     alignItems: 'center', justifyContent: 'center',
+    shadowColor: colors.primary[500], shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  emptyTitle: { marginTop: spacing.base, fontSize: typography.fontSize.base, fontWeight: '700', color: colors.dark },
-  emptyText: { marginTop: spacing.xs, fontSize: typography.fontSize.sm, color: colors.neutral[500], textAlign: 'center', maxWidth: 280 },
-  emptyBtn: { marginTop: spacing.lg, backgroundColor: colors.primary[500], paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.lg },
+  emptyBody: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, paddingVertical: spacing['2xl'] },
+  emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.primary[50], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.base },
+  emptyTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark, marginBottom: spacing.xs },
+  emptyText: { fontSize: typography.fontSize.sm, color: colors.neutral[500], textAlign: 'center', maxWidth: 300, lineHeight: 20 },
+  emptyBtn: {
+    marginTop: spacing.lg,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: colors.primary[500],
+    paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.full,
+    shadowColor: colors.primary[500], shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+  },
   emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.sm },
   card: {
     backgroundColor: '#fff',
     marginHorizontal: spacing.lg, marginTop: spacing.md,
     borderRadius: radius.lg, overflow: 'hidden',
-    borderWidth: 1, borderColor: colors.neutral[200],
+    elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
   avatar: {
-    width: 38, height: 38, borderRadius: 19,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: colors.primary[500],
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    borderWidth: 2, borderColor: '#fff',
   },
   avatarImg: { width: '100%', height: '100%' },
   avatarTxt: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.base },
   author: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark },
-  time: { fontSize: typography.fontSize.xs, color: colors.neutral[500] },
+  time: { fontSize: typography.fontSize.xs, color: colors.neutral[500], marginTop: 2 },
+  menuBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, fontSize: typography.fontSize.sm, color: colors.dark, lineHeight: 20 },
   image: { width: '100%', aspectRatio: 4 / 3, backgroundColor: colors.neutral[100] },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.neutral[100] },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  actionLabel: { fontSize: typography.fontSize.sm, fontWeight: '600', color: colors.neutral[700] },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.neutral[100] },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm },
+  actionLabel: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.neutral[700] },
 });
