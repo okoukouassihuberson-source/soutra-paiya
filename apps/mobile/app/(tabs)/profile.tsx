@@ -158,7 +158,8 @@ export default function Profile() {
           <Text style={s.sectionTitle}>Aide & légal</Text>
         </View>
         <View style={s.menu}>
-          <MenuItem icon="help-circle-outline" label="Centre d'aide" onPress={() => Alert.alert('Centre d\'aide', 'Tu peux nous contacter à support@soutra.ci')} />
+          <MenuItem icon="sparkles-outline" label="Assistant Soutra" badge="IA" badgeColor={colors.primary[500]} onPress={() => router.push('/assistant' as any)} />
+          <MenuItem icon="help-circle-outline" label="Centre d'aide" onPress={() => Alert.alert('Centre d\'aide', 'Pose ta question à l\'Assistant Soutra (au-dessus), ou écris à support@soutra.ci.')} />
           <MenuItem icon="document-text-outline" label="Conditions & Confidentialité" onPress={() => Alert.alert('CGU & Confidentialité', 'Les CGU et la politique de confidentialité seront bientôt disponibles ici.')} last />
         </View>
 
