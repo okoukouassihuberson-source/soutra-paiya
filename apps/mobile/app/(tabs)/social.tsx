@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors, typography, radius, spacing } from '@soutra/shared';
+import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
+import { useColors } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { listFeed, toggleLike, deletePost, type Post } from '@/lib/social';
@@ -15,6 +16,8 @@ import { Skeleton } from '@/components/Skeleton';
 export default function Social() {
   const router = useRouter();
   const { user } = useAuth();
+  const c = useColors();
+  const s = useMemo(() => makeStyles(c), [c]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,10 +107,10 @@ export default function Social() {
         trailing={(
           <View style={s.headerActions}>
             <Pressable onPress={() => router.push('/chats')} style={s.iconBtn} hitSlop={6}>
-              <Ionicons name="chatbubbles-outline" size={20} color={colors.dark} />
+              <Ionicons name="chatbubbles-outline" size={20} color={c.dark} />
             </Pressable>
             <Pressable onPress={() => router.push('/discover')} style={s.iconBtn} hitSlop={6}>
-              <Ionicons name="people" size={20} color={colors.dark} />
+              <Ionicons name="people" size={20} color={c.dark} />
             </Pressable>
             <Pressable onPress={() => router.push('/post-create')} style={s.fab} hitSlop={6}>
               <Ionicons name="add" size={22} color="#fff" />
@@ -119,15 +122,15 @@ export default function Social() {
       {loading ? (
         <ScrollView contentContainerStyle={{ paddingBottom: spacing['2xl'] }}>
           <StoriesStrip />
-          <PostSkeleton />
-          <PostSkeleton />
+          <PostSkeleton c={c} />
+          <PostSkeleton c={c} />
         </ScrollView>
       ) : posts.length === 0 ? (
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <StoriesStrip />
           <View style={s.emptyBody}>
             <View style={s.emptyIconWrap}>
-              <Ionicons name="chatbubbles" size={48} color={colors.primary[400]} />
+              <Ionicons name="chatbubbles" size={48} color={c.primary[400]} />
             </View>
             <Text style={s.emptyTitle}>Le fil est encore vide</Text>
             <Text style={s.emptyText}>Sois le premier à partager une sortie, un événement ou un coup de cœur.</Text>
@@ -167,7 +170,7 @@ export default function Social() {
                 </View>
                 {p.user_id === user?.id && (
                   <Pressable onPress={() => handleDelete(p)} hitSlop={10} style={s.menuBtn}>
-                    <Ionicons name="ellipsis-horizontal" size={20} color={colors.neutral[500]} />
+                    <Ionicons name="ellipsis-horizontal" size={20} color={c.neutral[500]} />
                   </Pressable>
                 )}
               </View>
@@ -186,10 +189,10 @@ export default function Social() {
                   <Ionicons
                     name={p.liked_by_me ? 'heart' : 'heart-outline'}
                     size={22}
-                    color={p.liked_by_me ? colors.danger : colors.neutral[600]}
+                    color={p.liked_by_me ? c.danger : c.neutral[600]}
                   />
                   {p.like_count > 0 && (
-                    <Text style={[s.actionLabel, p.liked_by_me && { color: colors.danger }]}>
+                    <Text style={[s.actionLabel, p.liked_by_me && { color: c.danger }]}>
                       {p.like_count}
                     </Text>
                   )}
@@ -199,7 +202,7 @@ export default function Social() {
                   style={({ pressed }) => [s.actionBtn, pressed && { opacity: 0.7 }]}
                   hitSlop={8}
                 >
-                  <Ionicons name="chatbubble-outline" size={20} color={colors.neutral[600]} />
+                  <Ionicons name="chatbubble-outline" size={20} color={c.neutral[600]} />
                   {p.comment_count > 0 && (
                     <Text style={s.actionLabel}>{p.comment_count}</Text>
                   )}
@@ -225,7 +228,8 @@ export default function Social() {
   );
 }
 
-function PostSkeleton() {
+function PostSkeleton({ c }: { c: ColorPalette }) {
+  const s = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={s.card}>
       <View style={s.cardHeader}>
@@ -261,53 +265,55 @@ function relativeTime(iso: string): string {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  iconBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.neutral[200],
-  },
-  fab: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors.primary[500],
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: colors.primary[500], shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-  },
-  emptyBody: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, paddingVertical: spacing['2xl'] },
-  emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.primary[50], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.base },
-  emptyTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark, marginBottom: spacing.xs },
-  emptyText: { fontSize: typography.fontSize.sm, color: colors.neutral[500], textAlign: 'center', maxWidth: 300, lineHeight: 20 },
-  emptyBtn: {
-    marginTop: spacing.lg,
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: colors.primary[500],
-    paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.full,
-    shadowColor: colors.primary[500], shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
-  },
-  emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.sm },
-  card: {
-    backgroundColor: '#fff',
-    marginHorizontal: spacing.lg, marginTop: spacing.md,
-    borderRadius: radius.lg, overflow: 'hidden',
-    elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
-  },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
-  avatar: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors.primary[500],
-    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-    borderWidth: 2, borderColor: '#fff',
-  },
-  avatarImg: { width: '100%', height: '100%' },
-  avatarTxt: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.base },
-  author: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark },
-  time: { fontSize: typography.fontSize.xs, color: colors.neutral[500], marginTop: 2 },
-  menuBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, fontSize: typography.fontSize.sm, color: colors.dark, lineHeight: 20 },
-  image: { width: '100%', aspectRatio: 4 / 3, backgroundColor: colors.neutral[100] },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.neutral[100] },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm },
-  actionLabel: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.neutral[700] },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.light },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    iconBtn: {
+      width: 40, height: 40, borderRadius: 20,
+      backgroundColor: c.neutral[50], alignItems: 'center', justifyContent: 'center',
+      borderWidth: 1, borderColor: c.neutral[200],
+    },
+    fab: {
+      width: 40, height: 40, borderRadius: 20,
+      backgroundColor: c.primary[500],
+      alignItems: 'center', justifyContent: 'center',
+      shadowColor: c.primary[500], shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+    },
+    emptyBody: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, paddingVertical: spacing['2xl'] },
+    emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: c.primary[50], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.base },
+    emptyTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: c.dark, marginBottom: spacing.xs },
+    emptyText: { fontSize: typography.fontSize.sm, color: c.neutral[500], textAlign: 'center', maxWidth: 300, lineHeight: 20 },
+    emptyBtn: {
+      marginTop: spacing.lg,
+      flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+      backgroundColor: c.primary[500],
+      paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.full,
+      shadowColor: c.primary[500], shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+    },
+    emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.sm },
+    card: {
+      backgroundColor: c.neutral[50],
+      marginHorizontal: spacing.lg, marginTop: spacing.md,
+      borderRadius: radius.lg, overflow: 'hidden',
+      elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
+    avatar: {
+      width: 40, height: 40, borderRadius: 20,
+      backgroundColor: c.primary[500],
+      alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+      borderWidth: 2, borderColor: c.neutral[50],
+    },
+    avatarImg: { width: '100%', height: '100%' },
+    avatarTxt: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.base },
+    author: { fontSize: typography.fontSize.sm, fontWeight: '700', color: c.dark },
+    time: { fontSize: typography.fontSize.xs, color: c.neutral[500], marginTop: 2 },
+    menuBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    body: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, fontSize: typography.fontSize.sm, color: c.dark, lineHeight: 20 },
+    image: { width: '100%', aspectRatio: 4 / 3, backgroundColor: c.neutral[100] },
+    actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: c.neutral[100] },
+    actionBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm },
+    actionLabel: { fontSize: typography.fontSize.sm, fontWeight: '700', color: c.neutral[700] },
+  });
+}

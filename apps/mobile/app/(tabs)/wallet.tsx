@@ -1,17 +1,20 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
+import { useColors } from '@/lib/theme';
 
 export default function Wallet() {
   const { user } = useAuth();
   const router = useRouter();
+  const c = useColors();
+  const s = useMemo(() => makeStyles(c), [c]);
   const [balance, setBalance] = useState<number>(0);
   const [locked, setLocked] = useState<number>(0);
   const [walletLoading, setWalletLoading] = useState(true);
@@ -70,7 +73,7 @@ export default function Wallet() {
           subtitle="Ton portefeuille Soutra-Pay"
           trailing={(
             <Pressable hitSlop={10} onPress={() => router.push('/settings')} style={s.iconBtn}>
-              <Ionicons name="settings-outline" size={20} color={colors.dark} />
+              <Ionicons name="settings-outline" size={20} color={c.dark} />
             </Pressable>
           )}
         />
@@ -108,7 +111,7 @@ export default function Wallet() {
               onPress={() => router.push('/recharge')}
               style={({ pressed }) => [s.balanceActionBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
             >
-              <Ionicons name="add-circle" size={18} color={colors.primary[600]} />
+              <Ionicons name="add-circle" size={18} color={c.primary[600]} />
               <Text style={s.balanceActionText}>Recharger</Text>
             </Pressable>
             <Pressable
@@ -142,7 +145,7 @@ export default function Wallet() {
           <View style={s.sectionAccent} />
           <Text style={s.sectionTitle}>Activité récente</Text>
         </View>
-        <TransactionHistory userId={user?.id} refreshNonce={refreshNonce} />
+        <TransactionHistory c={c} userId={user?.id} refreshNonce={refreshNonce} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -167,12 +170,15 @@ interface Transaction {
 }
 
 function TransactionHistory({
+  c,
   userId,
   refreshNonce,
 }: {
+  c: ColorPalette;
   userId?: string;
   refreshNonce: number;
 }) {
+  const s = useMemo(() => makeStyles(c), [c]);
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -218,7 +224,7 @@ function TransactionHistory({
     return (
       <View style={s.emptyState}>
         <View style={s.emptyIconWrap}>
-          <Ionicons name="receipt-outline" size={36} color={colors.primary[400]} />
+          <Ionicons name="receipt-outline" size={36} color={c.primary[400]} />
         </View>
         <Text style={s.emptyTitle}>Aucune activité</Text>
         <Text style={s.emptyText}>Recharge ton wallet pour commencer à payer, envoyer ou recevoir.</Text>
@@ -230,7 +236,7 @@ function TransactionHistory({
     <View style={s.txList}>
       {txs.map((tx) => {
         const credit = isCredit(tx, userId);
-        const meta = txMeta(tx, userId);
+        const meta = txMeta(tx, userId, c);
         const failed = tx.status === 'failed' || tx.status === 'reversed';
         const pending = tx.status === 'pending';
         return (
@@ -249,12 +255,12 @@ function TransactionHistory({
                 )}
                 {failed && (
                   <View style={[s.txStatusPill, { backgroundColor: '#fee2e2' }]}>
-                    <Text style={[s.txStatusText, { color: colors.danger }]}>Échec</Text>
+                    <Text style={[s.txStatusText, { color: c.danger }]}>Échec</Text>
                   </View>
                 )}
               </View>
             </View>
-            <Text style={[s.txAmount, { color: failed ? colors.neutral[400] : credit ? colors.success : colors.dark }]}>
+            <Text style={[s.txAmount, { color: failed ? c.neutral[400] : credit ? c.success : c.dark }]}>
               {credit ? '+' : '−'}{formatXOF(tx.amount_xof)}
             </Text>
           </View>
@@ -269,7 +275,7 @@ function isCredit(tx: Transaction, userId?: string): boolean {
   return tx.type === 'topup' || tx.type === 'refund' || tx.type === 'escrow_release';
 }
 
-function txMeta(tx: Transaction, userId?: string): { label: string; icon: keyof typeof Ionicons.glyphMap; bg: string; color: string } {
+function txMeta(tx: Transaction, userId: string | undefined, c: ColorPalette): { label: string; icon: keyof typeof Ionicons.glyphMap; bg: string; color: string } {
   if (tx.type === 'transfer') {
     const received = tx.counterparty_id === userId;
     return received
@@ -284,8 +290,8 @@ function txMeta(tx: Transaction, userId?: string): { label: string; icon: keyof 
     case 'split': return { label: 'Split Bill', icon: 'people', bg: '#fef3c7', color: '#d97706' };
     case 'escrow_hold': return { label: 'Séquestre', icon: 'lock-closed', bg: '#e0e7ff', color: '#4f46e5' };
     case 'escrow_release': return { label: 'Libération séquestre', icon: 'lock-open', bg: '#dcfce7', color: '#16a34a' };
-    case 'fee': return { label: 'Frais', icon: 'receipt', bg: colors.neutral[100], color: colors.neutral[600] };
-    default: return { label: tx.type, icon: 'help-circle', bg: colors.neutral[100], color: colors.neutral[600] };
+    case 'fee': return { label: 'Frais', icon: 'receipt', bg: c.neutral[100], color: c.neutral[600] };
+    default: return { label: tx.type, icon: 'help-circle', bg: c.neutral[100], color: c.neutral[600] };
   }
 }
 
@@ -302,47 +308,49 @@ function relativeDate(iso: string): string {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.light },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.neutral[200] },
-  balanceCard: {
-    position: 'relative', overflow: 'hidden',
-    marginHorizontal: spacing.lg, marginTop: spacing.sm,
-    padding: spacing.lg, borderRadius: 20,
-    backgroundColor: colors.primary[500],
-    shadowColor: colors.primary[700], shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8,
-  },
-  bgCircle1: { position: 'absolute', top: -60, right: -60, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.08)' },
-  bgCircle2: { position: 'absolute', bottom: -40, left: -40, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.06)' },
-  balanceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  balanceLabel: { color: 'rgba(255,255,255,0.85)', fontSize: typography.fontSize.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  balanceValueRow: { marginTop: spacing.xs, minHeight: 42 },
-  balanceValue: { color: '#fff', fontSize: 32, fontWeight: '700', letterSpacing: -0.5 },
-  lockedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs },
-  locked: { color: 'rgba(255,255,255,0.85)', fontSize: typography.fontSize.xs, fontWeight: '600' },
-  eyeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  balanceActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
-  balanceActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md, backgroundColor: '#fff', borderRadius: radius.full },
-  balanceActionBtnGhost: { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
-  balanceActionText: { color: colors.primary[600], fontWeight: '700', fontSize: typography.fontSize.sm },
-  quickRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.lg, paddingHorizontal: spacing.lg },
-  quickItem: { alignItems: 'center', gap: spacing.sm },
-  quickIcon: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  quickLabel: { fontSize: typography.fontSize.xs, color: colors.dark, fontWeight: '600' },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.md },
-  sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: colors.primary[500] },
-  sectionTitle: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
-  txList: { marginHorizontal: spacing.lg, backgroundColor: '#fff', borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
-  txItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.neutral[100] },
-  txIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  txType: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark },
-  txMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2 },
-  txDate: { fontSize: typography.fontSize.xs, color: colors.neutral[500] },
-  txStatusPill: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
-  txStatusText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
-  txAmount: { fontSize: typography.fontSize.base, fontWeight: '700' },
-  emptyState: { marginHorizontal: spacing.lg, padding: spacing.xl, backgroundColor: '#fff', borderRadius: radius.lg, alignItems: 'center' },
-  emptyIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primary[50], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
-  emptyTitle: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.dark, marginBottom: spacing.xs },
-  emptyText: { fontSize: typography.fontSize.sm, color: colors.neutral[500], textAlign: 'center', maxWidth: 280 },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.light },
+    iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.neutral[50], alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.neutral[200] },
+    balanceCard: {
+      position: 'relative', overflow: 'hidden',
+      marginHorizontal: spacing.lg, marginTop: spacing.sm,
+      padding: spacing.lg, borderRadius: 20,
+      backgroundColor: c.primary[500],
+      shadowColor: c.primary[700], shadowOpacity: 0.35, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8,
+    },
+    bgCircle1: { position: 'absolute', top: -60, right: -60, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.08)' },
+    bgCircle2: { position: 'absolute', bottom: -40, left: -40, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.06)' },
+    balanceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    balanceLabel: { color: 'rgba(255,255,255,0.85)', fontSize: typography.fontSize.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+    balanceValueRow: { marginTop: spacing.xs, minHeight: 42 },
+    balanceValue: { color: '#fff', fontSize: 32, fontWeight: '700', letterSpacing: -0.5 },
+    lockedRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs },
+    locked: { color: 'rgba(255,255,255,0.85)', fontSize: typography.fontSize.xs, fontWeight: '600' },
+    eyeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+    balanceActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
+    balanceActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md, backgroundColor: '#fff', borderRadius: radius.full },
+    balanceActionBtnGhost: { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+    balanceActionText: { color: c.primary[600], fontWeight: '700', fontSize: typography.fontSize.sm },
+    quickRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.lg, paddingHorizontal: spacing.lg },
+    quickItem: { alignItems: 'center', gap: spacing.sm },
+    quickIcon: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+    quickLabel: { fontSize: typography.fontSize.xs, color: c.dark, fontWeight: '600' },
+    sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.md },
+    sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: c.primary[500] },
+    sectionTitle: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: c.dark },
+    txList: { marginHorizontal: spacing.lg, backgroundColor: c.neutral[50], borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
+    txItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: c.neutral[100] },
+    txIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+    txType: { fontSize: typography.fontSize.sm, fontWeight: '700', color: c.dark },
+    txMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2 },
+    txDate: { fontSize: typography.fontSize.xs, color: c.neutral[500] },
+    txStatusPill: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
+    txStatusText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+    txAmount: { fontSize: typography.fontSize.base, fontWeight: '700' },
+    emptyState: { marginHorizontal: spacing.lg, padding: spacing.xl, backgroundColor: c.neutral[50], borderRadius: radius.lg, alignItems: 'center' },
+    emptyIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: c.primary[50], alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
+    emptyTitle: { fontSize: typography.fontSize.base, fontWeight: '700', color: c.dark, marginBottom: spacing.xs },
+    emptyText: { fontSize: typography.fontSize.sm, color: c.neutral[500], textAlign: 'center', maxWidth: 280 },
+  });
+}

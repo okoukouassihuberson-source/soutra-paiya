@@ -1,8 +1,16 @@
 // Design tokens — Soutra-Playce
 // Source unique pour Tailwind (web) et StyleSheet (mobile).
+//
+// Convention pour le dark mode :
+// - les couleurs brand (primary, secondary, accent, danger, warning, success)
+//   restent identiques entre light et dark (on garde l'identité visuelle).
+// - `dark` = couleur du TEXTE PRINCIPAL : en light c'est sombre, en dark
+//   c'est clair. NE PAS lire ce token comme « couleur foncée ».
+// - `light` = couleur du FOND PRINCIPAL : en light c'est crème, en dark
+//   c'est noir.
+// - `neutral` : l'échelle est INVERSÉE en dark (neutral[100] dark <-> [800] light).
 
-export const colors = {
-  // Brand
+const BRAND = {
   primary: {
     50:  '#FFF1E6',
     100: '#FFE0CC',
@@ -24,11 +32,15 @@ export const colors = {
   accent: {
     500: '#0984E3', // Lagune Blue — liens
   },
-  dark: '#1A1D2E',     // Nuit Abidjan
-  light: '#FAF7F2',    // Sable
   danger: '#E63946',   // SOS Red
   warning: '#FFC93C',  // Akwaba Yellow
   success: '#00B894',
+} as const;
+
+export const colors = {
+  ...BRAND,
+  dark: '#1A1D2E',     // Texte principal (light theme : Nuit Abidjan)
+  light: '#FAF7F2',    // Fond principal (light theme : Sable)
   neutral: {
     50:  '#F8FAFC',
     100: '#F1F5F9',
@@ -42,6 +54,40 @@ export const colors = {
     900: '#0F172A',
   },
 } as const;
+
+// Palette dark — même shape, valeurs inversées sur dark/light/neutral.
+// Les screens utilisent `useColors()` pour récupérer la bonne palette au runtime.
+export const colorsDark = {
+  ...BRAND,
+  dark: '#F5F5F7',     // Texte principal en dark theme (gris très clair)
+  light: '#0E1116',    // Fond principal en dark theme (presque noir)
+  neutral: {
+    50:  '#0F172A',
+    100: '#1E293B',
+    200: '#334155',
+    300: '#475569',
+    400: '#64748B',
+    500: '#94A3B8',
+    600: '#CBD5E1',
+    700: '#E2E8F0',
+    800: '#F1F5F9',
+    900: '#F8FAFC',
+  },
+} as const;
+
+// Type structurel pour pouvoir typer indifféremment `colors` (light) et
+// `colorsDark` — sans les types littéraux qui les rendraient incompatibles.
+export type ColorPalette = {
+  primary: { 50: string; 100: string; 200: string; 300: string; 400: string; 500: string; 600: string; 700: string; 800: string; 900: string };
+  secondary: { 50: string; 500: string; 600: string; 700: string };
+  accent: { 500: string };
+  danger: string;
+  warning: string;
+  success: string;
+  dark: string;
+  light: string;
+  neutral: { 50: string; 100: string; 200: string; 300: string; 400: string; 500: string; 600: string; 700: string; 800: string; 900: string };
+};
 
 export const typography = {
   fontFamily: {

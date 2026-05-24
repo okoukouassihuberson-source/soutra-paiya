@@ -2,11 +2,13 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { ThemeProvider, useTheme } from '@/lib/theme';
 
 function RootNav() {
   const { session, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const { resolved, colors } = useTheme();
 
   useEffect(() => {
     if (loading) return;
@@ -16,18 +18,28 @@ function RootNav() {
   }, [session, loading, segments]);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <>
+      {/* Inverse la barre système selon le thème actif. */}
+      <StatusBar style={resolved === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.light },
+        }}
+      >
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </>
   );
 }
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="auto" />
-      <RootNav />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RootNav />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

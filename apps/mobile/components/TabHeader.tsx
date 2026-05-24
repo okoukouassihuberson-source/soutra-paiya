@@ -6,29 +6,28 @@
  * générique : on prend le prénom du full_name ou le téléphone tronqué.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '@soutra/shared';
+import { typography, spacing, type ColorPalette } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useColors } from '@/lib/theme';
 
 type Props = {
-  /** Petit label affiché au-dessus du titre. Ex. « Bonjour ». */
   eyebrow?: string;
-  /** Titre principal. Si null, on affiche « <Bonjour>, <prénom> » par défaut. */
   title?: string;
-  /** Sous-titre optionnel, sous le titre. Ex. ville, date. */
   subtitle?: string;
-  /** Icône supplémentaire à gauche de l'avatar (ex. cloche notifs). */
   trailing?: React.ReactNode;
 };
 
 export function TabHeader({ eyebrow, title, subtitle, trailing }: Props) {
   const router = useRouter();
   const { user } = useAuth();
+  const c = useColors();
+  const s = useMemo(() => makeStyles(c), [c]);
   const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
 
   const load = useCallback(async () => {
@@ -41,7 +40,6 @@ export function TabHeader({ eyebrow, title, subtitle, trailing }: Props) {
     if (data) setProfile(data);
   }, [user?.id]);
 
-  // Recharge à chaque focus pour refléter un changement d'avatar / nom.
   useFocusEffect(useCallback(() => { load(); }, [load]));
   useEffect(() => { load(); }, [load]);
 
@@ -71,19 +69,21 @@ export function TabHeader({ eyebrow, title, subtitle, trailing }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  row: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md,
-  },
-  title: { fontSize: typography.fontSize.xl, fontWeight: '700', color: colors.dark },
-  subtitle: { marginTop: 2, fontSize: typography.fontSize.xs, color: colors.neutral[500] },
-  avatar: {
-    width: 40, height: 40, borderRadius: 20, overflow: 'hidden',
-    backgroundColor: colors.primary[500], alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#fff',
-    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2,
-  },
-  avatarImg: { width: '100%', height: '100%' },
-  avatarTxt: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.base },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+      paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md,
+    },
+    title: { fontSize: typography.fontSize.xl, fontWeight: '700', color: c.dark },
+    subtitle: { marginTop: 2, fontSize: typography.fontSize.xs, color: c.neutral[500] },
+    avatar: {
+      width: 40, height: 40, borderRadius: 20, overflow: 'hidden',
+      backgroundColor: c.primary[500], alignItems: 'center', justifyContent: 'center',
+      borderWidth: 2, borderColor: c.light,
+      shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    },
+    avatarImg: { width: '100%', height: '100%' },
+    avatarTxt: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.base },
+  });
+}
