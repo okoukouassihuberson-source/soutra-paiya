@@ -16,6 +16,7 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { buildPaymentQr, parsePaymentQr } from '@/lib/qr';
+import { ScreenHeader } from '@/components/ScreenHeader';
 
 type Mode = 'scan' | 'myqr';
 
@@ -84,31 +85,23 @@ export default function Scan() {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
-      <View style={s.header}>
-        <Pressable hitSlop={10} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color={colors.dark} />
-        </Pressable>
-        <Text style={s.headerTitle}>Payer par QR</Text>
-        <View style={{ width: 28 }} />
-      </View>
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <ScreenHeader title="Payer par QR" subtitle="Scanner ou afficher ton code" />
 
       <View style={s.toggle}>
         <Pressable
-          style={[s.toggleBtn, mode === 'scan' && s.toggleBtnActive]}
+          style={({ pressed }) => [s.toggleBtn, mode === 'scan' && s.toggleBtnActive, pressed && { opacity: 0.85 }]}
           onPress={() => switchMode('scan')}
         >
-          <Text style={[s.toggleText, mode === 'scan' && s.toggleTextActive]}>
-            Scanner
-          </Text>
+          <Ionicons name="scan-outline" size={16} color={mode === 'scan' ? '#fff' : colors.neutral[600]} />
+          <Text style={[s.toggleText, mode === 'scan' && s.toggleTextActive]}>Scanner</Text>
         </Pressable>
         <Pressable
-          style={[s.toggleBtn, mode === 'myqr' && s.toggleBtnActive]}
+          style={({ pressed }) => [s.toggleBtn, mode === 'myqr' && s.toggleBtnActive, pressed && { opacity: 0.85 }]}
           onPress={() => switchMode('myqr')}
         >
-          <Text style={[s.toggleText, mode === 'myqr' && s.toggleTextActive]}>
-            Mon QR
-          </Text>
+          <Ionicons name="qr-code" size={16} color={mode === 'myqr' ? '#fff' : colors.neutral[600]} />
+          <Text style={[s.toggleText, mode === 'myqr' && s.toggleTextActive]}>Mon QR</Text>
         </Pressable>
       </View>
 
@@ -166,9 +159,19 @@ function ScanArea({
         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         onBarcodeScanned={scanned ? undefined : onScan}
       />
+      {/* Overlay sombre avec un trou rectangulaire au centre */}
       <View style={s.overlay} pointerEvents="none">
-        <View style={s.scanFrame} />
-        <Text style={s.scanHint}>Vise un QR de paiement Soutra-Paiya</Text>
+        <View style={s.scanFrame}>
+          {/* 4 coins du cadre */}
+          <View style={[s.corner, s.cornerTL]} />
+          <View style={[s.corner, s.cornerTR]} />
+          <View style={[s.corner, s.cornerBL]} />
+          <View style={[s.corner, s.cornerBR]} />
+        </View>
+        <View style={s.scanHintWrap}>
+          <Ionicons name="qr-code" size={16} color="#fff" />
+          <Text style={s.scanHint}>Vise un QR de paiement Soutra-Paiya</Text>
+        </View>
       </View>
     </View>
   );
@@ -183,106 +186,80 @@ function MyQrArea({ phone, name }: { phone: string; name: string }) {
     );
   }
   return (
-    <View style={s.center}>
+    <View style={s.myQrWrap}>
       <View style={s.qrCard}>
-        <QRCode value={buildPaymentQr({ phone, name: name || undefined })} size={220} />
+        <View style={s.qrCardInner}>
+          <QRCode value={buildPaymentQr({ phone, name: name || undefined })} size={220} />
+        </View>
+        {!!name && <Text style={s.qrName}>{name}</Text>}
+        <Text style={s.qrPhone}>{phone}</Text>
       </View>
-      {!!name && <Text style={s.qrName}>{name}</Text>}
-      <Text style={s.qrPhone}>{phone}</Text>
-      <Text style={s.qrHint}>
-        Fais scanner ce code pour recevoir de l'argent sur ton wallet.
-      </Text>
+      <View style={s.qrHintBox}>
+        <Ionicons name="information-circle" size={18} color={colors.primary[500]} />
+        <Text style={s.qrHint}>Fais scanner ce code pour recevoir de l'argent.</Text>
+      </View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.light },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.base,
-  },
-  headerTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
   toggle: {
     flexDirection: 'row',
     marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
     backgroundColor: colors.neutral[100],
     borderRadius: radius.full,
     padding: 4,
+    gap: 4,
   },
   toggleBtn: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    alignItems: 'center',
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
+    paddingVertical: spacing.sm, borderRadius: radius.full,
   },
   toggleBtnActive: { backgroundColor: colors.primary[500] },
-  toggleText: { fontSize: typography.fontSize.sm, fontWeight: '600', color: colors.neutral[600] },
+  toggleText: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.neutral[600] },
   toggleTextActive: { color: '#fff' },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  permTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
-  permText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[600],
-    textAlign: 'center',
-  },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl, gap: spacing.md },
+  permTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark, textAlign: 'center' },
+  permText: { fontSize: typography.fontSize.sm, color: colors.neutral[600], textAlign: 'center' },
   permBtn: {
-    marginTop: spacing.sm,
-    backgroundColor: colors.primary[500],
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
+    marginTop: spacing.sm, backgroundColor: colors.primary[500],
+    borderRadius: radius.full, paddingVertical: spacing.md, paddingHorizontal: spacing.xl,
+    shadowColor: colors.primary[500], shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
   },
   permBtnText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.base },
   cameraWrap: {
     flex: 1,
-    margin: spacing.lg,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: '#000',
+    marginHorizontal: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.lg,
+    borderRadius: 24, overflow: 'hidden', backgroundColor: '#000',
   },
   overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
-  scanFrame: {
-    width: 230,
-    height: 230,
-    borderWidth: 3,
-    borderColor: '#fff',
-    borderRadius: radius.lg,
-    backgroundColor: 'transparent',
+  scanFrame: { width: 250, height: 250, position: 'relative' },
+  corner: { position: 'absolute', width: 36, height: 36, borderColor: '#fff' },
+  cornerTL: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 12 },
+  cornerTR: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 12 },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 12 },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 12 },
+  scanHintWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    marginTop: spacing.xl, backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
   },
-  scanHint: {
-    marginTop: spacing.lg,
-    color: '#fff',
-    fontSize: typography.fontSize.sm,
-    fontWeight: '600',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
+  scanHint: { color: '#fff', fontSize: typography.fontSize.sm, fontWeight: '600' },
+  myQrWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.lg },
   qrCard: {
-    backgroundColor: '#fff',
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
+    backgroundColor: '#fff', padding: spacing.lg, borderRadius: 24,
+    alignItems: 'center',
+    elevation: 4, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 16, shadowOffset: { width: 0, height: 8 },
   },
-  qrName: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
-  qrPhone: { fontSize: typography.fontSize.base, color: colors.neutral[600] },
-  qrHint: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
-    textAlign: 'center',
-    marginTop: spacing.sm,
+  qrCardInner: { backgroundColor: '#fff', padding: spacing.md, borderRadius: radius.lg, borderWidth: 2, borderColor: colors.primary[500] },
+  qrName: { marginTop: spacing.md, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
+  qrPhone: { marginTop: 4, fontSize: typography.fontSize.base, color: colors.neutral[600], fontFamily: 'monospace' },
+  qrHintBox: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: colors.primary[50], paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full,
   },
+  qrHint: { fontSize: typography.fontSize.xs, color: colors.primary[700], fontWeight: '600' },
 });

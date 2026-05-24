@@ -1,16 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  ScrollView,
-  View,
-  Text,
-  Pressable,
-  TextInput,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { ScrollView, View, Text, Pressable, TextInput, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,14 +7,14 @@ import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { requestWithdrawal, type WithdrawParams } from '@/lib/paystack';
+import { ScreenHeader } from '@/components/ScreenHeader';
 
 type Provider = WithdrawParams['provider'];
 
-// Paystack ne propose le payout XOF que pour MTN, Orange et Wave (Moov exclu).
-const PROVIDERS: { id: Provider; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'orange', label: 'Orange Money', icon: 'phone-portrait-outline' },
-  { id: 'mtn', label: 'MTN MoMo', icon: 'phone-portrait-outline' },
-  { id: 'wave', label: 'Wave', icon: 'phone-portrait-outline' },
+const PROVIDERS: { id: Provider; label: string; bg: string; color: string }[] = [
+  { id: 'orange', label: 'Orange Money', bg: '#fff7ed', color: '#ea580c' },
+  { id: 'mtn', label: 'MTN MoMo', bg: '#fefce8', color: '#ca8a04' },
+  { id: 'wave', label: 'Wave', bg: '#eff6ff', color: '#2563eb' },
 ];
 
 const MIN_XOF = 100;
@@ -41,18 +30,13 @@ export default function Withdraw() {
 
   const [amount, setAmount] = useState('');
   const [provider, setProvider] = useState<Provider | null>(null);
-  const [phone, setPhone] = useState(
-    user?.phone ? `+${user.phone.replace(/^\+/, '')}` : '+225',
-  );
+  const [phone, setPhone] = useState(user?.phone ? `+${user.phone.replace(/^\+/, '')}` : '+225');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!user?.id) {
-        setLoading(false);
-        return;
-      }
+      if (!user?.id) { setLoading(false); return; }
       try {
         const [walletRes, profileRes] = await Promise.all([
           supabase.from('wallets').select('balance_xof').eq('user_id', user.id).maybeSingle(),
@@ -67,9 +51,7 @@ export default function Withdraw() {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [user?.id]);
 
   const amountNum = parseInt(amount || '0', 10);
@@ -82,13 +64,10 @@ export default function Withdraw() {
     try {
       setSubmitting(true);
       const result = await requestWithdrawal({ amountXof: amountNum, provider, phone });
-      const msg =
-        result.status === 'success'
-          ? `${formatXOF(amountNum)} ont été envoyés vers ton compte ${provider.toUpperCase()}.`
-          : `Ton retrait de ${formatXOF(amountNum)} est en cours de traitement.`;
-      Alert.alert('Retrait enregistré', msg, [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      const msg = result.status === 'success'
+        ? `${formatXOF(amountNum)} ont été envoyés vers ton compte ${provider.toUpperCase()}.`
+        : `Ton retrait de ${formatXOF(amountNum)} est en cours de traitement.`;
+      Alert.alert('Retrait enregistré', msg, [{ text: 'OK', onPress: () => router.back() }]);
     } catch (err: any) {
       Alert.alert('Retrait impossible', err?.message ?? 'Une erreur est survenue.');
     } finally {
@@ -98,46 +77,47 @@ export default function Withdraw() {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.safe}>
-        <ActivityIndicator size="large" color={colors.primary[500]} style={{ flex: 1 }} />
+      <SafeAreaView style={s.safe} edges={['top']}>
+        <ScreenHeader title="Retirer" />
+        <ActivityIndicator size="large" color={colors.primary[500]} style={{ flex: 1, marginTop: spacing.xl }} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={s.safe}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={s.header}>
-          <Pressable hitSlop={10} onPress={() => router.back()} disabled={submitting}>
-            <Ionicons name="chevron-back" size={28} color={colors.dark} />
-          </Pressable>
-          <Text style={s.headerTitle}>Retirer</Text>
-          <View style={{ width: 28 }} />
-        </View>
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScreenHeader title="Retirer" subtitle="Vers Orange, MTN ou Wave" />
 
-        <ScrollView
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }}
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }} keyboardShouldPersistTaps="handled">
           {!kycVerified && (
-            <Pressable style={s.kycBanner} onPress={() => router.push('/kyc')}>
-              <Ionicons name="alert-circle" size={22} color={colors.dark} />
-              <Text style={s.kycText}>
-                Vérification d'identité requise pour retirer. Touche ici pour compléter ton KYC.
-              </Text>
+            <Pressable
+              style={({ pressed }) => [s.kycBanner, pressed && { opacity: 0.85 }]}
+              onPress={() => router.push('/kyc')}
+            >
+              <View style={s.kycIconWrap}>
+                <Ionicons name="alert-circle" size={20} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.kycTitle}>Vérification d'identité requise</Text>
+                <Text style={s.kycSub}>Touche pour compléter ton KYC et débloquer les retraits.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.dark} />
             </Pressable>
           )}
 
-          <View style={s.balanceLine}>
+          {/* Balance card */}
+          <View style={s.balanceCard}>
             <Text style={s.balanceLabel}>Solde disponible</Text>
             <Text style={s.balanceValue}>{formatXOF(balance)}</Text>
           </View>
 
-          <Text style={s.label}>Montant à retirer</Text>
-          <View style={s.amountInputRow}>
+          {/* Amount */}
+          <View style={s.sectionTitleRow}>
+            <View style={s.sectionAccent} />
+            <Text style={s.sectionTitle}>Montant à retirer</Text>
+          </View>
+          <View style={[s.fieldCard, amount.length > 0 && !amountValid && s.fieldCardError]}>
             <TextInput
               style={s.amountInput}
               value={amount}
@@ -152,29 +132,31 @@ export default function Withdraw() {
           </View>
           {amount.length > 0 && !amountValid && (
             <Text style={s.errorHint}>
-              {amountNum > balance
-                ? 'Montant supérieur à ton solde.'
-                : `Minimum ${formatXOF(MIN_XOF)}.`}
+              {amountNum > balance ? `Solde insuffisant (${formatXOF(balance)}).` : `Minimum ${formatXOF(MIN_XOF)}.`}
             </Text>
           )}
 
-          <Text style={s.label}>Opérateur mobile money</Text>
+          {/* Provider */}
+          <View style={s.sectionTitleRow}>
+            <View style={s.sectionAccent} />
+            <Text style={s.sectionTitle}>Opérateur mobile money</Text>
+          </View>
           <View style={s.providerGrid}>
             {PROVIDERS.map((p) => {
               const active = provider === p.id;
               return (
                 <Pressable
                   key={p.id}
-                  style={[s.providerChip, active && s.providerChipActive]}
+                  style={({ pressed }) => [
+                    s.providerChip,
+                    { backgroundColor: active ? p.bg : '#fff', borderColor: active ? p.color : colors.neutral[200] },
+                    pressed && { transform: [{ scale: 0.97 }] },
+                  ]}
                   onPress={() => setProvider(p.id)}
                   disabled={submitting || !kycVerified}
                 >
-                  <Ionicons
-                    name={p.icon}
-                    size={18}
-                    color={active ? colors.primary[500] : colors.neutral[500]}
-                  />
-                  <Text style={[s.providerText, active && s.providerTextActive]}>
+                  <View style={[s.providerDot, { backgroundColor: p.color }]} />
+                  <Text style={[s.providerText, { color: active ? p.color : colors.neutral[700] }]}>
                     {p.label}
                   </Text>
                 </Pressable>
@@ -182,27 +164,39 @@ export default function Withdraw() {
             })}
           </View>
 
-          <Text style={s.label}>Numéro mobile money</Text>
-          <TextInput
-            style={s.phoneInput}
-            value={phone}
-            onChangeText={(t) => setPhone(t.replace(/[^0-9+]/g, ''))}
-            placeholder="+225XXXXXXXXXX"
-            placeholderTextColor={colors.neutral[400]}
-            keyboardType="phone-pad"
-            maxLength={14}
-            editable={!submitting && kycVerified}
-          />
+          {/* Phone */}
+          <View style={s.sectionTitleRow}>
+            <View style={s.sectionAccent} />
+            <Text style={s.sectionTitle}>Numéro mobile money</Text>
+          </View>
+          <View style={[s.fieldCard, phone.length > 4 && !phoneValid && s.fieldCardError]}>
+            <Ionicons name="call-outline" size={18} color={colors.neutral[500]} />
+            <TextInput
+              style={s.phoneInput}
+              value={phone}
+              onChangeText={(t) => setPhone(t.replace(/[^0-9+]/g, ''))}
+              placeholder="+225XXXXXXXXXX"
+              placeholderTextColor={colors.neutral[400]}
+              keyboardType="phone-pad"
+              maxLength={14}
+              editable={!submitting && kycVerified}
+            />
+          </View>
           {phone.length > 4 && !phoneValid && (
             <Text style={s.errorHint}>Format attendu : +225 suivi de 10 chiffres.</Text>
           )}
 
+          {/* Info */}
           <View style={s.infoBox}>
-            <Ionicons name="time-outline" size={20} color={colors.primary[500]} />
-            <Text style={s.infoText}>
-              Le transfert est traité par Paystack. Ton solde est débité immédiatement ;
-              en cas d'échec, il est automatiquement recrédité.
-            </Text>
+            <View style={s.infoIconWrap}>
+              <Ionicons name="time-outline" size={18} color={colors.primary[500]} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.infoTitle}>Traitement Paystack</Text>
+              <Text style={s.infoText}>
+                Ton solde est débité immédiatement. En cas d'échec, il est automatiquement recrédité.
+              </Text>
+            </View>
           </View>
         </ScrollView>
 
@@ -211,7 +205,7 @@ export default function Withdraw() {
             style={({ pressed }) => [
               s.payBtn,
               !canSubmit && s.payBtnDisabled,
-              pressed && { opacity: 0.85 },
+              pressed && canSubmit && { transform: [{ scale: 0.98 }], opacity: 0.92 },
             ]}
             onPress={handleWithdraw}
             disabled={!canSubmit}
@@ -219,9 +213,12 @@ export default function Withdraw() {
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={s.payBtnText}>
-                {amountValid ? `Retirer ${formatXOF(amountNum)}` : 'Retirer'}
-              </Text>
+              <>
+                <Ionicons name="arrow-down-circle" size={18} color="#fff" />
+                <Text style={s.payBtnText}>
+                  {amountValid ? `Retirer ${formatXOF(amountNum)}` : 'Saisis un montant'}
+                </Text>
+              </>
             )}
           </Pressable>
         </View>
@@ -232,103 +229,52 @@ export default function Withdraw() {
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.light },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.base,
-  },
-  headerTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
   kycBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.warning,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    backgroundColor: '#fef3c7', borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.lg,
+    borderWidth: 1, borderColor: '#fde68a',
   },
-  kycText: { flex: 1, fontSize: typography.fontSize.sm, fontWeight: '600', color: colors.dark },
-  balanceLine: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
+  kycIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#d97706', alignItems: 'center', justifyContent: 'center' },
+  kycTitle: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark },
+  kycSub: { fontSize: typography.fontSize.xs, color: colors.neutral[600], marginTop: 2 },
+  balanceCard: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: radius.lg, padding: spacing.lg,
+    elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 },
   },
-  balanceLabel: { fontSize: typography.fontSize.sm, color: colors.neutral[600] },
-  balanceValue: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
-  label: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-    fontSize: typography.fontSize.sm,
-    fontWeight: '600',
-    color: colors.dark,
+  balanceLabel: { fontSize: typography.fontSize.sm, color: colors.neutral[500], fontWeight: '600' },
+  balanceValue: { fontSize: typography.fontSize.xl, fontWeight: '700', color: colors.dark, letterSpacing: -0.3 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.sm },
+  sectionAccent: { width: 4, height: 16, borderRadius: 2, backgroundColor: colors.primary[500] },
+  sectionTitle: { flex: 1, fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark },
+  fieldCard: {
+    flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm,
+    backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.neutral[200],
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
   },
-  amountInputRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-    backgroundColor: '#fff',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-  },
+  fieldCardError: { borderColor: colors.danger },
   amountInput: { flex: 1, fontSize: 28, fontWeight: '700', color: colors.dark, padding: 0 },
   amountCurrency: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.neutral[500] },
-  errorHint: { marginTop: spacing.xs, fontSize: typography.fontSize.xs, color: colors.danger },
+  phoneInput: { flex: 1, fontSize: typography.fontSize.base, color: colors.dark, padding: 0, paddingVertical: 4 },
+  errorHint: { marginTop: spacing.xs, fontSize: typography.fontSize.xs, color: colors.danger, fontWeight: '600' },
   providerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   providerChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderColor: colors.neutral[300],
-    backgroundColor: '#fff',
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    borderRadius: radius.lg, borderWidth: 1.5,
   },
-  providerChipActive: { borderColor: colors.primary[500], backgroundColor: colors.primary[50] },
-  providerText: { fontSize: typography.fontSize.sm, fontWeight: '600', color: colors.neutral[700] },
-  providerTextActive: { color: colors.primary[500] },
-  phoneInput: {
-    backgroundColor: '#fff',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: typography.fontSize.base,
-    color: colors.dark,
-  },
-  infoBox: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    backgroundColor: colors.primary[50],
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.xl,
-  },
-  infoText: { flex: 1, fontSize: typography.fontSize.sm, color: colors.neutral[700] },
-  footer: {
-    padding: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral[100],
-    backgroundColor: colors.light,
-  },
+  providerDot: { width: 10, height: 10, borderRadius: 5 },
+  providerText: { fontSize: typography.fontSize.sm, fontWeight: '700' },
+  infoBox: { flexDirection: 'row', gap: spacing.md, backgroundColor: '#fff', borderRadius: radius.lg, padding: spacing.md, marginTop: spacing.xl, borderWidth: 1, borderColor: colors.neutral[200] },
+  infoIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary[50], alignItems: 'center', justifyContent: 'center' },
+  infoTitle: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark, marginBottom: 2 },
+  infoText: { fontSize: typography.fontSize.xs, color: colors.neutral[600], lineHeight: 18 },
+  footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.neutral[100], backgroundColor: colors.light },
   payBtn: {
-    backgroundColor: colors.primary[500],
-    borderRadius: radius.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+    backgroundColor: colors.primary[500], borderRadius: radius.full, paddingVertical: spacing.lg,
+    shadowColor: colors.primary[500], shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
   },
-  payBtnDisabled: { opacity: 0.5 },
+  payBtnDisabled: { opacity: 0.4, shadowOpacity: 0 },
   payBtnText: { fontSize: typography.fontSize.base, fontWeight: '700', color: '#fff' },
 });
