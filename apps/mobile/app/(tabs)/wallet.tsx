@@ -72,9 +72,14 @@ export default function Wallet() {
         <TabHeader
           subtitle="Ton portefeuille Soutra-Pay"
           trailing={(
-            <Pressable hitSlop={10} onPress={() => router.push('/settings')} style={s.iconBtn}>
-              <Ionicons name="settings-outline" size={20} color={c.dark} />
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+              <Pressable hitSlop={10} onPress={() => router.push('/wallet-stats')} style={s.iconBtn}>
+                <Ionicons name="bar-chart-outline" size={20} color={c.dark} />
+              </Pressable>
+              <Pressable hitSlop={10} onPress={() => router.push('/settings')} style={s.iconBtn}>
+                <Ionicons name="settings-outline" size={20} color={c.dark} />
+              </Pressable>
+            </View>
           )}
         />
 
