@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors } from '@/lib/theme';
+import { getRewardSummary, type RewardSummary } from '@/lib/rewards';
 
 export default function Wallet() {
   const { user } = useAuth();
@@ -123,6 +124,9 @@ export default function Wallet() {
             </Pressable>
           </View>
         </View>
+
+        {/* Tuile récompenses */}
+        <RewardsTile c={c} userId={user?.id} refreshNonce={refreshNonce} />
 
         {/* Actions rapides */}
         <View style={s.quickRow}>
@@ -270,6 +274,73 @@ function TransactionHistory({
   );
 }
 
+function RewardsTile({
+  c,
+  userId,
+  refreshNonce,
+}: {
+  c: ColorPalette;
+  userId?: string;
+  refreshNonce: number;
+}) {
+  const router = useRouter();
+  const s = useMemo(() => makeStyles(c), [c]);
+  const [summary, setSummary] = useState<RewardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!userId) { setLoading(false); return; }
+    (async () => {
+      try {
+        const sum = await getRewardSummary();
+        if (mounted) setSummary(sum);
+      } catch (err) {
+        console.error('[wallet] rewards:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [userId, refreshNonce]);
+
+  const tierColor = summary?.current_tier?.color_hex ?? c.primary[500];
+  const equivalent = summary
+    ? summary.balance * summary.redeem_rate_xof_per_point
+    : 0;
+
+  return (
+    <Pressable
+      onPress={() => router.push('/rewards')}
+      style={({ pressed }) => [s.rewardsTile, pressed && { opacity: 0.9, transform: [{ scale: 0.99 }] }]}
+    >
+      <View style={[s.rewardsIcon, { backgroundColor: tierColor + '22' }]}>
+        <Ionicons name="gift" size={22} color={tierColor} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={s.rewardsTitle}>Mes récompenses</Text>
+        {loading ? (
+          <Skeleton width={120} height={12} style={{ marginTop: 4 }} />
+        ) : summary ? (
+          <Text style={s.rewardsSub}>
+            <Text style={{ fontWeight: '700', color: c.dark }}>
+              {summary.balance.toLocaleString('fr-FR')} pts
+            </Text>
+            {' · '}
+            {formatXOF(equivalent)} convertible · palier{' '}
+            <Text style={{ fontWeight: '700', color: tierColor }}>
+              {summary.current_tier?.display_name ?? 'Bronze'}
+            </Text>
+          </Text>
+        ) : (
+          <Text style={s.rewardsSub}>Active le cashback Soutra-Pay</Text>
+        )}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={c.neutral[400]} />
+    </Pressable>
+  );
+}
+
 function isCredit(tx: Transaction, userId?: string): boolean {
   if (tx.type === 'transfer') return tx.counterparty_id === userId;
   return tx.type === 'topup' || tx.type === 'refund' || tx.type === 'escrow_release';
@@ -332,6 +403,15 @@ function makeStyles(c: ColorPalette) {
     balanceActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md, backgroundColor: '#fff', borderRadius: radius.full },
     balanceActionBtnGhost: { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
     balanceActionText: { color: c.primary[600], fontWeight: '700', fontSize: typography.fontSize.sm },
+    rewardsTile: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+      marginHorizontal: spacing.lg, marginTop: spacing.lg,
+      padding: spacing.md, borderRadius: radius.lg,
+      backgroundColor: c.neutral[50], borderWidth: 1, borderColor: c.neutral[100],
+    },
+    rewardsIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    rewardsTitle: { fontSize: typography.fontSize.sm, fontWeight: '700', color: c.dark },
+    rewardsSub: { fontSize: typography.fontSize.xs, color: c.neutral[600], marginTop: 2 },
     quickRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.lg, paddingHorizontal: spacing.lg },
     quickItem: { alignItems: 'center', gap: spacing.sm },
     quickIcon: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
