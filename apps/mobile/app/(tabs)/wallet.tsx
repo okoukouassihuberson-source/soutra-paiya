@@ -178,6 +178,7 @@ function TransactionHistory({
   userId?: string;
   refreshNonce: number;
 }) {
+  const router = useRouter();
   const s = useMemo(() => makeStyles(c), [c]);
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -240,7 +241,11 @@ function TransactionHistory({
         const failed = tx.status === 'failed' || tx.status === 'reversed';
         const pending = tx.status === 'pending';
         return (
-          <View key={tx.id} style={s.txItem}>
+          <Pressable
+            key={tx.id}
+            style={({ pressed }) => [s.txItem, pressed && { opacity: 0.6 }]}
+            onPress={() => router.push({ pathname: '/transaction', params: { id: tx.id } })}
+          >
             <View style={[s.txIcon, { backgroundColor: meta.bg }]}>
               <Ionicons name={meta.icon} size={18} color={meta.color} />
             </View>
@@ -263,7 +268,8 @@ function TransactionHistory({
             <Text style={[s.txAmount, { color: failed ? c.neutral[400] : credit ? c.success : c.dark }]}>
               {credit ? '+' : '−'}{formatXOF(tx.amount_xof)}
             </Text>
-          </View>
+            <Ionicons name="chevron-forward" size={16} color={c.neutral[400]} style={{ marginLeft: spacing.xs }} />
+          </Pressable>
         );
       })}
     </View>
