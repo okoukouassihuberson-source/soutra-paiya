@@ -10,6 +10,7 @@ import { lookupRecipient, sendMoney } from '@/lib/wallet';
 import { hasPaymentPin } from '@/lib/security';
 import { PinPrompt } from '@/components/PinPrompt';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { listPaymentFavorites, type PaymentFavorite } from '@/lib/payment-favorites';
 
 const MIN_XOF = 100;
 const PHONE_RE = /^\+225[0-9]{10}$/;
@@ -27,19 +28,22 @@ export default function Send() {
   const [submitting, setSubmitting] = useState(false);
   const [hasPin, setHasPin] = useState(false);
   const [pinVisible, setPinVisible] = useState(false);
+  const [favs, setFavs] = useState<PaymentFavorite[]>([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (!user?.id) { setLoading(false); return; }
       try {
-        const [walletRes, pin] = await Promise.all([
+        const [walletRes, pin, favList] = await Promise.all([
           supabase.from('wallets').select('balance_xof').eq('user_id', user.id).maybeSingle(),
           hasPaymentPin(),
+          listPaymentFavorites().catch(() => [] as PaymentFavorite[]),
         ]);
         if (mounted) {
           setBalance((walletRes.data as any)?.balance_xof ?? 0);
           setHasPin(pin);
+          setFavs(favList);
         }
       } catch (err) {
         console.error('[send] load:', err);
@@ -111,10 +115,60 @@ export default function Send() {
             <Text style={s.balanceValue}>{formatXOF(balance)}</Text>
           </View>
 
+          {/* Favoris — barre horizontale d'accès rapide */}
+          {favs.length > 0 && (
+            <>
+              <View style={s.sectionTitleRow}>
+                <View style={s.sectionAccent} />
+                <Text style={s.sectionTitle}>Favoris</Text>
+                <Pressable hitSlop={6} onPress={() => router.push('/payment-favorites')}>
+                  <Text style={s.sectionLink}>Gérer</Text>
+                </Pressable>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.xs }}
+              >
+                {favs.map((f) => (
+                  <Pressable
+                    key={f.favorite_user_id}
+                    style={({ pressed }) => [s.favChip, pressed && { opacity: 0.75 }]}
+                    onPress={() => f.phone && setPhone(f.phone)}
+                    disabled={!f.phone}
+                  >
+                    <View style={s.favAvatar}>
+                      <Text style={s.favAvatarText}>
+                        {(f.display_name || '?').trim().charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={s.favChipName} numberOfLines={1}>
+                      {f.display_name}
+                    </Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  style={({ pressed }) => [s.favChip, s.favChipAdd, pressed && { opacity: 0.75 }]}
+                  onPress={() => router.push('/payment-favorites')}
+                >
+                  <View style={[s.favAvatar, { backgroundColor: colors.primary[50] }]}>
+                    <Ionicons name="add" size={20} color={colors.primary[600]} />
+                  </View>
+                  <Text style={[s.favChipName, { color: colors.primary[600] }]}>Ajouter</Text>
+                </Pressable>
+              </ScrollView>
+            </>
+          )}
+
           {/* Recipient */}
           <View style={s.sectionTitleRow}>
             <View style={s.sectionAccent} />
             <Text style={s.sectionTitle}>Numéro du destinataire</Text>
+            {favs.length === 0 && (
+              <Pressable hitSlop={6} onPress={() => router.push('/payment-favorites')}>
+                <Text style={s.sectionLink}>Favoris</Text>
+              </Pressable>
+            )}
           </View>
           <View style={[s.fieldCard, phone.length > 4 && !phoneValid && s.fieldCardError]}>
             <Ionicons name="person-outline" size={18} color={colors.neutral[500]} />
@@ -239,6 +293,16 @@ const s = StyleSheet.create({
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.sm },
   sectionAccent: { width: 4, height: 16, borderRadius: 2, backgroundColor: colors.primary[500] },
   sectionTitle: { flex: 1, fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark },
+  sectionLink: { fontSize: typography.fontSize.xs, fontWeight: '700', color: colors.primary[600] },
+  favChip: { alignItems: 'center', width: 64, gap: 4 },
+  favChipAdd: { },
+  favAvatar: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: colors.primary[100],
+    alignItems: 'center', justifyContent: 'center',
+  },
+  favAvatarText: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.primary[700] },
+  favChipName: { fontSize: 11, color: colors.dark, fontWeight: '600', textAlign: 'center' },
   fieldCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.neutral[200],

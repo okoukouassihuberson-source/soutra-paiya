@@ -106,6 +106,16 @@ export default function Settings() {
           />
         </View>
 
+        <Text style={s.section}>Paiements</Text>
+        <View style={s.group}>
+          <Row
+            icon="star-outline"
+            label="Mes favoris de paiement"
+            onPress={() => router.push('/payment-favorites')}
+            last
+          />
+        </View>
+
         <Text style={s.section}>Sécurité</Text>
         <View style={s.group}>
           <Row
