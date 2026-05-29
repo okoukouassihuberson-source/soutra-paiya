@@ -47,9 +47,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Méthode non autorisée" }, 405);
   }
 
-  // Auth.
-  const { user, error: authErr } = await getAuthUser(req);
-  if (authErr || !user) {
+  // Auth. `getAuthUser` retourne l'objet User ou null — pas un wrapper
+  // `{ user, error }`. Toutes les autres Edge Functions suivent ce pattern.
+  const user = await getAuthUser(req);
+  if (!user) {
     return jsonResponse({ error: "Authentification requise" }, 401);
   }
 
