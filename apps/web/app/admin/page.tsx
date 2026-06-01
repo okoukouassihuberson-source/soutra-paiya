@@ -6,6 +6,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF } from '@soutra/shared';
+import { ReportsTab } from './_components/ReportsTab';
 
 // Lazy-load Recharts : sort ~80 kB du bundle initial /admin et ne les charge
 // que si l'utilisateur affiche un onglet contenant des charts. Le static
@@ -26,13 +27,14 @@ const VenueCategoryBar      = dynamic(() => import('./_components/AdminCharts').
 const RevenueByProviderBar  = dynamic(() => import('./_components/AdminCharts').then(m => m.RevenueByProviderBar),  { ssr: false, loading: ChartLoader });
 const UsersByCityBar        = dynamic(() => import('./_components/AdminCharts').then(m => m.UsersByCityBar),        { ssr: false, loading: ChartLoader });
 
-type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
+type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'reports' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Vue d\'ensemble', icon: <IcoGrid /> },
   { id: 'analytics', label: 'Analytics', icon: <IcoChart /> },
   { id: 'users', label: 'Utilisateurs', icon: <IcoUsers /> },
   { id: 'venues', label: 'Établissements', icon: <IcoBuilding /> },
+  { id: 'reports', label: 'Signalements', icon: <IcoAlert /> },
   { id: 'transactions', label: 'Transactions', icon: <IcoCurrency /> },
   { id: 'reservations', label: 'Réservations', icon: <IcoCalendar /> },
   { id: 'marketing', label: 'Marketing', icon: <IcoMegaphone /> },
@@ -102,7 +104,7 @@ function AdminDashboard() {
   // bouton retour navigateur, deep-linking).
   const tabParam = searchParams?.get('tab');
   const tab: Tab = (
-    ['overview', 'analytics', 'users', 'venues', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
+    ['overview', 'analytics', 'users', 'venues', 'reports', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'overview';
   const setTab = useCallback((next: Tab) => {
     router.replace(`/admin?tab=${next}`, { scroll: false });
@@ -614,6 +616,9 @@ function AdminDashboard() {
                 ],
               }))} total={filterList(venues, 'name', 'status').length} />
           )}
+
+          {/* ═══════════ REPORTS (signalements) ═══════════ */}
+          {tab === 'reports' && <ReportsTab />}
 
           {/* ═══════════ TRANSACTIONS ═══════════ */}
           {tab === 'transactions' && (
