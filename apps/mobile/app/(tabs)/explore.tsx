@@ -227,6 +227,16 @@ export default function Explore() {
               <Ionicons name="close-circle" size={18} color={palette.neutral[400]} />
             </Pressable>
           )}
+          {/* Recherche IA en langage naturel (PR search-nl) :
+              pousse vers /search-ai en pré-remplissant le champ si non vide. */}
+          <Pressable
+            onPress={() => router.push({ pathname: '/search-ai', params: searchQuery.trim() ? { q: searchQuery.trim() } : {} })}
+            hitSlop={6}
+            style={({ pressed }) => [s.aiBtn, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}
+            accessibilityLabel="Recherche IA"
+          >
+            <Ionicons name="sparkles" size={16} color={palette.primary[500]} />
+          </Pressable>
           {voiceAvailable && (
             <Pressable
               onPress={() => setVoiceOpen(true)}
@@ -441,6 +451,11 @@ function makeStyles(c: ColorPalette) {
     searchInput: { flex: 1, fontSize: typography.fontSize.sm, color: c.dark },
     searchAction: { paddingHorizontal: 4 },
     micBtn: {
+      width: 32, height: 32, borderRadius: 16,
+      backgroundColor: c.primary[50],
+      alignItems: 'center', justifyContent: 'center',
+    },
+    aiBtn: {
       width: 32, height: 32, borderRadius: 16,
       backgroundColor: c.primary[50],
       alignItems: 'center', justifyContent: 'center',
