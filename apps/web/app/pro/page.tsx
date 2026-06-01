@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF, slugify } from '@soutra/shared';
@@ -1237,8 +1238,12 @@ function ProDashboard() {
                       <div>
                         <label className="mb-2 block text-xs font-medium text-neutral-500">Logo</label>
                         <div className="flex items-center gap-4">
-                          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
-                            {media.logo ? <img src={media.logo} alt="logo" className="h-full w-full object-cover" /> : <IcoGrid className="h-7 w-7 text-neutral-300" />}
+                          <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
+                            {media.logo ? (
+                              <Image src={media.logo} alt="logo" fill sizes="80px" className="object-cover" />
+                            ) : (
+                              <IcoGrid className="h-7 w-7 text-neutral-300" />
+                            )}
                           </div>
                           <label className="cursor-pointer rounded-xl border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition hover:border-primary-500/30 hover:text-primary-500">
                             {uploading === 'logo' ? 'Envoi…' : 'Choisir un logo'}
@@ -1250,8 +1255,12 @@ function ProDashboard() {
                       <div>
                         <label className="mb-2 block text-xs font-medium text-neutral-500">Bannière</label>
                         <div className="flex items-center gap-4">
-                          <div className="flex h-20 w-32 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
-                            {media.cover ? <img src={media.cover} alt="bannière" className="h-full w-full object-cover" /> : <IcoGrid className="h-7 w-7 text-neutral-300" />}
+                          <div className="relative flex h-20 w-32 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+                            {media.cover ? (
+                              <Image src={media.cover} alt="bannière" fill sizes="128px" className="object-cover" />
+                            ) : (
+                              <IcoGrid className="h-7 w-7 text-neutral-300" />
+                            )}
                           </div>
                           <label className="cursor-pointer rounded-xl border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition hover:border-primary-500/30 hover:text-primary-500">
                             {uploading === 'cover' ? 'Envoi…' : 'Choisir une bannière'}
@@ -1276,7 +1285,7 @@ function ProDashboard() {
                         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
                           {media.gallery.map((url) => (
                             <div key={url} className="group relative aspect-square overflow-hidden rounded-xl border border-neutral-200">
-                              <img src={url} alt="" className="h-full w-full object-cover" />
+                              <Image src={url} alt="" fill sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 16vw" className="object-cover" />
                               <button onClick={() => removeGalleryImage(url)} title="Retirer"
                                 className="absolute right-1 top-1 rounded-lg bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100">
                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

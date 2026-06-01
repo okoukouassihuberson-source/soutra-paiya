@@ -54,9 +54,27 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', title: 'Soutra-Playce' },
 };
 
+// Hôte Supabase pré-connecté pour économiser le handshake DNS/TLS au premier
+// appel réseau (auth, RPCs, storage). Extrait l'origine de NEXT_PUBLIC_SUPABASE_URL
+// au build-time pour ne pas embarquer du runtime.
+const SUPABASE_ORIGIN = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pjtmmzxcitbcwbbgtpdj.supabase.co').origin;
+  } catch {
+    return 'https://pjtmmzxcitbcwbbgtpdj.supabase.co';
+  }
+})();
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={inter.variable}>
+      <head>
+        {/* Preconnect réseau pour Supabase : économise ~100-200ms au premier appel. */}
+        <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />
+        {/* DNS-prefetch pour fonts.googleapis.com / fonts.gstatic.com (Inter). */}
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+      </head>
       <body>
         {children}
         <ServiceWorkerRegistrar />
