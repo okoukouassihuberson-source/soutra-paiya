@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, type LayoutChangeEvent } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
@@ -32,6 +32,7 @@ export default function VenueDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -39,6 +40,11 @@ export default function VenueDetail() {
   // Coordonnées GPS lues depuis la RPC get_venue_location (migration 0019)
   // — la colonne PostGIS `location` ne se lit pas proprement via supabase-js.
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Hauteur mesurée du CTA flottant : sert à calculer le paddingBottom du
+  // ScrollView pour qu'aucun contenu (notamment la galerie) ne soit chevauché
+  // par le bouton « Réserver une table ».
+  const [ctaHeight, setCtaHeight] = useState(0);
+  const onCtaLayout = (e: LayoutChangeEvent) => setCtaHeight(e.nativeEvent.layout.height);
 
   useEffect(() => {
     loadVenue();
@@ -145,9 +151,14 @@ export default function VenueDetail() {
     );
   }
 
+  // Padding bottom dynamique : hauteur réelle du CTA + un peu d'air pour
+  // que la galerie reste entièrement visible quand on scroll en bas.
+  // Fallback à 120px tant que onLayout n'a pas encore mesuré le CTA.
+  const scrollPaddingBottom = (ctaHeight || 120) + spacing.md;
+
   return (
-    <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={{ paddingBottom: spacing['2xl'] }}>
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <ScrollView contentContainerStyle={{ paddingBottom: scrollPaddingBottom }}>
         {/* Header with back button */}
         <View style={s.headerBar}>
           <Pressable hitSlop={10} onPress={() => router.back()}>
@@ -265,8 +276,13 @@ export default function VenueDetail() {
         </View>
       </ScrollView>
 
-      {/* Floating CTA */}
-      <View style={s.cta}>
+      {/* Floating CTA — mesure sa hauteur via onLayout pour que le
+          ScrollView padding bottom soit dynamique et evite tout chevauchement.
+          Padding bottom du conteneur inclut la safe-area iOS (home indicator). */}
+      <View
+        style={[s.cta, { paddingBottom: spacing.lg + Math.max(insets.bottom, 0) }]}
+        onLayout={onCtaLayout}
+      >
         <Pressable
           style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
           onPress={() =>
