@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { openDirections, dialPhone, openWhatsApp } from '@/lib/maps';
 import { Gallery } from '@/components/venue/Gallery';
 import { HoursCompact } from '@/components/venue/HoursCompact';
+import { ReportSheet } from '@/components/venue/ReportSheet';
 
 interface Venue {
   id: string;
@@ -45,6 +46,8 @@ export default function VenueDetail() {
   // par le bouton « Réserver une table ».
   const [ctaHeight, setCtaHeight] = useState(0);
   const onCtaLayout = (e: LayoutChangeEvent) => setCtaHeight(e.nativeEvent.layout.height);
+  // Modal "Signaler un problème" — ouvert via la 3e action du header.
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     loadVenue();
@@ -159,18 +162,27 @@ export default function VenueDetail() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={{ paddingBottom: scrollPaddingBottom }}>
-        {/* Header with back button */}
+        {/* Header with back button + favorite + signaler */}
         <View style={s.headerBar}>
           <Pressable hitSlop={10} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={colors.dark} />
           </Pressable>
-          <Pressable hitSlop={10} onPress={toggleFavorite} disabled={favBusy}>
-            <Ionicons
-              name={isFavorite ? 'heart' : 'heart-outline'}
-              size={24}
-              color={isFavorite ? colors.danger : colors.dark}
-            />
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
+            <Pressable
+              hitSlop={10}
+              onPress={() => setReportOpen(true)}
+              accessibilityLabel="Signaler un problème"
+            >
+              <Ionicons name="flag-outline" size={22} color={colors.neutral[600]} />
+            </Pressable>
+            <Pressable hitSlop={10} onPress={toggleFavorite} disabled={favBusy}>
+              <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={24}
+                color={isFavorite ? colors.danger : colors.dark}
+              />
+            </Pressable>
+          </View>
         </View>
 
         {/* ════════ GALERIE PREMIUM ════════ */}
@@ -295,6 +307,14 @@ export default function VenueDetail() {
           <Text style={s.ctaText}>Réserver une table</Text>
         </Pressable>
       </View>
+
+      {/* Modal "Signaler un problème" */}
+      <ReportSheet
+        visible={reportOpen}
+        onClose={() => setReportOpen(false)}
+        venueId={venue.id}
+        venueName={venue.name}
+      />
     </SafeAreaView>
   );
 }

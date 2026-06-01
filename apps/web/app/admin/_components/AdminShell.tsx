@@ -27,12 +27,21 @@ const IcoShield = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+// Icône drapeau pour l'onglet Signalements.
+const IcoFlag = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+    <line x1="4" y1="22" x2="4" y2="15" />
+  </svg>
+);
+
 const NAV: NavItem[] = [
   { id: 'overview',     label: "Vue d'ensemble", href: '/admin?tab=overview',     icon: <IcoGrid />,       inBottomNav: true, match: 'exact' },
   { id: 'analytics',    label: 'Analytics',      href: '/admin?tab=analytics',    icon: <IcoChart />,      inBottomNav: true, match: 'exact' },
   { id: 'users',        label: 'Utilisateurs',   href: '/admin?tab=users',        icon: <IcoUsers />,      inBottomNav: true, match: 'exact' },
   { id: 'venues',       label: 'Établissements', href: '/admin?tab=venues',       icon: <IcoStore />,      inBottomNav: true, match: 'exact' },
-  { id: 'transactions', label: 'Transactions',   href: '/admin?tab=transactions', icon: <IcoWallet />,     inBottomNav: true, match: 'exact' },
+  { id: 'reports',      label: 'Signalements',   href: '/admin?tab=reports',      icon: <IcoFlag />,       inBottomNav: true, match: 'exact' },
+  { id: 'transactions', label: 'Transactions',   href: '/admin?tab=transactions', icon: <IcoWallet />,                        match: 'exact' },
   { id: 'reservations', label: 'Réservations',   href: '/admin?tab=reservations', icon: <IcoCalendar />,                      match: 'exact' },
   { id: 'marketing',    label: 'Marketing',      href: '/admin?tab=marketing',    icon: <IcoMegaphone />,                     match: 'exact' },
   { id: 'security',     label: 'Sécurité',       href: '/admin?tab=security',     icon: <IcoShield />,                        match: 'exact' },
