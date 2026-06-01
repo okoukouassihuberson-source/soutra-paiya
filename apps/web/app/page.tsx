@@ -1,63 +1,26 @@
 import Link from 'next/link';
+import { LandingNavbar } from '@/components/marketing/LandingNavbar';
 
 export default function HomePage() {
   return (
     <main className="overflow-x-hidden">
-
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/*  NAVBAR                                                */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <nav className="fixed top-0 z-50 w-full border-b border-white/[0.06] bg-dark/70 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href="/" className="font-display text-xl font-bold tracking-tight">
-            <span className="text-white">Soutra</span>
-            <span className="text-primary-400">-Playce</span>
-          </Link>
-
-          <div className="hidden items-center gap-8 md:flex">
-            <a href="#how" className="text-sm text-neutral-400 transition hover:text-white">
-              Comment ça marche
-            </a>
-            <a href="#features" className="text-sm text-neutral-400 transition hover:text-white">
-              Fonctionnalités
-            </a>
-            <Link href="/pro" className="text-sm text-neutral-400 transition hover:text-white">
-              Espace Pro
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white sm:block"
-            >
-              Se connecter
-            </Link>
-            <a
-              href="#download"
-              className="rounded-full bg-primary-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-500/20 transition hover:shadow-primary-500/40"
-            >
-              Télécharger
-            </a>
-          </div>
-        </div>
-      </nav>
+      <LandingNavbar />
 
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  HERO                                                  */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="relative min-h-[100dvh] bg-dark pb-20 pt-28 lg:pb-32 lg:pt-36">
+      <section className="relative min-h-[100dvh] bg-dark pb-16 pt-24 sm:pb-20 sm:pt-28 lg:pb-32 lg:pt-36">
         {/* Gradient orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-[40%] left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-primary-500/20 blur-[120px]" />
-          <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-secondary-500/10 blur-[100px]" />
-          <div className="absolute left-0 top-1/3 h-[300px] w-[300px] rounded-full bg-accent-500/10 blur-[80px]" />
+          <div className="absolute -top-[40%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-primary-500/20 blur-[120px] sm:h-[800px] sm:w-[800px]" />
+          <div className="absolute bottom-0 right-0 h-[300px] w-[300px] rounded-full bg-secondary-500/10 blur-[100px] sm:h-[400px] sm:w-[400px]" />
+          <div className="absolute left-0 top-1/3 h-[200px] w-[200px] rounded-full bg-accent-500/10 blur-[80px] sm:h-[300px] sm:w-[300px]" />
         </div>
 
-        <div className="relative mx-auto grid max-w-7xl items-center gap-16 px-6 lg:grid-cols-2">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 sm:gap-12 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
           {/* ── Left: Copy ── */}
           <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/10 px-4 py-1.5 text-sm backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/10 px-3 py-1 text-xs backdrop-blur-sm sm:px-4 sm:py-1.5 sm:text-sm">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-400" />
@@ -65,7 +28,7 @@ export default function HomePage() {
               <span className="text-primary-300">Disponible à Abidjan</span>
             </div>
 
-            <h1 className="mt-8 font-display text-5xl font-bold leading-[1.08] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            <h1 className="mt-6 font-display text-[2.5rem] font-bold leading-[1.08] tracking-tight text-white sm:mt-8 sm:text-5xl md:text-6xl lg:text-7xl">
               Sors. Réserve.
               <br />
               <span className="bg-gradient-to-r from-primary-400 via-warning to-primary-500 bg-clip-text text-transparent">
@@ -73,30 +36,30 @@ export default function HomePage() {
               </span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-lg text-lg leading-relaxed text-neutral-400 lg:mx-0">
+            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-neutral-400 sm:mt-6 sm:text-lg lg:mx-0">
               Trouve les meilleurs maquis et restos d&apos;Abidjan. Réserve ta table
               en 10 secondes. Paie avec Orange Money, Wave ou MTN.{' '}
               <span className="text-neutral-300">C&apos;est garanti.</span>
             </p>
 
-            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row lg:justify-start">
+            <div className="mt-8 flex flex-col items-stretch gap-3 sm:mt-10 sm:flex-row sm:gap-4 sm:items-center lg:justify-start">
               <a
                 href="#download"
-                className="group inline-flex w-full items-center justify-center gap-2.5 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-8 py-4 text-base font-semibold text-white shadow-2xl shadow-primary-500/25 transition-all duration-300 hover:shadow-[0_20px_60px_-15px_rgba(255,107,26,0.5)] sm:w-auto"
+                className="group inline-flex items-center justify-center gap-2.5 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-3.5 text-sm font-semibold text-white shadow-2xl shadow-primary-500/25 transition-all duration-300 hover:shadow-[0_20px_60px_-15px_rgba(255,107,26,0.5)] sm:px-8 sm:py-4 sm:text-base"
               >
                 Télécharger l&apos;app
                 <ArrowIcon className="transition-transform duration-300 group-hover:translate-x-1" />
               </a>
               <Link
                 href="/pro"
-                className="inline-flex w-full items-center justify-center rounded-full border border-neutral-700 px-8 py-4 text-base font-medium text-neutral-300 transition-all duration-300 hover:border-neutral-500 hover:bg-white/[0.03] hover:text-white sm:w-auto"
+                className="inline-flex items-center justify-center rounded-full border border-neutral-700 px-6 py-3.5 text-sm font-medium text-neutral-300 transition-all duration-300 hover:border-neutral-500 hover:bg-white/[0.03] hover:text-white sm:px-8 sm:py-4 sm:text-base"
               >
                 Espace établissement
               </Link>
             </div>
 
-            {/* Social proof */}
-            <div className="mt-14 flex flex-wrap items-center justify-center gap-8 lg:justify-start">
+            {/* Social proof — grille égale 3 cols sur mobile pour lisibilité */}
+            <div className="mt-10 grid grid-cols-3 gap-4 sm:mt-14 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-8 lg:justify-start">
               <HeroStat value="200+" label="Établissements" />
               <div className="hidden h-10 w-px bg-neutral-800 sm:block" />
               <HeroStat value="15K+" label="Utilisateurs" />
@@ -105,8 +68,8 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── Right: Phone ── */}
-          <div className="relative mx-auto lg:mx-0 lg:ml-auto">
+          {/* ── Right: Phone ── (sous le copy sur mobile/tablet via grid 1-col) */}
+          <div className="relative mx-auto w-full max-w-xs sm:max-w-sm lg:mx-0 lg:ml-auto lg:max-w-none">
             <div className="absolute -inset-12 animate-glow-pulse rounded-full bg-gradient-to-br from-primary-500/20 to-warning/10 blur-[80px]" />
             <PhoneMockup />
           </div>
@@ -117,13 +80,13 @@ export default function HomePage() {
       {/*  TRUST BAR                                             */}
       {/* ═══════════════════════════════════════════════════════ */}
       <section className="border-b border-neutral-100 bg-white py-12">
-        <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="mb-8 text-center text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
             Paiements sécurisés
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-14 gap-y-6 opacity-40 grayscale transition-all duration-500 hover:opacity-60 hover:grayscale-0">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 opacity-40 grayscale transition-all duration-500 hover:opacity-60 hover:grayscale-0 sm:gap-x-10 sm:gap-y-6 lg:gap-x-14">
             {['Orange Money', 'Wave', 'MTN MoMo', 'Moov Money', 'Visa', 'Mastercard'].map((name) => (
-              <span key={name} className="text-lg font-bold text-neutral-600">
+              <span key={name} className="text-sm font-bold text-neutral-600 sm:text-base lg:text-lg">
                 {name}
               </span>
             ))}
@@ -134,8 +97,8 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  HOW IT WORKS                                          */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section id="how" className="bg-light py-24 lg:py-32">
-        <div className="mx-auto max-w-7xl px-6">
+      <section id="how" className="bg-light py-16 sm:py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <span className="text-sm font-semibold uppercase tracking-widest text-primary-500">
               Simple comme bonjour
@@ -177,8 +140,8 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  FEATURES — Bento Grid                                 */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section id="features" className="bg-white py-24 lg:py-32">
-        <div className="mx-auto max-w-7xl px-6">
+      <section id="features" className="bg-white py-16 sm:py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <span className="text-sm font-semibold uppercase tracking-widest text-primary-500">
               Fonctionnalités
@@ -254,8 +217,8 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  TESTIMONIALS                                          */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="bg-light py-24 lg:py-32">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-light py-16 sm:py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <span className="text-sm font-semibold uppercase tracking-widest text-primary-500">
               Témoignages
@@ -294,8 +257,8 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  B2B PRO                                               */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="bg-dark py-24 text-white lg:py-32">
-        <div className="mx-auto max-w-7xl px-6">
+      <section className="bg-dark py-16 text-white sm:py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-16 lg:grid-cols-2">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-secondary-500/20 bg-secondary-500/10 px-4 py-1.5 text-sm font-semibold text-secondary-500">
@@ -400,10 +363,10 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  FOOTER                                                */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <footer className="bg-dark py-16 text-neutral-400">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid gap-12 md:grid-cols-4">
-            <div className="md:col-span-1">
+      <footer className="bg-dark py-12 text-neutral-400 sm:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 gap-8 sm:gap-10 md:grid-cols-4 md:gap-12">
+            <div className="col-span-2 md:col-span-1">
               <span className="font-display text-xl font-bold">
                 <span className="text-white">Soutra</span>
                 <span className="text-primary-400">-Playce</span>
