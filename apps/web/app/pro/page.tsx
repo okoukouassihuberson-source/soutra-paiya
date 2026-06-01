@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
-import { formatXOF, slugify } from '@soutra/shared';
+import { formatXOF, slugify, categoriesByGroup } from '@soutra/shared';
 
 // Picker GPS — chargé en client only (leaflet utilise window au montage).
 const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPicker'), {
@@ -48,19 +48,10 @@ const SIDEBAR: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'settings', label: 'Paramètres', icon: <IcoGear /> },
 ];
 
-// Catégories d'établissement — valeurs de l'enum venue_category (migration 0013).
-const VENUE_CATEGORIES: { v: string; l: string }[] = [
-  { v: 'maquis', l: 'Maquis' },
-  { v: 'restaurant', l: 'Restaurant' },
-  { v: 'bar', l: 'Bar' },
-  { v: 'lounge', l: 'Lounge' },
-  { v: 'club', l: 'Club / Boîte de nuit' },
-  { v: 'hotel', l: 'Hôtel' },
-  { v: 'cafe', l: 'Café' },
-  { v: 'sport', l: 'Complexe sportif' },
-  { v: 'beach', l: 'Plage privée' },
-  { v: 'event_space', l: 'Espace événementiel' },
-];
+// Catégories d'établissement — désormais sourcées de @soutra/shared
+// (migrations 0001 + 0013 + 0033). Les <select> utilisent <optgroup> pour
+// rester lisibles avec ~50 catégories réparties dans 10 domaines.
+const VENUE_CATEGORY_GROUPS_PRO = categoriesByGroup();
 
 const HOURS_DAYS: { k: string; l: string }[] = [
   { k: 'mon', l: 'Lundi' }, { k: 'tue', l: 'Mardi' }, { k: 'wed', l: 'Mercredi' },
@@ -781,7 +772,11 @@ function ProDashboard() {
                   <div>
                     <label className="mb-1 block text-xs font-medium text-neutral-500">Catégorie</label>
                     <select value={nv.category} onChange={(e) => setNv((p) => ({ ...p, category: e.target.value }))} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
-                      {VENUE_CATEGORIES.map((c) => <option key={c.v} value={c.v}>{c.l}</option>)}
+                      {VENUE_CATEGORY_GROUPS_PRO.map((g) => (
+                        <optgroup key={g.group} label={g.label}>
+                          {g.items.map((c) => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
+                        </optgroup>
+                      ))}
                     </select>
                   </div>
                   <ProInput label="Ville / commune" value={nv.city} onChange={(v) => setNv((p) => ({ ...p, city: v }))} placeholder="Abidjan" />
@@ -1329,7 +1324,11 @@ function ProDashboard() {
                         <div>
                           <label className="mb-1 block text-xs font-medium text-neutral-500">Catégorie</label>
                           <select value={settingsCategory} onChange={(e) => setSettingsCategory(e.target.value)} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
-                            {VENUE_CATEGORIES.map((c) => <option key={c.v} value={c.v}>{c.l}</option>)}
+                            {VENUE_CATEGORY_GROUPS_PRO.map((g) => (
+                        <optgroup key={g.group} label={g.label}>
+                          {g.items.map((c) => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
+                        </optgroup>
+                      ))}
                           </select>
                         </div>
                         <ProInput label="Ville" value={settingsCity} onChange={setSettingsCity} />

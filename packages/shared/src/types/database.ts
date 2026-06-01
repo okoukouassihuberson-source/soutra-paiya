@@ -46,13 +46,20 @@ export interface Database {
           owner_id: string;
           name: string;
           slug: string;
-          category: 'maquis' | 'restaurant' | 'hotel' | 'club' | 'sport' | 'cafe' | 'event_space';
+          // Enum venue_category — migrations 0001 + 0013 + 0033.
+          // Si tu ajoutes une valeur en SQL, miroir-la ici.
+          category: VenueCategory;
+          subcategory: string | null;             // migration 0033
           description: string | null;
           cover_url: string | null;
           gallery_urls: string[];
+          video_urls: string[];                   // migration 0033
+          tour_360_url: string | null;            // migration 0033
           address: string;
           city: string;
+          commune: string | null;                 // migration 0033
           district: string | null;
+          website: string | null;                 // migration 0033
           phone: string | null;
           email: string | null;
           opening_hours: Json;
@@ -65,7 +72,7 @@ export interface Database {
           updated_at: string;
         };
         Insert: Partial<Database['public']['Tables']['venues']['Row']> & {
-          owner_id: string; name: string; slug: string; category: Database['public']['Tables']['venues']['Row']['category']; address: string;
+          owner_id: string; name: string; slug: string; category: VenueCategory; address: string;
         };
         Update: Partial<Database['public']['Tables']['venues']['Row']>;
       };
@@ -129,7 +136,38 @@ export interface Database {
     Functions: Record<string, never>;
     Enums: {
       user_role: 'user' | 'venue_owner' | 'organizer' | 'staff' | 'admin';
-      venue_category: 'maquis' | 'restaurant' | 'hotel' | 'club' | 'sport' | 'cafe' | 'event_space';
+      venue_category: VenueCategory;
     };
   };
 }
+
+// ============================================================================
+// VenueCategory — enum miroir du type PostgreSQL `venue_category`
+// (migrations 0001 + 0013 + 0033). Si tu ajoutes une valeur en SQL, ajoute-la
+// ici. Sinon les types Insert/Update n'accepteront pas les nouvelles valeurs.
+// Regroupé par domaine pour la lisibilité; l'ordre n'a pas d'incidence runtime.
+// ============================================================================
+export type VenueCategory =
+  // Restauration
+  | 'maquis' | 'restaurant' | 'cafe' | 'bar' | 'lounge'
+  | 'fast_food' | 'patisserie'
+  // Hébergement
+  | 'hotel' | 'residence_meublee' | 'villa' | 'resort' | 'auberge'
+  // Loisirs
+  | 'club' | 'piscine' | 'cinema' | 'casino'
+  | 'centre_loisirs' | 'parc' | 'event_space' | 'beach'
+  // Sport
+  | 'sport' | 'salle_sport' | 'terrain_football' | 'multisports' | 'fitness'
+  // Commerce
+  | 'mall' | 'supermarche' | 'boutique'
+  // Éducation
+  | 'maternelle' | 'primaire' | 'college' | 'lycee' | 'universite'
+  | 'grande_ecole' | 'formation' | 'bibliotheque' | 'residence_universitaire'
+  // Santé
+  | 'hopital' | 'clinique' | 'pharmacie' | 'laboratoire'
+  // Services
+  | 'banque' | 'assurance' | 'immobilier' | 'voyage' | 'comptable' | 'juridique'
+  // Tourisme
+  | 'site_touristique' | 'musee' | 'monument' | 'reserve_naturelle' | 'attraction'
+  // Autres
+  | 'entreprise' | 'autre';
