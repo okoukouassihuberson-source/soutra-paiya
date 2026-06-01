@@ -3,12 +3,28 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF } from '@soutra/shared';
-import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-} from 'recharts';
+
+// Lazy-load Recharts : sort ~80 kB du bundle initial /admin et ne les charge
+// que si l'utilisateur affiche un onglet contenant des charts. Le static
+// analysis de next/dynamic exige des options literals (pas de variable
+// partagee), c'est pourquoi on duplique l'objet à chaque appel.
+const ChartLoader = () => (
+  <div className="flex h-[240px] items-center justify-center text-xs text-neutral-600">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-700 border-t-primary-500" />
+  </div>
+);
+
+const RevenueAreaChart      = dynamic(() => import('./_components/AdminCharts').then(m => m.RevenueAreaChart),      { ssr: false, loading: ChartLoader });
+const GenericPie            = dynamic(() => import('./_components/AdminCharts').then(m => m.GenericPie),            { ssr: false, loading: ChartLoader });
+const RevenueFeeAreaChart   = dynamic(() => import('./_components/AdminCharts').then(m => m.RevenueFeeAreaChart),   { ssr: false, loading: ChartLoader });
+const UserGrowthBar         = dynamic(() => import('./_components/AdminCharts').then(m => m.UserGrowthBar),         { ssr: false, loading: ChartLoader });
+const ResaPerDayArea        = dynamic(() => import('./_components/AdminCharts').then(m => m.ResaPerDayArea),        { ssr: false, loading: ChartLoader });
+const VenueCategoryBar      = dynamic(() => import('./_components/AdminCharts').then(m => m.VenueCategoryBar),      { ssr: false, loading: ChartLoader });
+const RevenueByProviderBar  = dynamic(() => import('./_components/AdminCharts').then(m => m.RevenueByProviderBar),  { ssr: false, loading: ChartLoader });
+const UsersByCityBar        = dynamic(() => import('./_components/AdminCharts').then(m => m.UsersByCityBar),        { ssr: false, loading: ChartLoader });
 
 type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
 
@@ -62,7 +78,8 @@ const RESA_STATUS: Record<string, { label: string; color: string }> = {
   refunded: { label: 'Remboursé', color: 'bg-purple-900/50 text-purple-400' },
 };
 
-const PIE_COLORS = ['#f97316', '#3b82f6', '#10b981', '#a855f7', '#ef4444', '#6b7280'];
+// PIE_COLORS et CustomTooltip ont migré vers _components/AdminCharts.tsx
+// (extraits avec les charts dans le chunk async Recharts).
 
 /**
  * Next 14 App Router exige qu'un composant qui appelle useSearchParams soit
@@ -470,30 +487,10 @@ function AdminDashboard() {
               </div>
               <div className="mt-6 grid gap-6 lg:grid-cols-2">
                 <ChartCard title="Revenus (30 derniers jours)">
-                  {revenueByDay.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={240}>
-                      <AreaChart data={revenueByDay}>
-                        <defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f97316" stopOpacity={0.3} /><stop offset="100%" stopColor="#f97316" stopOpacity={0} /></linearGradient></defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                        <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} />
-                        <YAxis tick={{ fontSize: 10, fill: '#737373' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-                        <Tooltip content={<CustomTooltip formatter={(v: number) => formatXOF(v)} />} />
-                        <Area type="monotone" dataKey="revenue" stroke="#f97316" fill="url(#revGrad)" strokeWidth={2} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : <EmptyChart />}
+                  {revenueByDay.length > 0 ? <RevenueAreaChart data={revenueByDay} height={240} /> : <EmptyChart />}
                 </ChartCard>
                 <ChartCard title="Réservations par statut">
-                  {resaStatusPie.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={240}>
-                      <PieChart>
-                        <Pie data={resaStatusPie} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={3} dataKey="value">
-                          {resaStatusPie.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} /><Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : <EmptyChart />}
+                  {resaStatusPie.length > 0 ? <GenericPie data={resaStatusPie} height={240} innerRadius={55} outerRadius={90} /> : <EmptyChart />}
                 </ChartCard>
               </div>
               <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -539,63 +536,30 @@ function AdminDashboard() {
             <>
               <div className="grid gap-6 lg:grid-cols-2">
                 <ChartCard title="Évolution revenus & frais">
-                  {revenueByDay.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <AreaChart data={revenueByDay}>
-                        <defs>
-                          <linearGradient id="revGrad2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f97316" stopOpacity={0.3} /><stop offset="100%" stopColor="#f97316" stopOpacity={0} /></linearGradient>
-                          <linearGradient id="feeGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a855f7" stopOpacity={0.3} /><stop offset="100%" stopColor="#a855f7" stopOpacity={0} /></linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#262626" /><XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} /><YAxis tick={{ fontSize: 10, fill: '#737373' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-                        <Tooltip content={<CustomTooltip formatter={(v: number) => formatXOF(v)} />} /><Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                        <Area type="monotone" dataKey="revenue" name="Revenus" stroke="#f97316" fill="url(#revGrad2)" strokeWidth={2} />
-                        <Area type="monotone" dataKey="fees" name="Frais" stroke="#a855f7" fill="url(#feeGrad)" strokeWidth={2} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : <EmptyChart />}
+                  {revenueByDay.length > 0 ? <RevenueFeeAreaChart data={revenueByDay} /> : <EmptyChart />}
                 </ChartCard>
                 <ChartCard title="Croissance utilisateurs">
-                  {userGrowth.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <BarChart data={userGrowth}><CartesianGrid strokeDasharray="3 3" stroke="#262626" /><XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} /><YAxis tick={{ fontSize: 10, fill: '#737373' }} /><Tooltip content={<CustomTooltip />} /><Bar dataKey="nouveaux" name="Nouveaux" fill="#3b82f6" radius={[4, 4, 0, 0]} /></BarChart>
-                    </ResponsiveContainer>
-                  ) : <EmptyChart />}
+                  {userGrowth.length > 0 ? <UserGrowthBar data={userGrowth} /> : <EmptyChart />}
                 </ChartCard>
                 <ChartCard title="Réservations / jour">
-                  {resaByDay.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <AreaChart data={resaByDay}>
-                        <defs><linearGradient id="resaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={0.3} /><stop offset="100%" stopColor="#10b981" stopOpacity={0} /></linearGradient></defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#262626" /><XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} /><YAxis tick={{ fontSize: 10, fill: '#737373' }} /><Tooltip content={<CustomTooltip />} />
-                        <Area type="monotone" dataKey="reservations" stroke="#10b981" fill="url(#resaGrad)" strokeWidth={2} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : <EmptyChart />}
+                  {resaByDay.length > 0 ? <ResaPerDayArea data={resaByDay} /> : <EmptyChart />}
                 </ChartCard>
                 <ChartCard title="Statut transactions">
-                  {txStatusPie.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <PieChart><Pie data={txStatusPie} cx="50%" cy="50%" innerRadius={60} outerRadius={95} paddingAngle={3} dataKey="value">{txStatusPie.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}</Pie><Tooltip content={<CustomTooltip />} /><Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} /></PieChart>
-                    </ResponsiveContainer>
-                  ) : <EmptyChart />}
+                  {txStatusPie.length > 0 ? <GenericPie data={txStatusPie} height={280} innerRadius={60} outerRadius={95} /> : <EmptyChart />}
                 </ChartCard>
                 <ChartCard title="Répartition par rôle">
-                  {userRolePie.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <PieChart><Pie data={userRolePie} cx="50%" cy="50%" innerRadius={60} outerRadius={95} paddingAngle={3} dataKey="value">{userRolePie.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}</Pie><Tooltip content={<CustomTooltip />} /><Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} /></PieChart>
-                    </ResponsiveContainer>
-                  ) : <EmptyChart />}
+                  {userRolePie.length > 0 ? <GenericPie data={userRolePie} height={280} innerRadius={60} outerRadius={95} /> : <EmptyChart />}
                 </ChartCard>
                 <ChartCard title="Venues par catégorie">
-                  {venueCategoryBar.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <BarChart data={venueCategoryBar} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#262626" horizontal={false} /><XAxis type="number" tick={{ fontSize: 10, fill: '#737373' }} /><YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#737373' }} width={100} /><Tooltip content={<CustomTooltip />} /><Bar dataKey="count" name="Venues" fill="#f97316" radius={[0, 4, 4, 0]} /></BarChart>
-                    </ResponsiveContainer>
-                  ) : <EmptyChart />}
+                  {venueCategoryBar.length > 0 ? <VenueCategoryBar data={venueCategoryBar} /> : <EmptyChart />}
                 </ChartCard>
               </div>
               {revenueByProvider.length > 0 && (
-                <div className="mt-6"><ChartCard title="Revenus par provider"><ResponsiveContainer width="100%" height={280}><BarChart data={revenueByProvider}><CartesianGrid strokeDasharray="3 3" stroke="#262626" /><XAxis dataKey="name" tick={{ fontSize: 10, fill: '#737373' }} /><YAxis tick={{ fontSize: 10, fill: '#737373' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} /><Tooltip content={<CustomTooltip formatter={(v: number) => formatXOF(v)} />} /><Bar dataKey="value" name="Revenus" fill="#10b981" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></ChartCard></div>
+                <div className="mt-6">
+                  <ChartCard title="Revenus par provider">
+                    <RevenueByProviderBar data={revenueByProvider} />
+                  </ChartCard>
+                </div>
               )}
               <div className="mt-6 grid gap-4 lg:grid-cols-3">
                 <InsightCard title="Conversion" value={`${kpis.conversionRate}%`} desc="des réservations aboutissent" trend={kpis.conversionRate >= 50 ? 'up' : 'down'} color={kpis.conversionRate >= 50 ? 'emerald' : 'red'} />
@@ -704,17 +668,7 @@ function AdminDashboard() {
               <div className="mt-6 grid gap-6 lg:grid-cols-2">
                 {/* Segments utilisateurs par ville */}
                 <ChartCard title="Utilisateurs par ville">
-                  {usersByCity.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <BarChart data={usersByCity.slice(0, 8)} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#262626" horizontal={false} />
-                        <XAxis type="number" tick={{ fontSize: 10, fill: '#737373' }} />
-                        <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#737373' }} width={120} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Bar dataKey="count" name="Utilisateurs" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : <EmptyChart />}
+                  {usersByCity.length > 0 ? <UsersByCityBar data={usersByCity.slice(0, 8)} /> : <EmptyChart />}
                 </ChartCard>
 
                 {/* Créer un code promo */}
@@ -1060,16 +1014,6 @@ function InsightCard({ title, value, desc, trend, color }: { title: string; valu
       <div className="flex items-center justify-between"><span className="text-xs font-medium text-neutral-500">{title}</span><span className={`text-lg ${trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>{trend === 'up' ? '↑' : '↓'}</span></div>
       <p className={`mt-2 font-display text-3xl font-bold ${c.text}`}>{value}</p>
       <p className="mt-1 text-xs text-neutral-500">{desc}</p>
-    </div>
-  );
-}
-
-function CustomTooltip({ active, payload, label, formatter }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 shadow-2xl">
-      {label && <p className="mb-1 text-xs text-neutral-500">{label}</p>}
-      {payload.map((p: any, i: number) => <p key={i} className="text-sm font-medium" style={{ color: p.color }}>{p.name}: {formatter ? formatter(p.value) : p.value.toLocaleString('fr-FR')}</p>)}
     </div>
   );
 }
