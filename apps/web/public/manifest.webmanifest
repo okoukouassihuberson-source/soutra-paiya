@@ -1,0 +1,44 @@
+{
+  "name": "Soutra-Playce",
+  "short_name": "Soutra",
+  "description": "Sors, réserve, paie — zéro galère. La plateforme fintech & loisirs pour la Côte d'Ivoire.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FAF7F2",
+  "theme_color": "#FF6B1A",
+  "lang": "fr-CI",
+  "dir": "ltr",
+  "categories": ["finance", "lifestyle", "food", "social"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Espace Établissement",
+      "short_name": "Pro",
+      "description": "Dashboard de mon établissement",
+      "url": "/pro",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Espace Admin",
+      "short_name": "Admin",
+      "description": "Tableau de bord administrateur",
+      "url": "/admin",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    }
+  ]
+}

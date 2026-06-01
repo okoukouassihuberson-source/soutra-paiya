@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
+import { Suspense, useState, type ReactNode } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
@@ -50,7 +50,25 @@ interface Props {
  * les pages de cet espace (/pro, /admin…). Le shell est purement présentationnel,
  * la nav est définie par les `navItems` passés en props.
  */
-export function AppShell({
+export function AppShell(props: Props) {
+  // Wrap dans Suspense car useSearchParams nécessite un boundary
+  // côté Next 14 (App Router) lors du build static.
+  return (
+    <Suspense fallback={<AppShellInner {...props} _currentUrl={null} />}>
+      <AppShellWithUrl {...props} />
+    </Suspense>
+  );
+}
+
+function AppShellWithUrl(props: Props) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const qs = searchParams?.toString();
+  const currentUrl = qs ? `${pathname}?${qs}` : pathname;
+  return <AppShellInner {...props} _currentUrl={currentUrl} />;
+}
+
+function AppShellInner({
   navItems,
   appLabel,
   homeHref = '/',
@@ -58,9 +76,10 @@ export function AppShell({
   headerActions,
   sidebarFooter,
   children,
-}: Props) {
+  _currentUrl,
+}: Props & { _currentUrl: string | null }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const pathname = usePathname();
+  const currentUrl = _currentUrl;
 
   const bottomItems = navItems.filter((i) => i.inBottomNav).slice(0, 5);
 
@@ -87,7 +106,7 @@ export function AppShell({
           appLabel={appLabel}
           homeHref={homeHref}
           navItems={navItems}
-          pathname={pathname}
+          pathname={currentUrl}
           user={user}
           footer={sidebarFooter}
           onItemClick={() => setDrawerOpen(false)}
@@ -101,7 +120,7 @@ export function AppShell({
           appLabel={appLabel}
           homeHref={homeHref}
           navItems={navItems}
-          pathname={pathname}
+          pathname={currentUrl}
           user={user}
           footer={sidebarFooter}
         />
@@ -125,14 +144,31 @@ export function AppShell({
       </main>
 
       {/* Bottom-nav mobile */}
-      {bottomItems.length > 0 && <BottomNav items={bottomItems} pathname={pathname} />}
+      {bottomItems.length > 0 && <BottomNav items={bottomItems} pathname={currentUrl} />}
     </div>
   );
 }
 
-export function isActiveNav(href: string, pathname: string | null, mode: 'exact' | 'prefix' = 'prefix'): boolean {
-  if (!pathname) return false;
-  if (mode === 'exact') return pathname === href;
-  if (href === '/') return pathname === '/';
-  return pathname === href || pathname.startsWith(href + '/');
+/**
+ * Matche un href contre l'URL actuelle (pathname + query).
+ *   • mode 'exact'  : égalité stricte, avec un cas spécial : si l'href cible
+ *     `?tab=dashboard` et qu'on est sur le pathname sans query, on considère
+ *     « dashboard » comme l'onglet par défaut (donc actif).
+ *   • mode 'prefix' (default) : matche juste le pathname (avant ?), strict
+ *     ou prefix-with-slash. Idéal pour les sous-routes /pro/x/y.
+ */
+export function isActiveNav(href: string, currentUrl: string | null, mode: 'exact' | 'prefix' = 'prefix'): boolean {
+  if (!currentUrl) return false;
+  if (mode === 'exact') {
+    if (currentUrl === href) return true;
+    const [hPath, hQuery] = href.split('?');
+    const [cPath, cQuery] = currentUrl.split('?');
+    if (hPath !== cPath) return false;
+    if (!cQuery && hQuery) return hQuery === 'tab=dashboard';
+    return hQuery === cQuery;
+  }
+  const hPath = href.split('?')[0];
+  const cPath = currentUrl.split('?')[0];
+  if (hPath === '/') return cPath === '/';
+  return cPath === hPath || cPath.startsWith(hPath + '/');
 }
