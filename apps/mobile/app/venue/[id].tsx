@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ScrollView, View, Text, Pressable, Image, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { openDirections, dialPhone, openWhatsApp } from '@/lib/maps';
+import { Gallery } from '@/components/venue/Gallery';
+import { HoursCompact } from '@/components/venue/HoursCompact';
 
 interface Venue {
   id: string;
@@ -160,10 +162,9 @@ export default function VenueDetail() {
           </Pressable>
         </View>
 
-        {/* Hero Image */}
-        {venue.cover_url && (
-          <Image source={{ uri: venue.cover_url }} style={s.heroImg} />
-        )}
+        {/* ════════ GALERIE PREMIUM ════════ */}
+        {/* Hero photo principale + thumbs + lightbox plein écran avec swipe/zoom */}
+        <Gallery cover={venue.cover_url} gallery={venue.gallery_urls} />
 
         {/* Content */}
         <View style={s.content}>
@@ -212,6 +213,14 @@ export default function VenueDetail() {
             </Pressable>
           </View>
 
+          {/* ════════ HORAIRES COMPACTES ════════ */}
+          {/* Statut ouvert/fermé en temps réel + horaire du jour + bouton "Voir tous" */}
+          {venue.opening_hours && Object.keys(venue.opening_hours).length > 0 && (
+            <View style={{ marginBottom: spacing.lg }}>
+              <HoursCompact hours={venue.opening_hours} />
+            </View>
+          )}
+
           {/* Info Cards — l'adresse est cliquable et lance l'itinéraire */}
           <View style={s.infoGrid}>
             {venue.address && (
@@ -251,37 +260,6 @@ export default function VenueDetail() {
                   </View>
                 ))}
               </View>
-            </>
-          )}
-
-          {/* Opening Hours */}
-          {venue.opening_hours && Object.keys(venue.opening_hours).length > 0 && (
-            <>
-              <Text style={s.sectionTitle}>Horaires</Text>
-              <View>
-                {Object.entries(venue.opening_hours).map(([day, [open, close]]) => (
-                  <View key={day} style={s.hourRow}>
-                    <Text style={s.dayText}>{day.charAt(0).toUpperCase() + day.slice(1)}</Text>
-                    <Text style={s.timeText}>{open} - {close}</Text>
-                  </View>
-                ))}
-              </View>
-            </>
-          )}
-
-          {/* Gallery */}
-          {venue.gallery_urls && venue.gallery_urls.length > 0 && (
-            <>
-              <Text style={s.sectionTitle}>Galerie</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={s.galleryRow}
-              >
-                {venue.gallery_urls.map((url, idx) => (
-                  <Image key={idx} source={{ uri: url }} style={s.galleryImg} />
-                ))}
-              </ScrollView>
             </>
           )}
         </View>
