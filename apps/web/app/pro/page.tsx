@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
@@ -85,11 +85,34 @@ function vxFromVenue(v: any) {
   };
 }
 
-export default function ProDashboard() {
+/**
+ * Next 14 App Router exige qu'un composant qui appelle useSearchParams soit
+ * rendu sous une <Suspense> boundary (sinon le build static échoue). On wrap
+ * la vraie page dans un container qui fait juste ça.
+ */
+export default function ProDashboardPage() {
+  return (
+    <Suspense>
+      <ProDashboard />
+    </Suspense>
+  );
+}
+
+function ProDashboard() {
   const supabase = supabaseBrowser();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [tab, setTab] = useState<Tab>('dashboard');
+  // L'onglet actif est désormais piloté par ?tab=… ce qui permet à la
+  // sidebar AppShell (Link) et au bouton retour navigateur de fonctionner.
+  const tabParam = searchParams?.get('tab');
+  const tab: Tab = (
+    ['dashboard', 'reservations', 'events', 'menu', 'finances', 'marketing', 'settings'] as const
+  ).includes(tabParam as Tab) ? (tabParam as Tab) : 'dashboard';
+  const setTab = useCallback((next: Tab) => {
+    router.replace(`/pro?tab=${next}`, { scroll: false });
+  }, [router]);
+
   const [userName, setUserName] = useState('');
   const [userId, setUserId] = useState('');
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -687,59 +710,62 @@ export default function ProDashboard() {
   const menuCategories = useMemo(() => [...new Set(menuItems.map((m) => m.category))], [menuItems]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-neutral-50"><div className="text-center"><div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary-200 border-t-primary-500" /><p className="mt-4 text-sm text-neutral-500">Chargement du dashboard...</p></div></div>;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary-200 border-t-primary-500" />
+          <p className="mt-4 text-sm text-neutral-500">Chargement du dashboard…</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
+    <div className="min-h-full bg-neutral-50">
       {toast && (
-        <div className={`fixed right-6 top-6 z-[100] flex items-center gap-3 rounded-xl px-5 py-3 text-sm font-medium shadow-lg ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-          <span>{toast.type === 'success' ? '✓' : '✗'}</span>{toast.message}
+        <div
+          className={`fixed left-1/2 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium shadow-xl sm:left-auto sm:right-6 sm:translate-x-0 sm:px-5 sm:py-3 ${
+            toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+          }`}
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 70px)' }}
+        >
+          <span>{toast.type === 'success' ? '✓' : '✗'}</span>
+          <span className="truncate">{toast.message}</span>
         </div>
       )}
 
-      {/* ════════ SIDEBAR ════════ */}
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-dark">
-        <div className="flex items-center gap-2 border-b border-neutral-800 px-6 py-5">
-          <Link href="/" className="font-display text-lg font-bold"><span className="text-white">Soutra</span><span className="text-primary-400">-Playce</span></Link>
-          <span className="ml-auto rounded-md bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-400">Pro</span>
-        </div>
-
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {SIDEBAR.map((item) => (
-            <button key={item.id} onClick={() => { setTab(item.id); setSearch(''); setStatusFilter('all'); }}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${tab === item.id ? 'bg-primary-500/15 text-primary-400' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
-              {item.icon}{item.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="border-t border-neutral-800 px-4 py-4">
+      {/* Header local — sticky sous la topbar AppShell */}
+      <header
+        className="sticky z-20 border-b border-neutral-200 bg-white/80 backdrop-blur-xl"
+        style={{ top: 0 }}
+      >
+        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4 lg:px-8 lg:py-5">
+          <div className="min-w-0">
+            <h1 className="truncate font-display text-base font-bold text-dark sm:text-xl">
+              Bonjour, {userName.split(' ')[0] || '—'}
+            </h1>
+            <p className="mt-0.5 truncate text-xs capitalize text-neutral-400 sm:text-sm">{today}</p>
+          </div>
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-500 text-sm font-bold text-white">{userName.charAt(0).toUpperCase()}</div>
-            <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium text-white">{userName}</div><div className="text-xs text-neutral-500">Propriétaire</div></div>
-            <button onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} title="Se déconnecter" className="rounded-lg p-2 text-neutral-500 transition hover:bg-neutral-800 hover:text-white"><IcoLogout /></button>
+            {venues.length > 1 && (
+              <select
+                value={selectedVenueId}
+                onChange={(e) => setSelectedVenueId(e.target.value)}
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-dark transition focus:border-primary-500 focus:outline-none sm:w-auto sm:px-4 sm:py-2.5"
+              >
+                {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </select>
+            )}
+            {venues.length === 1 && (
+              <div className="truncate rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-dark sm:px-4 sm:py-2.5">
+                {venues[0].name}
+              </div>
+            )}
           </div>
         </div>
-      </aside>
+      </header>
 
-      {/* ════════ MAIN ════════ */}
-      <div className="ml-64 flex-1">
-        <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/80 backdrop-blur-xl">
-          <div className="flex items-center justify-between px-8 py-5">
-            <div><h1 className="font-display text-xl font-bold text-dark">Bonjour, {userName.split(' ')[0]}</h1><p className="mt-0.5 text-sm capitalize text-neutral-400">{today}</p></div>
-            <div className="flex items-center gap-3">
-              {venues.length > 1 && (
-                <select value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)} className="rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-dark transition focus:border-primary-500 focus:outline-none">
-                  {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-                </select>
-              )}
-              {venues.length === 1 && <div className="rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-dark">{venues[0].name}</div>}
-            </div>
-          </div>
-        </header>
-
-        <div className="p-8">
+      <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
           {/* Création d'établissement (aucun venue rattaché) */}
           {venues.length === 0 && (
             <div className="mx-auto max-w-2xl">
@@ -789,9 +815,15 @@ export default function ProDashboard() {
                   </div>
 
                   {/* Quick nav */}
-                  <div className="mb-6 grid grid-cols-3 gap-3 lg:grid-cols-6">
+                  <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 lg:gap-3">
                     {SIDEBAR.filter((s) => s.id !== 'dashboard').map((s) => (
-                      <button key={s.id} onClick={() => setTab(s.id)} className="rounded-xl border border-neutral-200 bg-white px-4 py-3 text-center text-sm font-medium text-neutral-600 transition hover:border-primary-500/30 hover:text-primary-500">{s.label}</button>
+                      <button
+                        key={s.id}
+                        onClick={() => setTab(s.id)}
+                        className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-center text-xs font-medium text-neutral-600 transition hover:border-primary-500/30 hover:text-primary-500 sm:px-4 sm:py-3 sm:text-sm"
+                      >
+                        {s.label}
+                      </button>
                     ))}
                   </div>
 
@@ -1374,7 +1406,6 @@ export default function ProDashboard() {
             </>
           )}
         </div>
-      </div>
     </div>
   );
 }
@@ -1443,12 +1474,15 @@ function ReservationTable({ reservations, tableLoading, search, onSearch, status
 
 function KpiCard({ icon, iconBg, label, value, sub }: { icon: React.ReactNode; iconBg: string; label: string; value: string; sub: string }) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 transition-shadow hover:shadow-md">
-      <div className="flex items-center gap-4">
-        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconBg}`}>{icon}</div>
-        <div className="min-w-0 flex-1"><div className="text-xs font-medium text-neutral-400">{label}</div><div className="mt-0.5 truncate font-display text-2xl font-bold text-dark">{value}</div></div>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-md sm:p-5 lg:p-6">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${iconBg}`}>{icon}</div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[11px] font-medium text-neutral-400 sm:text-xs">{label}</div>
+          <div className="mt-0.5 truncate font-display text-lg font-bold text-dark sm:text-2xl">{value}</div>
+        </div>
       </div>
-      <div className="mt-3 text-xs text-neutral-400">{sub}</div>
+      <div className="mt-2 truncate text-[11px] text-neutral-400 sm:mt-3 sm:text-xs">{sub}</div>
     </div>
   );
 }
