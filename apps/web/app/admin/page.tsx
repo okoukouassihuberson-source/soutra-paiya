@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF } from '@soutra/shared';
@@ -64,11 +64,33 @@ const RESA_STATUS: Record<string, { label: string; color: string }> = {
 
 const PIE_COLORS = ['#f97316', '#3b82f6', '#10b981', '#a855f7', '#ef4444', '#6b7280'];
 
-export default function AdminDashboard() {
+/**
+ * Next 14 App Router exige qu'un composant qui appelle useSearchParams soit
+ * rendu sous une <Suspense> boundary (sinon le build static échoue).
+ */
+export default function AdminDashboardPage() {
+  return (
+    <Suspense>
+      <AdminDashboard />
+    </Suspense>
+  );
+}
+
+function AdminDashboard() {
   const sb = supabaseBrowser();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [tab, setTab] = useState<Tab>('overview');
+  // L'onglet actif est piloté par ?tab=… (lien depuis la sidebar AppShell,
+  // bouton retour navigateur, deep-linking).
+  const tabParam = searchParams?.get('tab');
+  const tab: Tab = (
+    ['overview', 'analytics', 'users', 'venues', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
+  ).includes(tabParam as Tab) ? (tabParam as Tab) : 'overview';
+  const setTab = useCallback((next: Tab) => {
+    router.replace(`/admin?tab=${next}`, { scroll: false });
+  }, [router]);
+
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
@@ -377,94 +399,59 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-950">
+      <div className="flex min-h-[60vh] items-center justify-center bg-neutral-950 px-4">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-neutral-700 border-t-primary-500" />
-          <p className="text-sm text-neutral-500">Chargement du centre de contrôle...</p>
+          <p className="text-sm text-neutral-500">Chargement du centre de contrôle…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-neutral-950 text-white">
+    <div className="min-h-full bg-neutral-950 text-white">
       {toast && (
-        <div className={`fixed right-6 top-6 z-[100] flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium shadow-2xl backdrop-blur-xl ${toast.ok ? 'bg-emerald-600/90' : 'bg-red-600/90'}`}>
-          <span className="text-lg">{toast.ok ? '✓' : '✗'}</span> {toast.msg}
+        <div
+          className={`fixed left-1/2 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-2xl backdrop-blur-xl sm:left-auto sm:right-6 sm:translate-x-0 sm:px-5 sm:py-3 ${toast.ok ? 'bg-emerald-600/95' : 'bg-red-600/95'}`}
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 70px)' }}
+        >
+          <span className="text-lg">{toast.ok ? '✓' : '✗'}</span>
+          <span className="truncate">{toast.msg}</span>
         </div>
       )}
 
-      {/* ========== SIDEBAR ========== */}
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-neutral-800/50 bg-neutral-900/95 backdrop-blur-xl">
-        <div className="flex items-center gap-2 px-5 py-5">
-          <Link href="/" className="font-display text-lg font-bold">
-            <span className="text-white">Soutra</span>
-            <span className="text-primary-400">-Playce</span>
-          </Link>
-          <span className="ml-auto rounded-md bg-gradient-to-r from-red-500/20 to-orange-500/20 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-red-400 ring-1 ring-red-500/30">
-            Admin
-          </span>
-        </div>
-
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
-          {TABS.slice(0, 6).map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${tab === t.id ? 'bg-gradient-to-r from-primary-500/15 to-primary-500/5 text-primary-400 shadow-lg shadow-primary-500/5' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'}`}>
-              {t.icon}{t.label}
-            </button>
-          ))}
-
-          <div className="my-3 border-t border-neutral-800/50" />
-
-          {TABS.slice(6).map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${tab === t.id ? 'bg-gradient-to-r from-primary-500/15 to-primary-500/5 text-primary-400 shadow-lg shadow-primary-500/5' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'}`}>
-              {t.icon}{t.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="mx-3 mb-3 rounded-xl border border-neutral-800/50 bg-neutral-950/50 p-4">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-neutral-500">Santé plateforme</span>
-            <span className={`font-bold ${healthScore >= 80 ? 'text-emerald-400' : healthScore >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{healthScore}/100</span>
+      {/* Header local — sticky sous la topbar AppShell. Thème dark assumé. */}
+      <header
+        className="sticky z-20 border-b border-neutral-800/50 bg-neutral-950/85 backdrop-blur-xl"
+        style={{ top: 0 }}
+      >
+        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4 lg:px-8 lg:py-5">
+          <div className="min-w-0">
+            <h1 className="truncate font-display text-base font-bold sm:text-xl">
+              {TABS.find((t) => t.id === tab)?.label || 'Admin'}
+            </h1>
+            <p className="mt-0.5 truncate text-xs text-neutral-500 sm:text-sm">
+              Centre de contrôle Soutra-Playce
+            </p>
           </div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-800">
-            <div className={`h-full rounded-full transition-all duration-1000 ${healthScore >= 80 ? 'bg-emerald-500' : healthScore >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${healthScore}%` }} />
-          </div>
-        </div>
-
-        <div className="border-t border-neutral-800/50 px-4 py-4">
-          <button onClick={async () => { await sb.auth.signOut(); router.push('/login'); }}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-neutral-400 transition hover:bg-neutral-800 hover:text-white">
-            <IcoLogout />Se déconnecter
-          </button>
-        </div>
-      </aside>
-
-      {/* ========== MAIN ========== */}
-      <div className="ml-64 flex-1">
-        <header className="sticky top-0 z-30 border-b border-neutral-800/50 bg-neutral-950/80 px-8 py-5 backdrop-blur-xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-display text-xl font-bold">{TABS.find((t) => t.id === tab)?.label || 'Admin'}</h1>
-              <p className="mt-0.5 text-sm text-neutral-500">Centre de contrôle Soutra-Playce</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={async () => { setLoading(true); await loadAll(); setLoading(false); flash('Données actualisées'); }}
-                className="flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-2 text-xs font-medium text-neutral-400 transition hover:border-primary-500/30 hover:text-white">
-                <IcoRefresh />Actualiser
-              </button>
-              <div className="h-8 w-px bg-neutral-800" />
-              <div className="flex items-center gap-2 text-sm text-neutral-400">
-                <div className={`h-2 w-2 rounded-full shadow-lg ${maintenanceMode ? 'bg-amber-500 shadow-amber-500/50' : 'bg-emerald-500 shadow-emerald-500/50'}`} />
-                {maintenanceMode ? 'Maintenance' : 'En ligne'}
-              </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={async () => { setLoading(true); await loadAll(); setLoading(false); flash('Données actualisées'); }}
+              className="inline-flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs font-medium text-neutral-400 transition hover:border-primary-500/30 hover:text-white sm:px-4"
+            >
+              <IcoRefresh />
+              <span className="hidden xs:inline">Actualiser</span>
+            </button>
+            <div className="hidden h-8 w-px bg-neutral-800 sm:block" />
+            <div className="flex items-center gap-2 text-xs text-neutral-400 sm:text-sm">
+              <div className={`h-2 w-2 rounded-full shadow-lg ${maintenanceMode ? 'bg-amber-500 shadow-amber-500/50' : 'bg-emerald-500 shadow-emerald-500/50'}`} />
+              <span className="hidden sm:inline">{maintenanceMode ? 'Maintenance' : 'En ligne'}</span>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <div className="p-8">
+      <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
 
           {/* ═══════════ OVERVIEW ═══════════ */}
           {tab === 'overview' && (
@@ -1015,7 +1002,6 @@ export default function AdminDashboard() {
           )}
 
         </div>
-      </div>
     </div>
   );
 }
@@ -1035,10 +1021,14 @@ const COLOR_MAP: Record<string, { bg: string; text: string; ring: string }> = {
 function KpiCard({ label, value, sub, icon, color }: { label: string; value: number | string; sub: string; icon: React.ReactNode; color: string }) {
   const c = COLOR_MAP[color] || COLOR_MAP.blue;
   return (
-    <div className="group rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-5 transition-all hover:border-neutral-700/50 hover:shadow-lg hover:shadow-black/20">
-      <div className="flex items-start justify-between">
-        <div><p className="text-xs font-medium text-neutral-500">{label}</p><p className="mt-1.5 font-display text-2xl font-bold tracking-tight">{value}</p><p className={`mt-1 text-xs ${c.text}`}>{sub}</p></div>
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${c.bg} ${c.text} ring-1 ${c.ring}`}>{icon}</div>
+    <div className="group rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4 transition-all hover:border-neutral-700/50 hover:shadow-lg hover:shadow-black/20 sm:p-5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[11px] font-medium text-neutral-500 sm:text-xs">{label}</p>
+          <p className="mt-1 truncate font-display text-lg font-bold tracking-tight sm:mt-1.5 sm:text-2xl">{value}</p>
+          <p className={`mt-1 truncate text-[11px] ${c.text} sm:text-xs`}>{sub}</p>
+        </div>
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${c.bg} ${c.text} ring-1 ${c.ring}`}>{icon}</div>
       </div>
     </div>
   );
@@ -1047,10 +1037,10 @@ function KpiCard({ label, value, sub, icon, color }: { label: string; value: num
 function MiniKpi({ label, value, color }: { label: string; value: number | string; color: string }) {
   const c = COLOR_MAP[color] || COLOR_MAP.blue;
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-neutral-800/50 bg-neutral-900/30 px-4 py-3">
-      <div className={`h-2 w-2 rounded-full ${c.text.replace('text-', 'bg-')}`} />
-      <span className="text-xs text-neutral-500">{label}</span>
-      <span className={`ml-auto text-sm font-bold ${c.text}`}>{value}</span>
+    <div className="flex items-center gap-2 rounded-xl border border-neutral-800/50 bg-neutral-900/30 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+      <div className={`h-2 w-2 shrink-0 rounded-full ${c.text.replace('text-', 'bg-')}`} />
+      <span className="truncate text-[11px] text-neutral-500 sm:text-xs">{label}</span>
+      <span className={`ml-auto text-xs font-bold sm:text-sm ${c.text}`}>{value}</span>
     </div>
   );
 }
