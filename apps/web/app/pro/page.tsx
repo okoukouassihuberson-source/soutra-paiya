@@ -7,6 +7,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF, slugify, categoriesByGroup } from '@soutra/shared';
+import { VenueAnalytics } from './_components/VenueAnalytics';
 
 // Picker GPS — chargé en client only (leaflet utilise window au montage).
 const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPicker'), {
@@ -14,7 +15,7 @@ const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPick
   loading: () => <div className="py-12 text-center text-sm text-neutral-400">Chargement de la carte…</div>,
 });
 
-type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'finances' | 'marketing' | 'settings';
+type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'analytics' | 'finances' | 'marketing' | 'settings';
 type ResStatus = 'pending' | 'confirmed' | 'arrived' | 'no_show' | 'cancelled' | 'refunded';
 
 interface Venue { id: string; name: string; category: string; city: string; address: string; phone: string; status: string; rating_avg: number; rating_count: number; description: string; logo_url: string | null; cover_url: string | null; gallery_urls: string[] | null; whatsapp: string | null; email: string | null; district: string | null; avg_price_xof: number | null; opening_hours: any; amenities: string[] | null; ambiance: string[] | null; socials: any; }
@@ -43,6 +44,7 @@ const SIDEBAR: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'reservations', label: 'Réservations', icon: <IcoCalendar /> },
   { id: 'events', label: 'Événements', icon: <IcoTicket /> },
   { id: 'menu', label: 'Menu', icon: <IcoUtensils /> },
+  { id: 'analytics', label: 'Analytics', icon: <IcoTrend /> },
   { id: 'finances', label: 'Finances', icon: <IcoWallet /> },
   { id: 'marketing', label: 'Marketing', icon: <IcoMegaphone /> },
   { id: 'settings', label: 'Paramètres', icon: <IcoGear /> },
@@ -99,7 +101,7 @@ function ProDashboard() {
   // sidebar AppShell (Link) et au bouton retour navigateur de fonctionner.
   const tabParam = searchParams?.get('tab');
   const tab: Tab = (
-    ['dashboard', 'reservations', 'events', 'menu', 'finances', 'marketing', 'settings'] as const
+    ['dashboard', 'reservations', 'events', 'menu', 'analytics', 'finances', 'marketing', 'settings'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'dashboard';
   const setTab = useCallback((next: Tab) => {
     router.replace(`/pro?tab=${next}`, { scroll: false });
@@ -1070,6 +1072,11 @@ function ProDashboard() {
                     </div>
                   </div>
                 </>
+              )}
+
+              {/* ═══════════ ANALYTICS (PR 9) ═══════════ */}
+              {tab === 'analytics' && (
+                <VenueAnalytics venueId={selectedVenueId || null} venueName={selectedVenue?.name} />
               )}
 
               {/* ═══════════ FINANCES ═══════════ */}
