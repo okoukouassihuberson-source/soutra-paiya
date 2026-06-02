@@ -648,13 +648,29 @@ const GROUP_BYS: { id: string; label: string }[] = [
   { id: 'venue',    label: 'Par établissement' },
 ];
 
+interface VenueRevRow {
+  venue_id: string;
+  venue_name: string;
+  category: string | null;
+  city: string | null;
+  commune: string | null;
+  event_count: number;
+  total_xof: number;
+  resa_xof: number;
+  ticket_xof: number;
+  payment_xof: number;
+  last_event_at: string | null;
+}
+
 function DashboardSection() {
   const sb = supabaseBrowser();
   const [period, setPeriod] = useState('30d');
   const [groupBy, setGroupBy] = useState('kind');
   const [summary, setSummary] = useState<Summary | null>(null);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
+  const [topVenues, setTopVenues] = useState<VenueRevRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [backfilling, setBackfilling] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -662,14 +678,17 @@ function DashboardSection() {
     const from = new Date(Date.now() - days * 86400000).toISOString();
     const to = new Date().toISOString();
     try {
-      const [s, b] = await Promise.all([
+      const [s, b, tv] = await Promise.all([
         (sb.rpc as any)('revenue_summary', { p_from: from, p_to: to }),
         (sb.rpc as any)('revenue_dashboard', { p_from: from, p_to: to, p_group_by: groupBy }),
+        (sb as any).from('venue_revenue_summary').select('*').order('total_xof', { ascending: false }).limit(10),
       ]);
       if (s.error) { console.error('[summary]', s.error); setSummary(null); }
       else setSummary(s.data as Summary);
       if (b.error) { console.error('[dashboard]', b.error); setBuckets([]); }
       else setBuckets((b.data as Bucket[]) ?? []);
+      if (tv.error) { console.error('[venue rev]', tv.error); setTopVenues([]); }
+      else setTopVenues((tv.data as VenueRevRow[]) ?? []);
     } finally {
       setLoading(false);
     }
@@ -677,12 +696,26 @@ function DashboardSection() {
 
   useEffect(() => { void load(); }, [load]);
 
+  const runBackfill = async () => {
+    if (!confirm('Lancer le backfill ? Cela parcourt l\'historique (tickets, réservations, paiements) et alimente le dashboard. Idempotent : peut être relancé sans risque.')) return;
+    setBackfilling(true);
+    try {
+      const { data, error } = await (sb.rpc as any)('backfill_revenue_log', { p_max_per_source: 5000 });
+      if (error) { alert(error.message); return; }
+      const r = data as { tickets_logged: number; reservations_logged: number; transactions_logged: number; total_logged: number };
+      alert(`Backfill terminé.\nTickets : ${r.tickets_logged}\nRéservations : ${r.reservations_logged}\nTransactions : ${r.transactions_logged}\nTotal : ${r.total_logged}`);
+      await load();
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
   const maxBucket = useMemo(() => Math.max(1, ...buckets.map((b) => b.total_xof)), [buckets]);
 
   return (
     <div>
-      {/* Period filter */}
-      <div className="mb-4 flex flex-wrap gap-2">
+      {/* Period filter + backfill */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         {PERIODS.map((p) => (
           <button
             key={p.id}
@@ -696,6 +729,14 @@ function DashboardSection() {
             {p.label}
           </button>
         ))}
+        <button
+          onClick={runBackfill}
+          disabled={backfilling}
+          className="ml-auto rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/25 disabled:opacity-50"
+          title="Rattrape l'historique des tickets/réservations/transactions pour alimenter le dashboard"
+        >
+          {backfilling ? '⏳ Backfill en cours…' : '🔄 Backfill historique'}
+        </button>
       </div>
 
       {/* KPIs */}
@@ -761,6 +802,34 @@ function DashboardSection() {
           </ul>
         )}
       </div>
+
+      {/* Top 10 venues par revenu */}
+      {topVenues.length > 0 && (
+        <div className="mt-6">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-neutral-500">Top 10 établissements par revenu</p>
+          <ul className="space-y-2">
+            {topVenues.map((v) => (
+              <li key={v.venue_id} className="flex items-center justify-between rounded-xl border border-neutral-800/50 bg-neutral-900/50 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{v.venue_name}</p>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-500">
+                    {v.category} · {v.city}{v.commune ? ` · ${v.commune}` : ''}
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-3 text-[10px] text-neutral-400">
+                    {v.resa_xof > 0 && <span>🍽️ Résa : {formatXOF(v.resa_xof)}</span>}
+                    {v.ticket_xof > 0 && <span>🎟️ Billets : {formatXOF(v.ticket_xof)}</span>}
+                    {v.payment_xof > 0 && <span>💳 Paiements : {formatXOF(v.payment_xof)}</span>}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-bold text-emerald-300">{formatXOF(v.total_xof)}</p>
+                  <p className="text-[10px] text-neutral-500">{v.event_count} event{v.event_count > 1 ? 's' : ''}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
