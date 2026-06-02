@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase';
-import { formatXOF } from '@soutra/shared';
+import { formatXOF, buildRevenueReportHtml, type RevenueReportVenue } from '@soutra/shared';
 
 // ============================================================================
 // Pro Revenue Dashboard — bloc à intégrer dans l'onglet Finances de /pro.
@@ -78,7 +78,13 @@ const PERIODS: { id: string; label: string; days: number }[] = [
   { id: '90d', label: '90 jours', days: 90 },
 ];
 
-export function ProRevenueDashboard({ venueId }: { venueId: string }) {
+interface ProRevenueDashboardProps {
+  venueId: string;
+  /** Infos venue passées par le parent (sinon on les charge nous-même). */
+  venue?: { name: string; category: string; city: string | null; district: string | null };
+}
+
+export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps) {
   const sb = supabaseBrowser();
   const [period, setPeriod] = useState('30d');
   const [summary, setSummary] = useState<SummaryPro | null>(null);
@@ -87,6 +93,45 @@ export function ProRevenueDashboard({ venueId }: { venueId: string }) {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEvents, setShowEvents] = useState(false);
+  const [printing, setPrinting] = useState(false);
+
+  /**
+   * Ouvre un PDF du rapport courant en générant un HTML autonome dans une
+   * nouvelle fenêtre puis en triggant window.print(). L'utilisateur choisit
+   * "Enregistrer en PDF" depuis le dialogue d'impression du navigateur.
+   */
+  const handlePrint = () => {
+    if (!summary) return;
+    setPrinting(true);
+    try {
+      const periodLabel = PERIODS.find((p) => p.id === period)?.label ?? '30 jours';
+      const reportVenue: RevenueReportVenue = venue
+        ? { name: venue.name, category: venue.category, city: venue.city, district: venue.district }
+        : { name: 'Établissement', category: '—', city: null, district: null };
+      const html = buildRevenueReportHtml({
+        venue: reportVenue,
+        summary,
+        byKind,
+        events: events.map((e) => ({ ts: e.ts, kind: e.kind, amount_xof: e.amount_xof, rule_name: e.rule_name })),
+        periodLabel,
+      });
+      const win = window.open('', '_blank', 'noopener,noreferrer,width=900,height=1200');
+      if (!win) {
+        alert('Impossible d\'ouvrir la fenêtre d\'impression. Vérifie que les pop-ups sont autorisés.');
+        return;
+      }
+      win.document.write(html);
+      win.document.close();
+      // Laisse le temps au navigateur de rendre les images / fonts avant print.
+      win.onload = () => {
+        try { win.focus(); win.print(); } catch { /* user fermera manuellement */ }
+      };
+      // Fallback si onload n'a pas tiré
+      setTimeout(() => { try { win.print(); } catch {} }, 800);
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   const load = useCallback(async () => {
     if (!venueId) return;
@@ -128,10 +173,10 @@ export function ProRevenueDashboard({ venueId }: { venueId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Period filter */}
+      {/* Period filter + export PDF */}
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Revenus Soutra-Playce</p>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           {PERIODS.map((p) => (
             <button
               key={p.id}
@@ -145,6 +190,14 @@ export function ProRevenueDashboard({ venueId }: { venueId: string }) {
               {p.label}
             </button>
           ))}
+          <button
+            onClick={handlePrint}
+            disabled={printing || loading || !summary}
+            title="Génère un rapport PDF (utilise le dialogue d'impression du navigateur)"
+            className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+          >
+            {printing ? '⏳' : '📄'} Télécharger PDF
+          </button>
         </div>
       </div>
 
