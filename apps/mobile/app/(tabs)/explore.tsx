@@ -223,13 +223,24 @@ export default function Explore() {
         <TabHeader
           subtitle={`${filteredVenues.length} lieux à découvrir près de toi`}
           trailing={(
-            <Pressable
-              hitSlop={10}
-              onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
-              style={s.bellBtn}
-            >
-              <Ionicons name="notifications-outline" size={22} color={palette.dark} />
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+              {/* "Ça bouge maintenant" — accès direct au module trending (PR 10). */}
+              <Pressable
+                hitSlop={10}
+                onPress={() => router.push('/trending')}
+                style={s.bellBtn}
+                accessibilityLabel="Ça bouge maintenant"
+              >
+                <Ionicons name="flame" size={20} color={palette.primary[500]} />
+              </Pressable>
+              <Pressable
+                hitSlop={10}
+                onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
+                style={s.bellBtn}
+              >
+                <Ionicons name="notifications-outline" size={22} color={palette.dark} />
+              </Pressable>
+            </View>
           )}
         />
 
