@@ -15,7 +15,9 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { Skeleton } from '@/components/Skeleton';
 import {
   getTrendingVenues, getActivePromotions, getCurrentEvents,
+  PROMO_KIND_META,
   type TrendingVenue, type ActivePromotion, type CurrentEvent,
+  type PromoKind,
 } from '@/lib/trending';
 
 type TabKey = 'trending' | 'promos' | 'events';
@@ -51,6 +53,8 @@ export default function Trending() {
   const [trending, setTrending] = useState<TrendingVenue[] | null>(null);
   const [promos, setPromos]     = useState<ActivePromotion[] | null>(null);
   const [events, setEvents]     = useState<CurrentEvent[] | null>(null);
+  // Filtre par kind dans le tab Promos (migration 0038).
+  const [promoFilter, setPromoFilter] = useState<PromoKind | 'all'>('all');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -75,7 +79,13 @@ export default function Trending() {
         const data = await getTrendingVenues({ lat: coords?.lat, lng: coords?.lng, radiusKm: 50, limit: 30 });
         setTrending(data);
       } else if (k === 'promos') {
-        const data = await getActivePromotions({ lat: coords?.lat, lng: coords?.lng, radiusKm: 50, limit: 50 });
+        const data = await getActivePromotions({
+          lat: coords?.lat,
+          lng: coords?.lng,
+          radiusKm: 50,
+          limit: 50,
+          kind: promoFilter,
+        });
         setPromos(data);
       } else {
         const data = await getCurrentEvents({ limit: 50, includeUpcomingHours: 48 });
@@ -87,7 +97,7 @@ export default function Trending() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [coords?.lat, coords?.lng]);
+  }, [coords?.lat, coords?.lng, promoFilter]);
 
   useEffect(() => { load(tab); }, [load, tab]);
 
@@ -126,7 +136,13 @@ export default function Trending() {
         ) : tab === 'trending' ? (
           <TrendingList data={trending ?? []} c={c} onPress={(id) => router.push({ pathname: '/venue/[id]', params: { id } })} />
         ) : tab === 'promos' ? (
-          <PromosList data={promos ?? []} c={c} onPress={(id) => router.push({ pathname: '/venue/[id]', params: { id } })} />
+          <PromosList
+            data={promos ?? []}
+            c={c}
+            onPress={(id) => router.push({ pathname: '/venue/[id]', params: { id } })}
+            filter={promoFilter}
+            onFilterChange={setPromoFilter}
+          />
         ) : (
           <EventsList data={events ?? []} c={c} onPress={(venueId) => venueId && router.push({ pathname: '/venue/[id]', params: { id: venueId } })} />
         )}
@@ -216,49 +232,107 @@ function TrendingList({ data, c, onPress }: { data: TrendingVenue[]; c: ColorPal
 // ============================================================================
 // Tab 2 — Promos
 // ============================================================================
-function PromosList({ data, c, onPress }: { data: ActivePromotion[]; c: ColorPalette; onPress: (venueId: string) => void }) {
+const PROMO_KIND_ORDER: (PromoKind | 'all')[] = ['all', 'discount', 'happy_hour', 'couple', 'group', 'weekend', 'student'];
+const ALL_LABEL = { label: 'Toutes', emoji: '✨' };
+
+function PromosList({
+  data, c, onPress, filter, onFilterChange,
+}: {
+  data: ActivePromotion[];
+  c: ColorPalette;
+  onPress: (venueId: string) => void;
+  filter: PromoKind | 'all';
+  onFilterChange: (k: PromoKind | 'all') => void;
+}) {
   const s = useMemo(() => makeStyles(c), [c]);
-  if (data.length === 0) {
-    return <EmptyState c={c} title="Aucune promo active" hint="Reviens plus tard, les établissements publient leurs promotions au fil de la journée." />;
-  }
   return (
-    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
-      {data.map((p) => (
-        <Pressable
-          key={p.promo_id}
-          onPress={() => onPress(p.venue_id)}
-          style={({ pressed }) => [s.promoCard, pressed && { opacity: 0.9 }]}
-        >
-          <View style={s.discountBig}>
-            <Text style={s.discountBigPct}>-{p.discount_pct}%</Text>
-            <Text style={s.discountBigCode} numberOfLines={1}>{p.code}</Text>
-          </View>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={s.cardName} numberOfLines={1}>{p.venue_name}</Text>
-            <Text style={s.cardMeta} numberOfLines={1}>
-              {categoryEmoji(p.venue_category)} {categoryLabel(p.venue_category)}
-              {p.venue_district ? ` · ${p.venue_district}` : p.venue_city ? ` · ${p.venue_city}` : ''}
-            </Text>
-            <View style={s.cardStatsRow}>
-              {p.is_open_now === true && (
-                <View style={s.miniOpen}>
-                  <View style={s.openDot} />
-                  <Text style={s.miniOpenText}>Ouvert</Text>
+    <View>
+      {/* Chips de filtre par kind (migration 0038) */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: 6 }}
+      >
+        {PROMO_KIND_ORDER.map((k) => {
+          const meta = k === 'all' ? ALL_LABEL : PROMO_KIND_META[k];
+          const active = filter === k;
+          return (
+            <Pressable
+              key={k}
+              onPress={() => onFilterChange(k)}
+              style={[
+                s.filterChip,
+                active && { backgroundColor: c.primary[500], borderColor: c.primary[500] },
+              ]}
+            >
+              <Text style={[s.filterChipText, active && { color: '#fff' }]}>
+                {meta.emoji} {meta.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {data.length === 0 ? (
+        <EmptyState
+          c={c}
+          title={filter === 'all' ? 'Aucune promo active' : `Aucune promo ${PROMO_KIND_META[filter as PromoKind]?.label.toLowerCase()}`}
+          hint={
+            filter === 'all'
+              ? "Reviens plus tard, les établissements publient leurs promotions au fil de la journée."
+              : 'Essaie un autre type de promo ou reviens plus tard.'
+          }
+        />
+      ) : (
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
+          {data.map((p) => {
+            const kindMeta = PROMO_KIND_META[(p.kind as PromoKind) || 'discount'];
+            return (
+              <Pressable
+                key={p.promo_id}
+                onPress={() => onPress(p.venue_id)}
+                style={({ pressed }) => [s.promoCard, pressed && { opacity: 0.9 }]}
+              >
+                <View style={[s.discountBig, { backgroundColor: kindMeta.color }]}>
+                  <Text style={s.discountBigPct}>-{p.discount_pct}%</Text>
+                  <Text style={s.discountBigCode} numberOfLines={1}>{p.code}</Text>
                 </View>
-              )}
-              {p.distance_km != null && (
-                <Text style={s.statSubtle}>
-                  {p.distance_km < 1 ? `${Math.round(p.distance_km * 1000)} m` : `${p.distance_km.toFixed(1)} km`}
-                </Text>
-              )}
-              {p.valid_until && (
-                <Text style={s.statSubtle}>Jusqu'au {new Date(p.valid_until).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</Text>
-              )}
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={c.neutral[400]} />
-        </Pressable>
-      ))}
+                <View style={{ flex: 1, gap: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text style={s.cardName} numberOfLines={1}>{p.venue_name}</Text>
+                    <View style={[s.kindBadge, { backgroundColor: kindMeta.color + '22', borderColor: kindMeta.color + '55' }]}>
+                      <Text style={[s.kindBadgeText, { color: kindMeta.color }]}>
+                        {kindMeta.emoji} {kindMeta.label}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={s.cardMeta} numberOfLines={1}>
+                    {categoryEmoji(p.venue_category)} {categoryLabel(p.venue_category)}
+                    {p.venue_district ? ` · ${p.venue_district}` : p.venue_city ? ` · ${p.venue_city}` : ''}
+                  </Text>
+                  <View style={s.cardStatsRow}>
+                    {p.is_open_now === true && (
+                      <View style={s.miniOpen}>
+                        <View style={s.openDot} />
+                        <Text style={s.miniOpenText}>Ouvert</Text>
+                      </View>
+                    )}
+                    {p.distance_km != null && (
+                      <Text style={s.statSubtle}>
+                        {p.distance_km < 1 ? `${Math.round(p.distance_km * 1000)} m` : `${p.distance_km.toFixed(1)} km`}
+                      </Text>
+                    )}
+                    {p.valid_until && (
+                      <Text style={s.statSubtle}>Jusqu'au {new Date(p.valid_until).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</Text>
+                    )}
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={c.neutral[400]} />
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }
@@ -432,6 +506,21 @@ function makeStyles(c: ColorPalette) {
     promoBadgeText: { fontSize: 9, fontWeight: '800', color: '#be185d', letterSpacing: 0.3 },
 
     // -------- promos card --------
+    // Filtre chips par kind (migration 0038)
+    filterChip: {
+      paddingHorizontal: spacing.md, paddingVertical: 6,
+      borderRadius: radius.full,
+      borderWidth: 1, borderColor: c.neutral[200],
+      backgroundColor: c.neutral[50],
+    },
+    filterChipText: { fontSize: typography.fontSize.xs, fontWeight: '700', color: c.dark },
+    // Badge kind sur chaque card
+    kindBadge: {
+      paddingHorizontal: spacing.sm, paddingVertical: 2,
+      borderRadius: radius.full,
+      borderWidth: 1,
+    },
+    kindBadgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.2 },
     promoCard: {
       flexDirection: 'row', alignItems: 'center', gap: spacing.md,
       padding: spacing.sm,
