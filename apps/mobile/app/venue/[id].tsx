@@ -10,6 +10,7 @@ import { openDirections, dialPhone, openWhatsApp } from '@/lib/maps';
 import { Gallery } from '@/components/venue/Gallery';
 import { HoursCompact } from '@/components/venue/HoursCompact';
 import { ReportSheet } from '@/components/venue/ReportSheet';
+import { logVenueEvent } from '@/lib/venue-analytics';
 
 interface Venue {
   id: string;
@@ -51,6 +52,9 @@ export default function VenueDetail() {
 
   useEffect(() => {
     loadVenue();
+    // Tracking analytics : on log une vue dès qu'on a un id stable.
+    // Fire-and-forget : ne casse pas le rendu si la RPC échoue.
+    if (id) logVenueEvent(id, 'view');
   }, [id]);
 
   useEffect(() => {
@@ -212,7 +216,11 @@ export default function VenueDetail() {
           <View style={s.actionRow}>
             <Pressable
               style={({ pressed }) => [s.actionBtn, !coords && s.actionBtnDisabled, pressed && coords && { opacity: 0.85 }]}
-              onPress={() => coords && openDirections({ lat: coords.lat, lng: coords.lng, label: venue.name })}
+              onPress={() => {
+                if (!coords) return;
+                logVenueEvent(venue.id, 'click_directions');
+                openDirections({ lat: coords.lat, lng: coords.lng, label: venue.name });
+              }}
               disabled={!coords}
             >
               <Ionicons name="navigate" size={22} color={coords ? colors.primary[500] : colors.neutral[400]} />
@@ -220,7 +228,11 @@ export default function VenueDetail() {
             </Pressable>
             <Pressable
               style={({ pressed }) => [s.actionBtn, !venue.phone && s.actionBtnDisabled, pressed && venue.phone && { opacity: 0.85 }]}
-              onPress={() => venue.phone && dialPhone(venue.phone)}
+              onPress={() => {
+                if (!venue.phone) return;
+                logVenueEvent(venue.id, 'click_call');
+                dialPhone(venue.phone);
+              }}
               disabled={!venue.phone}
             >
               <Ionicons name="call" size={22} color={venue.phone ? colors.primary[500] : colors.neutral[400]} />
@@ -228,7 +240,11 @@ export default function VenueDetail() {
             </Pressable>
             <Pressable
               style={({ pressed }) => [s.actionBtn, !venue.whatsapp && s.actionBtnDisabled, pressed && venue.whatsapp && { opacity: 0.85 }]}
-              onPress={() => venue.whatsapp && openWhatsApp(venue.whatsapp, `Bonjour, je vous contacte au sujet de ${venue.name} via Soutra-Playce.`)}
+              onPress={() => {
+                if (!venue.whatsapp) return;
+                logVenueEvent(venue.id, 'click_whatsapp');
+                openWhatsApp(venue.whatsapp, `Bonjour, je vous contacte au sujet de ${venue.name} via Soutra-Playce.`);
+              }}
               disabled={!venue.whatsapp}
             >
               <Ionicons name="logo-whatsapp" size={22} color={venue.whatsapp ? '#25D366' : colors.neutral[400]} />
@@ -297,12 +313,13 @@ export default function VenueDetail() {
       >
         <Pressable
           style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
-          onPress={() =>
+          onPress={() => {
+            logVenueEvent(venue.id, 'reservation_start');
             router.push({
               pathname: '/reservation/[venueId]',
               params: { venueId: venue.id },
-            })
-          }
+            });
+          }}
         >
           <Text style={s.ctaText}>Réserver une table</Text>
         </Pressable>
