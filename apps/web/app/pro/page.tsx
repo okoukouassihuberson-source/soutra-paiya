@@ -153,15 +153,28 @@ function ProDashboard() {
   const [txs, setTxs] = useState<any[]>([]);
   const [walletBalance, setWalletBalance] = useState(0);
 
-  // Marketing state — persistance réelle via la table promo_codes (migration 0015).
-  type Promo = { id: string; code: string; discount_pct: number; max_uses: number | null; uses_count: number; valid_until: string | null; active: boolean; created_at: string };
+  // Marketing state — persistance réelle via la table promo_codes (migrations 0015 + 0038).
+  type PromoKind = 'discount' | 'happy_hour' | 'couple' | 'group' | 'weekend' | 'student';
+  type Promo = { id: string; code: string; discount_pct: number; max_uses: number | null; uses_count: number; valid_until: string | null; active: boolean; created_at: string; kind?: PromoKind };
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState('10');
   const [promoMaxUses, setPromoMaxUses] = useState('');
   const [promoValidUntil, setPromoValidUntil] = useState('');
+  // Migration 0038 — type de promo (discount/happy_hour/couple/group/weekend/student)
+  const [promoKind, setPromoKind] = useState<PromoKind>('discount');
   const [promos, setPromos] = useState<Promo[]>([]);
   const [promosLoading, setPromosLoading] = useState(false);
   const [promoSaving, setPromoSaving] = useState(false);
+
+  // Meta partagée par le sélecteur de kind + les badges affichés sur la liste.
+  const PROMO_KIND_META: Record<PromoKind, { label: string; emoji: string; color: string }> = {
+    discount:   { label: 'Réduction',   emoji: '🏷️', color: '#FF6B1A' },
+    happy_hour: { label: 'Happy Hour',  emoji: '🍻', color: '#F59E0B' },
+    couple:     { label: 'Couple',      emoji: '💑', color: '#EC4899' },
+    group:      { label: 'Groupe',      emoji: '👥', color: '#3B82F6' },
+    weekend:    { label: 'Week-end',    emoji: '🌅', color: '#A855F7' },
+    student:    { label: 'Étudiant',    emoji: '🎓', color: '#10B981' },
+  };
 
   // Settings state
   const [settingsName, setSettingsName] = useState('');
@@ -268,7 +281,7 @@ function ProDashboard() {
     setPromosLoading(true);
     const { data, error } = await (supabase as any)
       .from('promo_codes')
-      .select('id, code, discount_pct, max_uses, uses_count, valid_until, active, created_at')
+      .select('id, code, discount_pct, max_uses, uses_count, valid_until, active, created_at, kind')
       .eq('venue_id', venueId)
       .order('created_at', { ascending: false });
     if (error) { flash(error.message, 'error'); setPromos([]); }
@@ -516,8 +529,9 @@ function ProDashboard() {
         max_uses: maxUses,
         valid_until: validUntilIso,
         active: true,
+        kind: promoKind, // migration 0038
       })
-      .select('id, code, discount_pct, max_uses, uses_count, valid_until, active, created_at')
+      .select('id, code, discount_pct, max_uses, uses_count, valid_until, active, created_at, kind')
       .single();
     setPromoSaving(false);
     if (error) {
@@ -1200,6 +1214,31 @@ function ProDashboard() {
                       <h3 className="mb-4 font-display text-lg font-bold text-dark">Créer un code promo</h3>
                       <div className="space-y-4">
                         <ProInput label="Code promo" value={promoCode} onChange={(v) => setPromoCode(v.toUpperCase())} placeholder="ETE2026" />
+                        {/* Migration 0038 — sélecteur de type de promo */}
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-neutral-500">Type de promo</label>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {(Object.keys(PROMO_KIND_META) as PromoKind[]).map((k) => {
+                              const meta = PROMO_KIND_META[k];
+                              const active = promoKind === k;
+                              return (
+                                <button
+                                  key={k}
+                                  type="button"
+                                  onClick={() => setPromoKind(k)}
+                                  className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                                    active
+                                      ? 'border-transparent text-white shadow-sm'
+                                      : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
+                                  }`}
+                                  style={active ? { backgroundColor: meta.color } : undefined}
+                                >
+                                  <span className="mr-1">{meta.emoji}</span>{meta.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                         <div>
                           <label className="mb-1 block text-xs font-medium text-neutral-500">Remise (%)</label>
                           <select value={promoDiscount} onChange={(e) => setPromoDiscount(e.target.value)} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
@@ -1234,8 +1273,20 @@ function ProDashboard() {
                             return (
                               <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
                                 <div className="min-w-0">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-wrap items-center gap-2">
                                     <p className="font-mono font-bold text-primary-600">{p.code}</p>
+                                    {/* Migration 0038 — badge kind (fallback 'discount' pour les promos pré-migration) */}
+                                    {(() => {
+                                      const km = PROMO_KIND_META[(p.kind as PromoKind) || 'discount'];
+                                      return (
+                                        <span
+                                          className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                                          style={{ backgroundColor: km.color + '22', color: km.color }}
+                                        >
+                                          {km.emoji} {km.label}
+                                        </span>
+                                      );
+                                    })()}
                                     {!p.active && <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">désactivé</span>}
                                     {expired && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">expiré</span>}
                                     {exhausted && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">épuisé</span>}

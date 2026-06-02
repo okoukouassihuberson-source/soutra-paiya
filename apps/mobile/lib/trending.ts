@@ -50,6 +50,18 @@ export async function getTrendingVenues(opts?: {
 // Active promotions
 // ----------------------------------------------------------------------------
 
+/** Migration 0038 — type de promotion. */
+export type PromoKind = 'discount' | 'happy_hour' | 'couple' | 'group' | 'weekend' | 'student';
+
+export const PROMO_KIND_META: Record<PromoKind, { label: string; emoji: string; color: string }> = {
+  discount:   { label: 'Réduction',   emoji: '🏷️', color: '#FF6B1A' },
+  happy_hour: { label: 'Happy Hour',  emoji: '🍻', color: '#F59E0B' },
+  couple:     { label: 'Couple',      emoji: '💑', color: '#EC4899' },
+  group:      { label: 'Groupe',      emoji: '👥', color: '#3B82F6' },
+  weekend:    { label: 'Week-end',    emoji: '🌅', color: '#A855F7' },
+  student:    { label: 'Étudiant',    emoji: '🎓', color: '#10B981' },
+};
+
 export interface ActivePromotion {
   promo_id: string;
   code: string;
@@ -69,6 +81,8 @@ export interface ActivePromotion {
   lng: number | null;
   distance_km: number | null;
   is_open_now: boolean | null;
+  /** Migration 0038. 'discount' par défaut pour les promos pré-migration. */
+  kind?: PromoKind;
 }
 
 export async function getActivePromotions(opts?: {
@@ -76,12 +90,15 @@ export async function getActivePromotions(opts?: {
   lat?: number;
   lng?: number;
   radiusKm?: number;
+  /** Migration 0038 : filtre par kind, null/'all' = tous. */
+  kind?: PromoKind | 'all' | null;
 }): Promise<ActivePromotion[]> {
   const { data, error } = await (supabase.rpc as any)('get_active_promotions', {
     p_limit: opts?.limit ?? 50,
     p_lat: opts?.lat ?? null,
     p_lng: opts?.lng ?? null,
     p_radius_km: opts?.radiusKm ?? 50,
+    p_kind: opts?.kind && opts.kind !== 'all' ? opts.kind : null,
   });
   if (error) throw new Error(error.message ?? 'PROMOS_FAILED');
   return (data ?? []) as ActivePromotion[];
