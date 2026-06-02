@@ -125,6 +125,27 @@ export default function Profile() {
           <MenuItem c={c} icon="medkit-outline" label="Mes contacts SOS" onPress={() => router.push('/sos-contacts' as any)} last />
         </View>
 
+        {/* Espace gérant — visible si le user est venue_owner / staff / organizer / admin */}
+        {profile?.role && ['venue_owner', 'staff', 'organizer', 'admin'].includes(profile.role) && (
+          <>
+            <View style={s.sectionTitleRow}>
+              <View style={s.sectionAccent} />
+              <Text style={s.sectionTitle}>Espace pro</Text>
+            </View>
+            <View style={s.menu}>
+              <MenuItem
+                c={c}
+                icon="storefront-outline"
+                label="Espace gérant"
+                badge="Pro"
+                badgeColor={c.primary[500]}
+                onPress={() => router.push('/pro' as any)}
+                last
+              />
+            </View>
+          </>
+        )}
+
         {/* Apparence */}
         <View style={s.sectionTitleRow}>
           <View style={s.sectionAccent} />
