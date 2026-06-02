@@ -173,7 +173,7 @@ function AdminDashboard() {
       (sb as any).from('transactions').select('id, user_id, type, amount_xof, fee_xof, status, provider, created_at').order('created_at', { ascending: false }).limit(500),
       (sb as any).from('reservations').select('id, user_id, venue_id, date_time, party_size, deposit_xof, status, created_at').order('created_at', { ascending: false }).limit(500),
       (sb as any).from('profiles').select('id, phone, full_name, role, kyc_status, city, created_at').order('created_at', { ascending: false }).limit(500),
-      (sb as any).from('venues').select('id, name, category, city, status, rating_avg, rating_count, owner_id, created_at').order('created_at', { ascending: false }).limit(500),
+      (sb as any).from('venues').select('id, name, category, city, status, rating_avg, rating_count, owner_id, created_at, trust_score, quality_score, activity_score, popularity_score, scores_updated_at').order('created_at', { ascending: false }).limit(500),
       (sb as any).from('audit_events').select('*').order('created_at', { ascending: false }).limit(200),
     ]);
 
@@ -242,6 +242,21 @@ function AdminDashboard() {
     const { error } = await (sb as any).from('venues').update(updates).eq('id', id);
     if (error) flash(error.message, false);
     else { flash('Établissement mis à jour'); await loadAll(); }
+    setActionLoading(null);
+  }
+
+  /**
+   * Migration 0036 — recalcule les 4 scores (trust/quality/activity/
+   * popularity) pour TOUS les venues actifs. Réservé admin via la RPC
+   * SECURITY DEFINER `recompute_all_venue_scores`.
+   * Lourd : ~50 ms par venue. À utiliser ponctuellement (en attendant un
+   * cron Edge Function).
+   */
+  async function recomputeAllScores() {
+    setActionLoading('__scores__');
+    const { data, error } = await (sb as any).rpc('recompute_all_venue_scores');
+    if (error) flash(error.message, false);
+    else { flash(`${(data as any)?.updated ?? 0} venues mis à jour`); await loadAll(); }
     setActionLoading(null);
   }
 
@@ -596,25 +611,42 @@ function AdminDashboard() {
 
           {/* ═══════════ VENUES ═══════════ */}
           {tab === 'venues' && (
-            <AdminTable searchPlaceholder="Rechercher un établissement..." search={search} onSearch={setSearch} filterValue={filter1} onFilter={setFilter1}
-              filterOptions={[{ value: 'all', label: 'Tous les statuts' }, { value: 'active', label: 'Actif' }, { value: 'draft', label: 'Brouillon' }, { value: 'suspended', label: 'Suspendu' }, { value: 'closed', label: 'Fermé' }]}
-              headers={['Établissement', 'Catégorie', 'Ville', 'Note', 'Statut', 'Créé le', 'Actions']}
-              rows={filterList(venues, 'name', 'status').map((v) => ({
-                key: v.id,
-                cells: [
-                  <span key="n" className="font-medium">{v.name}</span>,
-                  <span key="c" className="text-xs capitalize text-neutral-400">{v.category}</span>,
-                  <span key="ci" className="text-neutral-400">{v.city}</span>,
-                  <span key="r" className="font-mono text-amber-400">&#9733; {v.rating_avg || 0}</span>,
-                  <Badge key="s" meta={VENUE_STATUS[v.status]} />,
-                  <span key="d" className="text-xs text-neutral-500">{fmtDate(v.created_at)}</span>,
-                  <ActionGroup key="a" loading={actionLoading === v.id} actions={[
-                    v.status !== 'active' && { label: 'Activer', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => updateVenue(v.id, { status: 'active' }) },
-                    v.status === 'active' && { label: 'Suspendre', cls: 'text-red-400 hover:bg-red-900/30', fn: () => updateVenue(v.id, { status: 'suspended' }) },
-                    v.status !== 'closed' && { label: 'Fermer', cls: 'text-neutral-400 hover:bg-neutral-800', fn: () => updateVenue(v.id, { status: 'closed' }) },
-                  ]} />,
-                ],
-              }))} total={filterList(venues, 'name', 'status').length} />
+            <>
+              {/* PR Scores — bouton de refresh global des 4 scores */}
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-3 text-xs">
+                <span className="text-neutral-400">
+                  <strong className="text-white">Scores</strong> calculés à partir des reviews, signalements et événements
+                  des 30 derniers jours (migration 0036).
+                </span>
+                <button
+                  onClick={recomputeAllScores}
+                  disabled={actionLoading === '__scores__'}
+                  className="rounded-full bg-primary-500/15 px-3 py-1.5 text-xs font-semibold text-primary-300 hover:bg-primary-500/25 disabled:opacity-50"
+                >
+                  {actionLoading === '__scores__' ? 'Recalcul…' : '⚙ Recalculer tous les scores'}
+                </button>
+              </div>
+              <AdminTable searchPlaceholder="Rechercher un établissement..." search={search} onSearch={setSearch} filterValue={filter1} onFilter={setFilter1}
+                filterOptions={[{ value: 'all', label: 'Tous les statuts' }, { value: 'active', label: 'Actif' }, { value: 'draft', label: 'Brouillon' }, { value: 'suspended', label: 'Suspendu' }, { value: 'closed', label: 'Fermé' }]}
+                headers={['Établissement', 'Catégorie', 'Ville', 'Note', 'Scores', 'Statut', 'Créé le', 'Actions']}
+                rows={filterList(venues, 'name', 'status').map((v) => ({
+                  key: v.id,
+                  cells: [
+                    <span key="n" className="font-medium">{v.name}</span>,
+                    <span key="c" className="text-xs capitalize text-neutral-400">{v.category}</span>,
+                    <span key="ci" className="text-neutral-400">{v.city}</span>,
+                    <span key="r" className="font-mono text-amber-400">&#9733; {v.rating_avg || 0}</span>,
+                    <ScoreCluster key="sc" trust={v.trust_score} quality={v.quality_score} activity={v.activity_score} popularity={v.popularity_score} />,
+                    <Badge key="s" meta={VENUE_STATUS[v.status]} />,
+                    <span key="d" className="text-xs text-neutral-500">{fmtDate(v.created_at)}</span>,
+                    <ActionGroup key="a" loading={actionLoading === v.id} actions={[
+                      v.status !== 'active' && { label: 'Activer', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => updateVenue(v.id, { status: 'active' }) },
+                      v.status === 'active' && { label: 'Suspendre', cls: 'text-red-400 hover:bg-red-900/30', fn: () => updateVenue(v.id, { status: 'suspended' }) },
+                      v.status !== 'closed' && { label: 'Fermer', cls: 'text-neutral-400 hover:bg-neutral-800', fn: () => updateVenue(v.id, { status: 'closed' }) },
+                    ]} />,
+                  ],
+                }))} total={filterList(venues, 'name', 'status').length} />
+            </>
           )}
 
           {/* ═══════════ REPORTS (signalements) ═══════════ */}
@@ -1095,6 +1127,43 @@ function ActionGroup({ loading, actions }: { loading: boolean; actions: (false |
   if (loading) return <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-700 border-t-primary-500" />;
   if (valid.length === 0) return <span className="text-neutral-700">—</span>;
   return <div className="flex gap-1">{valid.map((a) => <button key={a.label} onClick={a.fn} className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${a.cls}`}>{a.label}</button>)}</div>;
+}
+
+/**
+ * Cluster compact des 4 scores d'un venue (PR 8 / migration 0036).
+ * Affiche popularity en grand (mis en avant) + 3 petites pills colorées
+ * pour trust / quality / activity. Tooltip natif via `title`.
+ */
+function ScoreCluster({
+  trust, quality, activity, popularity,
+}: { trust?: number; quality?: number; activity?: number; popularity?: number }) {
+  const pop = popularity ?? 0;
+  const popColor = pop >= 70 ? 'text-emerald-300' : pop >= 40 ? 'text-amber-300' : 'text-neutral-400';
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className={`font-mono text-sm font-bold ${popColor}`}
+        title={`Popularité ${pop}/100\nQualité ${quality ?? 0} · Confiance ${trust ?? 0} · Activité ${activity ?? 0}`}
+      >
+        {pop}
+      </span>
+      <div className="flex gap-0.5">
+        <ScoreDot value={trust} label="C" />
+        <ScoreDot value={quality} label="Q" />
+        <ScoreDot value={activity} label="A" />
+      </div>
+    </div>
+  );
+}
+
+function ScoreDot({ value, label }: { value?: number; label: string }) {
+  const v = value ?? 0;
+  const bg = v >= 70 ? 'bg-emerald-500/15 text-emerald-300' : v >= 40 ? 'bg-amber-500/15 text-amber-300' : 'bg-neutral-700/40 text-neutral-400';
+  return (
+    <span className={`inline-flex h-5 w-5 items-center justify-center rounded text-[9px] font-bold ${bg}`} title={`${label} : ${v}/100`}>
+      {label}
+    </span>
+  );
 }
 
 /* ─────────────────────────────────────────────────── */

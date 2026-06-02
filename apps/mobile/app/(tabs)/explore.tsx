@@ -31,6 +31,10 @@ interface Venue {
   lng: number | null;
   distance_km?: number;
   is_open_now?: boolean | null;
+  // Migration 0036 : score 0-100 calculé périodiquement côté serveur.
+  // Optional car la vue venues_public peut ne pas l'exposer si pas
+  // encore appliquée.
+  popularity_score?: number | null;
 }
 
 const RADII_KM: { label: string; v: number }[] = [
@@ -69,6 +73,9 @@ export default function Explore() {
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState<number>(5);
   const [openNow, setOpenNow] = useState(false);
+  // Tri par popularité (PR scores 0036) : utilise popularity_score persisté
+  // sur les venues. Quand activé, on trie la liste cliente desc.
+  const [sortByPopularity, setSortByPopularity] = useState(false);
 
   // Recherche vocale (modal d'écoute).
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -94,7 +101,7 @@ export default function Explore() {
       // depuis le point PostGIS. Source de vérité unique pour la carte.
       const { data, error } = await supabase
         .from('venues_public')
-        .select('id, name, slug, category, cover_url, avg_price_xof, rating_avg, rating_count, district, city, lat, lng')
+        .select('id, name, slug, category, cover_url, avg_price_xof, rating_avg, rating_count, district, city, lat, lng, popularity_score')
         .order('rating_avg', { ascending: false });
 
       if (error) {
@@ -158,14 +165,28 @@ export default function Explore() {
   }
 
   const selectedCategory = CHIPS.find((c) => c.label === selectedChip)?.category;
-  const filteredVenues = venues.filter((v) => {
-    if (selectedCategory && v.category !== selectedCategory) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      return v.name.toLowerCase().includes(q) || (v.district ?? '').toLowerCase().includes(q);
+  const filteredVenues = useMemo(() => {
+    const filtered = venues.filter((v) => {
+      if (selectedCategory && v.category !== selectedCategory) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return v.name.toLowerCase().includes(q) || (v.district ?? '').toLowerCase().includes(q);
+      }
+      return true;
+    });
+    // Tri par popularité si activé : popularity_score desc, puis rating desc
+    // comme tiebreaker. Sinon : on garde l'ordre serveur (distance en mode
+    // nearMe, ordre arbitraire sinon).
+    if (sortByPopularity) {
+      return [...filtered].sort((a, b) => {
+        const pa = a.popularity_score ?? 0;
+        const pb = b.popularity_score ?? 0;
+        if (pa !== pb) return pb - pa;
+        return (b.rating_avg ?? 0) - (a.rating_avg ?? 0);
+      });
     }
-    return true;
-  });
+    return filtered;
+  }, [venues, selectedCategory, searchQuery, sortByPopularity]);
 
   // Seuls les venues avec coordonnées valides apparaissent sur la carte.
   // Les autres restent dans la liste en bas (le pro doit aller poser son pin
@@ -264,8 +285,8 @@ export default function Explore() {
           })}
         </ScrollView>
 
-        {/* Filtres géographiques */}
-        <View style={s.geoRow}>
+        {/* Filtres géographiques + tri */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.geoRow}>
           <Pressable onPress={toggleNearMe} style={[s.geoBtn, nearMe && s.geoBtnActive]}>
             <Ionicons name={nearMe ? 'navigate' : 'navigate-outline'} size={14} color={nearMe ? '#fff' : palette.primary[600]} />
             <Text style={[s.geoBtnText, nearMe && s.geoBtnTextActive]}>
@@ -276,7 +297,12 @@ export default function Explore() {
             <Ionicons name="time-outline" size={14} color={openNow ? '#fff' : palette.primary[600]} />
             <Text style={[s.geoBtnText, openNow && s.geoBtnTextActive]}>Ouvert maintenant</Text>
           </Pressable>
-        </View>
+          {/* PR Scores : trier par popularity_score desc */}
+          <Pressable onPress={() => setSortByPopularity((v) => !v)} style={[s.geoBtn, sortByPopularity && s.geoBtnActive]}>
+            <Ionicons name={sortByPopularity ? 'flame' : 'flame-outline'} size={14} color={sortByPopularity ? '#fff' : palette.primary[600]} />
+            <Text style={[s.geoBtnText, sortByPopularity && s.geoBtnTextActive]}>Top populaires</Text>
+          </Pressable>
+        </ScrollView>
 
         {nearMe && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.radiiRow}>
