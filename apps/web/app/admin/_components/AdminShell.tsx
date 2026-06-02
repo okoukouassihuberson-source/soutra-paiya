@@ -54,6 +54,14 @@ const IcoPlus = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+// Icône $ pour l'onglet Monétisation (Super Dashboard).
+const IcoCash = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+  </svg>
+);
+
 const NAV: NavItem[] = [
   { id: 'overview',     label: "Vue d'ensemble", href: '/admin?tab=overview',     icon: <IcoGrid />,       inBottomNav: true, match: 'exact' },
   { id: 'analytics',    label: 'Analytics',      href: '/admin?tab=analytics',    icon: <IcoChart />,      inBottomNav: true, match: 'exact' },
@@ -62,6 +70,7 @@ const NAV: NavItem[] = [
   { id: 'reports',      label: 'Signalements',   href: '/admin?tab=reports',      icon: <IcoFlag />,       inBottomNav: true, match: 'exact' },
   { id: 'claims',       label: 'Revendications', href: '/admin?tab=claims',       icon: <IcoKey />,                           match: 'exact' },
   { id: 'submissions',  label: 'Contributions',  href: '/admin?tab=submissions',  icon: <IcoPlus />,                          match: 'exact' },
+  { id: 'monetization', label: 'Monétisation',   href: '/admin?tab=monetization', icon: <IcoCash />,                          match: 'exact' },
   { id: 'transactions', label: 'Transactions',   href: '/admin?tab=transactions', icon: <IcoWallet />,                        match: 'exact' },
   { id: 'reservations', label: 'Réservations',   href: '/admin?tab=reservations', icon: <IcoCalendar />,                      match: 'exact' },
   { id: 'marketing',    label: 'Marketing',      href: '/admin?tab=marketing',    icon: <IcoMegaphone />,                     match: 'exact' },
