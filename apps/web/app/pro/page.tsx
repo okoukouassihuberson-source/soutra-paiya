@@ -1148,9 +1148,18 @@ function ProDashboard() {
                 <>
                   {/* ═══════════ DASHBOARD REVENUS SOUTRA-PLAYCE (PR 0043) ═══════════ */}
                   {/* Affiche brut / commission Soutra-Playce / net / frais facturés
-                      avec timeline + ventilation par source + détail des events. */}
+                      avec timeline + ventilation par source + détail des events.
+                      Le bouton "📄 Télécharger PDF" génère un rapport autonome. */}
                   <div className="mb-8">
-                    <ProRevenueDashboard venueId={selectedVenueId} />
+                    <ProRevenueDashboard
+                      venueId={selectedVenueId}
+                      venue={selectedVenue ? {
+                        name: selectedVenue.name,
+                        category: selectedVenue.category,
+                        city: selectedVenue.city,
+                        district: selectedVenue.district,
+                      } : undefined}
+                    />
                   </div>
 
                   <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">

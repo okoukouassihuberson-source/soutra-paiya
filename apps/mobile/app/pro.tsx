@@ -22,6 +22,7 @@ import {
   PRO_KIND_META,
   type ProVenue, type ProSummary, type ProByKind, type ProTimelineRow, type ProEventRow,
 } from '@/lib/pro-revenue';
+import { exportRevenuePdf } from '@/lib/revenue-pdf';
 
 const PERIODS: { id: string; label: string; days: number }[] = [
   { id: '7d', label: '7 j', days: 7 },
@@ -45,6 +46,31 @@ export default function ProDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showEvents, setShowEvents] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const selectedVenue = venues.find((v) => v.id === selectedVenueId) ?? null;
+
+  const handleExportPdf = async () => {
+    if (!summary || !selectedVenue) return;
+    setExporting(true);
+    try {
+      const periodLabel = PERIODS.find((p) => p.id === period)?.label ?? '30 j';
+      await exportRevenuePdf({
+        venue: {
+          name: selectedVenue.name,
+          category: selectedVenue.category,
+          city: selectedVenue.city,
+          district: selectedVenue.district,
+        },
+        summary,
+        byKind,
+        events: events.map((e) => ({ ts: e.ts, kind: e.kind, amount_xof: e.amount_xof, rule_name: e.rule_name })),
+        periodLabel,
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Chargement initial : récupère les venues du gérant.
   useEffect(() => {
@@ -168,7 +194,17 @@ export default function ProDashboard() {
           <Ionicons name="chevron-back" size={26} color={c.dark} />
         </Pressable>
         <Text style={s.headerTitle}>Espace gérant</Text>
-        <View style={{ width: 26 }} />
+        <Pressable
+          onPress={handleExportPdf}
+          disabled={exporting || !summary}
+          hitSlop={10}
+          accessibilityLabel="Exporter en PDF"
+          style={{ opacity: summary && !exporting ? 1 : 0.3 }}
+        >
+          {exporting
+            ? <ActivityIndicator size="small" color={c.primary[500]} />
+            : <Ionicons name="document-text-outline" size={24} color={c.primary[500]} />}
+        </Pressable>
       </View>
 
       <ScrollView
@@ -207,13 +243,13 @@ export default function ProDashboard() {
         )}
 
         {/* Header avec nom du venue sélectionné */}
-        {selectedVenueId && venues.find((v) => v.id === selectedVenueId) && (
+        {selectedVenue && (
           <View style={s.venueHeader}>
-            <Text style={s.venueName}>{venues.find((v) => v.id === selectedVenueId)?.name}</Text>
+            <Text style={s.venueName}>{selectedVenue.name}</Text>
             <Text style={s.venueSub}>
-              {venues.find((v) => v.id === selectedVenueId)?.category}
+              {selectedVenue.category}
               {' · '}
-              {venues.find((v) => v.id === selectedVenueId)?.city}
+              {selectedVenue.city}
             </Text>
           </View>
         )}
