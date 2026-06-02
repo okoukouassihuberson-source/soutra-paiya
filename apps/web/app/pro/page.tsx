@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF, slugify, categoriesByGroup } from '@soutra/shared';
 import { VenueAnalytics } from './_components/VenueAnalytics';
+import { ProRevenueDashboard } from './_components/ProRevenueDashboard';
 
 // Picker GPS — chargé en client only (leaflet utilise window au montage).
 const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPicker'), {
@@ -1145,6 +1146,13 @@ function ProDashboard() {
               {/* ═══════════ FINANCES ═══════════ */}
               {tab === 'finances' && (
                 <>
+                  {/* ═══════════ DASHBOARD REVENUS SOUTRA-PLAYCE (PR 0043) ═══════════ */}
+                  {/* Affiche brut / commission Soutra-Playce / net / frais facturés
+                      avec timeline + ventilation par source + détail des events. */}
+                  <div className="mb-8">
+                    <ProRevenueDashboard venueId={selectedVenueId} />
+                  </div>
+
                   <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <KpiCard icon={<IcoWallet className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-600" label="Solde wallet" value={formatXOF(walletBalance)} sub="disponible" />
                     <KpiCard icon={<IcoTrend className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-600" label="Revenus acomptes" value={formatXOF(revenue)} sub="confirmés + arrivés" />
