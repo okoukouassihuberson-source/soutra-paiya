@@ -176,7 +176,16 @@ function ProDashboard() {
   const [nv, setNv] = useState({ name: '', category: 'maquis', city: 'Abidjan', address: '', phone: '', whatsapp: '', description: '' });
 
   // Médias de l'établissement (logo, bannière, galerie)
-  const [media, setMedia] = useState<{ logo: string | null; cover: string | null; gallery: string[] }>({ logo: null, cover: null, gallery: [] });
+  // PR Video — étend l'état média avec videos[] et tour_360_url (migration 0033).
+  const [media, setMedia] = useState<{
+    logo: string | null;
+    cover: string | null;
+    gallery: string[];
+    videos: string[];
+    tour360: string | null;
+  }>({ logo: null, cover: null, gallery: [], videos: [], tour360: null });
+  // State local pour le champ "URL visite 360°" — synchronisé lors du save.
+  const [tour360Input, setTour360Input] = useState('');
   const [uploading, setUploading] = useState<string | null>(null);
 
   // Localisation GPS — lat/lng lus depuis la RPC get_venue_location au changement
@@ -215,7 +224,7 @@ function ProDashboard() {
       setSettingsPhone(v.phone || '');
       setSettingsDesc(v.description || '');
       setSettingsCategory(v.category || '');
-      setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [] });
+      setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [], videos: (v as any).video_urls || [], tour360: (v as any).tour_360_url || null }); setTour360Input((v as any).tour_360_url || '');
       setVx(vxFromVenue(v));
     }
 
@@ -298,7 +307,7 @@ function ProDashboard() {
   // When venue changes, update settings
   useEffect(() => {
     const v = venues.find((x) => x.id === selectedVenueId);
-    if (v) { setSettingsName(v.name || ''); setSettingsCity(v.city || ''); setSettingsAddress(v.address || ''); setSettingsPhone(v.phone || ''); setSettingsDesc(v.description || ''); setSettingsCategory(v.category || ''); setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [] }); setVx(vxFromVenue(v)); }
+    if (v) { setSettingsName(v.name || ''); setSettingsCity(v.city || ''); setSettingsAddress(v.address || ''); setSettingsPhone(v.phone || ''); setSettingsDesc(v.description || ''); setSettingsCategory(v.category || ''); setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [], videos: (v as any).video_urls || [], tour360: (v as any).tour_360_url || null }); setTour360Input((v as any).tour_360_url || ''); setVx(vxFromVenue(v)); }
   }, [selectedVenueId, venues]);
 
   // Charge la position GPS courante du venue (la colonne PostGIS n'est pas
@@ -578,7 +587,7 @@ function ProDashboard() {
     await loadInitialData();
   }
 
-  async function uploadMedia(file: File, kind: 'logo' | 'cover' | 'gallery') {
+  async function uploadMedia(file: File, kind: 'logo' | 'cover' | 'gallery' | 'video') {
     // Guards visibles -> on n'absorbe plus le `selectedVenueId` vide en silence,
     // sinon le user voit le toast RLS sans comprendre d'où il vient.
     if (!selectedVenueId) {
@@ -589,9 +598,18 @@ function ProDashboard() {
       flash('ID d\'établissement invalide — recharge la page.', 'error');
       return;
     }
-    const okMime = /^image\/(jpe?g|png|webp|gif)$/i.test(file.type);
-    if (!okMime) { flash('Format non supporté (JPG, PNG, WebP, GIF uniquement)', 'error'); return; }
-    if (file.size > 8 * 1024 * 1024) { flash('Image trop lourde (8 Mo max)', 'error'); return; }
+    // Validation par type de média :
+    //  • image (logo/cover/gallery) : 8 Mo, formats classiques
+    //  • video (PR Video)           : 50 Mo, MP4/MOV/WebM
+    if (kind === 'video') {
+      const okVid = /^video\/(mp4|quicktime|webm|x-m4v)$/i.test(file.type);
+      if (!okVid) { flash('Format vidéo non supporté (MP4, MOV, WebM)', 'error'); return; }
+      if (file.size > 50 * 1024 * 1024) { flash('Vidéo trop lourde (50 Mo max)', 'error'); return; }
+    } else {
+      const okMime = /^image\/(jpe?g|png|webp|gif)$/i.test(file.type);
+      if (!okMime) { flash('Format non supporté (JPG, PNG, WebP, GIF uniquement)', 'error'); return; }
+      if (file.size > 8 * 1024 * 1024) { flash('Image trop lourde (8 Mo max)', 'error'); return; }
+    }
 
     // Vérifie côté client que la session est encore vivante. Un JWT expiré
     // donne « new row violates row-level security policy » côté storage car
@@ -648,18 +666,25 @@ function ProDashboard() {
 
     const url = supabase.storage.from('venue-media').getPublicUrl(path).data.publicUrl;
     const patch =
-      kind === 'logo' ? { logo_url: url }
+      kind === 'logo'    ? { logo_url: url }
       : kind === 'cover' ? { cover_url: url }
+      : kind === 'video' ? { video_urls: [...media.videos, url] }
       : { gallery_urls: [...media.gallery, url] };
     const { error: updErr } = await (supabase as any).from('venues').update(patch).eq('id', selectedVenueId);
     if (updErr) { flash(updErr.message, 'error'); setUploading(null); return; }
 
     setMedia((m) =>
-      kind === 'logo' ? { ...m, logo: url }
+      kind === 'logo'    ? { ...m, logo: url }
       : kind === 'cover' ? { ...m, cover: url }
+      : kind === 'video' ? { ...m, videos: [...m.videos, url] }
       : { ...m, gallery: [...m.gallery, url] },
     );
-    flash(kind === 'gallery' ? 'Photo ajoutée' : kind === 'logo' ? 'Logo mis à jour' : 'Bannière mise à jour');
+    flash(
+      kind === 'video' ? 'Vidéo ajoutée' :
+      kind === 'gallery' ? 'Photo ajoutée' :
+      kind === 'logo' ? 'Logo mis à jour' :
+      'Bannière mise à jour'
+    );
     setUploading(null);
   }
 
@@ -669,6 +694,30 @@ function ProDashboard() {
     if (error) { flash(error.message, 'error'); return; }
     setMedia((m) => ({ ...m, gallery: next }));
     flash('Photo retirée');
+  }
+
+  // PR Video — retire une vidéo de la galerie video_urls (file laissé en
+  // Storage : on évite la cascade de delete pour rester non-cassant).
+  async function removeGalleryVideo(url: string) {
+    const next = media.videos.filter((u) => u !== url);
+    const { error } = await (supabase as any).from('venues').update({ video_urls: next }).eq('id', selectedVenueId);
+    if (error) { flash(error.message, 'error'); return; }
+    setMedia((m) => ({ ...m, videos: next }));
+    flash('Vidéo retirée');
+  }
+
+  // PR Video — sauvegarde l'URL visite 360° (Matterport, Kuula…)
+  async function saveTour360() {
+    const next = tour360Input.trim() || null;
+    // Validation soft : si non vide, doit ressembler à https://
+    if (next && !/^https?:\/\//i.test(next)) {
+      flash("L'URL doit commencer par https://", 'error');
+      return;
+    }
+    const { error } = await (supabase as any).from('venues').update({ tour_360_url: next }).eq('id', selectedVenueId);
+    if (error) { flash(error.message, 'error'); return; }
+    setMedia((m) => ({ ...m, tour360: next }));
+    flash(next ? 'Visite 360° enregistrée' : 'Visite 360° retirée');
   }
 
   // KPIs
@@ -1295,6 +1344,73 @@ function ProDashboard() {
                             </div>
                           ))}
                         </div>
+                      )}
+                    </div>
+
+                    {/* PR Video — galerie vidéos */}
+                    <div className="mt-6 border-t border-neutral-100 pt-6">
+                      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <label className="text-xs font-medium text-neutral-500">
+                          Galerie vidéos ({media.videos.length}) <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500">MP4 · MOV · WebM · 50 Mo max</span>
+                        </label>
+                        <label className="cursor-pointer rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-600">
+                          {uploading === 'video' ? 'Envoi…' : '+ Ajouter une vidéo'}
+                          <input type="file" accept="video/mp4,video/quicktime,video/webm,video/x-m4v" className="hidden" disabled={!!uploading}
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMedia(f, 'video'); e.target.value = ''; }} />
+                        </label>
+                      </div>
+                      {media.videos.length === 0 ? (
+                        <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400">
+                          Aucune vidéo — une visite vidéo augmente fortement l'engagement
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                          {media.videos.map((url) => (
+                            <div key={url} className="group relative aspect-video overflow-hidden rounded-xl border border-neutral-200 bg-black">
+                              {/* video preview (muet pour ne pas hurler dans /pro) */}
+                              <video src={url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+                              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                <div className="rounded-full bg-black/50 p-2">
+                                  <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                </div>
+                              </div>
+                              <button onClick={() => removeGalleryVideo(url)} title="Retirer"
+                                className="absolute right-1 top-1 rounded-lg bg-black/70 p-1 text-white opacity-0 transition group-hover:opacity-100">
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* PR Video — Visite virtuelle 360° */}
+                    <div className="mt-6 border-t border-neutral-100 pt-6">
+                      <label className="mb-2 block text-xs font-medium text-neutral-500">
+                        Visite virtuelle 360° <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500">Matterport, Kuula, Pano2VR…</span>
+                      </label>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          type="url"
+                          value={tour360Input}
+                          onChange={(e) => setTour360Input(e.target.value)}
+                          placeholder="https://my.matterport.com/show/?m=..."
+                          className="flex-1 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none"
+                        />
+                        <button
+                          onClick={saveTour360}
+                          className="rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary-600"
+                        >
+                          {media.tour360 === (tour360Input.trim() || null) ? '✓ Enregistré' : 'Enregistrer'}
+                        </button>
+                      </div>
+                      {media.tour360 && (
+                        <p className="mt-2 text-xs text-neutral-500">
+                          Lien actif :{' '}
+                          <a href={media.tour360} target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">
+                            ouvrir la visite
+                          </a>
+                        </p>
                       )}
                     </div>
                   </div>

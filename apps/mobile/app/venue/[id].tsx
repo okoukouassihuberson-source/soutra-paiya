@@ -11,6 +11,7 @@ import { Gallery } from '@/components/venue/Gallery';
 import { HoursCompact } from '@/components/venue/HoursCompact';
 import { ReportSheet } from '@/components/venue/ReportSheet';
 import { logVenueEvent } from '@/lib/venue-analytics';
+import * as WebBrowser from 'expo-web-browser';
 
 interface Venue {
   id: string;
@@ -18,6 +19,10 @@ interface Venue {
   description: string;
   cover_url: string;
   gallery_urls: string[];
+  // Migration 0033 : galerie vidéos + visite 360°. Optionnels (peuvent
+  // être absents si la migration n'est pas encore appliquée côté DB).
+  video_urls?: string[];
+  tour_360_url?: string | null;
   address: string;
   city: string;
   phone: string;
@@ -191,7 +196,7 @@ export default function VenueDetail() {
 
         {/* ════════ GALERIE PREMIUM ════════ */}
         {/* Hero photo principale + thumbs + lightbox plein écran avec swipe/zoom */}
-        <Gallery cover={venue.cover_url} gallery={venue.gallery_urls} />
+        <Gallery cover={venue.cover_url} gallery={venue.gallery_urls} videos={venue.video_urls} />
 
         {/* Content */}
         <View style={s.content}>
@@ -251,6 +256,34 @@ export default function VenueDetail() {
               <Text style={[s.actionLabel, !venue.whatsapp && s.actionLabelDisabled]}>WhatsApp</Text>
             </Pressable>
           </View>
+
+          {/* ════════ VISITE VIRTUELLE 360° ════════ */}
+          {/* Migration 0033 : tour_360_url (Matterport, Kuula, etc).
+              Ouvre l'URL dans un browser in-app (Custom Tabs / SFSafariVC). */}
+          {venue.tour_360_url && (
+            <Pressable
+              onPress={async () => {
+                logVenueEvent(venue.id, 'click_website', { kind: 'tour_360' });
+                try {
+                  await WebBrowser.openBrowserAsync(venue.tour_360_url!, {
+                    presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+                  });
+                } catch (err) {
+                  console.warn('[venue] tour 360 open error:', err);
+                }
+              }}
+              style={({ pressed }) => [s.tour360Card, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
+            >
+              <View style={s.tour360IconWrap}>
+                <Ionicons name="cube" size={28} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.tour360Title}>Visite virtuelle 360°</Text>
+                <Text style={s.tour360Sub}>Explore l'établissement en immersion</Text>
+              </View>
+              <Ionicons name="open-outline" size={18} color={colors.primary[600]} />
+            </Pressable>
+          )}
 
           {/* ════════ HORAIRES COMPACTES ════════ */}
           {/* Statut ouvert/fermé en temps réel + horaire du jour + bouton "Voir tous" */}
@@ -376,6 +409,23 @@ const s = StyleSheet.create({
   actionLabel: { fontSize: typography.fontSize.xs, fontWeight: '600', color: colors.primary[600] },
   actionLabelDisabled: { color: colors.neutral[400] },
   infoGrid: { marginBottom: spacing.lg, gap: spacing.md },
+  // PR Video — visite 360° (Matterport/Kuula)
+  tour360Card: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    backgroundColor: '#fff',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.primary[100],
+    marginBottom: spacing.lg,
+  },
+  tour360IconWrap: {
+    width: 48, height: 48, borderRadius: radius.md,
+    backgroundColor: colors.primary[500],
+    alignItems: 'center', justifyContent: 'center',
+  },
+  tour360Title: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.dark },
+  tour360Sub: { fontSize: typography.fontSize.xs, color: colors.neutral[600], marginTop: 2 },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
