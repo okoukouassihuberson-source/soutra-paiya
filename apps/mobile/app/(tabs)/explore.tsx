@@ -224,6 +224,15 @@ export default function Explore() {
           subtitle={`${filteredVenues.length} lieux à découvrir près de toi`}
           trailing={(
             <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+              {/* "Ajouter un lieu" — contribution communautaire (PR 9). */}
+              <Pressable
+                hitSlop={10}
+                onPress={() => router.push('/add-venue')}
+                style={s.bellBtn}
+                accessibilityLabel="Ajouter un lieu"
+              >
+                <Ionicons name="add-circle-outline" size={22} color={palette.primary[500]} />
+              </Pressable>
               {/* "Ça bouge maintenant" — accès direct au module trending (PR 10). */}
               <Pressable
                 hitSlop={10}
