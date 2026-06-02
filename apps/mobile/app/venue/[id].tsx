@@ -10,7 +10,9 @@ import { openDirections, dialPhone, openWhatsApp } from '@/lib/maps';
 import { Gallery } from '@/components/venue/Gallery';
 import { HoursCompact } from '@/components/venue/HoursCompact';
 import { ReportSheet } from '@/components/venue/ReportSheet';
+import { ClaimSheet } from '@/components/venue/ClaimSheet';
 import { logVenueEvent } from '@/lib/venue-analytics';
+import { getVenueClaimStatus, CLAIM_STATUS_META, type ClaimStatus } from '@/lib/venue-claims';
 import * as WebBrowser from 'expo-web-browser';
 
 interface Venue {
@@ -54,6 +56,10 @@ export default function VenueDetail() {
   const onCtaLayout = (e: LayoutChangeEvent) => setCtaHeight(e.nativeEvent.layout.height);
   // Modal "Signaler un problème" — ouvert via la 3e action du header.
   const [reportOpen, setReportOpen] = useState(false);
+  // Modal "Revendiquer cet établissement" + état du claim courant.
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [claimable, setClaimable] = useState(false);
+  const [myClaimStatus, setMyClaimStatus] = useState<ClaimStatus | null>(null);
 
   useEffect(() => {
     loadVenue();
@@ -80,6 +86,26 @@ export default function VenueDetail() {
     return () => {
       active = false;
     };
+  }, [id, user?.id]);
+
+  // Statut de revendication — décide l'affichage du bouton "Revendiquer".
+  // Recalculé quand on revient sur l'écran ou après soumission.
+  const loadClaimStatus = async () => {
+    if (!id) return;
+    try {
+      const info = await getVenueClaimStatus(id);
+      setClaimable(info.claimable);
+      setMyClaimStatus(info.myClaimStatus);
+    } catch {
+      // Fire-and-forget : ne casse pas l'écran si la RPC échoue.
+      setClaimable(false);
+      setMyClaimStatus(null);
+    }
+  };
+
+  useEffect(() => {
+    void loadClaimStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
 
   const loadVenue = async () => {
@@ -215,6 +241,35 @@ export default function VenueDetail() {
           {/* Description */}
           {venue.description && (
             <Text style={s.description}>{venue.description}</Text>
+          )}
+
+          {/* ════════ REVENDICATION PROPRIÉTAIRE (PR 8 Découverte) ════════ */}
+          {/* Bannière "Êtes-vous le propriétaire ?" quand le lieu est claimable
+              et qu'aucun claim en cours côté user. Si déjà soumis, on affiche
+              un petit badge de statut au lieu du CTA. */}
+          {claimable && !myClaimStatus && user?.id && (
+            <Pressable
+              onPress={() => setClaimOpen(true)}
+              style={({ pressed }) => [s.claimCard, pressed && { opacity: 0.92 }]}
+              accessibilityLabel="Revendiquer cet établissement"
+            >
+              <View style={s.claimIconWrap}>
+                <Ionicons name="shield-checkmark" size={22} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.claimTitle}>Êtes-vous le propriétaire ?</Text>
+                <Text style={s.claimSub}>Revendiquez cet établissement pour gérer la fiche.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.primary[600]} />
+            </Pressable>
+          )}
+          {myClaimStatus && myClaimStatus !== 'approved' && (
+            <View style={[s.claimBadge, { borderColor: CLAIM_STATUS_META[myClaimStatus].color }]}>
+              <Text style={{ fontSize: 14 }}>{CLAIM_STATUS_META[myClaimStatus].icon}</Text>
+              <Text style={[s.claimBadgeText, { color: CLAIM_STATUS_META[myClaimStatus].color }]}>
+                Revendication : {CLAIM_STATUS_META[myClaimStatus].label}
+              </Text>
+            </View>
           )}
 
           {/* Actions rapides — itinéraire, appel, WhatsApp */}
@@ -365,6 +420,15 @@ export default function VenueDetail() {
         venueId={venue.id}
         venueName={venue.name}
       />
+
+      {/* Modal "Revendiquer cet établissement" — KYC pro */}
+      <ClaimSheet
+        visible={claimOpen}
+        onClose={() => setClaimOpen(false)}
+        venueId={venue.id}
+        venueName={venue.name}
+        onSubmitted={() => void loadClaimStatus()}
+      />
     </SafeAreaView>
   );
 }
@@ -426,6 +490,32 @@ const s = StyleSheet.create({
   },
   tour360Title: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.dark },
   tour360Sub: { fontSize: typography.fontSize.xs, color: colors.neutral[600], marginTop: 2 },
+  // PR Claims — bannière revendication propriétaire
+  claimCard: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+    backgroundColor: colors.primary[50],
+    borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.primary[200],
+    marginBottom: spacing.lg,
+  },
+  claimIconWrap: {
+    width: 44, height: 44, borderRadius: radius.md,
+    backgroundColor: colors.primary[500],
+    alignItems: 'center', justifyContent: 'center',
+  },
+  claimTitle: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.dark },
+  claimSub: { fontSize: typography.fontSize.xs, color: colors.neutral[600], marginTop: 2 },
+  claimBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.md, paddingVertical: 6,
+    borderRadius: radius.full,
+    borderWidth: 1.5,
+    backgroundColor: '#fff',
+    marginBottom: spacing.lg,
+  },
+  claimBadgeText: { fontSize: typography.fontSize.xs, fontWeight: '700' },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
