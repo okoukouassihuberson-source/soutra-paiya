@@ -47,12 +47,31 @@ Deno.serve(async (req) => {
         type === "transfer.reversed") && reference
     ) {
       const outcome = type === "transfer.success" ? "success" : "failed";
-      const { data: result, error } = await svc.rpc(
-        "paystack_settle_transfer",
-        { p_reference: reference, p_outcome: outcome },
-      );
-      if (error) console.error("[webhook] settle_transfer:", error);
-      else console.log(`[webhook] ${type} ${reference} -> ${result}`);
+      // Dispatch par préfixe de référence :
+      //   sp-vp-<uuid> = venue payout (migration 0044)
+      //   sp-wd-<uuid> = wallet user withdraw (migration 0007)
+      if (reference.startsWith("sp-vp-")) {
+        const { data: result, error } = await svc.rpc(
+          "settle_venue_payout",
+          {
+            p_reference: reference,
+            p_outcome: outcome,
+            p_failure_reason: outcome === "failed"
+              ? (typeof data.reason === "string" ? data.reason : null)
+              : null,
+            p_metadata_patch: { webhook_event: type },
+          },
+        );
+        if (error) console.error("[webhook] settle_venue_payout:", error);
+        else console.log(`[webhook] ${type} ${reference} (venue) -> ${result}`);
+      } else {
+        const { data: result, error } = await svc.rpc(
+          "paystack_settle_transfer",
+          { p_reference: reference, p_outcome: outcome },
+        );
+        if (error) console.error("[webhook] settle_transfer:", error);
+        else console.log(`[webhook] ${type} ${reference} (wallet) -> ${result}`);
+      }
     } else {
       console.log(`[webhook] événement ignoré : ${type}`);
     }

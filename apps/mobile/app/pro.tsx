@@ -22,6 +22,7 @@ import {
   PRO_KIND_META,
   type ProVenue, type ProSummary, type ProByKind, type ProTimelineRow, type ProEventRow,
 } from '@/lib/pro-revenue';
+import { getVenuePayableBalance, type VenuePayoutBalance } from '@/lib/venue-payout';
 import { exportRevenuePdf } from '@/lib/revenue-pdf';
 
 const PERIODS: { id: string; label: string; days: number }[] = [
@@ -43,6 +44,7 @@ export default function ProDashboard() {
   const [byKind, setByKind] = useState<ProByKind[]>([]);
   const [timeline, setTimeline] = useState<ProTimelineRow[]>([]);
   const [events, setEvents] = useState<ProEventRow[]>([]);
+  const [payable, setPayable] = useState<VenuePayoutBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showEvents, setShowEvents] = useState(false);
@@ -97,16 +99,18 @@ export default function ProDashboard() {
   const loadRevenue = useCallback(async (venueId: string) => {
     const days = PERIODS.find((p) => p.id === period)?.days ?? 30;
     try {
-      const [sum, kind, tl, evs] = await Promise.all([
+      const [sum, kind, tl, evs, payableRes] = await Promise.all([
         getProRevenueSummary(venueId, days),
         getProRevenueByKind(venueId, days),
         getProRevenueTimeline(venueId, days),
         listProRevenueEvents(venueId, 20),
+        getVenuePayableBalance(venueId).catch(() => null),
       ]);
       setSummary(sum);
       setByKind(kind);
       setTimeline(tl);
       setEvents(evs);
+      setPayable(payableRes);
     } catch (err) {
       console.warn('[pro] load revenue', err);
     } finally {
@@ -299,7 +303,11 @@ export default function ProDashboard() {
               <KpiCard
                 label="Revenus nets"
                 value={summary ? formatXOF(summary.net_xof) : '—'}
-                sub="Brut – commission"
+                sub={
+                  payable
+                    ? `dont ${formatXOF(payable.payable_xof)} retirables`
+                    : 'Brut – commission'
+                }
                 emoji="💰"
                 tone="emerald"
                 colors={c}
@@ -315,6 +323,27 @@ export default function ProDashboard() {
                 styles={s}
               />
             </View>
+
+            {/* CTA Retirer mes revenus — visible dès qu'il y a du solde retirable */}
+            {selectedVenueId && payable && payable.payable_xof > 0 && (
+              <Pressable
+                onPress={() => router.push(`/venue-payout?venueId=${selectedVenueId}` as any)}
+                style={({ pressed }) => [s.payoutCta, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
+                accessibilityLabel="Retirer mes revenus"
+              >
+                <View style={s.payoutCtaIcon}>
+                  <Ionicons name="arrow-down-circle" size={20} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.payoutCtaTitle}>Retirer mes revenus</Text>
+                  <Text style={s.payoutCtaSub}>
+                    {formatXOF(payable.payable_xof)} disponibles
+                    {payable.pending_xof > 0 ? ` · ${formatXOF(payable.pending_xof)} en cours` : ''}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#fff" />
+              </Pressable>
+            )}
 
             {/* Variation badge */}
             {summary?.delta_pct != null && (
@@ -565,6 +594,23 @@ function makeStyles(c: ColorPalette) {
     kpiLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
     kpiValue: { fontSize: typography.fontSize.lg, fontWeight: '700', marginTop: 4 },
     kpiSub: { fontSize: 10, marginTop: 2 },
+
+    // CTA Retirer mes revenus
+    payoutCta: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+      backgroundColor: c.primary[500],
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+      marginBottom: spacing.md,
+      shadowColor: c.primary[500], shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3,
+    },
+    payoutCtaIcon: {
+      width: 36, height: 36, borderRadius: 18,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    payoutCtaTitle: { fontSize: typography.fontSize.sm, fontWeight: '700', color: '#fff' },
+    payoutCtaSub: { fontSize: typography.fontSize.xs, color: 'rgba(255,255,255,0.9)', marginTop: 2 },
 
     // Delta badge
     deltaBadge: {
