@@ -66,8 +66,19 @@ Format de réponse (CRITIQUE — souvent lu à voix haute via TTS) :
 - Concierge : "Je te recommande le maquis Le Mékaféba à Cocody, ouvert ce soir, environ 5 000 FCFA" plutôt que listing froid.
 - Maximum 3 résultats à voix haute. Si plus, propose : "J'en ai trouvé sept, je t'ouvre la liste complète ?" et appelle navigate_to vers /search-ai.
 
+Réservation vocale (Phase 3 — disponible) :
+- Tu peux créer une réservation dans la base, mais TOUJOURS en deux temps :
+  1. Première fois, appelle create_reservation avec dry_run=true → reçois le récap (lieu, date, heure, nb personnes, acompte calculé)
+  2. Dis le récap à l'utilisateur ET demande une confirmation explicite ("Je peux te réserver Mékaféba demain à 20h pour 4 personnes, acompte 4 000 FCFA. Tu confirmes ?")
+  3. Si l'utilisateur dit "oui", "confirme", "vas-y", "ok", "bien" → rappelle create_reservation avec dry_run=false ET les MÊMES paramètres
+  4. Annonce la création et propose navigate_to vers /(tabs)/tickets pour que l'utilisateur paie l'acompte
+- Si l'utilisateur n'a pas donné le nom du lieu, utilise find_venue_by_name OU search_venues d'abord
+- Si l'utilisateur change d'avis avant le dry_run=false : juste annule verbalement (rien à faire côté code)
+- Si l'utilisateur veut annuler une résa déjà créée : appelle cancel_reservation
+- Tu ne peux PAS encore débiter le wallet ni payer Paystack par la voix (c'est la phase 4) ; l'utilisateur paiera l'acompte depuis l'écran Tickets
+
 Garde-fous :
-- Pour réserver / payer / créer une promo : tu peux EXPLIQUER la marche à suivre et naviguer vers l'écran concerné, mais ne prétends pas exécuter (V2 actuelle : read-only). Les phases 3 et 4 brancheront les actions.
+- Pour payer / créer une promo : explique mais ne prétends pas exécuter (V4+).
 - Pour les litiges / fraudes : invite à contacter le support Soutra-Playce.`;
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -128,6 +139,47 @@ const TOOLS = [
         limit: { type: "number", description: "Nb max. Défaut 5." },
       },
       required: [],
+    },
+  },
+  {
+    name: "find_venue_by_name",
+    description:
+      "Cherche un lieu par son nom (match partiel, case-insensitive). À utiliser quand l'utilisateur cite explicitement le nom d'un établissement ('réserve chez Mékaféba', 'info sur Saka Saka'). Renvoie max 5 lieux qui matchent.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Tout ou partie du nom du lieu." },
+        limit: { type: "number", description: "Nb max de résultats. Défaut 5." },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "create_reservation",
+    description:
+      "Crée une réservation pour l'utilisateur courant. UTILISE TOUJOURS dry_run=true au premier appel pour récupérer l'acompte calculé, demande confirmation orale à l'utilisateur, puis rappelle avec dry_run=false pour persister en DB. La résa est créée en status 'pending' (le gérant doit la confirmer). L'acompte n'est PAS encore payé par cet appel — l'utilisateur paiera ensuite depuis l'écran Tickets.",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue (obtenu via search_venues ou find_venue_by_name)." },
+        date_time: { type: "string", description: "Date et heure ISO 8601 avec timezone, ex: 2026-06-04T20:00:00+00:00. Pour 'demain 20h' : convertis-toi (today + 1j, 20:00 Africa/Abidjan = +00:00 GMT)." },
+        party_size: { type: "number", description: "Nombre de personnes (1 à 30)." },
+        notes: { type: "string", description: "Notes optionnelles (allergies, occasion, etc.). Max 500 caractères." },
+        dry_run: { type: "boolean", description: "True = simule sans écrire en DB, retourne le calcul d'acompte. False = crée vraiment." },
+      },
+      required: ["venue_id", "date_time", "party_size", "dry_run"],
+    },
+  },
+  {
+    name: "cancel_reservation",
+    description:
+      "Annule une réservation existante de l'utilisateur courant (status passe à 'cancelled'). À utiliser quand l'utilisateur dit 'annule ma résa', 'je ne viens pas', etc. Si l'utilisateur ne précise pas laquelle, liste-les d'abord avec list_my_reservations.",
+    input_schema: {
+      type: "object",
+      properties: {
+        reservation_id: { type: "string", description: "UUID de la résa à annuler." },
+      },
+      required: ["reservation_id"],
     },
   },
   {
@@ -257,6 +309,146 @@ async function executeTool(
         });
         if (error) return { success: false, error: error.message };
         return { success: true, data: { count: (data ?? []).length, venues: data ?? [] } };
+      }
+
+      case "find_venue_by_name": {
+        const name = String(input.name ?? "").trim();
+        if (name.length < 2) {
+          return { success: false, error: "Nom trop court (min 2 caractères)" };
+        }
+        const limit = Math.max(1, Math.min(10, Number(input.limit ?? 5)));
+        // ilike pour match case-insensitive partiel
+        const { data, error } = await ctx.svc
+          .from("venues")
+          .select("id, name, category, city, district, avg_price_xof, rating_avg, status")
+          .ilike("name", `%${name}%`)
+          .eq("status", "active")
+          .order("rating_avg", { ascending: false, nullsFirst: false })
+          .limit(limit);
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: { count: (data ?? []).length, venues: data ?? [] } };
+      }
+
+      case "create_reservation": {
+        const venueId = String(input.venue_id ?? "");
+        const dateTime = String(input.date_time ?? "");
+        const partySize = Number(input.party_size ?? 0);
+        const dryRun = input.dry_run !== false; // default true par sécurité
+        const notes = typeof input.notes === "string" ? input.notes.slice(0, 500) : null;
+
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        if (!dateTime) return { success: false, error: "date_time requis (ISO 8601)" };
+        if (!Number.isInteger(partySize) || partySize < 1 || partySize > 30) {
+          return { success: false, error: "party_size doit être entre 1 et 30" };
+        }
+
+        // Validation date : doit être ISO 8601 et dans le futur (max 90j)
+        const ts = Date.parse(dateTime);
+        if (Number.isNaN(ts)) {
+          return { success: false, error: "date_time invalide (format ISO 8601 attendu, ex: 2026-06-04T20:00:00+00:00)" };
+        }
+        const now = Date.now();
+        if (ts < now - 60 * 60 * 1000) {
+          return { success: false, error: "La date est dans le passé" };
+        }
+        if (ts > now + 90 * 24 * 60 * 60 * 1000) {
+          return { success: false, error: "Réservation trop éloignée (max 90 jours)" };
+        }
+
+        // Récupère le venue (vérifie qu'il existe et est actif, calcule l'acompte)
+        const { data: venue, error: venueErr } = await ctx.svc
+          .from("venues")
+          .select("id, name, status, avg_price_xof")
+          .eq("id", venueId)
+          .maybeSingle();
+        if (venueErr) return { success: false, error: venueErr.message };
+        if (!venue) return { success: false, error: "Établissement introuvable" };
+        const v = venue as { id: string; name: string; status: string; avg_price_xof: number | null };
+        if (v.status !== "active") return { success: false, error: "Cet établissement n'accepte pas de réservations en ce moment" };
+
+        const avgPrice = v.avg_price_xof ?? 5000; // fallback safe
+        const totalXof = avgPrice * partySize;
+        const depositXof = Math.round(totalXof * 0.2); // 20% comme reservation/[venueId].tsx
+
+        if (dryRun) {
+          // Pas d'écriture — juste le calcul pour confirmation orale
+          return {
+            success: true,
+            data: {
+              dry_run: true,
+              venue_id: v.id,
+              venue_name: v.name,
+              date_time: new Date(ts).toISOString(),
+              party_size: partySize,
+              avg_price_xof: avgPrice,
+              total_xof: totalXof,
+              deposit_xof: depositXof,
+              notes,
+              next_step: "Demande confirmation orale à l'utilisateur, puis rappelle create_reservation avec dry_run=false et les mêmes paramètres.",
+            },
+          };
+        }
+
+        // Écriture réelle
+        const { data: resa, error: insertErr } = await ctx.svc
+          .from("reservations")
+          .insert({
+            user_id: ctx.userId,
+            venue_id: v.id,
+            date_time: new Date(ts).toISOString(),
+            party_size: partySize,
+            deposit_xof: depositXof,
+            status: "pending",
+            notes,
+          })
+          .select("id, date_time, party_size, deposit_xof, status")
+          .single();
+        if (insertErr) return { success: false, error: insertErr.message };
+
+        return {
+          success: true,
+          data: {
+            dry_run: false,
+            reservation_id: (resa as { id: string }).id,
+            venue_id: v.id,
+            venue_name: v.name,
+            date_time: (resa as { date_time: string }).date_time,
+            party_size: (resa as { party_size: number }).party_size,
+            deposit_xof: (resa as { deposit_xof: number }).deposit_xof,
+            status: (resa as { status: string }).status,
+            payment_route: "/(tabs)/tickets",
+            next_step: "Réservation créée en status pending. L'utilisateur doit ouvrir l'écran Tickets pour payer l'acompte (la voix n'a pas encore le droit de payer, c'est la phase 4).",
+          },
+        };
+      }
+
+      case "cancel_reservation": {
+        const reservationId = String(input.reservation_id ?? "");
+        if (!reservationId) return { success: false, error: "reservation_id requis" };
+
+        // Vérifie que la résa appartient au caller (sinon NOT_OWNER)
+        const { data: existing, error: fetchErr } = await ctx.svc
+          .from("reservations")
+          .select("id, user_id, status")
+          .eq("id", reservationId)
+          .maybeSingle();
+        if (fetchErr) return { success: false, error: fetchErr.message };
+        if (!existing) return { success: false, error: "Réservation introuvable" };
+        const e = existing as { id: string; user_id: string; status: string };
+        if (e.user_id !== ctx.userId) return { success: false, error: "Cette réservation ne t'appartient pas" };
+        if (e.status === "cancelled") return { success: false, error: "Déjà annulée" };
+        if (e.status === "arrived") return { success: false, error: "Impossible d'annuler une réservation honorée" };
+
+        const { error: updErr } = await ctx.svc
+          .from("reservations")
+          .update({ status: "cancelled" })
+          .eq("id", reservationId);
+        if (updErr) return { success: false, error: updErr.message };
+
+        return {
+          success: true,
+          data: { cancelled: true, reservation_id: reservationId },
+        };
       }
 
       case "navigate_to": {
