@@ -140,22 +140,9 @@ create policy "venue_submissions_delete_admin" on public.venue_submissions
 -- ----------------------------------------------------------------------------
 -- 4) Helper : slug-ify un nom
 --    On garde la fonction publique car re-utile ailleurs si besoin.
+--    `unaccent_or_lower` est défini AVANT `slugify_text` car ce dernier est
+--    en `language sql` (référence résolue à la création, pas à l'appel).
 -- ----------------------------------------------------------------------------
-
-create or replace function public.slugify_text(p_text text)
-returns text
-language sql
-immutable
-set search_path = public
-as $$
-  -- Lowercase + remove accents + replace non-alphanum with '-'
-  select trim(both '-' from
-    regexp_replace(
-      lower(public.unaccent_or_lower(coalesce(p_text, ''))),
-      '[^a-z0-9]+', '-', 'g'
-    )
-  );
-$$;
 
 -- unaccent peut ne pas être installé partout — fallback lowercase si manquant.
 create or replace function public.unaccent_or_lower(p_text text)
@@ -172,6 +159,21 @@ begin
     return lower(coalesce(p_text, ''));
   end;
 end;
+$$;
+
+create or replace function public.slugify_text(p_text text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+  -- Lowercase + remove accents + replace non-alphanum with '-'
+  select trim(both '-' from
+    regexp_replace(
+      lower(public.unaccent_or_lower(coalesce(p_text, ''))),
+      '[^a-z0-9]+', '-', 'g'
+    )
+  );
 $$;
 
 -- ----------------------------------------------------------------------------

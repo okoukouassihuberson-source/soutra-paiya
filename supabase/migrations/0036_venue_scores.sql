@@ -22,6 +22,12 @@
 -- (uniquement des ADD COLUMN IF NOT EXISTS sur `venues`).
 -- ============================================================================
 
+-- Le `CREATE VIEW venues_public` plus bas utilise `st_x` / `st_y` / `::geometry`
+-- (PostGIS) ; ces symboles vivent dans le schéma `extensions`. Le CLI
+-- `supabase db push` n'a pas `extensions` dans le search_path par défaut,
+-- on l'ajoute donc explicitement pour toute la migration.
+set search_path = public, extensions;
+
 -- ----------------------------------------------------------------------------
 -- 1) Colonnes sur `venues`
 -- ----------------------------------------------------------------------------

@@ -306,9 +306,11 @@ grant execute on function public.get_current_events(integer, integer)
 -- 4) Commentaires
 -- ----------------------------------------------------------------------------
 
-comment on function public.get_trending_venues is
-  'Renvoie les venues tendance avec trend_score = activité 24h normalisée + boost ouvert + popularity. Filtre rayon optionnel via lat/lng/radius_km.';
-comment on function public.get_active_promotions is
-  'Liste les codes promo actifs (non expirés, non épuisés) joints au venue, filtre rayon optionnel.';
-comment on function public.get_current_events is
-  'Renvoie les events en cours OU qui démarrent dans les prochaines N heures (défaut 24h).';
+-- COMMENT qualifiées par signature (un même nom peut exister avec plusieurs
+-- arités sur prod si une version antérieure a été déployée via le Studio).
+comment on function public.get_trending_venues(integer, double precision, double precision, double precision)
+  is 'Renvoie les venues tendance avec trend_score = activité 24h normalisée + boost ouvert + popularity. Filtre rayon optionnel via lat/lng/radius_km.';
+comment on function public.get_active_promotions(integer, double precision, double precision, double precision)
+  is 'Liste les codes promo actifs (non expirés, non épuisés) joints au venue, filtre rayon optionnel.';
+comment on function public.get_current_events(integer, integer)
+  is 'Renvoie les events en cours OU qui démarrent dans les prochaines N heures (défaut 24h).';
