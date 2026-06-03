@@ -1,59 +1,343 @@
 // ============================================================================
-// chatbot — assistant conversationnel pour Soutra-Playce, propulsé par Claude.
+// chatbot — assistant vocal Sia avec tool use (Phase 2).
 //
-// JWT requis (verify_jwt = true par défaut). Reçoit un historique de messages
-// + le dernier message du user, appelle l'API Anthropic Messages, renvoie la
-// réponse texte.
+// JWT requis. Reçoit historique de messages + last user message + position
+// optionnelle. Boucle d'orchestration tool use Anthropic :
+//   1. Appelle Claude avec l'historique + les tools définis
+//   2. Si Claude renvoie un tool_use, exécute le tool côté serveur
+//   3. Renvoie le résultat à Claude (tool_result), boucle
+//   4. Quand Claude répond enfin par du texte, on retourne
+//      { reply, actions?, usage, model } au client
 //
-// Modèle par défaut : claude-haiku-4-5 (rapide, économique). Override via
-// ANTHROPIC_MODEL si besoin (ex. claude-sonnet-4-5 pour des réponses plus
-// fouillées).
+// Les tools sont READ-ONLY pour la Phase 2 (search, get, list). Les phases
+// suivantes (3-4) ajouteront create_reservation, initiate_payment, etc.
+// La pseudo-tool `navigate_to` n'est pas une action serveur — elle dit juste
+// au client d'ouvrir une route donnée (router.push côté mobile).
 //
-// Secrets à configurer côté Supabase :
-//   supabase secrets set ANTHROPIC_API_KEY=sk-ant-xxxx
-//   supabase secrets set ANTHROPIC_MODEL=claude-haiku-4-5   # optionnel
+// Secrets :
+//   ANTHROPIC_API_KEY = sk-ant-...
+//   ANTHROPIC_MODEL   = claude-haiku-4-5 (défaut)
 // ============================================================================
 
-import { jsonResponse, getAuthUser } from "../_shared/supabase.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { jsonResponse, getAuthUser, serviceClient } from "../_shared/supabase.ts";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_MODEL = "claude-haiku-4-5";
-const MAX_TOKENS = 1024;
-// Limite défensive sur l'historique envoyé à l'API pour borner les coûts.
+const MAX_TOKENS = 1500;
 const MAX_HISTORY = 20;
+const MAX_TOOL_ITERATIONS = 5; // safety bound sur la boucle tool use
+const FALLBACK_LAT = 5.348;    // centre Abidjan
+const FALLBACK_LNG = -4.026;
 
-// Prompt système : décrit l'app et le rôle de l'assistant.
-// "Sia" est l'identité officielle (court, africain, mémorisable). Le ton et
-// le format sont optimisés pour la voix : phrases courtes, pas de markdown
-// (le TTS lit "double astérisque"), nombres écrits en lettres quand <= 10.
+// ────────────────────────────────────────────────────────────────────────────
+// System prompt — adapté pour le tool use
+// ────────────────────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `Tu es Sia, l'assistant vocal officiel de Soutra-Playce — une application mobile et web ivoirienne qui permet de :
-- découvrir maquis, restaurants, hôtels, bars, cafés, piscines, événements et lieux dans toute la Côte d'Ivoire (Abidjan, Bassam, Yamoussoukro, etc.) ;
+- découvrir maquis, restaurants, hôtels, bars, cafés, piscines, événements et lieux dans toute la Côte d'Ivoire ;
 - réserver une table avec acompte payé via Soutra-Pay (le wallet intégré) ;
 - payer en mobile money (Orange Money, MTN MoMo, Wave) ou carte ;
-- envoyer / demander de l'argent à d'autres utilisateurs (P2P), splitter une addition, scanner un QR code de paiement ;
-- pour un gérant : voir ses revenus, retirer ses gains vers mobile money, gérer son établissement (menu, promos, événements) ;
-- publier des stories 24h, commenter des posts, matcher avec d'autres utilisateurs proches, chatter.
+- envoyer / demander de l'argent, splitter une addition, scanner un QR code ;
+- pour un gérant : voir ses revenus, retirer ses gains, gérer son établissement.
 
 Identité :
-- Tu t'appelles Sia. Tu es chaleureuse, professionnelle, naturelle, et fière de la Côte d'Ivoire.
-- Tu tutoies (c'est l'usage cool en CI mais tu restes pro et respectueuse).
-- Tu peux glisser quelques expressions ivoiriennes courantes ("c'est cadeau", "wê-wê", "tchiii") quand c'est naturel mais sans en abuser.
-- Si l'utilisateur te parle en anglais ou en nouchi, tu réponds dans la même langue.
+- Tu t'appelles Sia. Chaleureuse, professionnelle, naturelle, fière de la CI.
+- Tu tutoies. Tu peux glisser quelques expressions ivoiriennes ("c'est cadeau", "wê") sans en abuser.
+- Si on te parle en anglais ou en nouchi, réponds dans la même langue.
 
-Format de réponse (CRITIQUE — tes réponses sont souvent lues à voix haute via TTS) :
-- Phrases courtes. 2 à 4 phrases max sauf si la question demande des étapes détaillées.
-- Aucun markdown : pas de **, pas de *, pas de #, pas de listes à puces. Du français parlé fluide.
-- Nombres : écris en lettres si <= 10 ("trois maquis" pas "3 maquis"). Au-delà, chiffres normalement.
-- Pas d'URL ni d'emails dans tes réponses parlées (Sia te lira "https deux points slash slash…").
-- Pour une recommandation, formule comme un concierge : "Je te recommande le maquis Le Mékaféba à Cocody, ouvert ce soir, environ 5 000 FCFA par personne" plutôt que "Voici une liste : ...".
+Outils disponibles :
+- search_venues : trouve des lieux selon catégorie / commune / prix / distance / "ouvert maintenant"
+- get_venue_details : info détaillée sur un lieu précis (horaires, prix, ambiance)
+- list_my_reservations : les réservations de l'utilisateur courant
+- get_wallet_balance : son solde wallet + transactions récentes
+- list_trending_venues : lieux tendance ("ça bouge en ce moment")
+- navigate_to : ouvre une route dans l'app (à utiliser APRÈS avoir donné l'info, pour que l'utilisateur puisse voir le détail)
+
+Quand utiliser les outils :
+- Toute question sur des données réelles (lieux, prix, dispo, solde, résa) → utilise un outil. Ne JAMAIS inventer.
+- Si l'utilisateur dit "ouvre", "montre", "emmène-moi à" → utilise navigate_to.
+- Combine outils si besoin (search_venues puis navigate_to vers le résultat).
+
+Format de réponse (CRITIQUE — souvent lu à voix haute via TTS) :
+- Phrases courtes, 2 à 4 max sauf demande détaillée.
+- Aucun markdown : pas de **, *, #, listes à puces.
+- Nombres en lettres si ≤ 10 ("trois maquis" pas "3 maquis").
+- Pas d'URL ni d'email.
+- Concierge : "Je te recommande le maquis Le Mékaféba à Cocody, ouvert ce soir, environ 5 000 FCFA" plutôt que listing froid.
+- Maximum 3 résultats à voix haute. Si plus, propose : "J'en ai trouvé sept, je t'ouvre la liste complète ?" et appelle navigate_to vers /search-ai.
 
 Garde-fous :
-- Ne jamais inventer un tarif, un horaire d'établissement, un partenariat ou une promo qui n'existe pas — ces données viennent de la base, pas de toi. Si tu n'as pas l'info, dis "Je vais vérifier dans l'app" ou invite l'utilisateur à ouvrir la fiche.
-- N'évoque aucune fonctionnalité qui n'est pas dans la liste ci-dessus (pas de "Soutra Premium", pas de "Soutra Pro+" inventés).
-- Pour les questions sensibles (litige, fraude, perte d'argent) : invite à contacter le support (mention "contact le support Soutra-Playce", sans donner l'email à voix haute).
-- Pour réserver, payer, ou ajouter une promo en tant que gérant : explique la marche à suivre mais ne prétends pas exécuter l'action toi-même tant que ce n'est pas branché côté code (V1 actuelle : tu peux conseiller, pas encore agir).`;
+- Pour réserver / payer / créer une promo : tu peux EXPLIQUER la marche à suivre et naviguer vers l'écran concerné, mais ne prétends pas exécuter (V2 actuelle : read-only). Les phases 3 et 4 brancheront les actions.
+- Pour les litiges / fraudes : invite à contacter le support Soutra-Playce.`;
 
-type Msg = { role: "user" | "assistant"; content: string };
+// ────────────────────────────────────────────────────────────────────────────
+// Tools définition (format Anthropic)
+// ────────────────────────────────────────────────────────────────────────────
+
+const TOOLS = [
+  {
+    name: "search_venues",
+    description:
+      "Recherche des lieux (maquis, restaurants, hôtels, etc.) selon des critères. Utilise dès que l'utilisateur demande un lieu. Renvoie max 5 résultats triés par distance.",
+    input_schema: {
+      type: "object",
+      properties: {
+        category: { type: "string", description: "Catégorie en snake_case : maquis, restaurant, hotel, club, piscine, cafe, bar, lounge, beach, mall, pharmacie, hopital, banque, etc. Null si non spécifié." },
+        commune: { type: "string", description: "Commune Abidjan (Cocody, Yopougon, Plateau, Marcory, Adjamé, Treichville, Abobo, Koumassi, etc.) ou ville (Bassam, Yamoussoukro, Bouaké). Null si non spécifié." },
+        max_price_xof: { type: "number", description: "Prix max par personne en FCFA. Null si non spécifié. 'Pas cher' = 8000, 'moyen' = 20000." },
+        max_distance_km: { type: "number", description: "Rayon max en km depuis la position user. 'Tout près' = 2, 'à 10 min' = 5. Défaut 30." },
+        open_now: { type: "boolean", description: "True si user veut ouvert maintenant / ce soir." },
+        limit: { type: "number", description: "Nb max de résultats. Défaut 5, max 10." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_venue_details",
+    description: "Récupère les infos détaillées d'un lieu (horaires, prix moyen, ambiance, rating, adresse). Utiliser après search_venues quand l'utilisateur demande plus d'info sur un lieu précis.",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue obtenu via search_venues." },
+      },
+      required: ["venue_id"],
+    },
+  },
+  {
+    name: "list_my_reservations",
+    description: "Liste les réservations de l'utilisateur courant (les 10 plus récentes). Utiliser quand il demande 'mes résas', 'mon historique', etc.",
+    input_schema: {
+      type: "object",
+      properties: {
+        status: { type: "string", description: "Filtre optionnel : pending, confirmed, arrived, no_show, cancelled, refunded." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_wallet_balance",
+    description: "Récupère le solde wallet de l'utilisateur courant + ses 5 dernières transactions. Utiliser quand il demande 'mon solde', 'combien j'ai', 'mes derniers paiements'.",
+    input_schema: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "list_trending_venues",
+    description: "Lieux tendance (forte activité récente). Utiliser pour 'qu'est-ce qui bouge ?', 'le truc du moment'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "number", description: "Nb max. Défaut 5." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "navigate_to",
+    description:
+      "Demande au client d'ouvrir une route dans l'app. À utiliser APRÈS avoir donné l'info à l'oral, pour que l'utilisateur voie le détail visuel. Routes valides : '/venue/<uuid>', '/(tabs)/wallet', '/(tabs)/explore', '/(tabs)/tickets', '/pro', '/recharge', '/send', '/withdraw', '/scan', '/search-ai?q=<query>', '/assistant'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        route: { type: "string", description: "Route Expo Router complète (ex: /venue/abc-123, /search-ai?q=maquis+cocody)." },
+        reason: { type: "string", description: "Courte explication (max 80 char) de pourquoi tu navigues — utile pour les logs." },
+      },
+      required: ["route"],
+    },
+  },
+];
+
+// ────────────────────────────────────────────────────────────────────────────
+// Exécution des tools côté serveur
+// ────────────────────────────────────────────────────────────────────────────
+
+interface ToolContext {
+  userId: string;
+  userLat: number;
+  userLng: number;
+  svc: ReturnType<typeof createClient>;
+}
+
+interface ToolResult {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+  // Pour navigate_to : l'action à transmettre au client.
+  action?: { type: "navigate"; route: string; reason?: string };
+}
+
+async function executeTool(
+  name: string,
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  try {
+    switch (name) {
+      case "search_venues": {
+        const limit = Math.max(1, Math.min(10, Number(input.limit ?? 5)));
+        const radiusKm = Number(input.max_distance_km ?? 30);
+        const { data, error } = await ctx.svc.rpc("search_venues_nearby", {
+          p_lat: ctx.userLat,
+          p_lng: ctx.userLng,
+          p_radius_km: radiusKm,
+          p_category: (input.category as string) || null,
+          p_open_now: input.open_now === true,
+        });
+        if (error) return { success: false, error: error.message };
+        let results = ((data ?? []) as Array<{
+          id: string; name: string; category: string; district: string | null;
+          city: string | null; avg_price_xof: number | null;
+          rating_avg: number | null; distance_km: number | null;
+          is_open_now: boolean | null;
+        }>);
+        // Filtres post-RPC
+        if (typeof input.max_price_xof === "number") {
+          const maxPx = input.max_price_xof as number;
+          results = results.filter((v) => v.avg_price_xof == null || v.avg_price_xof <= maxPx);
+        }
+        if (typeof input.commune === "string" && input.commune.trim()) {
+          const needle = (input.commune as string).toLowerCase();
+          results = results.filter((v) =>
+            (v.district ?? "").toLowerCase().includes(needle) ||
+            (v.city ?? "").toLowerCase().includes(needle),
+          );
+        }
+        results = results.slice(0, limit);
+        return { success: true, data: { count: results.length, venues: results } };
+      }
+
+      case "get_venue_details": {
+        const venueId = String(input.venue_id ?? "");
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        const { data, error } = await ctx.svc
+          .from("venues")
+          .select("id, name, category, description, address, city, district, phone, whatsapp, email, avg_price_xof, rating_avg, rating_count, opening_hours, amenities, ambiance, cover_url")
+          .eq("id", venueId)
+          .maybeSingle();
+        if (error) return { success: false, error: error.message };
+        if (!data) return { success: false, error: "Lieu introuvable" };
+        return { success: true, data };
+      }
+
+      case "list_my_reservations": {
+        let q = ctx.svc
+          .from("reservations")
+          .select("id, venue_id, date_time, party_size, deposit_xof, status, created_at, notes")
+          .eq("user_id", ctx.userId)
+          .order("date_time", { ascending: false })
+          .limit(10);
+        if (typeof input.status === "string") {
+          q = q.eq("status", input.status as string);
+        }
+        const { data, error } = await q;
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: { count: (data ?? []).length, reservations: data ?? [] } };
+      }
+
+      case "get_wallet_balance": {
+        const [walletRes, txRes] = await Promise.all([
+          ctx.svc.from("wallets").select("balance_xof, daily_limit_xof").eq("user_id", ctx.userId).maybeSingle(),
+          ctx.svc.from("transactions").select("id, type, amount_xof, status, description, created_at").eq("user_id", ctx.userId).order("created_at", { ascending: false }).limit(5),
+        ]);
+        if (walletRes.error) return { success: false, error: walletRes.error.message };
+        return {
+          success: true,
+          data: {
+            balance_xof: (walletRes.data as { balance_xof?: number } | null)?.balance_xof ?? 0,
+            recent_transactions: txRes.data ?? [],
+          },
+        };
+      }
+
+      case "list_trending_venues": {
+        const limit = Math.max(1, Math.min(10, Number(input.limit ?? 5)));
+        const { data, error } = await ctx.svc.rpc("get_trending_venues", {
+          p_limit: limit,
+          p_lat: ctx.userLat,
+          p_lng: ctx.userLng,
+          p_radius_km: 50,
+        });
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: { count: (data ?? []).length, venues: data ?? [] } };
+      }
+
+      case "navigate_to": {
+        const route = String(input.route ?? "").trim();
+        if (!route.startsWith("/")) {
+          return { success: false, error: "Route invalide (doit commencer par /)" };
+        }
+        // Garde-fou : la route doit matcher un pattern connu (anti-injection).
+        const validPrefixes = [
+          "/venue/", "/(tabs)/", "/pro", "/recharge", "/send", "/withdraw",
+          "/scan", "/search-ai", "/assistant", "/kyc", "/profile-edit",
+          "/notifications-settings", "/venue-payout", "/reservation/",
+        ];
+        if (!validPrefixes.some((p) => route === p.replace(/\/$/, "") || route.startsWith(p))) {
+          return { success: false, error: "Route non autorisée" };
+        }
+        return {
+          success: true,
+          data: { navigated: true, route },
+          action: { type: "navigate", route, reason: input.reason as string | undefined },
+        };
+      }
+
+      default:
+        return { success: false, error: `Outil inconnu : ${name}` };
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: msg };
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Anthropic API call
+// ────────────────────────────────────────────────────────────────────────────
+
+interface AnthropicMessage {
+  role: "user" | "assistant";
+  content: string | Array<Record<string, unknown>>;
+}
+
+async function callAnthropic(
+  apiKey: string,
+  model: string,
+  messages: AnthropicMessage[],
+): Promise<{
+  ok: true;
+  data: {
+    content: Array<{ type: string; [k: string]: unknown }>;
+    stop_reason: string;
+    usage?: unknown;
+    model?: string;
+  };
+} | { ok: false; status: number; error: string }> {
+  const res = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: MAX_TOKENS,
+      system: SYSTEM_PROMPT,
+      tools: TOOLS,
+      messages,
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    return { ok: false, status: res.status, error: errText };
+  }
+  return { ok: true, data: await res.json() };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Edge handler
+// ────────────────────────────────────────────────────────────────────────────
+
+type ClientMsg = { role: "user" | "assistant"; content: string };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return jsonResponse({ ok: true }, 200);
@@ -61,14 +345,9 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Méthode non autorisée" }, 405);
   }
 
-  // Auth. `getAuthUser` retourne l'objet User ou null — pas un wrapper
-  // `{ user, error }`. Toutes les autres Edge Functions suivent ce pattern.
   const user = await getAuthUser(req);
-  if (!user) {
-    return jsonResponse({ error: "Authentification requise" }, 401);
-  }
+  if (!user) return jsonResponse({ error: "Authentification requise" }, 401);
 
-  // Secret check.
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) {
     console.error("[chatbot] ANTHROPIC_API_KEY non configuré");
@@ -76,15 +355,14 @@ Deno.serve(async (req) => {
   }
   const model = Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL;
 
-  // Body parse + validation.
-  let body: { messages?: Msg[] } | null = null;
+  // ---- Body parse + validation ----
+  let body: { messages?: ClientMsg[]; lat?: number; lng?: number } | null = null;
   try { body = await req.json(); } catch { /* noop */ }
-  const messages = Array.isArray(body?.messages) ? body!.messages : [];
-  if (messages.length === 0) {
+  const inMessages = Array.isArray(body?.messages) ? body!.messages : [];
+  if (inMessages.length === 0) {
     return jsonResponse({ error: "Aucun message fourni" }, 400);
   }
-  // Validation par message.
-  for (const m of messages) {
+  for (const m of inMessages) {
     if (!m || typeof m.content !== "string" || (m.role !== "user" && m.role !== "assistant")) {
       return jsonResponse({ error: "Format de message invalide" }, 400);
     }
@@ -92,54 +370,105 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Message trop long (4000 caractères max)" }, 400);
     }
   }
-  if (messages[messages.length - 1].role !== "user") {
+  if (inMessages[inMessages.length - 1].role !== "user") {
     return jsonResponse({ error: "Le dernier message doit être de l'utilisateur" }, 400);
   }
-  // Garde-fou taille d'historique.
-  const trimmed = messages.slice(-MAX_HISTORY);
+  const lat = typeof body?.lat === "number" && Number.isFinite(body!.lat) ? body!.lat : FALLBACK_LAT;
+  const lng = typeof body?.lng === "number" && Number.isFinite(body!.lng) ? body!.lng : FALLBACK_LNG;
 
-  // Appel Anthropic.
+  // Convertit l'historique client (string content) en format Anthropic
+  // (string content suffit, Claude accepte les deux formats).
+  const trimmed = inMessages.slice(-MAX_HISTORY);
+  const messages: AnthropicMessage[] = trimmed.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+
+  // Contexte d'exécution des tools
+  const ctx: ToolContext = {
+    userId: user.id,
+    userLat: lat,
+    userLng: lng,
+    svc: serviceClient(),
+  };
+
+  // Actions accumulées au fil des tool_use (transmises au client)
+  const actions: Array<{ type: "navigate"; route: string; reason?: string }> = [];
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Boucle tool use
+  // ────────────────────────────────────────────────────────────────────────
+  let iterations = 0;
+  let finalText = "";
+  let lastUsage: unknown = null;
+  let lastModel: string | undefined = model;
+
   try {
-    const res = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: MAX_TOKENS,
-        system: SYSTEM_PROMPT,
-        messages: trimmed,
-      }),
-    });
+    while (iterations < MAX_TOOL_ITERATIONS) {
+      iterations++;
+      const res = await callAnthropic(apiKey, model, messages);
+      if (!res.ok) {
+        console.error("[chatbot] Anthropic error", res.status, res.error);
+        if (res.status === 401) return jsonResponse({ error: "Clé API invalide côté serveur" }, 503);
+        if (res.status === 429) return jsonResponse({ error: "Trop de requêtes, réessaie dans quelques secondes" }, 429);
+        return jsonResponse({ error: "Le moteur de l'assistant a renvoyé une erreur" }, 502);
+      }
+      const data = res.data;
+      lastUsage = data.usage ?? null;
+      lastModel = data.model ?? model;
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("[chatbot] Anthropic error", res.status, errText);
-      if (res.status === 401) {
-        return jsonResponse({ error: "Clé API invalide côté serveur" }, 503);
+      // Push la réponse du modèle dans l'historique (assistant turn)
+      messages.push({ role: "assistant", content: data.content });
+
+      const stop = data.stop_reason;
+      const toolUses = (data.content || []).filter((c) => c.type === "tool_use") as Array<{
+        type: "tool_use"; id: string; name: string; input: Record<string, unknown>;
+      }>;
+
+      if (stop === "tool_use" && toolUses.length > 0) {
+        // Exécute chaque tool_use en parallèle, puis renvoie les résultats.
+        const results = await Promise.all(
+          toolUses.map(async (tu) => {
+            const out = await executeTool(tu.name, tu.input || {}, ctx);
+            if (out.action) actions.push(out.action);
+            return {
+              type: "tool_result",
+              tool_use_id: tu.id,
+              content: out.success
+                ? JSON.stringify(out.data ?? null)
+                : `ERROR: ${out.error ?? "tool failed"}`,
+              is_error: !out.success,
+            };
+          }),
+        );
+        // Ajoute un user-turn contenant tous les tool_result, et re-loop.
+        messages.push({ role: "user", content: results });
+        continue;
       }
-      if (res.status === 429) {
-        return jsonResponse({ error: "Trop de requêtes, réessaie dans quelques secondes" }, 429);
-      }
-      return jsonResponse({ error: "Le moteur de l'assistant a renvoyé une erreur" }, 502);
+
+      // stop_reason = "end_turn" (ou autre) → on extrait le texte final
+      finalText = (data.content || [])
+        .filter((c) => c.type === "text")
+        .map((c) => (c as { text: string }).text)
+        .join("\n")
+        .trim();
+      break;
     }
 
-    const data = await res.json();
-    // Format réponse Anthropic : { content: [{ type, text }], usage: {...} }
-    const text = Array.isArray(data.content)
-      ? data.content.filter((c: { type: string }) => c.type === "text").map((c: { text: string }) => c.text).join("\n").trim()
-      : "";
-    if (!text) {
-      return jsonResponse({ error: "Réponse vide du moteur" }, 502);
+    if (!finalText) {
+      // Cas limite : le modèle a appelé des tools mais n'a jamais répondu en texte
+      // (sortie de boucle par MAX_TOOL_ITERATIONS). On renvoie un message générique.
+      finalText = actions.length > 0
+        ? "C'est fait. Je t'ouvre l'écran correspondant."
+        : "Je n'ai pas trouvé de réponse claire — peux-tu reformuler ?";
     }
 
     return jsonResponse({
-      reply: text,
-      usage: data.usage ?? null,
-      model: data.model ?? model,
+      reply: finalText,
+      actions: actions.length > 0 ? actions : undefined,
+      iterations,
+      usage: lastUsage,
+      model: lastModel,
     });
   } catch (err) {
     console.error("[chatbot] fatal:", err);

@@ -16,11 +16,13 @@ import {
   View, Text, Modal, Pressable, StyleSheet, Animated, Easing, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { voice } from '@/lib/voice';
-import { askAssistant, type ChatMessage } from '@/lib/assistant';
+import { askAssistant, runAction, type ChatMessage, type AssistantAction } from '@/lib/assistant';
 
 type Status = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
 
@@ -57,16 +59,34 @@ export function VoiceConversation({
 }: Props) {
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
+  const router = useRouter();
 
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
   const [partialTranscript, setPartialTranscript] = useState('');
   const [lastUserText, setLastUserText] = useState('');
   const [lastSiaText, setLastSiaText] = useState('');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const historyRef = useRef<ChatMessage[]>(initialHistory);
   const pulse = useRef(new Animated.Value(1)).current;
   const sttAvailable = useMemo(() => voice.isSttAvailable(), []);
   const ttsAvailable = useMemo(() => voice.isTtsAvailable(), []);
+
+  // Récupère la position au mount pour que les tools search_venues soient
+  // géo-pertinents.
+  useEffect(() => {
+    if (!visible) return;
+    let active = true;
+    (async () => {
+      try {
+        const { status: perm } = await Location.getForegroundPermissionsAsync();
+        if (perm !== 'granted') return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (active) setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      } catch { /* fallback Abidjan côté serveur */ }
+    })();
+    return () => { active = false; };
+  }, [visible]);
 
   // ─── Pulse animation pendant écoute/parole ────────────────────────────
   useEffect(() => {
@@ -119,6 +139,19 @@ export function VoiceConversation({
     });
   }, [sttAvailable]);
 
+  // ─── Helper : ferme le modal + navigue (cas action navigate) ──────────
+  const handleCloseAndNavigate = useCallback(async (
+    action: Extract<AssistantAction, { type: 'navigate' }>,
+  ) => {
+    await voice.stopListening();
+    await voice.stopSpeaking();
+    setStatus('idle');
+    // Ferme d'abord pour éviter que le modal masque l'écran cible.
+    onClose();
+    // Petit delay pour laisser le modal s'animer out avant de naviguer.
+    setTimeout(() => { runAction(action, router); }, 200);
+  }, [onClose, router]);
+
   // ─── Pipeline : user dit → Claude → Sia parle → re-écoute ─────────────
   const handleUserMessage = useCallback(async (text: string) => {
     setLastUserText(text);
@@ -129,7 +162,7 @@ export function VoiceConversation({
     onHistoryChange?.(next);
 
     try {
-      const res = await askAssistant(next);
+      const res = await askAssistant(next, coords ?? undefined);
       const reply = res.reply?.trim() || 'Je n\'ai pas bien compris, peux-tu répéter ?';
       setLastSiaText(reply);
 
@@ -137,19 +170,34 @@ export function VoiceConversation({
       historyRef.current = after;
       onHistoryChange?.(after);
 
+      const navAction = res.actions?.find((a) => a.type === 'navigate') as
+        | Extract<AssistantAction, { type: 'navigate' }>
+        | undefined;
+
       if (ttsAvailable) {
         setStatus('speaking');
         await voice.speak(reply, {
           locale: 'fr-FR',
           onDone: () => {
-            // Re-démarre l'écoute pour le tour suivant.
-            void startListening();
+            if (navAction) {
+              // L'utilisateur a demandé "ouvre X" : on ferme le modal vocal
+              // et on navigue. Conversation continue dans l'écran cible.
+              void handleCloseAndNavigate(navAction);
+            } else {
+              // Pas d'action → re-démarre l'écoute pour le tour suivant.
+              void startListening();
+            }
           },
           onError: () => {
-            // Si le TTS rate, on continue quand même : tape micro pour parler.
-            setStatus('idle');
+            if (navAction) {
+              void handleCloseAndNavigate(navAction);
+            } else {
+              setStatus('idle');
+            }
           },
         });
+      } else if (navAction) {
+        void handleCloseAndNavigate(navAction);
       } else {
         setStatus('idle');
       }
@@ -161,7 +209,7 @@ export function VoiceConversation({
       historyRef.current = historyRef.current.slice(0, -1);
       onHistoryChange?.(historyRef.current);
     }
-  }, [ttsAvailable, onHistoryChange, startListening]);
+  }, [ttsAvailable, onHistoryChange, startListening, coords, handleCloseAndNavigate]);
 
   // ─── Auto-démarrage à l'ouverture du modal ────────────────────────────
   useEffect(() => {

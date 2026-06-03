@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { askAssistant, type ChatMessage } from '@/lib/assistant';
+import { askAssistant, runAction, type ChatMessage, type AssistantAction } from '@/lib/assistant';
 import { voice } from '@/lib/voice';
 import { VoiceConversation } from '@/components/VoiceConversation';
 
@@ -23,11 +24,13 @@ const WELCOME: ChatMessage = {
 
 export default function Assistant() {
   const params = useLocalSearchParams<{ voice?: string }>();
+  const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [readAloud, setReadAloud] = useState(false);     // Toggle TTS auto des réponses
   const [voiceMode, setVoiceMode] = useState(false);     // Modal conversation continue
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
 
   // Ouvre direct le mode vocal si l'utilisateur a tapé "Parler à Sia" depuis
@@ -36,10 +39,44 @@ export default function Assistant() {
     if (params.voice === '1') setVoiceMode(true);
   }, [params.voice]);
 
+  // Récupère la position (best-effort) pour que les tools search_venues
+  // soient géo-pertinents. Échec silencieux → fallback Abidjan côté serveur.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (active) setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      } catch { /* noop */ }
+    })();
+    return () => { active = false; };
+  }, []);
+
   // Cleanup TTS si l'écran est démonté pendant une lecture.
   useEffect(() => {
     return () => { void voice.stopSpeaking(); };
   }, []);
+
+  /**
+   * Applique les actions après la réponse. Si "Lire les réponses" est ON,
+   * on attend la fin du TTS avant de naviguer (l'utilisateur sait où il va).
+   * Sinon navigation immédiate.
+   */
+  function applyActions(actions: AssistantAction[] | undefined, replyText: string) {
+    if (!actions || actions.length === 0) return;
+    const navAction = actions.find((a) => a.type === 'navigate');
+    if (!navAction) return;
+    if (readAloud && voice.isTtsAvailable()) {
+      // Le TTS lance déjà la lecture (cf. plus haut). On hook un délai
+      // basé sur la longueur du texte (~150 mots/min en TTS humain).
+      const estimatedMs = Math.min(8000, Math.max(1500, replyText.length * 60));
+      setTimeout(() => { runAction(navAction, router); }, estimatedMs);
+    } else {
+      runAction(navAction, router);
+    }
+  }
 
   async function send(text: string) {
     const body = text.trim();
@@ -54,13 +91,15 @@ export default function Assistant() {
       // Exclude le message de bienvenue de l'historique envoyé au modèle
       // (c'est du faux contexte produit local, pas une vraie conversation).
       const history = next.filter((m) => m !== WELCOME);
-      const res = await askAssistant(history);
+      const res = await askAssistant(history, coords ?? undefined);
       setMessages((prev) => [...prev, { role: 'assistant', content: res.reply }]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 30);
       // Lecture vocale auto si le toggle est on (best-effort, ne bloque pas l'UI).
       if (readAloud && voice.isTtsAvailable()) {
         void voice.speak(res.reply, { locale: 'fr-FR' });
       }
+      // Exécute les actions (navigate, etc.) après la lecture si toggle ON.
+      applyActions(res.actions, res.reply);
     } catch (err: any) {
       const msg = err?.message ?? 'Échec de la requête';
       // On retire le dernier message user pour permettre une réessai propre.
