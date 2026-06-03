@@ -131,6 +131,7 @@ export interface Database {
       sos_contacts: { Row: any; Insert: any; Update: any };
       sos_alerts: { Row: any; Insert: any; Update: any };
       sos_pings: { Row: any; Insert: any; Update: any };
+      venue_payouts: { Row: any; Insert: any; Update: any };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

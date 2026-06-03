@@ -9,6 +9,7 @@ import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF, slugify, categoriesByGroup } from '@soutra/shared';
 import { VenueAnalytics } from './_components/VenueAnalytics';
 import { ProRevenueDashboard } from './_components/ProRevenueDashboard';
+import { VenuePayoutPanel } from './_components/VenuePayoutPanel';
 
 // Picker GPS — chargé en client only (leaflet utilise window au montage).
 const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPicker'), {
@@ -1160,6 +1161,15 @@ function ProDashboard() {
                         district: selectedVenue.district,
                       } : undefined}
                     />
+                  </div>
+
+                  {/* ═══════════ PAYOUTS GÉRANT (migration 0044) ═══════════ */}
+                  {/* Solde payable du venue + demande de virement mobile money.
+                      Edge function venue-payout-initiate + RPCs request/settle
+                      _venue_payout. Le webhook Paystack route automatiquement
+                      sur settle_venue_payout via le préfixe sp-vp-. */}
+                  <div className="mb-8">
+                    <VenuePayoutPanel venueId={selectedVenueId || null} />
                   </div>
 
                   <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
