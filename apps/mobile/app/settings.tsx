@@ -102,6 +102,11 @@ export default function Settings() {
             icon="shield-checkmark-outline"
             label="Vérification d'identité (KYC)"
             onPress={() => router.push('/kyc')}
+          />
+          <Row
+            icon="notifications-outline"
+            label="Notifications"
+            onPress={() => router.push('/notifications-settings' as any)}
             last
           />
         </View>

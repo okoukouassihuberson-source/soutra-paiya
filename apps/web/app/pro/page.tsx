@@ -10,6 +10,7 @@ import { formatXOF, slugify, categoriesByGroup } from '@soutra/shared';
 import { VenueAnalytics } from './_components/VenueAnalytics';
 import { ProRevenueDashboard } from './_components/ProRevenueDashboard';
 import { VenuePayoutPanel } from './_components/VenuePayoutPanel';
+import { NotificationPrefsPanel } from './_components/NotificationPrefsPanel';
 
 // Picker GPS — chargé en client only (leaflet utilise window au montage).
 const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPicker'), {
@@ -1360,6 +1361,15 @@ function ProDashboard() {
               {/* ═══════════ SETTINGS ═══════════ */}
               {tab === 'settings' && (
                 <>
+                  {/* ═══════════ NOTIFICATIONS PRO (migration 0045) ═══════════ */}
+                  {/* Toggle granulaire des 4 events pro (nouvelle résa, paiement
+                      reçu, payout réglé, jalon revenus). Le helper SQL
+                      is_notification_enabled est consulté par send-push avant
+                      chaque envoi pour respecter ces préférences. */}
+                  <div className="mb-8">
+                    <NotificationPrefsPanel />
+                  </div>
+
                   {/* Médias de la vitrine */}
                   <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6">
                     <h3 className="mb-5 font-display text-lg font-bold text-dark">Médias de la vitrine</h3>

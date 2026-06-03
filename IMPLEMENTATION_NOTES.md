@@ -131,3 +131,59 @@ reservation/
 - QR code generated client-side (no server calls)
 - Reservations lazy-loaded with pagination (limit 10 for now)
 - Venue details fetched once on navigation
+
+---
+
+## Notifications pro (migration 0045 — push pour les gérants)
+
+La migration 0045 ajoute 4 events business côté gérant à `send-push` (déjà
+déclenchée par les Database Webhooks Supabase pour les events users). Pour
+que ces 4 events se déclenchent en prod, **il faut créer 4 Database Webhooks
+manuellement dans le Studio** (le repo ne configure pas les webhooks via IaC).
+
+### Étapes Studio (à faire une seule fois après le merge)
+
+Va sur https://supabase.com/dashboard/project/pjtmmzxcitbcwbbgtpdj/database/hooks
+puis pour chacun des 4 events :
+
+1. **Cliquer "Create a new hook"**
+2. **Name** : choisir un nom parlant (ex `notify_new_reservation`)
+3. **Table** : voir tableau ci-dessous
+4. **Events** : voir tableau ci-dessous
+5. **Type** : Supabase Edge Functions
+6. **Edge Function** : `send-push`
+7. **HTTP Headers** : `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`
+   (copier depuis Settings → API → service_role key)
+8. **HTTP Params** : aucun
+
+| Hook | Table | Events | Filter (optionnel) |
+|------|-------|--------|---|
+| `notify_new_reservation` | `reservations` | INSERT | (laisser vide — le filter `status = 'pending'` est fait côté Edge) |
+| `notify_payment_received` | `transactions` | UPDATE | (laisser vide — le filter `type IN payment/split AND status→success` est fait côté Edge) |
+| `notify_payout_settled` | `venue_payouts` | UPDATE | (laisser vide) |
+| `notify_revenue_milestone` | `revenue_milestones_reached` | INSERT | (laisser vide) |
+
+Les Database Webhooks pour `messages`, `payment_requests`, `transactions (transfer)`,
+`profile_likes`, `post_comments` et `reservations (UPDATE confirmed)` doivent déjà
+exister depuis le PR #20 — vérifie qu'ils sont actifs.
+
+### Test rapide post-setup
+
+Insère une résa pending sur un venue dont tu n'es pas owner :
+
+```sql
+insert into public.reservations (venue_id, user_id, date_time, party_size, deposit_xof, status)
+values ('<venue_id>', auth.uid(), now() + interval '2 days', 2, 5000, 'pending');
+```
+
+→ l'owner du venue doit recevoir une push « Nouvelle réservation 📅 » dans la
+seconde si son device est registered et la pref `new_reservation` à `true`.
+
+### Préférences utilisateur
+
+Chaque user peut désactiver les 4 events via :
+- Mobile : `Paramètres` → `Notifications`
+- Web : `/pro?tab=settings` → carte "Notifications pro"
+
+Defaults : tous à `true` (insertion auto à la 1re lecture via
+`get_my_notification_preferences`).

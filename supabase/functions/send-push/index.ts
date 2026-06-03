@@ -1,18 +1,25 @@
 // ============================================================================
 // send-push — déclenche des notifications push (Expo Push API).
 //
-// Appelée par les Database Webhooks Supabase à chaque INSERT pertinent.
+// Appelée par les Database Webhooks Supabase à chaque INSERT/UPDATE pertinent.
 // Configuration : `verify_jwt = false` côté `supabase/config.toml`.
 // L'authenticité est garantie par le header `Authorization: Bearer <service-role-key>`
 // vérifié ci-dessous (toute autre source est rejetée).
 //
-// Événements pris en charge :
+// Événements UTILISATEUR (sans check de préférences, comportement historique) :
 //   - messages              -> « X t'a envoyé un message »
 //   - payment_requests      -> « X te demande Y FCFA »
-//   - transactions          -> « Tu as reçu Y FCFA de X » (transferts P2P)
-//   - profile_likes         -> « C'est un match avec X ! » (si like mutuel)
+//   - transactions (transfer P2P)  -> « Tu as reçu Y FCFA de X »
+//   - profile_likes         -> « C'est un match avec X ! »
 //   - post_comments         -> « X a commenté ton post »
-//   - reservations (UPDATE) -> « Ta réservation chez X est confirmée »
+//   - reservations confirmées (UPDATE) -> « Ta réservation chez X est confirmée »
+//
+// Événements PRO (avec check is_notification_enabled, migration 0045) :
+//   - reservations (INSERT pending)        -> owner : « Nouvelle réservation »
+//   - transactions (UPDATE success payment/split sur résa du venue)
+//                                          -> owner : « Paiement reçu »
+//   - venue_payouts (UPDATE pending→final) -> owner : « Retrait XOF : ✅/❌ »
+//   - revenue_milestones_reached (INSERT)  -> owner : « Jalon XOF atteint 🎉 »
 // ============================================================================
 
 import { jsonResponse, serviceClient } from "../_shared/supabase.ts";
@@ -170,7 +177,140 @@ async function buildNotifications(
     return out;
   }
 
+  // ═════════════════════════════════════════════════════════════════════════
+  // EVENTS PRO (migration 0045) — chaque bloc appelle is_notification_enabled
+  // avant de pousser. Le helper retourne true par défaut si l'owner n'a pas
+  // encore créé sa row de préférences.
+  // ═════════════════════════════════════════════════════════════════════════
+
+  // ─── new_reservation : INSERT sur reservations (status='pending') ───────
+  if (table === "reservations" && !oldRecord) {
+    const r = record as { id?: string; venue_id?: string; user_id?: string; status?: string; date_time?: string; party_size?: number };
+    if (r.status !== "pending" || !r.venue_id) return out;
+    const { data: venue } = await svc
+      .from("venues")
+      .select("name, owner_id")
+      .eq("id", r.venue_id)
+      .maybeSingle();
+    const ownerId = (venue as { owner_id?: string } | null)?.owner_id;
+    if (!ownerId || ownerId === r.user_id) return out; // pas de notif au gérant qui réserve chez lui
+    if (!(await isNotifEnabled(svc, ownerId, "new_reservation"))) return out;
+    const date = r.date_time
+      ? new Date(r.date_time).toLocaleDateString("fr-FR", {
+          day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+        })
+      : "à une date à confirmer";
+    const partyTxt = r.party_size ? `${r.party_size} pers.` : "réservation";
+    out.push({
+      user_id: ownerId,
+      title: "Nouvelle réservation 📅",
+      body: `${partyTxt} ${date ? "le " + date : ""} chez ${(venue as { name?: string } | null)?.name || "ton établissement"}.`,
+      data: { route: "/pro" },
+    });
+    return out;
+  }
+
+  // ─── payment_received : UPDATE transactions (status→success, type pay/split,
+  //                       liée à une résa d'un venue dont je suis owner) ────
+  if (table === "transactions" && oldRecord) {
+    const r = record as { id?: string; type?: string; status?: string; amount_xof?: number; reservation_id?: string | null };
+    const old = oldRecord as { status?: string };
+    if (r.status !== "success" || old.status === "success") return out;
+    if (r.type !== "payment" && r.type !== "split") return out;
+    if (!r.reservation_id) return out;
+    const { data: resa } = await svc
+      .from("reservations")
+      .select("venue_id")
+      .eq("id", r.reservation_id)
+      .maybeSingle();
+    const venueId = (resa as { venue_id?: string } | null)?.venue_id;
+    if (!venueId) return out;
+    const { data: venue } = await svc
+      .from("venues")
+      .select("name, owner_id")
+      .eq("id", venueId)
+      .maybeSingle();
+    const ownerId = (venue as { owner_id?: string } | null)?.owner_id;
+    if (!ownerId) return out;
+    if (!(await isNotifEnabled(svc, ownerId, "payment_received"))) return out;
+    out.push({
+      user_id: ownerId,
+      title: "Paiement reçu 💳",
+      body: `${fmtXof(r.amount_xof || 0)} encaissés pour ${(venue as { name?: string } | null)?.name || "ton établissement"}.`,
+      data: { route: "/pro?tab=finances" },
+    });
+    return out;
+  }
+
+  // ─── payout_settled : UPDATE venue_payouts (status pending → final) ─────
+  if (table === "venue_payouts" && oldRecord) {
+    const r = record as { id?: string; venue_id?: string; owner_id?: string; amount_xof?: number; status?: string; failure_reason?: string | null };
+    const old = oldRecord as { status?: string };
+    if (old.status !== "pending") return out;
+    if (r.status !== "success" && r.status !== "failed") return out;
+    if (!r.owner_id) return out;
+    if (!(await isNotifEnabled(svc, r.owner_id, "payout_settled"))) return out;
+    const isOk = r.status === "success";
+    const venueName = r.venue_id
+      ? ((await svc.from("venues").select("name").eq("id", r.venue_id).maybeSingle()).data as { name?: string } | null)?.name
+      : undefined;
+    out.push({
+      user_id: r.owner_id,
+      title: isOk ? "Retrait validé ✅" : "Retrait échoué ❌",
+      body: isOk
+        ? `${fmtXof(r.amount_xof || 0)} ont été envoyés sur ton compte mobile money${venueName ? ` (${venueName})` : ""}.`
+        : `Ton retrait de ${fmtXof(r.amount_xof || 0)} a échoué — le solde a été restauré${r.failure_reason ? `. ${r.failure_reason}` : "."}`,
+      data: { route: r.venue_id ? `/venue-payout?venueId=${r.venue_id}` : "/pro?tab=finances" },
+    });
+    return out;
+  }
+
+  // ─── revenue_milestone : INSERT revenue_milestones_reached ──────────────
+  if (table === "revenue_milestones_reached" && !oldRecord) {
+    const r = record as { venue_id?: string; milestone_xof?: number; total_xof_at_trigger?: number; year_month?: string };
+    if (!r.venue_id || !r.milestone_xof) return out;
+    const { data: venue } = await svc
+      .from("venues")
+      .select("name, owner_id")
+      .eq("id", r.venue_id)
+      .maybeSingle();
+    const ownerId = (venue as { owner_id?: string } | null)?.owner_id;
+    if (!ownerId) return out;
+    if (!(await isNotifEnabled(svc, ownerId, "revenue_milestone"))) return out;
+    out.push({
+      user_id: ownerId,
+      title: "Jalon atteint 🎉",
+      body: `${(venue as { name?: string } | null)?.name || "Ton établissement"} a atteint ${fmtXof(r.milestone_xof)} de revenus ce mois.`,
+      data: { route: "/pro?tab=finances" },
+    });
+    return out;
+  }
+
   return out;
+}
+
+// Helper : check préférences via RPC SECURITY DEFINER (migration 0045).
+// Retourne true en cas d'erreur (fail open) pour ne pas bloquer une notif
+// à cause d'un problème de DB transitoire.
+async function isNotifEnabled(
+  svc: ReturnType<typeof serviceClient>,
+  userId: string,
+  eventType: string,
+): Promise<boolean> {
+  try {
+    const { data, error } = await svc.rpc("is_notification_enabled", {
+      p_user_id: userId,
+      p_event_type: eventType,
+    });
+    if (error) {
+      console.error("[send-push] is_notification_enabled:", error);
+      return true; // fail open
+    }
+    return Boolean(data ?? true);
+  } catch (err) {
+    console.error("[send-push] is_notification_enabled fatal:", err);
+    return true;
+  }
 }
 
 Deno.serve(async (req) => {
