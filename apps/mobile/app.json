@@ -59,8 +59,8 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "Soutra-Playce utilise le micro pour la recherche vocale.",
-          "speechRecognitionPermission": "Soutra-Playce transcrit ta voix en local pour rechercher des établissements.",
+          "microphonePermission": "Sia utilise ton micro pour t'écouter quand tu lui parles (recherche, réservation, assistance).",
+          "speechRecognitionPermission": "Sia transcrit ta voix en local pour comprendre tes demandes et te répondre.",
           "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
         }
       ],

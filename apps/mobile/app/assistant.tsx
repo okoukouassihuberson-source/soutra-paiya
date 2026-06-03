@@ -1,10 +1,13 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { askAssistant, type ChatMessage } from '@/lib/assistant';
+import { voice } from '@/lib/voice';
+import { VoiceConversation } from '@/components/VoiceConversation';
 
 const SUGGESTIONS = [
   'Comment recharger mon wallet ?',
@@ -15,14 +18,28 @@ const SUGGESTIONS = [
 
 const WELCOME: ChatMessage = {
   role: 'assistant',
-  content: 'Bonjour ! Je suis Soutra, ton assistant. Demande-moi comment utiliser l\'app, où sortir à Abidjan, ou ce que tu veux savoir sur Soutra-Pay.',
+  content: 'Bonjour ! Je suis Sia, ton assistant vocal Soutra-Playce. Demande-moi comment utiliser l\'app, où sortir à Abidjan, ou tap le micro en haut pour me parler directement.',
 };
 
 export default function Assistant() {
+  const params = useLocalSearchParams<{ voice?: string }>();
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [readAloud, setReadAloud] = useState(false);     // Toggle TTS auto des réponses
+  const [voiceMode, setVoiceMode] = useState(false);     // Modal conversation continue
   const scrollRef = useRef<ScrollView | null>(null);
+
+  // Ouvre direct le mode vocal si l'utilisateur a tapé "Parler à Sia" depuis
+  // un autre écran (?voice=1 dans l'URL).
+  useEffect(() => {
+    if (params.voice === '1') setVoiceMode(true);
+  }, [params.voice]);
+
+  // Cleanup TTS si l'écran est démonté pendant une lecture.
+  useEffect(() => {
+    return () => { void voice.stopSpeaking(); };
+  }, []);
 
   async function send(text: string) {
     const body = text.trim();
@@ -40,6 +57,10 @@ export default function Assistant() {
       const res = await askAssistant(history);
       setMessages((prev) => [...prev, { role: 'assistant', content: res.reply }]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 30);
+      // Lecture vocale auto si le toggle est on (best-effort, ne bloque pas l'UI).
+      if (readAloud && voice.isTtsAvailable()) {
+        void voice.speak(res.reply, { locale: 'fr-FR' });
+      }
     } catch (err: any) {
       const msg = err?.message ?? 'Échec de la requête';
       // On retire le dernier message user pour permettre une réessai propre.
@@ -63,15 +84,56 @@ export default function Assistant() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader
-        title="Assistant Soutra"
-        subtitle="Propulsé par Claude"
+        title="Sia"
+        subtitle="Ton assistant vocal Soutra-Playce"
         trailing={(
-          messages.length > 1 ? (
-            <Pressable onPress={resetConversation} hitSlop={10} style={s.iconBtn}>
-              <Ionicons name="refresh" size={18} color={colors.dark} />
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            {/* Toggle "Lire les réponses à voix haute" */}
+            <Pressable
+              onPress={() => {
+                setReadAloud((v) => {
+                  const next = !v;
+                  if (!next) void voice.stopSpeaking();
+                  return next;
+                });
+              }}
+              hitSlop={10}
+              style={[s.iconBtn, readAloud && { backgroundColor: colors.primary[50], borderColor: colors.primary[500] }]}
+              accessibilityLabel={readAloud ? 'Couper la lecture vocale' : 'Activer la lecture vocale'}
+            >
+              <Ionicons
+                name={readAloud ? 'volume-high' : 'volume-mute-outline'}
+                size={18}
+                color={readAloud ? colors.primary[600] : colors.dark}
+              />
             </Pressable>
-          ) : null
+
+            {/* Bouton mode vocal (conversation continue) */}
+            <Pressable
+              onPress={() => setVoiceMode(true)}
+              hitSlop={10}
+              style={[s.iconBtn, { backgroundColor: colors.primary[500], borderColor: colors.primary[500] }]}
+              accessibilityLabel="Mode vocal — parler à Sia"
+            >
+              <Ionicons name="mic" size={18} color="#fff" />
+            </Pressable>
+
+            {/* Reset */}
+            {messages.length > 1 && (
+              <Pressable onPress={resetConversation} hitSlop={10} style={s.iconBtn}>
+                <Ionicons name="refresh" size={18} color={colors.dark} />
+              </Pressable>
+            )}
+          </View>
         )}
+      />
+
+      {/* Modal de conversation vocale continue */}
+      <VoiceConversation
+        visible={voiceMode}
+        initialHistory={messages.filter((m) => m !== WELCOME)}
+        onClose={() => setVoiceMode(false)}
+        onHistoryChange={(h) => setMessages([WELCOME, ...h])}
       />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>

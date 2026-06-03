@@ -113,6 +113,27 @@ export default function Profile() {
           <StatCard c={c} label="Matchs" value={stats?.matches} icon="heart" />
         </View>
 
+        {/* ═══════════ PARLER À SIA — featured card ═══════════ */}
+        {/* Entrée principale vers l'assistant vocal. Au tap, ouvre /assistant
+            avec ?voice=1 ce qui déclenche la modal de conversation continue
+            au mount, sans passer par le mode texte. */}
+        <Pressable
+          onPress={() => router.push('/assistant?voice=1' as any)}
+          style={({ pressed }) => [s.siaCard, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
+          accessibilityLabel="Parler à Sia, ton assistant vocal"
+        >
+          <View style={s.siaIconWrap}>
+            <Ionicons name="mic" size={26} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.siaTitle}>Parler à Sia</Text>
+            <Text style={s.siaSubtitle}>
+              Tap pour discuter à voix haute · réservations, paiements, recommandations
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color="#fff" style={{ opacity: 0.85 }} />
+        </Pressable>
+
         {/* Mon compte */}
         <View style={s.sectionTitleRow}>
           <View style={s.sectionAccent} />
@@ -182,8 +203,8 @@ export default function Profile() {
           <Text style={s.sectionTitle}>Aide & légal</Text>
         </View>
         <View style={s.menu}>
-          <MenuItem c={c} icon="sparkles-outline" label="Assistant Soutra" badge="IA" badgeColor={c.primary[500]} onPress={() => router.push('/assistant' as any)} />
-          <MenuItem c={c} icon="help-circle-outline" label="Centre d'aide" onPress={() => Alert.alert('Centre d\'aide', 'Pose ta question à l\'Assistant Soutra (au-dessus), ou écris à support@soutra.ci.')} />
+          <MenuItem c={c} icon="sparkles-outline" label="Sia (assistant vocal)" badge="IA" badgeColor={c.primary[500]} onPress={() => router.push('/assistant' as any)} />
+          <MenuItem c={c} icon="help-circle-outline" label="Centre d'aide" onPress={() => Alert.alert('Centre d\'aide', 'Pose ta question à Sia (au-dessus), ou écris à support@soutra.ci.')} />
           <MenuItem c={c} icon="document-text-outline" label="Conditions & Confidentialité" onPress={() => Alert.alert('CGU & Confidentialité', 'Les CGU et la politique de confidentialité seront bientôt disponibles ici.')} last />
         </View>
 
@@ -363,6 +384,23 @@ function makeStyles(c: ColorPalette) {
     statIconWrap: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.primary[50], alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
     statValue: { fontSize: typography.fontSize.xl, fontWeight: '700', color: c.dark },
     statLabel: { fontSize: typography.fontSize.xs, color: c.neutral[500], marginTop: 2, fontWeight: '600' },
+
+    // Card "Parler à Sia" — featured entry point pour l'assistant vocal
+    siaCard: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+      backgroundColor: c.primary[500],
+      marginHorizontal: spacing.lg, marginTop: spacing.lg,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+      shadowColor: c.primary[500], shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+    },
+    siaIconWrap: {
+      width: 48, height: 48, borderRadius: 24,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    siaTitle: { fontSize: typography.fontSize.base, fontWeight: '800', color: '#fff' },
+    siaSubtitle: { fontSize: typography.fontSize.xs, color: 'rgba(255,255,255,0.92)', marginTop: 3, lineHeight: 17 },
 
     sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.md },
     sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: c.primary[500] },
