@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { askAssistant, runAction, type ChatMessage, type AssistantAction, type PayReservationResult } from '@/lib/assistant';
+import { askAssistant, runAction, localeForLanguage, type ChatMessage, type AssistantAction, type PayReservationResult, type DetectedLanguage } from '@/lib/assistant';
 import { voice } from '@/lib/voice';
 import { VoiceConversation } from '@/components/VoiceConversation';
 import { PaymentConfirmModal } from '@/components/PaymentConfirmModal';
@@ -38,6 +38,8 @@ export default function Assistant() {
     | { reservation_id: string; amount_xof: number; venue_name?: string }
     | null
   >(null);
+  // Dernière langue détectée par le serveur (Phase 5) — pour piloter le TTS
+  const [lastLanguage, setLastLanguage] = useState<DetectedLanguage>('fr');
   const scrollRef = useRef<ScrollView | null>(null);
 
   // Ouvre direct le mode vocal si l'utilisateur a tapé "Parler à Sia" depuis
@@ -129,11 +131,14 @@ export default function Assistant() {
       // (c'est du faux contexte produit local, pas une vraie conversation).
       const history = next.filter((m) => m !== WELCOME);
       const res = await askAssistant(history, coords ?? undefined);
+      const lang = res.detected_language ?? 'fr';
+      setLastLanguage(lang);
       setMessages((prev) => [...prev, { role: 'assistant', content: res.reply }]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 30);
       // Lecture vocale auto si le toggle est on (best-effort, ne bloque pas l'UI).
+      // Locale dynamique : fr/nouchi → fr-FR, en → en-US.
       if (readAloud && voice.isTtsAvailable()) {
-        void voice.speak(res.reply, { locale: 'fr-FR' });
+        void voice.speak(res.reply, { locale: localeForLanguage(lang) });
       }
       // Exécute les actions (navigate, etc.) après la lecture si toggle ON.
       applyActions(res.actions, res.reply);

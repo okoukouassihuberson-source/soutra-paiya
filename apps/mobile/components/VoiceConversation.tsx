@@ -22,7 +22,7 @@ import * as Location from 'expo-location';
 import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { voice } from '@/lib/voice';
-import { askAssistant, runAction, type ChatMessage, type AssistantAction, type PayReservationResult } from '@/lib/assistant';
+import { askAssistant, runAction, localeForLanguage, type ChatMessage, type AssistantAction, type PayReservationResult, type DetectedLanguage } from '@/lib/assistant';
 import { PaymentConfirmModal } from '@/components/PaymentConfirmModal';
 
 type Status = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
@@ -73,6 +73,10 @@ export function VoiceConversation({
     | { reservation_id: string; amount_xof: number; venue_name?: string }
     | null
   >(null);
+  // Phase 5 : locale pour STT (fr-FR par défaut, override manuel en-US pour
+  // les anglophones natifs). Le TTS suit la langue détectée par le serveur.
+  const [sttLocale, setSttLocale] = useState<'fr-FR' | 'en-US'>('fr-FR');
+  const [lastLanguage, setLastLanguage] = useState<DetectedLanguage>('fr');
   const historyRef = useRef<ChatMessage[]>(initialHistory);
   const pulse = useRef(new Animated.Value(1)).current;
   const sttAvailable = useMemo(() => voice.isSttAvailable(), []);
@@ -122,7 +126,7 @@ export function VoiceConversation({
     setStatus('listening');
 
     await voice.startListening({
-      locale: 'fr-FR',
+      locale: sttLocale,
       continuous: false,
       onPartial: (text) => setPartialTranscript(text),
       onFinal: (text) => {
@@ -143,7 +147,7 @@ export function VoiceConversation({
         setStatus('error');
       },
     });
-  }, [sttAvailable]);
+  }, [sttAvailable, sttLocale]);
 
   // ─── Helper : ferme le modal + navigue (cas action navigate) ──────────
   const handleCloseAndNavigate = useCallback(async (
@@ -170,6 +174,8 @@ export function VoiceConversation({
     try {
       const res = await askAssistant(next, coords ?? undefined);
       const reply = res.reply?.trim() || 'Je n\'ai pas bien compris, peux-tu répéter ?';
+      const lang = res.detected_language ?? 'fr';
+      setLastLanguage(lang);
       setLastSiaText(reply);
 
       const after: ChatMessage[] = [...next, { role: 'assistant', content: reply }];
@@ -211,7 +217,7 @@ export function VoiceConversation({
       if (ttsAvailable) {
         setStatus('speaking');
         await voice.speak(reply, {
-          locale: 'fr-FR',
+          locale: localeForLanguage(lang),
           onDone: afterSpeech,
           onError: afterSpeech,
         });
@@ -239,11 +245,14 @@ export function VoiceConversation({
     const t = setTimeout(() => {
       // Saluer si l'historique est vide, sinon écouter direct.
       if (historyRef.current.length === 0 && ttsAvailable) {
-        const greeting = 'Bonjour ! Je suis Sia. Comment puis-je t\'aider ?';
+        // Greeting localisé selon la locale STT (proxy de la langue préférée)
+        const greeting = sttLocale === 'en-US'
+          ? "Hi! I'm Sia. How can I help you?"
+          : 'Bonjour ! Je suis Sia. Comment puis-je t\'aider ?';
         setLastSiaText(greeting);
         setStatus('speaking');
         void voice.speak(greeting, {
-          locale: 'fr-FR',
+          locale: sttLocale,
           onDone: () => { void startListening(); },
           onError: () => { void startListening(); },
         });
@@ -252,7 +261,7 @@ export function VoiceConversation({
       }
     }, 300);
     return () => clearTimeout(t);
-  }, [visible, ttsAvailable, startListening]);
+  }, [visible, ttsAvailable, startListening, sttLocale]);
 
   // ─── Cleanup au démontage / fermeture ─────────────────────────────────
   useEffect(() => {
@@ -273,7 +282,10 @@ export function VoiceConversation({
   // ─── Callbacks PaymentConfirmModal (Phase 4) ──────────────────────────
   const handlePaymentSuccess = useCallback(async (result: PayReservationResult) => {
     setPaymentReq(null);
-    const confirmText = `Paiement confirmé : ${formatXOF(result.amount_paid_xof)} débité de ton wallet. Nouveau solde : ${formatXOF(result.new_balance_xof)}.`;
+    // Confirmation localisée selon la dernière langue de la conversation
+    const confirmText = lastLanguage === 'en'
+      ? `Payment confirmed: ${formatXOF(result.amount_paid_xof)} debited from your wallet. New balance: ${formatXOF(result.new_balance_xof)}.`
+      : `Paiement confirmé : ${formatXOF(result.amount_paid_xof)} débité de ton wallet. Nouveau solde : ${formatXOF(result.new_balance_xof)}.`;
     setLastSiaText(confirmText);
     const after: ChatMessage[] = [
       ...historyRef.current,
@@ -284,14 +296,14 @@ export function VoiceConversation({
     if (ttsAvailable) {
       setStatus('speaking');
       await voice.speak(confirmText, {
-        locale: 'fr-FR',
+        locale: localeForLanguage(lastLanguage),
         onDone: () => { void startListening(); },
         onError: () => setStatus('idle'),
       });
     } else {
       setStatus('idle');
     }
-  }, [ttsAvailable, onHistoryChange, startListening]);
+  }, [ttsAvailable, onHistoryChange, startListening, lastLanguage]);
 
   const handlePaymentCancel = useCallback(() => {
     setPaymentReq(null);
@@ -345,8 +357,28 @@ export function VoiceConversation({
         <View style={s.header}>
           <View style={{ flex: 1 }}>
             <Text style={s.title}>Sia</Text>
-            <Text style={s.subtitle}>Ton assistant vocal Soutra-Playce</Text>
+            <Text style={s.subtitle}>
+              {sttLocale === 'en-US' ? 'Your Soutra-Playce voice assistant' : 'Ton assistant vocal Soutra-Playce'}
+            </Text>
           </View>
+
+          {/* Toggle FR / EN (Phase 5) */}
+          <Pressable
+            onPress={() => {
+              const nextLocale: 'fr-FR' | 'en-US' = sttLocale === 'fr-FR' ? 'en-US' : 'fr-FR';
+              setSttLocale(nextLocale);
+              // Re-démarre l'écoute avec la nouvelle locale si on écoute déjà
+              if (status === 'listening') {
+                void voice.stopListening().then(() => { /* startListening sera relancé via le useCallback dep sttLocale */ });
+              }
+            }}
+            hitSlop={8}
+            style={s.langPill}
+            accessibilityLabel={`Changer la langue, actuellement ${sttLocale === 'en-US' ? 'anglais' : 'français'}`}
+          >
+            <Text style={s.langText}>{sttLocale === 'en-US' ? 'EN' : 'FR'}</Text>
+          </Pressable>
+
           <Pressable onPress={handleClose} hitSlop={10} style={s.closeBtn}>
             <Ionicons name="close" size={22} color={c.dark} />
           </Pressable>
@@ -458,6 +490,18 @@ function makeStyles(c: ColorPalette) {
       width: 36, height: 36, borderRadius: 18,
       backgroundColor: c.neutral[100],
       alignItems: 'center', justifyContent: 'center',
+    },
+    langPill: {
+      paddingHorizontal: spacing.sm, paddingVertical: 6,
+      borderRadius: radius.full,
+      backgroundColor: c.primary[50],
+      borderWidth: 1, borderColor: c.primary[200],
+      marginRight: spacing.sm,
+      minWidth: 40, alignItems: 'center',
+    },
+    langText: {
+      fontSize: typography.fontSize.xs, fontWeight: '800',
+      color: c.primary[700], letterSpacing: 0.5,
     },
 
     transcript: { padding: spacing.lg, gap: spacing.md },

@@ -46,13 +46,26 @@ export async function payReservationFromWallet(
   });
 }
 
+/**
+ * Langue détectée par le serveur sur la réponse de Sia.
+ * - 'fr' / 'nouchi' → TTS fr-FR (le nouchi est compris comme du français)
+ * - 'en' → TTS en-US
+ */
+export type DetectedLanguage = 'fr' | 'en' | 'nouchi';
+
 export type AssistantReply = {
   reply: string;
   actions?: AssistantAction[];
+  detected_language?: DetectedLanguage;
   iterations?: number;
   usage?: { input_tokens: number; output_tokens: number } | null;
   model?: string;
 };
+
+/** Map la langue détectée vers une locale BCP-47 utilisable par expo-speech. */
+export function localeForLanguage(lang?: DetectedLanguage): 'fr-FR' | 'en-US' {
+  return lang === 'en' ? 'en-US' : 'fr-FR';
+}
 
 export interface AskAssistantOptions {
   /** Position utilisateur en lat/lng (passée au chatbot pour search_venues). */

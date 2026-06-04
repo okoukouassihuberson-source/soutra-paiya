@@ -22,6 +22,54 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { jsonResponse, getAuthUser, serviceClient } from "../_shared/supabase.ts";
 
+// ────────────────────────────────────────────────────────────────────────────
+// Détection de langue (heuristique simple, Phase 5)
+// ────────────────────────────────────────────────────────────────────────────
+// Used pour piloter le TTS côté client : 'fr' → fr-FR, 'en' → en-US,
+// 'nouchi' → fr-FR (pas de locale TTS dédiée, mais on tag pour analytics).
+//
+// On compte des mots-clés très typés par langue. Le nouchi a la précédence
+// sur le fr si on détecte > 1 marqueur nouchi (parce que c'est aussi du
+// français techniquement). En cas d'ambiguïté → 'fr' (langue par défaut).
+// ────────────────────────────────────────────────────────────────────────────
+
+const EN_KEYWORDS = new Set([
+  "the", "and", "you", "your", "i", "we", "they", "find", "want", "need",
+  "please", "what", "where", "when", "how", "much", "open", "close",
+  "tonight", "tomorrow", "today", "near", "cheap", "expensive", "show",
+  "with", "from", "have", "can", "would", "could", "should",
+]);
+
+const NOUCHI_MARKERS = [
+  "gbohi", "gboh", "djatchê", "djatchemo", "gomi", "gohou", "yêkê", "yeke",
+  "soutra", "boutchou", "boula", "blêh", "bleh", "gawa", "bra", "graille",
+  "tchiii", "wê", "c'est cadeau", "y a foi", "ma boutchou", "ma yêkê",
+];
+
+function detectLanguage(text: string): "fr" | "en" | "nouchi" {
+  if (!text || text.length < 3) return "fr";
+  const lower = text.toLowerCase();
+
+  // 1) Nouchi : compte les marqueurs (très spécifiques)
+  let nouchiCount = 0;
+  for (const m of NOUCHI_MARKERS) {
+    if (lower.includes(m)) nouchiCount++;
+  }
+  if (nouchiCount >= 1) return "nouchi";
+
+  // 2) Anglais : compte les stopwords anglais (mots de 1-5 lettres)
+  const words = lower.split(/[^a-zàâçéèêëîïôûùüÿñæœ']+/).filter((w) => w.length > 0);
+  if (words.length === 0) return "fr";
+  let enCount = 0;
+  for (const w of words) {
+    if (EN_KEYWORDS.has(w)) enCount++;
+  }
+  // Si > 25% des mots sont des stopwords anglais → c'est de l'anglais
+  if (enCount / words.length > 0.25) return "en";
+
+  return "fr";
+}
+
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_MODEL = "claude-haiku-4-5";
 const MAX_TOKENS = 1500;
@@ -42,8 +90,15 @@ const SYSTEM_PROMPT = `Tu es Sia, l'assistant vocal officiel de Soutra-Playce �
 
 Identité :
 - Tu t'appelles Sia. Chaleureuse, professionnelle, naturelle, fière de la CI.
-- Tu tutoies. Tu peux glisser quelques expressions ivoiriennes ("c'est cadeau", "wê") sans en abuser.
-- Si on te parle en anglais ou en nouchi, réponds dans la même langue.
+- Tu tutoies. Tu adaptes ton registre au registre de l'utilisateur.
+
+Langues (DÉTECTION AUTOMATIQUE — réponds dans la langue de l'utilisateur) :
+- Français standard : ton clair, professionnel, parsemé d'expressions ivoiriennes naturelles ("c'est cadeau", "wê", "tchiii", "y a foi")
+- Nouchi (français de la rue ivoirien) : si l'utilisateur dit "gbohi" (problème), "djatchêmo" (insulter), "gomi/go" (fille), "gohou" (regarder), "yêkê" (gars), "soutra" (aider), "boutchou" (jeune homme), "boula" (mentir), "blêh" (bien), "gawa" (vagabond), "bra" (frère/ami), "graille" (manger), "soutra ma boutchou" (aide-moi mec), → ré-utilise les mêmes registres, garde le ton chill du quartier.
+  Exemple : User "Soutra ma, je veux gbohi un maquis pas cher à Cocody" → Sia : "T'inquiète bra, j'ai vu trois bons maquis à Cocody, prix gentil. Le premier c'est Mékaféba, à 800 m, ouvert ce soir. Je t'ouvre la fiche ?"
+- Anglais : si l'utilisateur parle anglais (ex: "Find me a restaurant in Cocody"), réponds en anglais. Tu connais Abidjan, les mêmes lieux, les mêmes catégories. Garde un ton chaleureux et professionnel.
+  Exemple : User "Find me an open hotel for tonight in Abidjan" → Sia : "I found three hotels open tonight in Abidjan. The closest is Hôtel Tiama in Plateau, around 65 000 FCFA per night. Want me to open its profile?"
+- Autres langues africaines (dioula, baoulé, etc.) : pour l'instant, si tu détectes une autre langue, dis poliment "Je comprends surtout le français, l'anglais et le nouchi pour le moment. Reformule en français si tu veux."
 
 Outils disponibles :
 - search_venues : trouve des lieux selon catégorie / commune / prix / distance / "ouvert maintenant"
@@ -774,9 +829,16 @@ Deno.serve(async (req) => {
         : "Je n'ai pas trouvé de réponse claire — peux-tu reformuler ?";
     }
 
+    // Détection langue de la réponse de Sia (pour piloter le TTS côté client).
+    // On détecte sur le reply, pas le user message — car on veut speaker dans
+    // la langue dans laquelle Sia A REPONDU (peut différer si Sia choisit
+    // d'inviter à reformuler en français).
+    const detectedLanguage = detectLanguage(finalText);
+
     return jsonResponse({
       reply: finalText,
       actions: actions.length > 0 ? actions : undefined,
+      detected_language: detectedLanguage,
       iterations,
       usage: lastUsage,
       model: lastModel,
