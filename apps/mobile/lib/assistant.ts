@@ -53,9 +53,50 @@ export async function payReservationFromWallet(
  */
 export type DetectedLanguage = 'fr' | 'en' | 'nouchi';
 
+/** Phase 9 : cards venues rendues inline dans la conversation */
+export interface VenueCard {
+  id: string;
+  kind: 'venue';
+  venue_id: string;
+  name: string;
+  category?: string | null;
+  city?: string | null;
+  district?: string | null;
+  cover_url?: string | null;
+  avg_price_xof?: number | null;
+  rating_avg?: number | null;
+  rating_count?: number | null;
+  distance_km?: number | null;
+  is_open_now?: boolean | null;
+  badges?: Array<{ label: string; tone: 'primary' | 'success' | 'amber' | 'danger' }>;
+}
+
+/** Phase 9 : étape d'un itinéraire généré par plan_outing */
+export interface ItineraryStep {
+  order: number;
+  time?: string;
+  kind: string;
+  activity_label: string;
+  venue_id?: string | null;
+  venue_name?: string | null;
+  est_cost_xof: number;
+  notes?: string;
+}
+
+export interface Itinerary {
+  occasion: string;
+  party_size: number;
+  budget_xof: number;
+  total_estimated_xof: number;
+  remaining_xof: number;
+  steps: ItineraryStep[];
+}
+
 export type AssistantReply = {
   reply: string;
   actions?: AssistantAction[];
+  cards?: VenueCard[];
+  itinerary?: Itinerary;
   detected_language?: DetectedLanguage;
   iterations?: number;
   usage?: { input_tokens: number; output_tokens: number } | null;

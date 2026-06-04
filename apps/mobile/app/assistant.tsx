@@ -6,7 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { askAssistant, runAction, localeForLanguage, type ChatMessage, type AssistantAction, type PayReservationResult, type DetectedLanguage } from '@/lib/assistant';
+import { askAssistant, runAction, localeForLanguage, type ChatMessage, type AssistantAction, type PayReservationResult, type DetectedLanguage, type VenueCard, type Itinerary } from '@/lib/assistant';
+import { SiaVenueCard } from '@/components/SiaVenueCard';
+import { SiaItineraryCard } from '@/components/SiaItineraryCard';
 import { voice } from '@/lib/voice';
 import { VoiceConversation } from '@/components/VoiceConversation';
 import { PaymentConfirmModal } from '@/components/PaymentConfirmModal';
@@ -15,22 +17,30 @@ import { useAccessibilityMode } from '@/lib/accessibility';
 import { formatXOF } from '@soutra/shared';
 
 const SUGGESTIONS = [
+  "🎲 Je m'ennuie, propose-moi quelque chose",
+  "💰 J'ai 10 000 FCFA, où sortir ce soir ?",
+  '💑 Organise une sortie romantique 30 000 FCFA',
+  '🗓️ Organise mon week-end avec 100 000 FCFA',
+  '🔥 Où sortir ce soir près de moi ?',
   'Comment recharger mon wallet ?',
-  'Où trouver un maquis à Cocody ?',
-  'C\'est quoi un split bill ?',
-  'Comment payer mon acompte ?',
 ];
 
-const WELCOME: ChatMessage = {
+// Type UI étendu (vs ChatMessage côté serveur qui reste { role, content })
+type UIMessage = ChatMessage & {
+  cards?: VenueCard[];
+  itinerary?: Itinerary;
+};
+
+const WELCOME: UIMessage = {
   role: 'assistant',
-  content: 'Bonjour ! Je suis Sia, ton assistant vocal Soutra-Playce. Demande-moi comment utiliser l\'app, où sortir à Abidjan, ou tap le micro en haut pour me parler directement.',
+  content: 'Bonjour ! Je suis Sia, ton concierge Soutra-Playce. Dis-moi ton envie, ton budget, ou tap le micro — je trouve les meilleurs spots, je planifie ta sortie et je peux même réserver pour toi.',
 };
 
 export default function Assistant() {
   const params = useLocalSearchParams<{ voice?: string }>();
   const router = useRouter();
   const { enabled: accessibility } = useAccessibilityMode();
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
+  const [messages, setMessages] = useState<UIMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   // En mode accessibilité, TTS auto est forcé ON (l'utilisateur ne voit pas
@@ -126,7 +136,7 @@ export default function Assistant() {
   async function send(text: string) {
     const body = text.trim();
     if (!body || sending) return;
-    const next: ChatMessage[] = [...messages, { role: 'user', content: body }];
+    const next: UIMessage[] = [...messages, { role: 'user', content: body }];
     setMessages(next);
     setInput('');
     setSending(true);
@@ -135,11 +145,22 @@ export default function Assistant() {
     try {
       // Exclude le message de bienvenue de l'historique envoyé au modèle
       // (c'est du faux contexte produit local, pas une vraie conversation).
-      const history = next.filter((m) => m !== WELCOME);
+      // On strip aussi les cards/itinerary — Claude ne voit que {role, content}.
+      const history: ChatMessage[] = next
+        .filter((m) => m !== WELCOME)
+        .map((m) => ({ role: m.role, content: m.content }));
       const res = await askAssistant(history, coords ?? undefined);
       const lang = res.detected_language ?? 'fr';
       setLastLanguage(lang);
-      setMessages((prev) => [...prev, { role: 'assistant', content: res.reply }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: res.reply,
+          cards: res.cards,
+          itinerary: res.itinerary,
+        },
+      ]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 30);
       // Lecture vocale auto si le toggle est on (best-effort, ne bloque pas l'UI).
       // Locale dynamique : fr/nouchi → fr-FR, en → en-US.
@@ -245,15 +266,33 @@ export default function Assistant() {
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
         >
           {messages.map((m, i) => (
-            <View key={i} style={[s.bubbleRow, m.role === 'user' && s.bubbleRowUser]}>
-              {m.role === 'assistant' && (
-                <View style={s.avatar}>
-                  <Ionicons name="sparkles" size={14} color="#fff" />
+            <View key={i}>
+              <View style={[s.bubbleRow, m.role === 'user' && s.bubbleRowUser]}>
+                {m.role === 'assistant' && (
+                  <View style={s.avatar}>
+                    <Ionicons name="sparkles" size={14} color="#fff" />
+                  </View>
+                )}
+                <View style={[s.bubble, m.role === 'user' ? s.bubbleUser : s.bubbleAssistant]}>
+                  <Text style={[s.bubbleText, m.role === 'user' && s.bubbleTextUser]}>{m.content}</Text>
+                </View>
+              </View>
+
+              {/* Phase 9 : itinerary timeline rendue sous la bulle Sia */}
+              {m.role === 'assistant' && m.itinerary && (
+                <View style={s.cardsBlock}>
+                  <SiaItineraryCard itinerary={m.itinerary} />
                 </View>
               )}
-              <View style={[s.bubble, m.role === 'user' ? s.bubbleUser : s.bubbleAssistant]}>
-                <Text style={[s.bubbleText, m.role === 'user' && s.bubbleTextUser]}>{m.content}</Text>
-              </View>
+
+              {/* Phase 9 : cards venues rendues sous la bulle Sia */}
+              {m.role === 'assistant' && m.cards && m.cards.length > 0 && (
+                <View style={s.cardsBlock}>
+                  {m.cards.map((card) => (
+                    <SiaVenueCard key={card.id} card={card} />
+                  ))}
+                </View>
+              )}
             </View>
           ))}
 
@@ -339,6 +378,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.light },
   iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.neutral[200] },
   scroll: { padding: spacing.lg, paddingBottom: spacing['2xl'], gap: spacing.md },
+  cardsBlock: { marginTop: spacing.sm, marginLeft: 36 /* aligné avec le bubble assistant */ },
   bubbleRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
   bubbleRowUser: { justifyContent: 'flex-end' },
   avatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary[500], alignItems: 'center', justifyContent: 'center' },

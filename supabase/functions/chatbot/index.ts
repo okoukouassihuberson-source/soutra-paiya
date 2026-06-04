@@ -106,6 +106,12 @@ Outils disponibles :
 - list_my_reservations : les réservations de l'utilisateur courant
 - get_wallet_balance : son solde wallet + transactions récentes
 - list_trending_venues : lieux tendance ("ça bouge en ce moment")
+- plan_outing : ⭐ génère un itinéraire complet selon budget + occasion (Phase 9, concierge premium).
+  Utilise dès que l'utilisateur dit "j'ai X FCFA", "organise mon week-end",
+  "sortie romantique", "je m'ennuie", "où sortir ce soir" avec budget mentionné.
+  L'occasion est 'solo' / 'couple' / 'friends' / 'family' / 'weekend' / 'bored'.
+  Si l'utilisateur dit "j'ai 10k FCFA pour ce soir" sans préciser la compagnie,
+  demande "Tu sors seul, en couple ou entre amis ?" AVANT d'appeler.
 - navigate_to : ouvre une route dans l'app (à utiliser APRÈS avoir donné l'info, pour que l'utilisateur puisse voir le détail)
 
 Quand utiliser les outils :
@@ -119,7 +125,8 @@ Format de réponse (CRITIQUE — souvent lu à voix haute via TTS) :
 - Nombres en lettres si ≤ 10 ("trois maquis" pas "3 maquis").
 - Pas d'URL ni d'email.
 - Concierge : "Je te recommande le maquis Le Mékaféba à Cocody, ouvert ce soir, environ 5 000 FCFA" plutôt que listing froid.
-- Maximum 3 résultats à voix haute. Si plus, propose : "J'en ai trouvé sept, je t'ouvre la liste complète ?" et appelle navigate_to vers /search-ai.
+- L'UI rend AUTOMATIQUEMENT des cartes visuelles pour chaque venue mentionné dans search_venues/find_venue_by_name/plan_outing. NE LISTE PAS toutes les infos à voix haute — donne juste 1-2 phrases teaser et laisse les cards parler. Exemple : au lieu de "J'ai trouvé trois maquis : 1) X à Cocody, 4 étoiles, ouvert. 2) Y à Yopougon..." dis "J'ai trois bons maquis pour toi, le mieux noté est X à Cocody." Les cards affichent le détail.
+- Pour plan_outing : annonce le total et 1 phrase teaser ("Voilà ton week-end pour 45 000 FCFA, je te garde 5 000 de marge."). L'UI rend la timeline complète.
 
 Réservation vocale (Phase 3 — disponible) :
 - Création TOUJOURS en deux temps :
@@ -223,6 +230,23 @@ const TOOLS = [
         limit: { type: "number", description: "Nb max. Défaut 5." },
       },
       required: [],
+    },
+  },
+  {
+    name: "plan_outing",
+    description:
+      "Planifie une sortie complète selon budget + occasion + nb de personnes. Génère un itinéraire structuré 2-4 étapes (resto, bar, activité, transport) chiffré. À utiliser dès que l'utilisateur dit 'j'ai X FCFA', 'organise mon week-end', 'sortie romantique', 'je m'ennuie', etc. Retourne un itinerary[] (timeline) + cards[] (venues détaillées). Sia annonce le total et 1 phrase teaser, puis l'UI rend les cards.",
+    input_schema: {
+      type: "object",
+      properties: {
+        budget_xof: { type: "number", description: "Budget total en FCFA. Si l'utilisateur ne le donne pas, demande-le avant d'appeler." },
+        party_size: { type: "number", description: "Nb de personnes. Défaut 2." },
+        occasion: { type: "string", description: "'solo', 'couple', 'friends', 'family', 'weekend', 'bored'. Défaut 'solo'." },
+        date_time: { type: "string", description: "Date+heure ISO 8601 de début. Défaut maintenant." },
+        max_distance_km: { type: "number", description: "Rayon max depuis position user. Défaut 15." },
+        vibe: { type: "string", description: "'chill', 'festif', 'romantique', 'familial', 'sportif', 'culturel'. Optionnel." },
+      },
+      required: ["budget_xof"],
     },
   },
   {
@@ -396,11 +420,56 @@ type ServerAction =
       reason?: string;
     };
 
+// Phase 9 — Cards premium retournées avec la réponse Sia. Le client les rend
+// inline entre les bulles texte (chaque card = composant SiaVenueCard).
+interface VenueCard {
+  id: string;
+  kind: "venue";
+  venue_id: string;
+  name: string;
+  category?: string | null;
+  city?: string | null;
+  district?: string | null;
+  cover_url?: string | null;
+  avg_price_xof?: number | null;
+  rating_avg?: number | null;
+  rating_count?: number | null;
+  distance_km?: number | null;
+  is_open_now?: boolean | null;
+  /** Badges (Promo, Tendance, Ouvert, etc.) — affichage card */
+  badges?: Array<{ label: string; tone: "primary" | "success" | "amber" | "danger" }>;
+}
+
+// Phase 9 — Itinéraire structuré pour plan_outing
+interface ItineraryStep {
+  order: number;
+  time?: string;        // ex: "19h00"
+  kind: string;         // ex: "Dîner", "Bar", "Activité", "Transport"
+  activity_label: string;
+  venue_id?: string | null;
+  venue_name?: string | null;
+  est_cost_xof: number;
+  notes?: string;
+}
+
+interface Itinerary {
+  occasion: string;
+  party_size: number;
+  budget_xof: number;
+  total_estimated_xof: number;
+  remaining_xof: number;
+  steps: ItineraryStep[];
+}
+
 interface ToolResult {
   success: boolean;
   data?: unknown;
   error?: string;
   action?: ServerAction;
+  /** Phase 9 : cards venues à rendre inline dans la conversation */
+  cards?: VenueCard[];
+  /** Phase 9 : itinéraire structuré (plan_outing) */
+  itinerary?: Itinerary;
 }
 
 async function executeTool(
@@ -423,8 +492,10 @@ async function executeTool(
         if (error) return { success: false, error: error.message };
         let results = ((data ?? []) as Array<{
           id: string; name: string; category: string; district: string | null;
-          city: string | null; avg_price_xof: number | null;
-          rating_avg: number | null; distance_km: number | null;
+          city: string | null; cover_url: string | null;
+          avg_price_xof: number | null;
+          rating_avg: number | null; rating_count: number | null;
+          distance_km: number | null;
           is_open_now: boolean | null;
         }>);
         // Filtres post-RPC
@@ -440,7 +511,35 @@ async function executeTool(
           );
         }
         results = results.slice(0, limit);
-        return { success: true, data: { count: results.length, venues: results } };
+
+        // Phase 9 : génère des cards à rendre inline dans la convo
+        const cards: VenueCard[] = results.map((v) => {
+          const badges: VenueCard["badges"] = [];
+          if (v.is_open_now === true) badges.push({ label: "Ouvert", tone: "success" });
+          if ((v.rating_avg ?? 0) >= 4.5) badges.push({ label: "Top noté", tone: "primary" });
+          return {
+            id: `venue-${v.id}`,
+            kind: "venue",
+            venue_id: v.id,
+            name: v.name,
+            category: v.category,
+            city: v.city,
+            district: v.district,
+            cover_url: v.cover_url,
+            avg_price_xof: v.avg_price_xof,
+            rating_avg: v.rating_avg,
+            rating_count: v.rating_count,
+            distance_km: v.distance_km,
+            is_open_now: v.is_open_now,
+            badges,
+          };
+        });
+
+        return {
+          success: true,
+          data: { count: results.length, venues: results },
+          cards,
+        };
       }
 
       case "get_venue_details": {
@@ -496,6 +595,170 @@ async function executeTool(
         });
         if (error) return { success: false, error: error.message };
         return { success: true, data: { count: (data ?? []).length, venues: data ?? [] } };
+      }
+
+      case "plan_outing": {
+        const budgetXof = Math.max(0, Number(input.budget_xof ?? 0));
+        if (budgetXof <= 0) return { success: false, error: "budget_xof requis" };
+        const partySize = Math.max(1, Math.min(20, Number(input.party_size ?? 2)));
+        const occasion = String(input.occasion ?? "solo");
+        const maxDistanceKm = Math.max(1, Math.min(50, Number(input.max_distance_km ?? 15)));
+        const baseTime = input.date_time
+          ? new Date(String(input.date_time))
+          : new Date();
+
+        // Templates par occasion : catégories + fractions de budget allouées
+        type Step = { kind: string; cat: string; budget_frac: number; time_offset_min: number };
+        const TEMPLATES: Record<string, Step[]> = {
+          solo: [
+            { kind: "Dîner", cat: "restaurant", budget_frac: 0.55, time_offset_min: 0 },
+            { kind: "Bar / Lounge", cat: "bar", budget_frac: 0.25, time_offset_min: 90 },
+            { kind: "Transport", cat: "transport", budget_frac: 0.15, time_offset_min: 180 },
+          ],
+          couple: [
+            { kind: "Dîner romantique", cat: "restaurant", budget_frac: 0.5, time_offset_min: 0 },
+            { kind: "Cocktails", cat: "lounge", budget_frac: 0.25, time_offset_min: 90 },
+            { kind: "Activité", cat: "centre_loisirs", budget_frac: 0.1, time_offset_min: 180 },
+            { kind: "Transport", cat: "transport", budget_frac: 0.1, time_offset_min: 240 },
+          ],
+          friends: [
+            { kind: "Maquis / Resto", cat: "maquis", budget_frac: 0.4, time_offset_min: 0 },
+            { kind: "Club / Lounge", cat: "club", budget_frac: 0.35, time_offset_min: 120 },
+            { kind: "Transport", cat: "transport", budget_frac: 0.15, time_offset_min: 240 },
+          ],
+          family: [
+            { kind: "Activité familiale", cat: "centre_loisirs", budget_frac: 0.35, time_offset_min: 0 },
+            { kind: "Repas en famille", cat: "restaurant", budget_frac: 0.45, time_offset_min: 120 },
+            { kind: "Transport", cat: "transport", budget_frac: 0.15, time_offset_min: 240 },
+          ],
+          weekend: [
+            { kind: "Vendredi soir — dîner", cat: "restaurant", budget_frac: 0.2, time_offset_min: 0 },
+            { kind: "Vendredi soir — bar", cat: "lounge", budget_frac: 0.1, time_offset_min: 120 },
+            { kind: "Samedi — déjeuner", cat: "restaurant", budget_frac: 0.15, time_offset_min: 1080 },
+            { kind: "Samedi — activité", cat: "centre_loisirs", budget_frac: 0.15, time_offset_min: 1200 },
+            { kind: "Samedi — sortie", cat: "club", budget_frac: 0.15, time_offset_min: 1440 },
+            { kind: "Dimanche — brunch", cat: "cafe", budget_frac: 0.1, time_offset_min: 2520 },
+          ],
+          bored: [
+            { kind: "Sortie immédiate", cat: "maquis", budget_frac: 0.5, time_offset_min: 0 },
+            { kind: "Café / dessert", cat: "cafe", budget_frac: 0.25, time_offset_min: 90 },
+            { kind: "Transport", cat: "transport", budget_frac: 0.15, time_offset_min: 150 },
+          ],
+        };
+        const template = TEMPLATES[occasion] ?? TEMPLATES.solo;
+
+        // Pour chaque étape avec catégorie venue (pas transport), recherche
+        // un venue proche dans le budget de l'étape.
+        const steps: ItineraryStep[] = [];
+        const cards: VenueCard[] = [];
+        let totalAllocated = 0;
+
+        for (let i = 0; i < template.length; i++) {
+          const step = template[i];
+          const stepBudget = Math.round(budgetXof * step.budget_frac);
+          const stepTime = new Date(baseTime.getTime() + step.time_offset_min * 60_000);
+          const timeLabel = stepTime.toLocaleString("fr-FR", {
+            weekday: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+          if (step.cat === "transport") {
+            steps.push({
+              order: i + 1,
+              time: timeLabel,
+              kind: step.kind,
+              activity_label: "Taxi / VTC",
+              est_cost_xof: stepBudget,
+              notes: undefined,
+            });
+            totalAllocated += stepBudget;
+            continue;
+          }
+
+          // Cherche un venue de la catégorie ciblée dans le budget step
+          const maxPxPerPerson = Math.round(stepBudget / partySize);
+          const { data: rows } = await ctx.svc.rpc("search_venues_nearby", {
+            p_lat: ctx.userLat,
+            p_lng: ctx.userLng,
+            p_radius_km: maxDistanceKm,
+            p_category: step.cat,
+            p_open_now: false,
+          });
+          const list = (rows ?? []) as Array<{
+            id: string; name: string; category: string; district: string | null;
+            city: string | null; cover_url: string | null;
+            avg_price_xof: number | null;
+            rating_avg: number | null; rating_count: number | null;
+            distance_km: number | null;
+            is_open_now: boolean | null;
+          }>;
+          // Filtre prix puis prend le mieux noté
+          const eligible = list
+            .filter((v) => v.avg_price_xof == null || v.avg_price_xof <= maxPxPerPerson)
+            .sort((a, b) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0));
+          const chosen = eligible[0] ?? list.sort((a, b) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0))[0];
+
+          if (chosen) {
+            steps.push({
+              order: i + 1,
+              time: timeLabel,
+              kind: step.kind,
+              activity_label: chosen.name,
+              venue_id: chosen.id,
+              venue_name: chosen.name,
+              est_cost_xof: stepBudget,
+              notes: chosen.district ?? chosen.city ?? undefined,
+            });
+            cards.push({
+              id: `step-${i + 1}-${chosen.id}`,
+              kind: "venue",
+              venue_id: chosen.id,
+              name: chosen.name,
+              category: chosen.category,
+              city: chosen.city,
+              district: chosen.district,
+              cover_url: chosen.cover_url,
+              avg_price_xof: chosen.avg_price_xof,
+              rating_avg: chosen.rating_avg,
+              rating_count: chosen.rating_count,
+              distance_km: chosen.distance_km,
+              is_open_now: chosen.is_open_now,
+              badges: [{ label: `Étape ${i + 1}`, tone: "primary" }],
+            });
+            totalAllocated += stepBudget;
+          } else {
+            steps.push({
+              order: i + 1,
+              time: timeLabel,
+              kind: step.kind,
+              activity_label: "À choisir",
+              est_cost_xof: stepBudget,
+              notes: "Aucun lieu trouvé dans ce budget",
+            });
+            totalAllocated += stepBudget;
+          }
+        }
+
+        const itinerary: Itinerary = {
+          occasion,
+          party_size: partySize,
+          budget_xof: budgetXof,
+          total_estimated_xof: totalAllocated,
+          remaining_xof: Math.max(0, budgetXof - totalAllocated),
+          steps,
+        };
+
+        return {
+          success: true,
+          data: {
+            occasion, party_size: partySize, budget_xof: budgetXof,
+            steps_count: steps.length, total_xof: totalAllocated,
+            next_step: "Annonce le total et 1 phrase teaser. L'UI rend les cards + timeline. Pas besoin de lister chaque étape à voix haute.",
+          },
+          cards,
+          itinerary,
+        };
       }
 
       case "find_venue_by_name": {
@@ -1053,8 +1316,10 @@ Deno.serve(async (req) => {
     authHeader: req.headers.get("Authorization"),
   };
 
-  // Actions accumulées au fil des tool_use (transmises au client)
+  // Actions, cards et itinerary accumulés au fil des tool_use → transmis client.
   const actions: ServerAction[] = [];
+  const allCards: VenueCard[] = [];
+  let bestItinerary: Itinerary | null = null;
 
   // ────────────────────────────────────────────────────────────────────────
   // Boucle tool use
@@ -1092,6 +1357,8 @@ Deno.serve(async (req) => {
           toolUses.map(async (tu) => {
             const out = await executeTool(tu.name, tu.input || {}, ctx);
             if (out.action) actions.push(out.action);
+            if (out.cards && out.cards.length > 0) allCards.push(...out.cards);
+            if (out.itinerary) bestItinerary = out.itinerary; // dernière itinerary gagne
             return {
               type: "tool_result",
               tool_use_id: tu.id,
@@ -1130,9 +1397,21 @@ Deno.serve(async (req) => {
     // d'inviter à reformuler en français).
     const detectedLanguage = detectLanguage(finalText);
 
+    // Dédoublonne les cards par venue_id (un venue peut être trouvé via
+    // plusieurs tools ; on garde la 1re occurrence avec son badge).
+    const dedupedCards: VenueCard[] = [];
+    const seen = new Set<string>();
+    for (const card of allCards) {
+      if (seen.has(card.venue_id)) continue;
+      seen.add(card.venue_id);
+      dedupedCards.push(card);
+    }
+
     return jsonResponse({
       reply: finalText,
       actions: actions.length > 0 ? actions : undefined,
+      cards: dedupedCards.length > 0 ? dedupedCards : undefined,
+      itinerary: bestItinerary ?? undefined,
       detected_language: detectedLanguage,
       iterations,
       usage: lastUsage,
