@@ -140,8 +140,29 @@ Paiement vocal (Phase 4 — disponible UNIQUEMENT pour l'acompte depuis le walle
 - Tu NE peux PAS encore payer en mobile money via Paystack par la voix (cassé l'UX avec le redirect navigateur) ; pour ça, navigue vers la fiche résa
 - Tu NE peux PAS encore faire de transfert P2P / split bill / withdrawal par la voix (phases 5+)
 
+Mode gérant / pro (Phase 8 — disponible pour les venue owners) :
+- list_my_venues : "Quels sont mes établissements ?" → liste les venues dont
+  l'utilisateur est owner. Sia répond max 3 venues à voix haute.
+- get_venue_revenue : "Combien j'ai gagné ce mois chez {venue} ?" → KPIs
+  revenus (brut, commission Soutra, net) sur 7/30/90 jours.
+- get_venue_payable : "Combien je peux retirer ?" → solde payable de mes
+  venues. Si > 0, propose navigate_to vers /venue-payout?venueId=…
+- list_venue_payouts : "Mes derniers retraits ?" → 10 derniers payouts d'un
+  venue avec leur status (success/pending/failed).
+- list_venue_reservations_pro : "Mes résas chez {venue} ?" → résa entrantes
+  pour un de mes établissements (le gérant les voit toutes, pas juste les
+  siennes propres).
+
+Mode admin (Phase 8 — disponible UNIQUEMENT pour les comptes admin) :
+- get_platform_stats : "Revenus du jour ?", "Combien de réservations ce mois ?",
+  "Top venues" → stats globales plateforme. Sia rejette poliment si caller
+  n'est pas admin.
+
+Pour CRÉER une promo / publier un événement / modifier les horaires : Sia
+explique la marche à suivre et navigue vers /pro (web) ou /pro (mobile). Les
+actions write côté pro ne sont pas encore branchées via la voix (Phase 8b).
+
 Garde-fous :
-- Pour créer une promo / gérer un venue : explique mais ne prétends pas exécuter (Phase 8).
 - Pour les litiges / fraudes : invite à contacter le support Soutra-Playce.`;
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -258,6 +279,78 @@ const TOOLS = [
       required: ["reservation_id"],
     },
   },
+  // ─── Phase 8 : Mode pro / gérant ─────────────────────────────────────
+  {
+    name: "list_my_venues",
+    description:
+      "Liste les établissements dont l'utilisateur courant est propriétaire (owner). À utiliser quand un gérant demande 'mes établissements', 'mes lieux', ou avant d'appeler get_venue_revenue/get_venue_payable s'il a plusieurs venues. Tableau vide si l'utilisateur n'est pas gérant.",
+    input_schema: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "get_venue_revenue",
+    description:
+      "KPIs revenus d'un venue (gérant only) : brut, commission Soutra-Playce, net, frais facturés, variation vs période précédente. Période en jours : 7, 30 ou 90. RLS vérifie ownership.",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue (issu de list_my_venues)." },
+        days: { type: "number", description: "Fenêtre temporelle en jours (7, 30 ou 90). Défaut 30." },
+      },
+      required: ["venue_id"],
+    },
+  },
+  {
+    name: "get_venue_payable",
+    description:
+      "Solde payable d'un venue (gérant only) : ce qui peut être retiré immédiatement via mobile money. Retourne { gross, commission, net, pending, paid, payable }. Si payable > 0, propose navigate_to(/venue-payout?venueId=…).",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue." },
+      },
+      required: ["venue_id"],
+    },
+  },
+  {
+    name: "list_venue_payouts",
+    description:
+      "Liste les 10 derniers payouts d'un venue (gérant only) avec status, montant, opérateur, date. Utile pour 'mes derniers retraits', 'mon historique de virements'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue." },
+      },
+      required: ["venue_id"],
+    },
+  },
+  {
+    name: "list_venue_reservations_pro",
+    description:
+      "Liste les réservations ENTRANTES sur un de mes venues (vue gérant — toutes les résas, pas juste les miennes). À utiliser pour 'mes réservations chez {venue}', 'qui vient ce soir', 'mes prochaines résas'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue (doit être un de mes venues)." },
+        status: { type: "string", description: "Filtre optionnel : pending, confirmed, arrived, no_show, cancelled." },
+        upcoming_only: { type: "boolean", description: "Si true, ne retourne que les résas à date future. Défaut false." },
+      },
+      required: ["venue_id"],
+    },
+  },
+  // ─── Phase 8 : Mode admin (réservé aux comptes role='admin') ─────────
+  {
+    name: "get_platform_stats",
+    description:
+      "Statistiques globales de la plateforme (ADMIN ONLY). Sources : monetization_revenue_log (revenus Soutra), reservations (count), venue_revenue_summary view (top venues). Refusé si caller n'est pas admin.",
+    input_schema: {
+      type: "object",
+      properties: {
+        scope: { type: "string", description: "'today', 'week', 'month' — la fenêtre temporelle. Défaut 'today'." },
+        top_venues: { type: "boolean", description: "Si true, inclut le top 5 des venues par revenus. Défaut false." },
+      },
+      required: [],
+    },
+  },
   {
     name: "navigate_to",
     description:
@@ -282,6 +375,12 @@ interface ToolContext {
   userLat: number;
   userLng: number;
   svc: ReturnType<typeof createClient>;
+  /**
+   * Header Authorization du caller (Bearer ...) — utilisé pour ouvrir un
+   * client user-auth quand un tool a besoin de auth.uid() côté SQL
+   * (RPCs assert_venue_owner_or_admin, is_admin, etc.).
+   */
+  authHeader: string | null;
 }
 
 // Actions transmises au client après une réponse Sia.
@@ -625,6 +724,201 @@ async function executeTool(
         };
       }
 
+      // ──────────────────────────────────────────────────────────────────
+      // Phase 8 — Mode pro / gérant
+      // Les RPCs `list_my_pro_venues`, `get_pro_revenue_summary`,
+      // `get_venue_payable_balance`, `list_venue_payouts` vérifient
+      // ownership côté SQL (assert_venue_owner_or_admin).
+      // ──────────────────────────────────────────────────────────────────
+
+      case "list_my_venues": {
+        // list_my_pro_venues utilise auth.uid() côté SQL — on doit l'appeler
+        // avec un client user-authenticated (pas service_role).
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { data, error } = await userClient.rpc("list_my_pro_venues");
+        if (error) return { success: false, error: error.message };
+        return {
+          success: true,
+          data: { count: (data ?? []).length, venues: data ?? [] },
+        };
+      }
+
+      case "get_venue_revenue": {
+        const venueId = String(input.venue_id ?? "");
+        const days = Math.max(1, Math.min(180, Number(input.days ?? 30)));
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        const from = new Date(Date.now() - days * 86400000).toISOString();
+        const to = new Date().toISOString();
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { data, error } = await userClient.rpc("get_pro_revenue_summary", {
+          p_venue_id: venueId, p_from: from, p_to: to,
+        });
+        if (error) {
+          const raw = error.message ?? "";
+          if (raw.includes("NOT_OWNER")) return { success: false, error: "Ce venue n'est pas un de tes établissements" };
+          if (raw.includes("NOT_AUTHENTICATED")) return { success: false, error: "Authentification requise" };
+          return { success: false, error: raw };
+        }
+        return { success: true, data: { ...((data as object) ?? {}), period_days: days } };
+      }
+
+      case "get_venue_payable": {
+        const venueId = String(input.venue_id ?? "");
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { data, error } = await userClient.rpc("get_venue_payable_balance", { p_venue_id: venueId });
+        if (error) {
+          const raw = error.message ?? "";
+          if (raw.includes("NOT_OWNER")) return { success: false, error: "Ce venue n'est pas un de tes établissements" };
+          return { success: false, error: raw };
+        }
+        return { success: true, data };
+      }
+
+      case "list_venue_payouts": {
+        const venueId = String(input.venue_id ?? "");
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { data, error } = await userClient.rpc("list_venue_payouts", {
+          p_venue_id: venueId, p_limit: 10,
+        });
+        if (error) {
+          const raw = error.message ?? "";
+          if (raw.includes("NOT_OWNER")) return { success: false, error: "Ce venue n'est pas un de tes établissements" };
+          return { success: false, error: raw };
+        }
+        return { success: true, data: { count: (data ?? []).length, payouts: data ?? [] } };
+      }
+
+      case "list_venue_reservations_pro": {
+        const venueId = String(input.venue_id ?? "");
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        const upcomingOnly = input.upcoming_only === true;
+        const statusFilter = typeof input.status === "string" ? input.status : null;
+
+        // Vérification ownership : on liste mes venues d'abord
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { data: myVenues } = await userClient.rpc("list_my_pro_venues");
+        const owned = (myVenues as Array<{ id: string }> | null)?.some((v) => v.id === venueId);
+        if (!owned) {
+          return { success: false, error: "Ce venue n'est pas un de tes établissements" };
+        }
+
+        // Lecture via service_role pour bypass la RLS user-only sur reservations
+        let q = ctx.svc
+          .from("reservations")
+          .select("id, user_id, date_time, party_size, deposit_xof, status, notes, created_at")
+          .eq("venue_id", venueId)
+          .order("date_time", { ascending: false })
+          .limit(20);
+        if (statusFilter) q = q.eq("status", statusFilter);
+        if (upcomingOnly) q = q.gte("date_time", new Date().toISOString());
+        const { data, error } = await q;
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: { count: (data ?? []).length, reservations: data ?? [] } };
+      }
+
+      // ──────────────────────────────────────────────────────────────────
+      // Phase 8 — Mode admin (vérifie role='admin' côté serveur via is_admin)
+      // ──────────────────────────────────────────────────────────────────
+
+      case "get_platform_stats": {
+        // Vérifie le rôle admin via la fonction SQL is_admin() qui regarde
+        // profiles.role.
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { data: adminCheck } = await userClient.rpc("is_admin");
+        if (adminCheck !== true) {
+          return { success: false, error: "Réservé aux administrateurs Soutra-Playce" };
+        }
+
+        const scope = String(input.scope ?? "today");
+        const includeTop = input.top_venues === true;
+        let since: Date;
+        const now = new Date();
+        switch (scope) {
+          case "week":  since = new Date(now.getTime() - 7 * 86400000); break;
+          case "month": since = new Date(now.getTime() - 30 * 86400000); break;
+          default:      since = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // today 00:00
+        }
+
+        // Revenus Soutra (commissions) + count réservations en parallèle
+        const [revRes, resaRes] = await Promise.all([
+          ctx.svc
+            .from("monetization_revenue_log")
+            .select("amount_xof", { count: "exact" })
+            .gte("ts", since.toISOString()),
+          ctx.svc
+            .from("reservations")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", since.toISOString()),
+        ]);
+        const revenueRows = (revRes.data as Array<{ amount_xof: number }> | null) ?? [];
+        const totalRevenueXof = revenueRows.reduce((s, r) => s + (r.amount_xof ?? 0), 0);
+        const reservationCount = resaRes.count ?? 0;
+
+        const result: Record<string, unknown> = {
+          scope,
+          since: since.toISOString(),
+          revenue_events_count: revRes.count ?? 0,
+          total_revenue_xof: totalRevenueXof,
+          reservation_count: reservationCount,
+        };
+
+        if (includeTop) {
+          // venue_revenue_summary view (migration 0042) — déjà agrégée
+          const { data: top } = await ctx.svc
+            .from("venue_revenue_summary")
+            .select("venue_id, venue_name, category, city, total_xof, event_count, last_event_at")
+            .order("total_xof", { ascending: false })
+            .limit(5);
+          result.top_venues = top ?? [];
+        }
+
+        return { success: true, data: result };
+      }
+
       case "navigate_to": {
         const route = String(input.route ?? "").trim();
         if (!route.startsWith("/")) {
@@ -756,6 +1050,7 @@ Deno.serve(async (req) => {
     userLat: lat,
     userLng: lng,
     svc: serviceClient(),
+    authHeader: req.headers.get("Authorization"),
   };
 
   // Actions accumulées au fil des tool_use (transmises au client)
