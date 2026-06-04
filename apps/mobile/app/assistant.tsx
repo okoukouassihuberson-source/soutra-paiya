@@ -10,6 +10,7 @@ import { askAssistant, runAction, localeForLanguage, type ChatMessage, type Assi
 import { voice } from '@/lib/voice';
 import { VoiceConversation } from '@/components/VoiceConversation';
 import { PaymentConfirmModal } from '@/components/PaymentConfirmModal';
+import { useAccessibilityMode } from '@/lib/accessibility';
 import { formatXOF } from '@soutra/shared';
 
 const SUGGESTIONS = [
@@ -27,10 +28,14 @@ const WELCOME: ChatMessage = {
 export default function Assistant() {
   const params = useLocalSearchParams<{ voice?: string }>();
   const router = useRouter();
+  const { enabled: accessibility } = useAccessibilityMode();
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [readAloud, setReadAloud] = useState(false);     // Toggle TTS auto des réponses
+  // En mode accessibilité, TTS auto est forcé ON (l'utilisateur ne voit pas
+  // forcément l'écran). Sinon, opt-in via le toggle 🔊 du header.
+  const [readAloudPref, setReadAloudPref] = useState(false);
+  const readAloud = accessibility || readAloudPref;
   const [voiceMode, setVoiceMode] = useState(false);     // Modal conversation continue
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   // Modal de paiement vocal (Phase 4) — déclenché par action authenticate_and_pay
@@ -43,10 +48,10 @@ export default function Assistant() {
   const scrollRef = useRef<ScrollView | null>(null);
 
   // Ouvre direct le mode vocal si l'utilisateur a tapé "Parler à Sia" depuis
-  // un autre écran (?voice=1 dans l'URL).
+  // un autre écran (?voice=1) OU si le mode accessibilité est activé.
   useEffect(() => {
-    if (params.voice === '1') setVoiceMode(true);
-  }, [params.voice]);
+    if (params.voice === '1' || accessibility) setVoiceMode(true);
+  }, [params.voice, accessibility]);
 
   // Récupère la position (best-effort) pour que les tools search_venues
   // soient géo-pertinents. Échec silencieux → fallback Abidjan côté serveur.
@@ -169,17 +174,20 @@ export default function Assistant() {
         subtitle="Ton assistant vocal Soutra-Playce"
         trailing={(
           <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-            {/* Toggle "Lire les réponses à voix haute" */}
+            {/* Toggle "Lire les réponses à voix haute" — désactivé en mode
+                accessibilité (forcé ON, l'utilisateur n'a pas besoin de le couper) */}
             <Pressable
               onPress={() => {
-                setReadAloud((v) => {
+                if (accessibility) return;
+                setReadAloudPref((v) => {
                   const next = !v;
                   if (!next) void voice.stopSpeaking();
                   return next;
                 });
               }}
               hitSlop={10}
-              style={[s.iconBtn, readAloud && { backgroundColor: colors.primary[50], borderColor: colors.primary[500] }]}
+              disabled={accessibility}
+              style={[s.iconBtn, readAloud && { backgroundColor: colors.primary[50], borderColor: colors.primary[500] }, accessibility && { opacity: 0.6 }]}
               accessibilityLabel={readAloud ? 'Couper la lecture vocale' : 'Activer la lecture vocale'}
             >
               <Ionicons

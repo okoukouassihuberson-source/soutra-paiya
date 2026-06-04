@@ -24,6 +24,7 @@ import {
 } from '@/lib/pro-revenue';
 import { getVenuePayableBalance, type VenuePayoutBalance } from '@/lib/venue-payout';
 import { exportRevenuePdf } from '@/lib/revenue-pdf';
+import { useSpokenScreen } from '@/lib/accessibility';
 
 const PERIODS: { id: string; label: string; days: number }[] = [
   { id: '7d', label: '7 j', days: 7 },
@@ -51,6 +52,15 @@ export default function ProDashboard() {
   const [exporting, setExporting] = useState(false);
 
   const selectedVenue = venues.find((v) => v.id === selectedVenueId) ?? null;
+
+  // Mode accessibilité : annonce le venue actif + revenus nets + solde payable
+  useSpokenScreen(() => {
+    if (loading || !selectedVenue || !summary) return null;
+    const payableTxt = payable && payable.payable_xof > 0
+      ? `, dont ${formatXOF(payable.payable_xof)} retirables maintenant`
+      : '';
+    return `Espace gérant. ${selectedVenue.name} à ${selectedVenue.city ?? 'la ville'}. Revenus nets sur la période : ${formatXOF(summary.net_xof)}${payableTxt}.`;
+  });
 
   const handleExportPdf = async () => {
     if (!summary || !selectedVenue) return;

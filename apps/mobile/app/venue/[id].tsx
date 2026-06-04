@@ -13,6 +13,7 @@ import { ReportSheet } from '@/components/venue/ReportSheet';
 import { ClaimSheet } from '@/components/venue/ClaimSheet';
 import { logVenueEvent } from '@/lib/venue-analytics';
 import { getVenueClaimStatus, CLAIM_STATUS_META, type ClaimStatus } from '@/lib/venue-claims';
+import { useSpokenScreen } from '@/lib/accessibility';
 import * as WebBrowser from 'expo-web-browser';
 
 interface Venue {
@@ -44,6 +45,18 @@ export default function VenueDetail() {
   const insets = useSafeAreaInsets();
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Mode accessibilité : speak un résumé du venue dès qu'il est chargé.
+  useSpokenScreen(() => {
+    if (!venue) return null;
+    const rating = venue.rating_avg
+      ? `, note ${venue.rating_avg.toFixed(1)} sur cinq pour ${venue.rating_count} avis`
+      : '';
+    const price = venue.avg_price_xof
+      ? `, prix moyen ${formatXOF(venue.avg_price_xof)} par personne`
+      : '';
+    return `Tu es sur la fiche ${venue.name}, ${venue.address || venue.city || 'lieu'}${price}${rating}.`;
+  });
   const [isFavorite, setIsFavorite] = useState(false);
   const [favBusy, setFavBusy] = useState(false);
   // Coordonnées GPS lues depuis la RPC get_venue_location (migration 0019)

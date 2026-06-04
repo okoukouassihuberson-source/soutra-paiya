@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors } from '@/lib/theme';
+import { useSpokenScreen } from '@/lib/accessibility';
 
 interface Reservation {
   id: string;
@@ -37,6 +38,20 @@ export default function Tickets() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Mode accessibilité : annonce le nombre + prochaine résa à venir
+  useSpokenScreen(() => {
+    if (loading) return null;
+    if (reservations.length === 0) {
+      return 'Tu n\'as aucune réservation pour le moment. Tu peux en créer une en demandant à Sia ou depuis la fiche d\'un établissement.';
+    }
+    const next = reservations.find((r) => r.status === 'pending' || r.status === 'confirmed');
+    if (next) {
+      const when = new Date(next.date_time).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+      return `Tu as ${reservations.length} réservation${reservations.length > 1 ? 's' : ''}. La prochaine : ${next.venue?.name ?? 'établissement'} le ${when} pour ${next.party_size} personnes.`;
+    }
+    return `Tu as ${reservations.length} réservation${reservations.length > 1 ? 's' : ''} dans ton historique.`;
+  });
 
   const loadReservations = useCallback(async () => {
     if (!user?.id) { setReservations([]); setLoading(false); setRefreshing(false); return; }

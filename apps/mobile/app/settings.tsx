@@ -20,10 +20,12 @@ import {
   isBiometricEnabled,
   setBiometricEnabled as persistBiometric,
 } from '@/lib/security';
+import { useAccessibilityMode } from '@/lib/accessibility';
 
 export default function Settings() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { enabled: accessibilityOn, setEnabled: setAccessibilityOn } = useAccessibilityMode();
 
   const [fullName, setFullName] = useState('');
   const [hasPin, setHasPin] = useState(false);
@@ -107,8 +109,23 @@ export default function Settings() {
             icon="notifications-outline"
             label="Notifications"
             onPress={() => router.push('/notifications-settings' as any)}
-            last
           />
+
+          {/* Mode accessibilité (Phase 6) — toggle global */}
+          <View style={s.row}>
+            <Ionicons name="accessibility-outline" size={22} color={colors.neutral[600]} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.rowLabel}>Mode accessibilité (voix)</Text>
+              <Text style={s.rowHint}>
+                Ouvre Sia direct au lancement, lit les écrans et tes réponses à voix haute.
+              </Text>
+            </View>
+            <Switch
+              value={accessibilityOn}
+              onValueChange={(v) => { void setAccessibilityOn(v); }}
+              trackColor={{ true: colors.primary[500], false: colors.neutral[300] }}
+            />
+          </View>
         </View>
 
         <Text style={s.section}>Sécurité</Text>

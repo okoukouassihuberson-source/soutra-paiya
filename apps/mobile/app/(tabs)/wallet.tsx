@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors } from '@/lib/theme';
+import { useSpokenScreen } from '@/lib/accessibility';
 
 export default function Wallet() {
   const { user } = useAuth();
@@ -18,6 +19,13 @@ export default function Wallet() {
   const [balance, setBalance] = useState<number>(0);
   const [locked, setLocked] = useState<number>(0);
   const [walletLoading, setWalletLoading] = useState(true);
+
+  // Mode accessibilité : speak le solde au focus de l'écran
+  useSpokenScreen(() => {
+    if (walletLoading) return null;
+    const lockedTxt = locked > 0 ? ` (dont ${formatXOF(locked)} bloqués)` : '';
+    return `Wallet Soutra-Pay. Solde disponible : ${formatXOF(balance)}${lockedTxt}.`;
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [refreshNonce, setRefreshNonce] = useState(0);
