@@ -165,9 +165,23 @@ Mode admin (Phase 8 — disponible UNIQUEMENT pour les comptes admin) :
   "Top venues" → stats globales plateforme. Sia rejette poliment si caller
   n'est pas admin.
 
-Pour CRÉER une promo / publier un événement / modifier les horaires : Sia
-explique la marche à suivre et navigue vers /pro (web) ou /pro (mobile). Les
-actions write côté pro ne sont pas encore branchées via la voix (Phase 8b).
+Mode gérant WRITE (Phase 10 — pattern dry_run obligatoire comme la réservation) :
+- create_promo : "Ajoute une promo -20% chez Case blanche jusqu'à 21h" →
+  1. dry_run=true → reçois le récap (code généré, %, expiration)
+  2. "Je crée la promo PROMO-260612-XXXX à 20% chez Case blanche, expirant
+     vendredi 21h. Tu confirmes ?"
+  3. Si "oui" → dry_run=false avec MÊMES paramètres
+- publish_event : "Publie un événement Sunday Brunch dimanche 11h, entrée
+  5 000 FCFA chez Saka Saka" → dry_run récap → confirmation → publication
+- update_venue_hours : "Modifie mes horaires : ferme à 23h le vendredi
+  chez Case blanche" → dry_run → confirm → update
+- update_venue_pricing : "Augmente mon prix moyen à 12 000 FCFA chez
+  Case blanche" → dry_run → confirm → update
+
+CRITIQUE : Toujours dry_run=true en premier. Annonce le récap, attends "oui"/
+"confirme" explicite, puis dry_run=false. Pour update_venue_hours, demande
+le jour précis si l'utilisateur dit "le week-end" (samedi + dimanche = 2
+appels séparés).
 
 Garde-fous :
 - Pour les litiges / fraudes : invite à contacter le support Soutra-Playce.`;
@@ -373,6 +387,74 @@ const TOOLS = [
         top_venues: { type: "boolean", description: "Si true, inclut le top 5 des venues par revenus. Défaut false." },
       },
       required: [],
+    },
+  },
+  // ─── Phase 10 : Mode pro WRITE (création/édition vocale) ────────────
+  {
+    name: "create_promo",
+    description:
+      "Crée un code promo pour un de mes venues (gérant only). Pattern dry_run obligatoire : dry_run=true pour récap + confirmation orale, dry_run=false pour persister. RLS vérifie ownership.",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue (obtenu via list_my_venues)." },
+        discount_pct: { type: "number", description: "Pourcentage de réduction (1-100). Ex: 20 pour -20%." },
+        code: { type: "string", description: "Code promo (2-32 chars). Si absent, auto-généré (PROMO-YYMMDD-NNNN)." },
+        valid_until: { type: "string", description: "ISO 8601 date d'expiration. Ex: 2026-06-10T21:00:00+00:00 pour 'jusqu'à 21h ce vendredi'. Null = pas d'expiration." },
+        max_uses: { type: "number", description: "Nb max d'utilisations. Null = illimité." },
+        dry_run: { type: "boolean", description: "True = simule sans écrire / False = crée vraiment." },
+      },
+      required: ["venue_id", "discount_pct", "dry_run"],
+    },
+  },
+  {
+    name: "publish_event",
+    description:
+      "Publie un événement pour un de mes venues (gérant only). Pattern dry_run obligatoire. Status sera 'published' direct. Si price_xof fourni, crée un tier billet 'Standard'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue." },
+        title: { type: "string", description: "Titre de l'événement (3-120 chars)." },
+        starts_at: { type: "string", description: "ISO 8601 début. Ex: 2026-06-15T20:00:00+00:00." },
+        duration_hours: { type: "number", description: "Durée en heures (calcule ends_at = starts_at + h). Défaut 4." },
+        capacity: { type: "number", description: "Nb max de places. Optionnel." },
+        price_xof: { type: "number", description: "Prix d'un billet en FCFA. Si null/0, événement gratuit." },
+        description: { type: "string", description: "Description (max 1000 chars). Optionnel." },
+        dry_run: { type: "boolean", description: "True = simule / False = publie vraiment." },
+      },
+      required: ["venue_id", "title", "starts_at", "dry_run"],
+    },
+  },
+  {
+    name: "update_venue_hours",
+    description:
+      "Met à jour les horaires d'ouverture d'un de mes venues pour un jour précis. Pattern dry_run.",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue." },
+        day: { type: "string", description: "'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'." },
+        opens: { type: "string", description: "Heure d'ouverture HH:MM. Ex: '12:00'." },
+        closes: { type: "string", description: "Heure de fermeture HH:MM. Ex: '23:00' (ou '02:00' pour 2h du matin = jour suivant)." },
+        closed: { type: "boolean", description: "Si true, marque ce jour comme fermé (ignore opens/closes)." },
+        dry_run: { type: "boolean", description: "True = simule / False = applique." },
+      },
+      required: ["venue_id", "day", "dry_run"],
+    },
+  },
+  {
+    name: "update_venue_pricing",
+    description:
+      "Met à jour le prix moyen par personne d'un de mes venues. Affecte le calcul d'acompte des réservations futures. Pattern dry_run.",
+    input_schema: {
+      type: "object",
+      properties: {
+        venue_id: { type: "string", description: "UUID du venue." },
+        avg_price_xof: { type: "number", description: "Nouveau prix moyen par personne en FCFA (≥ 500)." },
+        dry_run: { type: "boolean", description: "True = simule / False = applique." },
+      },
+      required: ["venue_id", "avg_price_xof", "dry_run"],
     },
   },
   {
@@ -1180,6 +1262,339 @@ async function executeTool(
         }
 
         return { success: true, data: result };
+      }
+
+      // ──────────────────────────────────────────────────────────────────
+      // Phase 10 — Mode pro WRITE (création/édition vocale)
+      // Tous les tools ci-dessous utilisent un client user-auth. Les RLS
+      // sur promo_codes / events / venues vérifient déjà ownership via
+      // owner_id = auth.uid() (cf. migrations 0001/0002/0015) — pas
+      // besoin de double check inline.
+      // ──────────────────────────────────────────────────────────────────
+
+      case "create_promo": {
+        const venueId = String(input.venue_id ?? "");
+        const discountPct = Math.round(Number(input.discount_pct ?? 0));
+        const dryRun = input.dry_run !== false;
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        if (!Number.isInteger(discountPct) || discountPct < 1 || discountPct > 100) {
+          return { success: false, error: "discount_pct entre 1 et 100" };
+        }
+        const validUntil = typeof input.valid_until === "string" ? String(input.valid_until) : null;
+        const maxUses = typeof input.max_uses === "number" ? Math.max(1, Math.round(input.max_uses)) : null;
+        let code = typeof input.code === "string" ? input.code.trim().toUpperCase() : "";
+        if (!code) {
+          // Auto-générée : PROMO-YYMMDD-XXXX
+          const d = new Date();
+          const yymmdd = `${String(d.getUTCFullYear()).slice(-2)}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCDate()).padStart(2, "0")}`;
+          const rand = Math.floor(1000 + Math.random() * 9000);
+          code = `PROMO-${yymmdd}-${rand}`;
+        }
+        if (code.length < 2 || code.length > 32) {
+          return { success: false, error: "code doit faire 2-32 chars" };
+        }
+
+        // Validation venue name pour confirmation orale (RLS appliquée via
+        // service_role-bypass mais on lit juste le nom — public)
+        const { data: venue } = await ctx.svc
+          .from("venues")
+          .select("id, name, owner_id, status")
+          .eq("id", venueId)
+          .maybeSingle();
+        if (!venue) return { success: false, error: "Établissement introuvable" };
+        const v = venue as { id: string; name: string; owner_id: string; status: string };
+        if (v.owner_id !== ctx.userId) return { success: false, error: "Ce venue n'est pas un de tes établissements" };
+
+        if (dryRun) {
+          return {
+            success: true,
+            data: {
+              dry_run: true,
+              venue_id: v.id,
+              venue_name: v.name,
+              code,
+              discount_pct: discountPct,
+              valid_until: validUntil,
+              max_uses: maxUses,
+              next_step: "Demande confirmation orale. Si oui, rappelle create_promo avec dry_run=false et MÊMES paramètres (notamment le code généré).",
+            },
+          };
+        }
+
+        // Écriture via user-auth client (RLS = INSERT autorisé pour owner)
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { data: created, error: insertErr } = await userClient
+          .from("promo_codes")
+          .insert({
+            venue_id: v.id,
+            code,
+            discount_pct: discountPct,
+            valid_until: validUntil,
+            max_uses: maxUses,
+            active: true,
+          })
+          .select("id, code, discount_pct, valid_until, max_uses")
+          .single();
+        if (insertErr) {
+          if (insertErr.message.includes("ux_promo_codes_venue_code")) {
+            return { success: false, error: `Le code "${code}" existe déjà pour ce venue` };
+          }
+          return { success: false, error: insertErr.message };
+        }
+        return {
+          success: true,
+          data: {
+            dry_run: false,
+            promo_id: (created as { id: string }).id,
+            venue_name: v.name,
+            ...created,
+            next_step: "Promo créée. Annonce le code à l'utilisateur et propose navigate_to(/pro?tab=marketing) pour voir la liste.",
+          },
+        };
+      }
+
+      case "publish_event": {
+        const venueId = String(input.venue_id ?? "");
+        const title = String(input.title ?? "").trim();
+        const startsAt = String(input.start_at ?? input.starts_at ?? "");
+        const durationHours = Math.max(0.5, Math.min(24, Number(input.duration_hours ?? 4)));
+        const capacity = typeof input.capacity === "number" ? Math.max(1, Math.round(input.capacity)) : null;
+        const priceXof = typeof input.price_xof === "number" ? Math.max(0, Math.round(input.price_xof)) : 0;
+        const description = typeof input.description === "string" ? input.description.slice(0, 1000) : null;
+        const dryRun = input.dry_run !== false;
+
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        if (title.length < 3 || title.length > 120) {
+          return { success: false, error: "title doit faire 3-120 chars" };
+        }
+        const startsTs = Date.parse(startsAt);
+        if (Number.isNaN(startsTs)) {
+          return { success: false, error: "starts_at invalide (ISO 8601 attendu)" };
+        }
+        if (startsTs < Date.now() - 60 * 60 * 1000) {
+          return { success: false, error: "L'événement est dans le passé" };
+        }
+        const endsAt = new Date(startsTs + durationHours * 60 * 60 * 1000).toISOString();
+
+        // Validation venue
+        const { data: venue } = await ctx.svc
+          .from("venues")
+          .select("id, name, owner_id, city")
+          .eq("id", venueId)
+          .maybeSingle();
+        if (!venue) return { success: false, error: "Établissement introuvable" };
+        const v = venue as { id: string; name: string; owner_id: string; city: string };
+        if (v.owner_id !== ctx.userId) return { success: false, error: "Ce venue n'est pas un de tes établissements" };
+
+        if (dryRun) {
+          return {
+            success: true,
+            data: {
+              dry_run: true,
+              venue_id: v.id,
+              venue_name: v.name,
+              title,
+              starts_at: new Date(startsTs).toISOString(),
+              ends_at: endsAt,
+              capacity,
+              price_xof: priceXof,
+              ticket_kind: priceXof > 0 ? "paid" : "free",
+              next_step: "Demande confirmation orale. Si oui, rappelle publish_event avec dry_run=false ET les mêmes paramètres.",
+            },
+          };
+        }
+
+        // Slug : titre slugifié + timestamp suffix pour unicité
+        const slug = (
+          title.toLowerCase()
+            .normalize("NFD").replace(/[̀-ͯ]/g, "")
+            .replace(/[^a-z0-9]+/g, "-").replace(/(^-+|-+$)/g, "")
+          + "-" + String(startsTs).slice(-6)
+        ).slice(0, 80);
+
+        const ticketTiers = priceXof > 0
+          ? [{ name: "Standard", price_xof: priceXof, qty: capacity ?? 100, sold: 0 }]
+          : [];
+
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { data: created, error: insertErr } = await userClient
+          .from("events")
+          .insert({
+            organizer_id: ctx.userId,
+            venue_id: v.id,
+            title,
+            slug,
+            description,
+            starts_at: new Date(startsTs).toISOString(),
+            ends_at: endsAt,
+            capacity,
+            ticket_tiers: ticketTiers,
+            status: "published",
+            city: v.city ?? "Abidjan",
+          })
+          .select("id, title, slug, starts_at, ends_at, status")
+          .single();
+        if (insertErr) {
+          if (insertErr.message.toLowerCase().includes("unique") && insertErr.message.includes("slug")) {
+            return { success: false, error: "Un événement avec un slug similaire existe déjà — change le titre" };
+          }
+          return { success: false, error: insertErr.message };
+        }
+        return {
+          success: true,
+          data: {
+            dry_run: false,
+            event_id: (created as { id: string }).id,
+            venue_name: v.name,
+            ...created,
+            next_step: "Événement publié. Propose navigate_to(/pro?tab=events).",
+          },
+        };
+      }
+
+      case "update_venue_hours": {
+        const venueId = String(input.venue_id ?? "");
+        const day = String(input.day ?? "").toLowerCase();
+        const opens = typeof input.opens === "string" ? input.opens : "";
+        const closes = typeof input.closes === "string" ? input.closes : "";
+        const closed = input.closed === true;
+        const dryRun = input.dry_run !== false;
+
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        const validDays = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+        if (!validDays.includes(day)) {
+          return { success: false, error: "day doit être mon/tue/wed/thu/fri/sat/sun" };
+        }
+        const hourRe = /^([01]?\d|2[0-3]):[0-5]\d$/;
+        if (!closed) {
+          if (!hourRe.test(opens)) return { success: false, error: "opens doit être au format HH:MM" };
+          if (!hourRe.test(closes)) return { success: false, error: "closes doit être au format HH:MM" };
+        }
+
+        const { data: venue } = await ctx.svc
+          .from("venues")
+          .select("id, name, owner_id, opening_hours")
+          .eq("id", venueId)
+          .maybeSingle();
+        if (!venue) return { success: false, error: "Établissement introuvable" };
+        const v = venue as { id: string; name: string; owner_id: string; opening_hours: Record<string, unknown> | null };
+        if (v.owner_id !== ctx.userId) return { success: false, error: "Ce venue n'est pas un de tes établissements" };
+
+        const newHours = { ...(v.opening_hours ?? {}) } as Record<string, unknown>;
+        if (closed) {
+          newHours[day] = null;
+        } else {
+          newHours[day] = [opens, closes];
+        }
+
+        if (dryRun) {
+          return {
+            success: true,
+            data: {
+              dry_run: true,
+              venue_name: v.name,
+              day,
+              new_value: closed ? "Fermé" : `${opens} → ${closes}`,
+              next_step: "Demande confirmation orale puis rappelle avec dry_run=false.",
+            },
+          };
+        }
+
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { error: updErr } = await userClient
+          .from("venues")
+          .update({ opening_hours: newHours })
+          .eq("id", v.id);
+        if (updErr) return { success: false, error: updErr.message };
+
+        return {
+          success: true,
+          data: {
+            dry_run: false,
+            venue_name: v.name,
+            day,
+            new_value: closed ? "Fermé" : `${opens}-${closes}`,
+            next_step: "Horaire modifié. Annonce-le brièvement.",
+          },
+        };
+      }
+
+      case "update_venue_pricing": {
+        const venueId = String(input.venue_id ?? "");
+        const avgPriceXof = Math.round(Number(input.avg_price_xof ?? 0));
+        const dryRun = input.dry_run !== false;
+
+        if (!venueId) return { success: false, error: "venue_id requis" };
+        if (avgPriceXof < 500 || avgPriceXof > 500000) {
+          return { success: false, error: "avg_price_xof doit être entre 500 et 500 000 FCFA" };
+        }
+
+        const { data: venue } = await ctx.svc
+          .from("venues")
+          .select("id, name, owner_id, avg_price_xof")
+          .eq("id", venueId)
+          .maybeSingle();
+        if (!venue) return { success: false, error: "Établissement introuvable" };
+        const v = venue as { id: string; name: string; owner_id: string; avg_price_xof: number | null };
+        if (v.owner_id !== ctx.userId) return { success: false, error: "Ce venue n'est pas un de tes établissements" };
+
+        if (dryRun) {
+          return {
+            success: true,
+            data: {
+              dry_run: true,
+              venue_name: v.name,
+              old_price_xof: v.avg_price_xof,
+              new_price_xof: avgPriceXof,
+              next_step: "Demande confirmation orale puis rappelle avec dry_run=false.",
+            },
+          };
+        }
+
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { headers: { Authorization: ctx.authHeader ?? "" } },
+          },
+        );
+        const { error: updErr } = await userClient
+          .from("venues")
+          .update({ avg_price_xof: avgPriceXof })
+          .eq("id", v.id);
+        if (updErr) return { success: false, error: updErr.message };
+
+        return {
+          success: true,
+          data: {
+            dry_run: false,
+            venue_name: v.name,
+            new_price_xof: avgPriceXof,
+            next_step: "Prix mis à jour. Annonce-le brièvement.",
+          },
+        };
       }
 
       case "navigate_to": {
