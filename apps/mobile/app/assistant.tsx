@@ -10,6 +10,7 @@ import { askAssistant, runAction, localeForLanguage, type ChatMessage, type Assi
 import { voice } from '@/lib/voice';
 import { VoiceConversation } from '@/components/VoiceConversation';
 import { PaymentConfirmModal } from '@/components/PaymentConfirmModal';
+import { ProactiveCards } from '@/components/ProactiveCards';
 import { useAccessibilityMode } from '@/lib/accessibility';
 import { formatXOF } from '@soutra/shared';
 
@@ -267,6 +268,18 @@ export default function Assistant() {
                 <Dot delay={300} />
               </View>
             </View>
+          )}
+
+          {/* Suggestions proactives IA (Phase 7) — affichées seulement à l'état
+              vierge (avant le 1er échange), pour ne pas polluer la convo */}
+          {showSuggestions && (
+            <ProactiveCards
+              onAskSia={(prompt) => {
+                // Pré-remplit l'input avec le prompt de la suggestion et
+                // déclenche immédiatement l'envoi
+                void send(prompt);
+              }}
+            />
           )}
 
           {showSuggestions && (
