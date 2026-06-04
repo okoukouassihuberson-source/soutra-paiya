@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react';
 
-// Page de retour après un paiement Paystack. Elle redirige immédiatement vers
+// Page de retour après un paiement CinetPay. Elle redirige immédiatement vers
 // l'application mobile via le deep link soutrapaiya://, ce qui referme le
 // navigateur in-app ouvert par expo-web-browser. L'UI ci-dessous n'est qu'un
 // filet de sécurité si la redirection automatique n'aboutit pas.
-export default function PaystackCallbackPage() {
-  const [deepLink, setDeepLink] = useState('soutrapaiya://paystack');
+export default function CinetPayCallbackPage() {
+  const [deepLink, setDeepLink] = useState('soutrapaiya://cinetpay');
 
   useEffect(() => {
-    const target = `soutrapaiya://paystack${window.location.search}`;
+    const target = `soutrapaiya://cinetpay${window.location.search}`;
     setDeepLink(target);
     window.location.href = target;
   }, []);
