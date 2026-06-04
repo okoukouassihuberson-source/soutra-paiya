@@ -410,16 +410,29 @@ const TOOLS = [
   {
     name: "publish_event",
     description:
-      "Publie un événement pour un de mes venues (gérant only). Pattern dry_run obligatoire. Status sera 'published' direct. Si price_xof fourni, crée un tier billet 'Standard'.",
+      "Publie un événement pour un de mes venues (gérant only). Pattern dry_run obligatoire. Status 'published' direct. Supporte multi-tier billetterie : passe `tiers` pour VIP/VVIP/Early Bird/Étudiant/Groupe/Sponsor/etc. — sinon `price_xof` crée un tier 'Standard'. Si ni l'un ni l'autre → événement gratuit.",
     input_schema: {
       type: "object",
       properties: {
         venue_id: { type: "string", description: "UUID du venue." },
-        title: { type: "string", description: "Titre de l'événement (3-120 chars)." },
-        starts_at: { type: "string", description: "ISO 8601 début. Ex: 2026-06-15T20:00:00+00:00." },
-        duration_hours: { type: "number", description: "Durée en heures (calcule ends_at = starts_at + h). Défaut 4." },
-        capacity: { type: "number", description: "Nb max de places. Optionnel." },
-        price_xof: { type: "number", description: "Prix d'un billet en FCFA. Si null/0, événement gratuit." },
+        title: { type: "string", description: "Titre (3-120 chars)." },
+        starts_at: { type: "string", description: "ISO 8601 début." },
+        duration_hours: { type: "number", description: "Durée en heures. Défaut 4." },
+        capacity: { type: "number", description: "Nb max de places total (somme des tiers). Optionnel." },
+        price_xof: { type: "number", description: "Raccourci : crée un tier 'Standard' à ce prix. Ignoré si `tiers` fourni." },
+        tiers: {
+          type: "array",
+          description: "Catégories de billets (VIP, VVIP, Early Bird, Étudiant, Groupe, Sponsor, etc.). Si fourni, override price_xof. Chaque tier {name, price_xof, qty}.",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string", description: "Ex: 'VIP', 'Early Bird', 'Étudiant'." },
+              price_xof: { type: "number", description: "Prix unitaire (0 = gratuit)." },
+              qty: { type: "number", description: "Nb de places dans ce tier." },
+            },
+            required: ["name", "price_xof", "qty"],
+          },
+        },
         description: { type: "string", description: "Description (max 1000 chars). Optionnel." },
         dry_run: { type: "boolean", description: "True = simule / False = publie vraiment." },
       },
@@ -1393,7 +1406,25 @@ async function executeTool(
         const v = venue as { id: string; name: string; owner_id: string; city: string };
         if (v.owner_id !== ctx.userId) return { success: false, error: "Ce venue n'est pas un de tes établissements" };
 
+        // Pré-calcule les tiers pour le dry_run (preview) ET pour l'écriture.
+        let previewTiers: Array<{ name: string; price_xof: number; qty: number }>;
+        if (Array.isArray(input.tiers) && input.tiers.length > 0) {
+          previewTiers = (input.tiers as Array<{ name?: string; price_xof?: number; qty?: number }>)
+            .filter((t) => typeof t.name === "string" && t.name.trim().length > 0)
+            .map((t) => ({
+              name: String(t.name).slice(0, 60),
+              price_xof: Math.max(0, Math.round(Number(t.price_xof ?? 0))),
+              qty: Math.max(1, Math.round(Number(t.qty ?? 50))),
+            }))
+            .slice(0, 8);
+        } else if (priceXof > 0) {
+          previewTiers = [{ name: "Standard", price_xof: priceXof, qty: capacity ?? 100 }];
+        } else {
+          previewTiers = [];
+        }
+
         if (dryRun) {
+          const totalCapacity = previewTiers.reduce((s, t) => s + t.qty, 0) || (capacity ?? 0);
           return {
             success: true,
             data: {
@@ -1403,10 +1434,13 @@ async function executeTool(
               title,
               starts_at: new Date(startsTs).toISOString(),
               ends_at: endsAt,
-              capacity,
-              price_xof: priceXof,
-              ticket_kind: priceXof > 0 ? "paid" : "free",
-              next_step: "Demande confirmation orale. Si oui, rappelle publish_event avec dry_run=false ET les mêmes paramètres.",
+              capacity: totalCapacity || capacity,
+              tiers: previewTiers,
+              ticket_kind: previewTiers.length === 0 ? "free"
+                : previewTiers.length === 1 ? "single_tier" : "multi_tier",
+              next_step: previewTiers.length > 1
+                ? `Annonce le titre + ${previewTiers.length} catégories de billets brièvement. Si confirme, rappelle avec dry_run=false ET les MÊMES tiers.`
+                : "Demande confirmation orale puis rappelle avec dry_run=false ET les mêmes paramètres.",
             },
           };
         }
@@ -1419,9 +1453,24 @@ async function executeTool(
           + "-" + String(startsTs).slice(-6)
         ).slice(0, 80);
 
-        const ticketTiers = priceXof > 0
-          ? [{ name: "Standard", price_xof: priceXof, qty: capacity ?? 100, sold: 0 }]
-          : [];
+        // Multi-tier (Phase 11) : si `tiers` fourni, utilise directement.
+        // Sinon fallback sur price_xof (tier 'Standard') ou gratuit.
+        let ticketTiers: Array<{ name: string; price_xof: number; qty: number; sold: number }>;
+        if (Array.isArray(input.tiers) && input.tiers.length > 0) {
+          ticketTiers = (input.tiers as Array<{ name?: string; price_xof?: number; qty?: number }>)
+            .filter((t) => typeof t.name === "string" && t.name.trim().length > 0)
+            .map((t) => ({
+              name: String(t.name).slice(0, 60),
+              price_xof: Math.max(0, Math.round(Number(t.price_xof ?? 0))),
+              qty: Math.max(1, Math.round(Number(t.qty ?? 50))),
+              sold: 0,
+            }))
+            .slice(0, 8); // hard cap 8 tiers (UI sanity)
+        } else if (priceXof > 0) {
+          ticketTiers = [{ name: "Standard", price_xof: priceXof, qty: capacity ?? 100, sold: 0 }];
+        } else {
+          ticketTiers = [];
+        }
 
         const userClient = createClient(
           Deno.env.get("SUPABASE_URL")!,

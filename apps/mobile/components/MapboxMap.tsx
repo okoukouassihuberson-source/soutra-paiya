@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { getUserLocation, type UserCoords } from '@/lib/location';
 
 // Coordonnées par défaut : centre d'Abidjan (Cocody)
 export const ABIDJAN: [number, number] = [-3.999, 5.359]; // [lng, lat]
@@ -17,8 +18,16 @@ export interface MapVenue {
 
 interface Props {
   venues: MapVenue[];
+  /**
+   * Centre initial souhaité par le parent.
+   * Si non fourni, on essaie d'abord la position user puis fallback Abidjan.
+   */
   center?: [number, number];
   zoom?: number;
+  /** Si true (défaut), on centre auto sur la position GPS user dès qu'elle est connue. */
+  followUser?: boolean;
+  /** Si true, affiche un marker bleu animé sur la position user (Mapbox UserLocation). Défaut true. */
+  showUserLocation?: boolean;
   onMarkerPress?: (v: MapVenue) => void;
   style?: any;
 }
@@ -40,9 +49,61 @@ try {
   Mapbox = null;
 }
 
-export function MapboxMap({ venues, center = ABIDJAN, zoom = 12, onMarkerPress, style }: Props) {
+export function MapboxMap({
+  venues,
+  center,
+  zoom = 13,
+  followUser = true,
+  showUserLocation = true,
+  onMarkerPress,
+  style,
+}: Props) {
   const cameraRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
+  const [userCoords, setUserCoords] = useState<UserCoords | null>(null);
+  const [centeredOnUser, setCenteredOnUser] = useState(false);
+
+  // Récupère la position user au mount (high accuracy)
+  useEffect(() => {
+    if (!followUser) return;
+    let active = true;
+    (async () => {
+      const coords = await getUserLocation({ highAccuracy: true });
+      if (active && coords) setUserCoords(coords);
+    })();
+    return () => { active = false; };
+  }, [followUser]);
+
+  // Centre la caméra sur la position user dès qu'elle est connue (1 fois).
+  useEffect(() => {
+    if (!followUser || !userCoords || centeredOnUser || !cameraRef.current) return;
+    cameraRef.current.setCamera({
+      centerCoordinate: [userCoords.lng, userCoords.lat],
+      zoomLevel: zoom,
+      animationDuration: 1200,
+      animationMode: 'flyTo',
+    });
+    setCenteredOnUser(true);
+  }, [userCoords, followUser, centeredOnUser, zoom]);
+
+  // Centre initial : priorité au center prop (si fourni), sinon user si connu, sinon Abidjan
+  const initialCenter: [number, number] = center
+    ?? (userCoords ? [userCoords.lng, userCoords.lat] : ABIDJAN);
+
+  // Bouton recenter : remet la caméra sur la position user actuelle (re-fetch fresh)
+  const handleRecenter = async () => {
+    const fresh = await getUserLocation({ highAccuracy: true });
+    if (fresh) setUserCoords(fresh);
+    const target: [number, number] = fresh
+      ? [fresh.lng, fresh.lat]
+      : (userCoords ? [userCoords.lng, userCoords.lat] : initialCenter);
+    cameraRef.current?.setCamera({
+      centerCoordinate: target,
+      zoomLevel: zoom,
+      animationDuration: 800,
+      animationMode: 'flyTo',
+    });
+  };
 
   // Fallback si on tourne dans Expo Go ou si le token est absent
   if (!Mapbox || isExpoGo || tokenMissing) {
@@ -62,10 +123,19 @@ export function MapboxMap({ venues, center = ABIDJAN, zoom = 12, onMarkerPress, 
         <Mapbox.Camera
           ref={cameraRef}
           zoomLevel={zoom}
-          centerCoordinate={center}
+          centerCoordinate={initialCenter}
           animationMode="flyTo"
           animationDuration={1200}
         />
+        {/* Position utilisateur : point bleu animé + cercle de précision */}
+        {showUserLocation && (
+          <Mapbox.UserLocation
+            visible
+            renderMode="native"
+            animated
+            showsUserHeadingIndicator
+          />
+        )}
         {venues.map((v) => (
           <Mapbox.PointAnnotation
             key={v.id}
@@ -89,7 +159,7 @@ export function MapboxMap({ venues, center = ABIDJAN, zoom = 12, onMarkerPress, 
         ))}
       </Mapbox.MapView>
 
-      <Pressable style={s.recenter} onPress={() => cameraRef.current?.setCamera({ centerCoordinate: center, zoomLevel: zoom, animationDuration: 800 })}>
+      <Pressable style={s.recenter} onPress={handleRecenter}>
         <Ionicons name="locate" size={20} color={colors.primary[500]} />
       </Pressable>
     </View>

@@ -87,12 +87,82 @@ export interface VoiceModule {
 
 let activeListeners: Array<{ remove: () => void }> = [];
 let listening = false;
+let speaking = false;
 
 function clearListeners(): void {
   for (const sub of activeListeners) {
     try { sub.remove(); } catch { /* noop */ }
   }
   activeListeners = [];
+}
+
+// ─── Détection des voix disponibles (lazy, cached) ─────────────────────────
+// Sur Android, getAvailableVoicesAsync() liste les voix installées par le
+// moteur TTS du système. Si on demande 'fr-FR' et que la voix française
+// n'est PAS installée, Speech.speak peut échouer silencieusement ou utiliser
+// une voix random. On résout ça en mappant 'fr-FR' → 1re voix dispo qui
+// contient 'fr-' (fr-FR, fr-CA, fr-BE, fr-CH, etc.).
+
+interface VoiceInfo {
+  identifier: string;
+  language: string;
+  quality?: string;
+}
+
+let availableVoicesCache: VoiceInfo[] | null = null;
+let voicesPromise: Promise<VoiceInfo[]> | null = null;
+
+async function loadAvailableVoices(): Promise<VoiceInfo[]> {
+  if (availableVoicesCache) return availableVoicesCache;
+  if (voicesPromise) return voicesPromise;
+  if (!SpeechModule?.getAvailableVoicesAsync) {
+    availableVoicesCache = [];
+    return [];
+  }
+  voicesPromise = (async () => {
+    try {
+      const list = (await SpeechModule.getAvailableVoicesAsync()) as VoiceInfo[];
+      availableVoicesCache = Array.isArray(list) ? list : [];
+      return availableVoicesCache;
+    } catch {
+      availableVoicesCache = [];
+      return [];
+    }
+  })();
+  return voicesPromise;
+}
+
+/**
+ * Résout la meilleure voix disponible pour la locale demandée :
+ *   • Match exact (fr-FR) si disponible → identifier
+ *   • Match préfixe (fr-CA, fr-BE) si fr-FR absent
+ *   • null sinon → on laisse Speech utiliser le défaut système
+ *
+ * Sur les devices où getAvailableVoicesAsync() renvoie [] (Android avant
+ * SDK 23 ou TTS engine absent), on retourne null et on tente quand même
+ * avec la locale demandée.
+ */
+async function resolveVoiceForLocale(locale: string): Promise<{ language: string; voice?: string }> {
+  const voices = await loadAvailableVoices();
+  if (voices.length === 0) {
+    // Cas pessimiste : on essaie quand même avec la locale demandée
+    return { language: locale };
+  }
+  // Match exact (insensible à la casse)
+  const exact = voices.find((v) => v.language?.toLowerCase() === locale.toLowerCase());
+  if (exact) return { language: locale, voice: exact.identifier };
+
+  // Match préfixe (fr-* pour fr-FR demandé)
+  const langPrefix = locale.split('-')[0]?.toLowerCase();
+  const prefix = voices.find((v) => v.language?.toLowerCase().startsWith(langPrefix + '-'));
+  if (prefix) {
+    console.warn(`[voice] Voix exacte "${locale}" indisponible, fallback sur "${prefix.language}"`);
+    return { language: prefix.language, voice: prefix.identifier };
+  }
+
+  // Aucune voix dans la langue demandée : laisse Speech choisir le défaut
+  console.warn(`[voice] Aucune voix "${langPrefix}-*" installée — fallback voix système`);
+  return { language: locale };
 }
 
 // ─── Implémentation V1 ─────────────────────────────────────────────────────
@@ -119,21 +189,36 @@ export const voice: VoiceModule = {
     // Stop la lecture précédente pour éviter le chevauchement.
     try { await SpeechModule.stop(); } catch { /* noop */ }
 
+    // Résolution voix robuste : si fr-FR pas installée, on tente fr-CA, etc.
+    const targetLocale = opts.locale ?? 'fr-FR';
+    const resolved = await resolveVoiceForLocale(targetLocale);
+
     return new Promise<void>((resolve) => {
       try {
+        speaking = true;
         SpeechModule.speak(clean, {
-          language: opts.locale ?? 'fr-FR',
+          language: resolved.language,
+          ...(resolved.voice ? { voice: resolved.voice } : {}),
           rate: opts.rate ?? (Platform.OS === 'ios' ? 0.5 : 1), // iOS: 0.5 ≈ normal humain
           pitch: opts.pitch ?? 1,
-          onDone: () => { opts.onDone?.(); resolve(); },
+          onDone: () => {
+            speaking = false;
+            opts.onDone?.();
+            resolve();
+          },
           onError: (e: unknown) => {
+            speaking = false;
             const msg = e instanceof Error ? e.message : String(e);
             opts.onError?.(msg);
             resolve();
           },
-          onStopped: () => resolve(),
+          onStopped: () => {
+            speaking = false;
+            resolve();
+          },
         });
       } catch (err: unknown) {
+        speaking = false;
         const msg = err instanceof Error ? err.message : String(err);
         opts.onError?.(msg);
         resolve();
@@ -144,6 +229,7 @@ export const voice: VoiceModule = {
   async stopSpeaking(): Promise<void> {
     if (!SpeechModule) return;
     try { await SpeechModule.stop(); } catch { /* noop */ }
+    speaking = false;
   },
 
   async isSpeaking(): Promise<boolean> {
@@ -183,6 +269,12 @@ export const voice: VoiceModule = {
         (e: { results?: { transcript: string }[]; isFinal?: boolean }) => {
           const t = e.results?.[0]?.transcript;
           if (typeof t !== 'string') return;
+          // Barge-in : dès qu'on détecte un partial non-vide pendant que Sia
+          // parle, on coupe le TTS pour laisser l'utilisateur parler.
+          if (speaking && t.trim().length > 0) {
+            try { SpeechModule?.stop(); } catch { /* noop */ }
+            speaking = false;
+          }
           if (e.isFinal) {
             opts.onFinal(t);
           } else {
