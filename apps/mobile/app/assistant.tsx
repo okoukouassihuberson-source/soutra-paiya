@@ -6,9 +6,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { askAssistant, runAction, type ChatMessage, type AssistantAction } from '@/lib/assistant';
+import { askAssistant, runAction, type ChatMessage, type AssistantAction, type PayReservationResult } from '@/lib/assistant';
 import { voice } from '@/lib/voice';
 import { VoiceConversation } from '@/components/VoiceConversation';
+import { PaymentConfirmModal } from '@/components/PaymentConfirmModal';
+import { formatXOF } from '@soutra/shared';
 
 const SUGGESTIONS = [
   'Comment recharger mon wallet ?',
@@ -31,6 +33,11 @@ export default function Assistant() {
   const [readAloud, setReadAloud] = useState(false);     // Toggle TTS auto des réponses
   const [voiceMode, setVoiceMode] = useState(false);     // Modal conversation continue
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Modal de paiement vocal (Phase 4) — déclenché par action authenticate_and_pay
+  const [paymentReq, setPaymentReq] = useState<
+    | { reservation_id: string; amount_xof: number; venue_name?: string }
+    | null
+  >(null);
   const scrollRef = useRef<ScrollView | null>(null);
 
   // Ouvre direct le mode vocal si l'utilisateur a tapé "Parler à Sia" depuis
@@ -60,21 +67,51 @@ export default function Assistant() {
   }, []);
 
   /**
-   * Applique les actions après la réponse. Si "Lire les réponses" est ON,
-   * on attend la fin du TTS avant de naviguer (l'utilisateur sait où il va).
-   * Sinon navigation immédiate.
+   * Applique les actions après la réponse. Deux types d'actions :
+   * - navigate : ouvre une route Expo Router
+   * - authenticate_and_pay : ouvre le PaymentConfirmModal (PIN + débit wallet)
+   *
+   * Si "Lire les réponses" est ON, on attend la fin du TTS avant d'agir
+   * pour que l'utilisateur sache ce qui va se passer.
    */
   function applyActions(actions: AssistantAction[] | undefined, replyText: string) {
     if (!actions || actions.length === 0) return;
-    const navAction = actions.find((a) => a.type === 'navigate');
-    if (!navAction) return;
+
+    // Le délai est basé sur la longueur du texte (~150 mots/min en TTS humain).
+    const delayMs = readAloud && voice.isTtsAvailable()
+      ? Math.min(8000, Math.max(1500, replyText.length * 60))
+      : 0;
+
+    const apply = () => {
+      // Priorité au paiement (action sensible — interrompt tout)
+      const payAction = actions.find((a) => a.type === 'authenticate_and_pay');
+      if (payAction && payAction.type === 'authenticate_and_pay') {
+        setPaymentReq({
+          reservation_id: payAction.reservation_id,
+          amount_xof: payAction.amount_xof,
+          venue_name: payAction.venue_name,
+        });
+        return;
+      }
+      const navAction = actions.find((a) => a.type === 'navigate');
+      if (navAction) runAction(navAction, router);
+    };
+
+    if (delayMs > 0) setTimeout(apply, delayMs);
+    else apply();
+  }
+
+  /**
+   * Appelé quand le PaymentConfirmModal aboutit. On ajoute un message
+   * système dans la conversation et on speak un résumé.
+   */
+  function handlePaymentSuccess(res: PayReservationResult) {
+    setPaymentReq(null);
+    const confirmText = `Paiement de ${formatXOF(res.amount_paid_xof)} confirmé. Nouveau solde wallet : ${formatXOF(res.new_balance_xof)}.`;
+    setMessages((prev) => [...prev, { role: 'assistant', content: confirmText }]);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 30);
     if (readAloud && voice.isTtsAvailable()) {
-      // Le TTS lance déjà la lecture (cf. plus haut). On hook un délai
-      // basé sur la longueur du texte (~150 mots/min en TTS humain).
-      const estimatedMs = Math.min(8000, Math.max(1500, replyText.length * 60));
-      setTimeout(() => { runAction(navAction, router); }, estimatedMs);
-    } else {
-      runAction(navAction, router);
+      void voice.speak(confirmText, { locale: 'fr-FR' });
     }
   }
 
@@ -174,6 +211,18 @@ export default function Assistant() {
         onClose={() => setVoiceMode(false)}
         onHistoryChange={(h) => setMessages([WELCOME, ...h])}
       />
+
+      {/* Modal de paiement vocal (Phase 4) */}
+      {paymentReq && (
+        <PaymentConfirmModal
+          visible={true}
+          reservationId={paymentReq.reservation_id}
+          amountXof={paymentReq.amount_xof}
+          venueName={paymentReq.venue_name}
+          onSuccess={handlePaymentSuccess}
+          onCancel={() => setPaymentReq(null)}
+        />
+      )}
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView

@@ -67,18 +67,26 @@ Format de réponse (CRITIQUE — souvent lu à voix haute via TTS) :
 - Maximum 3 résultats à voix haute. Si plus, propose : "J'en ai trouvé sept, je t'ouvre la liste complète ?" et appelle navigate_to vers /search-ai.
 
 Réservation vocale (Phase 3 — disponible) :
-- Tu peux créer une réservation dans la base, mais TOUJOURS en deux temps :
-  1. Première fois, appelle create_reservation avec dry_run=true → reçois le récap (lieu, date, heure, nb personnes, acompte calculé)
-  2. Dis le récap à l'utilisateur ET demande une confirmation explicite ("Je peux te réserver Mékaféba demain à 20h pour 4 personnes, acompte 4 000 FCFA. Tu confirmes ?")
-  3. Si l'utilisateur dit "oui", "confirme", "vas-y", "ok", "bien" → rappelle create_reservation avec dry_run=false ET les MÊMES paramètres
-  4. Annonce la création et propose navigate_to vers /(tabs)/tickets pour que l'utilisateur paie l'acompte
-- Si l'utilisateur n'a pas donné le nom du lieu, utilise find_venue_by_name OU search_venues d'abord
-- Si l'utilisateur change d'avis avant le dry_run=false : juste annule verbalement (rien à faire côté code)
-- Si l'utilisateur veut annuler une résa déjà créée : appelle cancel_reservation
-- Tu ne peux PAS encore débiter le wallet ni payer Paystack par la voix (c'est la phase 4) ; l'utilisateur paiera l'acompte depuis l'écran Tickets
+- Création TOUJOURS en deux temps :
+  1. create_reservation avec dry_run=true → reçois le récap
+  2. Dis-le et demande confirmation orale ("Je peux te réserver…, acompte 4 000 FCFA. Tu confirmes ?")
+  3. Si "oui"/"confirme"/"vas-y"/"ok"/"bien" → rappelle create_reservation avec dry_run=false
+  4. Annonce la création. Si payment_route est retourné, ENCHAÎNE direct sur initiate_payment au lieu de naviguer vers Tickets (UX vocale fluide)
+- Si l'utilisateur veut annuler une résa déjà créée : cancel_reservation
+
+Paiement vocal (Phase 4 — disponible UNIQUEMENT pour l'acompte depuis le wallet Soutra-Pay) :
+- Même pattern dry_run en deux temps :
+  1. initiate_payment avec dry_run=true → reçois { deposit_xof, wallet_balance_xof, sufficient }
+  2. Si sufficient=true : "Je vais débiter ton wallet de 4 000 FCFA pour ta résa chez Mékaféba. Ton solde après sera de 8 500 FCFA. J'autorise ?"
+  3. Si sufficient=false : "Tu as 2 000 FCFA, l'acompte est 4 000. Tu peux recharger d'abord ? Je t'ouvre la page recharge." + navigate_to(/recharge)
+  4. Si l'utilisateur confirme oralement → rappelle initiate_payment avec dry_run=false
+     → l'app va déclencher biométrie+PIN auto, tu n'as plus rien à faire
+  5. La réponse "ok" de Sia à ce stade DOIT être courte : "OK, confirme avec ton PIN s'il te plaît." (le modal de PIN s'ouvre automatiquement côté client)
+- Tu NE peux PAS encore payer en mobile money via Paystack par la voix (cassé l'UX avec le redirect navigateur) ; pour ça, navigue vers la fiche résa
+- Tu NE peux PAS encore faire de transfert P2P / split bill / withdrawal par la voix (phases 5+)
 
 Garde-fous :
-- Pour payer / créer une promo : explique mais ne prétends pas exécuter (V4+).
+- Pour créer une promo / gérer un venue : explique mais ne prétends pas exécuter (Phase 8).
 - Pour les litiges / fraudes : invite à contacter le support Soutra-Playce.`;
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -171,6 +179,19 @@ const TOOLS = [
     },
   },
   {
+    name: "initiate_payment",
+    description:
+      "Démarre le paiement de l'acompte d'une réservation depuis le wallet Soutra-Pay. Pattern dry_run obligatoire : dry_run=true retourne le calcul (acompte, solde, suffisant), dry_run=false retourne une action authenticate_and_pay que le client exécute (PIN/biométrie + débit wallet atomique).",
+    input_schema: {
+      type: "object",
+      properties: {
+        reservation_id: { type: "string", description: "UUID de la résa à payer (obtenu via create_reservation ou list_my_reservations)." },
+        dry_run: { type: "boolean", description: "True = vérifie le solde sans débiter / False = retourne action que le client exécute après PIN." },
+      },
+      required: ["reservation_id", "dry_run"],
+    },
+  },
+  {
     name: "cancel_reservation",
     description:
       "Annule une réservation existante de l'utilisateur courant (status passe à 'cancelled'). À utiliser quand l'utilisateur dit 'annule ma résa', 'je ne viens pas', etc. Si l'utilisateur ne précise pas laquelle, liste-les d'abord avec list_my_reservations.",
@@ -208,12 +229,24 @@ interface ToolContext {
   svc: ReturnType<typeof createClient>;
 }
 
+// Actions transmises au client après une réponse Sia.
+// - navigate : ouvre une route
+// - authenticate_and_pay : déclenche bio/PIN puis appelle l'Edge pay-reservation
+type ServerAction =
+  | { type: "navigate"; route: string; reason?: string }
+  | {
+      type: "authenticate_and_pay";
+      reservation_id: string;
+      amount_xof: number;
+      venue_name?: string;
+      reason?: string;
+    };
+
 interface ToolResult {
   success: boolean;
   data?: unknown;
   error?: string;
-  // Pour navigate_to : l'action à transmettre au client.
-  action?: { type: "navigate"; route: string; reason?: string };
+  action?: ServerAction;
 }
 
 async function executeTool(
@@ -422,6 +455,92 @@ async function executeTool(
         };
       }
 
+      case "initiate_payment": {
+        const reservationId = String(input.reservation_id ?? "");
+        const dryRun = input.dry_run !== false; // default true par sécurité
+        if (!reservationId) return { success: false, error: "reservation_id requis" };
+
+        // Récupère la résa + le venue + le solde wallet en parallèle
+        const [resaRes, walletRes] = await Promise.all([
+          ctx.svc
+            .from("reservations")
+            .select("id, user_id, venue_id, deposit_xof, status, escrow_tx_id, date_time")
+            .eq("id", reservationId)
+            .maybeSingle(),
+          ctx.svc.from("wallets").select("balance_xof").eq("user_id", ctx.userId).maybeSingle(),
+        ]);
+        if (resaRes.error) return { success: false, error: resaRes.error.message };
+        if (!resaRes.data) return { success: false, error: "Réservation introuvable" };
+        const r = resaRes.data as {
+          id: string; user_id: string; venue_id: string;
+          deposit_xof: number | null; status: string;
+          escrow_tx_id: string | null; date_time: string;
+        };
+        if (r.user_id !== ctx.userId) return { success: false, error: "Cette réservation ne t'appartient pas" };
+        if (r.escrow_tx_id) return { success: false, error: "Réservation déjà payée" };
+        if (r.status !== "pending" && r.status !== "confirmed") {
+          return { success: false, error: "Réservation annulée ou expirée" };
+        }
+        const deposit = r.deposit_xof ?? 0;
+        if (deposit <= 0) return { success: false, error: "Aucun acompte requis pour cette réservation" };
+
+        const balance = ((walletRes.data as { balance_xof?: number } | null)?.balance_xof) ?? 0;
+        const sufficient = balance >= deposit;
+
+        // Récupère le nom du venue pour la confirmation orale
+        const { data: venue } = await ctx.svc
+          .from("venues")
+          .select("name")
+          .eq("id", r.venue_id)
+          .maybeSingle();
+        const venueName = (venue as { name?: string } | null)?.name;
+
+        if (dryRun) {
+          return {
+            success: true,
+            data: {
+              dry_run: true,
+              reservation_id: r.id,
+              venue_name: venueName,
+              deposit_xof: deposit,
+              wallet_balance_xof: balance,
+              sufficient,
+              shortfall_xof: sufficient ? 0 : deposit - balance,
+              next_step: sufficient
+                ? "Demande confirmation orale, puis rappelle initiate_payment avec dry_run=false."
+                : "Solde insuffisant. Propose à l'utilisateur de recharger via navigate_to(/recharge).",
+            },
+          };
+        }
+
+        // dry_run=false : émet l'action authenticate_and_pay. Le client va
+        // demander le PIN (ou biométrie + PIN) et appeler l'Edge function
+        // pay-reservation. Cette tool n'exécute PAS le paiement elle-même —
+        // c'est le client qui le fait (le PIN ne doit JAMAIS transiter par Claude).
+        if (!sufficient) {
+          return {
+            success: false,
+            error: "Solde insuffisant. Recharge ton wallet d'abord (navigate_to /recharge).",
+          };
+        }
+        return {
+          success: true,
+          data: {
+            dry_run: false,
+            reservation_id: r.id,
+            amount_xof: deposit,
+            venue_name: venueName,
+            next_step: "Action authenticate_and_pay émise. Le client va déclencher bio/PIN puis pay-reservation Edge function. Toi tu dois juste annoncer 'OK, confirme avec ton PIN s'il te plaît' à l'utilisateur.",
+          },
+          action: {
+            type: "authenticate_and_pay",
+            reservation_id: r.id,
+            amount_xof: deposit,
+            venue_name: venueName,
+          },
+        };
+      }
+
       case "cancel_reservation": {
         const reservationId = String(input.reservation_id ?? "");
         if (!reservationId) return { success: false, error: "reservation_id requis" };
@@ -585,7 +704,7 @@ Deno.serve(async (req) => {
   };
 
   // Actions accumulées au fil des tool_use (transmises au client)
-  const actions: Array<{ type: "navigate"; route: string; reason?: string }> = [];
+  const actions: ServerAction[] = [];
 
   // ────────────────────────────────────────────────────────────────────────
   // Boucle tool use

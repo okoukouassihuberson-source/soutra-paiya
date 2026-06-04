@@ -13,7 +13,38 @@ export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
 /** Action retournée par le serveur, exécutée côté client. */
 export type AssistantAction =
-  | { type: 'navigate'; route: string; reason?: string };
+  | { type: 'navigate'; route: string; reason?: string }
+  | {
+      type: 'authenticate_and_pay';
+      reservation_id: string;
+      amount_xof: number;
+      venue_name?: string;
+      reason?: string;
+    };
+
+/** Résultat du paiement vocal — speak côté client après réception. */
+export interface PayReservationResult {
+  ok: true;
+  reservation_id: string;
+  transaction_id: string;
+  amount_paid_xof: number;
+  new_balance_xof: number;
+}
+
+/**
+ * Règle l'acompte d'une résa depuis le wallet. Appelée par le mobile après
+ * que l'utilisateur ait validé sa biométrie/PIN. La RPC pay_reservation_from_wallet
+ * (migration 0046) valide tout côté serveur (PIN bcrypt, ownership, solde, statut).
+ */
+export async function payReservationFromWallet(
+  reservationId: string,
+  pin: string,
+): Promise<PayReservationResult> {
+  return invokeEdge<PayReservationResult>('pay-reservation', {
+    reservation_id: reservationId,
+    pin,
+  });
+}
 
 export type AssistantReply = {
   reply: string;

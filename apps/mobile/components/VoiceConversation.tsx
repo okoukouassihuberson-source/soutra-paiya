@@ -19,10 +19,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
+import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { voice } from '@/lib/voice';
-import { askAssistant, runAction, type ChatMessage, type AssistantAction } from '@/lib/assistant';
+import { askAssistant, runAction, type ChatMessage, type AssistantAction, type PayReservationResult } from '@/lib/assistant';
+import { PaymentConfirmModal } from '@/components/PaymentConfirmModal';
 
 type Status = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
 
@@ -67,6 +68,11 @@ export function VoiceConversation({
   const [lastUserText, setLastUserText] = useState('');
   const [lastSiaText, setLastSiaText] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Phase 4 : modal de confirmation paiement déclenché par action authenticate_and_pay
+  const [paymentReq, setPaymentReq] = useState<
+    | { reservation_id: string; amount_xof: number; venue_name?: string }
+    | null
+  >(null);
   const historyRef = useRef<ChatMessage[]>(initialHistory);
   const pulse = useRef(new Animated.Value(1)).current;
   const sttAvailable = useMemo(() => voice.isSttAvailable(), []);
@@ -173,33 +179,44 @@ export function VoiceConversation({
       const navAction = res.actions?.find((a) => a.type === 'navigate') as
         | Extract<AssistantAction, { type: 'navigate' }>
         | undefined;
+      const payAction = res.actions?.find((a) => a.type === 'authenticate_and_pay') as
+        | Extract<AssistantAction, { type: 'authenticate_and_pay' }>
+        | undefined;
+
+      // Le payment a priorité : il interrompt le cycle d'écoute pour
+      // afficher le modal PIN. La nav est gérée seulement s'il n'y a
+      // pas de paiement.
+      const afterSpeech = () => {
+        if (payAction) {
+          // Stop le micro, ouvre le modal de PIN. La reprise de l'écoute
+          // se fait sur callback success/cancel du modal.
+          void voice.stopListening();
+          setStatus('idle');
+          setPaymentReq({
+            reservation_id: payAction.reservation_id,
+            amount_xof: payAction.amount_xof,
+            venue_name: payAction.venue_name,
+          });
+          return;
+        }
+        if (navAction) {
+          // L'utilisateur a demandé "ouvre X" : ferme le modal vocal + navigue.
+          void handleCloseAndNavigate(navAction);
+          return;
+        }
+        // Pas d'action → re-démarre l'écoute pour le tour suivant.
+        void startListening();
+      };
 
       if (ttsAvailable) {
         setStatus('speaking');
         await voice.speak(reply, {
           locale: 'fr-FR',
-          onDone: () => {
-            if (navAction) {
-              // L'utilisateur a demandé "ouvre X" : on ferme le modal vocal
-              // et on navigue. Conversation continue dans l'écran cible.
-              void handleCloseAndNavigate(navAction);
-            } else {
-              // Pas d'action → re-démarre l'écoute pour le tour suivant.
-              void startListening();
-            }
-          },
-          onError: () => {
-            if (navAction) {
-              void handleCloseAndNavigate(navAction);
-            } else {
-              setStatus('idle');
-            }
-          },
+          onDone: afterSpeech,
+          onError: afterSpeech,
         });
-      } else if (navAction) {
-        void handleCloseAndNavigate(navAction);
       } else {
-        setStatus('idle');
+        afterSpeech();
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erreur Sia';
@@ -249,8 +266,39 @@ export function VoiceConversation({
     await voice.stopListening();
     await voice.stopSpeaking();
     setStatus('idle');
+    setPaymentReq(null);
     onClose();
   }, [onClose]);
+
+  // ─── Callbacks PaymentConfirmModal (Phase 4) ──────────────────────────
+  const handlePaymentSuccess = useCallback(async (result: PayReservationResult) => {
+    setPaymentReq(null);
+    const confirmText = `Paiement confirmé : ${formatXOF(result.amount_paid_xof)} débité de ton wallet. Nouveau solde : ${formatXOF(result.new_balance_xof)}.`;
+    setLastSiaText(confirmText);
+    const after: ChatMessage[] = [
+      ...historyRef.current,
+      { role: 'assistant', content: confirmText },
+    ];
+    historyRef.current = after;
+    onHistoryChange?.(after);
+    if (ttsAvailable) {
+      setStatus('speaking');
+      await voice.speak(confirmText, {
+        locale: 'fr-FR',
+        onDone: () => { void startListening(); },
+        onError: () => setStatus('idle'),
+      });
+    } else {
+      setStatus('idle');
+    }
+  }, [ttsAvailable, onHistoryChange, startListening]);
+
+  const handlePaymentCancel = useCallback(() => {
+    setPaymentReq(null);
+    // Reprend l'écoute pour laisser l'utilisateur dire "non finalement annule"
+    // ou enchaîner sur autre chose.
+    void startListening();
+  }, [startListening]);
 
   const handleMicTap = useCallback(async () => {
     if (status === 'listening') {
@@ -379,6 +427,18 @@ export function VoiceConversation({
             Tap pour {status === 'listening' ? 'mettre en pause' : 'parler'}
           </Text>
         </View>
+
+        {/* Modal PIN au-dessus de la conversation vocale (Phase 4) */}
+        {paymentReq && (
+          <PaymentConfirmModal
+            visible={true}
+            reservationId={paymentReq.reservation_id}
+            amountXof={paymentReq.amount_xof}
+            venueName={paymentReq.venue_name}
+            onSuccess={handlePaymentSuccess}
+            onCancel={handlePaymentCancel}
+          />
+        )}
       </SafeAreaView>
     </Modal>
   );
