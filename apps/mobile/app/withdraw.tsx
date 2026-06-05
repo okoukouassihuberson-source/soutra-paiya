@@ -6,15 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
-import { requestWithdrawal, type WithdrawParams } from '@/lib/cinetpay';
+import { requestWithdrawal, type WithdrawParams } from '@/lib/paystack';
 import { ScreenHeader } from '@/components/ScreenHeader';
 
 type Provider = WithdrawParams['provider'];
 
+// Paystack supporte Orange / MTN / Wave en XOF (pas Moov pour les payouts XOF).
 const PROVIDERS: { id: Provider; label: string; bg: string; color: string }[] = [
   { id: 'orange', label: 'Orange Money', bg: '#fff7ed', color: '#ea580c' },
   { id: 'mtn', label: 'MTN MoMo', bg: '#fefce8', color: '#ca8a04' },
-  { id: 'moov', label: 'Moov Money', bg: '#eff8ff', color: '#0369a1' },
   { id: 'wave', label: 'Wave', bg: '#eff6ff', color: '#2563eb' },
 ];
 
@@ -193,7 +193,7 @@ export default function Withdraw() {
               <Ionicons name="time-outline" size={18} color={colors.primary[500]} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.infoTitle}>Traitement CinetPay</Text>
+              <Text style={s.infoTitle}>Traitement Paystack</Text>
               <Text style={s.infoText}>
                 Ton solde est débité immédiatement. En cas d'échec, il est automatiquement recrédité.
               </Text>

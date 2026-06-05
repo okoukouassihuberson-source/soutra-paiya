@@ -23,11 +23,11 @@ enable_confirmations = false
 # ============================================================================
 # Edge Functions
 # ============================================================================
-# Webhook CinetPay (Phase 12 — migration Paystack → CinetPay).
-# Auth via header `x-token` (HMAC-SHA256 sur les champs cpm_*, vérifié dans
-# le code via _shared/cinetpay.ts). Pas de JWT user — c'est CinetPay qui
-# appelle directement.
-[functions.cinetpay-webhook]
+# Le webhook Paystack est appelé par Paystack lui-même, sans JWT utilisateur.
+# Son authenticité est garantie par la vérification de signature HMAC-SHA512
+# dans le code (cf. supabase/functions/paystack-webhook). Les autres fonctions
+# (initialize, verify, withdraw) gardent verify_jwt = true par défaut.
+[functions.paystack-webhook]
 verify_jwt = false
 
 # Déclenchée par les Database Webhooks Supabase, qui s'authentifient via

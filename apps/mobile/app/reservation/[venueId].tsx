@@ -8,7 +8,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { colors, typography, radius, spacing, formatXOF, reservationFormSchema } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
-import { payWithCinetPay } from '@/lib/cinetpay';
+import { payWithPaystack } from '@/lib/paystack';
 import { validatePromoCode, applyDiscount, reasonLabel } from '@/lib/promo';
 
 interface Venue {
@@ -205,9 +205,9 @@ export default function ReservationForm() {
         return;
       }
 
-      // 3. Paiement de l'acompte via CinetPay. Le montant est déterminé
+      // 3. Paiement de l'acompte via Paystack. Le montant est déterminé
       //    côté serveur à partir de la réservation.
-      const result = await payWithCinetPay({
+      const result = await payWithPaystack({
         purpose: 'reservation_deposit',
         reservationId: resaId,
       });

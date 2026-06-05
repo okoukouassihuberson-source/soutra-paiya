@@ -1167,7 +1167,7 @@ function ProDashboard() {
                   {/* ═══════════ PAYOUTS GÉRANT (migration 0044) ═══════════ */}
                   {/* Solde payable du venue + demande de virement mobile money.
                       Edge function venue-payout-initiate + RPCs request/settle
-                      _venue_payout. Le webhook CinetPay route automatiquement
+                      _venue_payout. Le webhook Paystack route automatiquement
                       sur settle_venue_payout via le préfixe sp-vp-. */}
                   <div className="mb-8">
                     <VenuePayoutPanel venueId={selectedVenueId || null} />

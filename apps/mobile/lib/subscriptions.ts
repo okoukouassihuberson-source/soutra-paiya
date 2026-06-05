@@ -9,7 +9,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './supabase';
 import { invokeEdge } from './edge';
 
-const RETURN_URL = 'soutrapaiya://cinetpay';
+const RETURN_URL = 'soutrapaiya://paystack';
 
 export type PlanCode = 'free' | 'standard' | 'pro' | 'premium' | 'soutra_premium';
 
@@ -118,18 +118,18 @@ export async function getMyActiveSubscription(): Promise<ActiveSubscription | nu
 export interface SubscribeResult {
   status: 'active' | 'pending';
   reference?: string;
-  payment_url?: string;
+  authorization_url?: string;
   subscription_id?: string;
 }
 
 /**
- * Subscribe to a plan. Pour les plans payants, ouvre le WebBrowser CinetPay
+ * Subscribe to a plan. Pour les plans payants, ouvre le WebBrowser Paystack
  * et attend la fin du paiement. Le webhook activera l'abonnement.
  */
 export async function subscribeTo(planCode: PlanCode): Promise<SubscribeResult> {
   const res = await invokeEdge<{
     status: 'active' | 'pending';
-    payment_url?: string;
+    authorization_url?: string;
     reference?: string;
     subscription_id?: string;
   }>('subscribe-initialize', { plan_code: planCode });
@@ -138,18 +138,18 @@ export async function subscribeTo(planCode: PlanCode): Promise<SubscribeResult> 
     return { status: 'active' };
   }
 
-  if (!res.payment_url) {
+  if (!res.authorization_url) {
     throw new Error('Réponse invalide du serveur subscribe');
   }
 
-  // Ouvre la page de paiement CinetPay
-  await WebBrowser.openAuthSessionAsync(res.payment_url, RETURN_URL);
+  // Ouvre la page de paiement Paystack
+  await WebBrowser.openAuthSessionAsync(res.authorization_url, RETURN_URL);
 
   return {
     status: 'pending',
     reference: res.reference,
     subscription_id: res.subscription_id,
-    payment_url: res.payment_url,
+    authorization_url: res.authorization_url,
   };
 }
 

@@ -7,7 +7,7 @@
 // sortant Paystack.
 //
 // Référence Paystack = `sp-vp-<uuid>` (vs `sp-wd-<uuid>` pour wallet withdraws).
-// Le webhook `cinetpay-webhook` route sur `settle_venue_payout` selon ce préfixe.
+// Le webhook `paystack-webhook` route sur `settle_venue_payout` selon ce préfixe.
 // ============================================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
@@ -17,20 +17,31 @@ import {
   serviceClient,
 } from "../_shared/supabase.ts";
 import {
-  addTransferContact,
+  createRecipient,
   initiateTransfer,
-  cinetpayMode,
-} from "../_shared/cinetpay.ts";
+  listBanks,
+  toSubunit,
+} from "../_shared/paystack.ts";
 
-// Mapping provider Soutra → CinetPay payment_method
-const PROVIDER_METHODS: Record<string, "OMCIDIRECT" | "MTNCI" | "MOOVCI" | "WAVECI"> = {
-  orange: "OMCIDIRECT",
-  mtn: "MTNCI",
-  moov: "MOOVCI",
-  wave: "WAVECI",
+// Mêmes opérateurs supportés par Paystack en payout mobile money XOF que pour
+// les retraits wallet (cf. paystack-withdraw) : MTN, Orange, Wave.
+const PROVIDER_KEYWORDS: Record<string, string[]> = {
+  mtn: ["mtn"],
+  orange: ["orange"],
+  wave: ["wave"],
 };
 
-const NOTIFY_URL = `${Deno.env.get("SUPABASE_URL")}/functions/v1/cinetpay-webhook`;
+async function resolveBankCode(provider: string): Promise<string> {
+  const keywords = PROVIDER_KEYWORDS[provider];
+  const banks = await listBanks("currency=XOF&type=mobile_money");
+  const match = banks.data.find((b) =>
+    keywords.some((k) => b.name.toLowerCase().includes(k))
+  );
+  if (!match) {
+    throw new Error(`Opérateur « ${provider} » indisponible chez Paystack`);
+  }
+  return match.code;
+}
 
 // Mappe les codes d'erreur SQL (RAISE EXCEPTION 'XYZ') vers des messages clairs.
 function mapRpcError(raw: string): { status: number; message: string } {
@@ -133,68 +144,73 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Réponse RPC invalide" }, 500);
     }
 
-    // ── 2. Récupère le nom + email du gérant pour le destinataire CinetPay ──
+    // ── 2. Récupère le nom du gérant pour le destinataire Paystack ──
     const { data: profile } = await svc
       .from("profiles")
-      .select("full_name, email")
+      .select("full_name")
       .eq("id", user.id)
       .maybeSingle();
-    const p = profile as { full_name?: string; email?: string } | null;
-    const fullName = p?.full_name || "Gérant Soutra-Playce";
-    const [firstName, ...rest] = fullName.split(" ");
-    const lastName = rest.join(" ") || firstName;
-    const email = p?.email || `${user.id.slice(0, 8)}@soutra-playce.local`;
+    const recipientName = (profile as { full_name?: string } | null)
+      ?.full_name || "Gérant Soutra-Playce";
 
-    // ── 3. Add contact CinetPay + initiate transfer ──
+    // ── 3. Crée le destinataire + initie le transfert Paystack ──
     try {
+      const bankCode = await resolveBankCode(provider);
       const localNumber = phone.replace(/^\+225/, "");
-      await addTransferContact({
-        prefix: "225",
-        phone: localNumber,
-        name: firstName.slice(0, 50) || "User",
-        surname: lastName.slice(0, 50) || "Soutra",
-        email,
+      const recipient = await createRecipient({
+        type: "mobile_money",
+        name: recipientName,
+        account_number: localNumber,
+        bank_code: bankCode,
+        currency: "XOF",
       });
       const transfer = await initiateTransfer({
-        prefix: "225",
-        phone: localNumber,
-        amount: amountXof,
-        client_transaction_id: reference,
-        payment_method: PROVIDER_METHODS[provider],
-        notify_url: NOTIFY_URL,
+        source: "balance",
+        amount: toSubunit(amountXof),
+        recipient: recipient.data.recipient_code,
+        reference,
+        reason: "Retrait revenus Soutra-Playce",
+        currency: "XOF",
       });
-      const transferStatus = transfer.data?.[0]?.treatment_status ?? "NEW";
-      const cinetpayTxId = transfer.data?.[0]?.cinetpay_transaction_id;
 
+      // Stocke les codes Paystack dans metadata + colonnes dédiées.
       await svc
         .from("venue_payouts")
         .update({
-          transfer_code: cinetpayTxId ?? null,
+          recipient_code: recipient.data.recipient_code,
+          transfer_code: transfer.data.transfer_code,
           metadata: {
-            provider_used: "cinetpay",
-            cinetpay_transaction_id: cinetpayTxId,
-            treatment_status: transferStatus,
+            recipient_code: recipient.data.recipient_code,
+            transfer_code: transfer.data.transfer_code,
+            transfer_status: transfer.data.status,
             initial_provider: provider,
-            mode: cinetpayMode(),
           },
         })
         .eq("id", payoutId);
 
-      // CinetPay valide les transferts de manière asynchrone (treatment_status
-      // passe de NEW → VAL ou REJ). On ne marque PAS success immédiat ici —
-      // l'issue arrive via cinetpay-webhook (settle_venue_payout).
+      // Mode test : statut « success » immédiat → règle tout de suite.
+      // (Idempotent avec le webhook : settle_venue_payout détecte déjà-réglé.)
+      if (transfer.data.status === "success") {
+        await svc.rpc("settle_venue_payout", {
+          p_reference: reference,
+          p_outcome: "success",
+          p_failure_reason: null,
+          p_metadata_patch: { settled_by: "immediate" },
+        });
+        return jsonResponse({ status: "success", reference, payout_id: payoutId });
+      }
+
       return jsonResponse({
         status: "pending",
         reference,
         payout_id: payoutId,
-        treatment_status: transferStatus,
-        message: "Retrait CinetPay en cours de traitement",
+        message: "Retrait en cours de traitement",
       });
     } catch (err) {
       // Échec Paystack : on marque le payout en failed (libère le solde
       // puisqu'il n'est plus ni pending ni success).
       const errMsg = err instanceof Error ? err.message : String(err);
-      console.error("[venue-payout-initiate] cinetpay:", errMsg);
+      console.error("[venue-payout-initiate] paystack:", errMsg);
       await svc.rpc("settle_venue_payout", {
         p_reference: reference,
         p_outcome: "failed",

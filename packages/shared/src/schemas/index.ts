@@ -32,21 +32,21 @@ export const transferSchema = z.object({
   note: z.string().max(140).optional(),
 });
 
-// CinetPay — démarrage d'un encaissement : recharge du wallet ou acompte
+// Paystack — démarrage d'un encaissement : recharge du wallet ou acompte
 // de réservation.
-export const cinetpayPurposeSchema = z.enum(['topup', 'reservation_deposit']);
+export const paystackPurposeSchema = z.enum(['topup', 'reservation_deposit']);
 
-export const cinetpayInitSchema = z.object({
+export const paystackInitSchema = z.object({
   amount_xof: amountSchema,
-  purpose: cinetpayPurposeSchema,
+  purpose: paystackPurposeSchema,
   reservation_id: z.string().uuid().optional(),
 });
 
 // Retrait du wallet vers un compte mobile money.
-// CinetPay supporte Orange, MTN, Moov et Wave en Côte d'Ivoire.
+// Paystack ne propose le payout XOF que pour Orange, MTN et Wave (Moov exclu).
 export const withdrawSchema = z.object({
   amount_xof: amountSchema,
-  provider: z.enum(['orange', 'mtn', 'wave', 'moov']),
+  provider: z.enum(['orange', 'mtn', 'wave']),
   phone: phoneSchema,
 });
 
@@ -82,7 +82,7 @@ export const reviewSchema = z.object({
 
 export type TopupInput = z.infer<typeof topupSchema>;
 export type TransferInput = z.infer<typeof transferSchema>;
-export type CinetPayInitInput = z.infer<typeof cinetpayInitSchema>;
+export type PaystackInitInput = z.infer<typeof paystackInitSchema>;
 export type WithdrawInput = z.infer<typeof withdrawSchema>;
 export type PaymentRequestInput = z.infer<typeof paymentRequestSchema>;
 export type ReservationFormInput = z.infer<typeof reservationFormSchema>;
