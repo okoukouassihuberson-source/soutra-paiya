@@ -305,13 +305,14 @@ export function verifyWebhookSignature(
 
 /**
  * Notre convention de référence (héritée de Paystack) :
- *   sp-tp-<uuid> = topup wallet
+ *   sp-tp-<uuid>  = topup wallet
  *   sp-dep-<uuid> = reservation deposit
- *   sp-wd-<uuid> = wallet withdraw (user payout)
- *   sp-vp-<uuid> = venue payout (gérant)
+ *   sp-wd-<uuid>  = wallet withdraw (user payout)
+ *   sp-vp-<uuid>  = venue payout (gérant)
+ *   sp-sub-<uuid> = subscription payment (Phase 14)
  * Permet au webhook de router vers le bon RPC settle_*.
  */
-export type PaymentRefKind = "topup" | "deposit" | "withdraw" | "venue_payout" | "unknown";
+export type PaymentRefKind = "topup" | "deposit" | "withdraw" | "venue_payout" | "subscription" | "unknown";
 
 export function classifyReference(ref: string | null | undefined): PaymentRefKind {
   if (!ref) return "unknown";
@@ -319,6 +320,7 @@ export function classifyReference(ref: string | null | undefined): PaymentRefKin
   if (ref.startsWith("sp-wd-")) return "withdraw";
   if (ref.startsWith("sp-tp-")) return "topup";
   if (ref.startsWith("sp-dep-")) return "deposit";
+  if (ref.startsWith("sp-sub-")) return "subscription";
   // Anciennes refs Paystack (sp-... sans préfixe spécifique) → topup par défaut
   if (ref.startsWith("sp-")) return "topup";
   return "unknown";

@@ -134,6 +134,8 @@ export interface Database {
       venue_payouts: { Row: any; Insert: any; Update: any };
       notification_preferences: { Row: any; Insert: any; Update: any };
       revenue_milestones_reached: { Row: any; Insert: any; Update: any };
+      subscriptions: { Row: any; Insert: any; Update: any };
+      fraud_logs: { Row: any; Insert: any; Update: any };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

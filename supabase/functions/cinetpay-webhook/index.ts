@@ -54,7 +54,35 @@ Deno.serve(async (req) => {
     const svc = serviceClient();
 
     // ── 3. Routing par type de référence ──
-    if (kind === "topup" || kind === "deposit") {
+    if (kind === "subscription") {
+      // Paiement d'abo : on settle d'abord la transaction (alias forward
+      // vers paystack_settle_charge qui crédite la transaction success),
+      // puis on appelle activate_subscription pour passer l'abo en active.
+      if (cinetpayStatus === "ACCEPTED") {
+        await svc.rpc("settle_payment_charge", {
+          p_reference: reference,
+          p_paid_subunit: amountFromCinetpay * 100,
+        });
+        // Récupère la duration depuis la tx metadata pour activer correctement
+        const { data: tx } = await svc
+          .from("transactions")
+          .select("metadata")
+          .eq("provider_ref", reference)
+          .maybeSingle();
+        const durationDays = Number((tx as { metadata?: { duration_days?: number } } | null)?.metadata?.duration_days ?? 30);
+        const { data: result } = await svc.rpc("activate_subscription", {
+          p_reference: reference,
+          p_duration_days: durationDays,
+        });
+        console.log(`[cinetpay-webhook] subscription ACTIVATED ${reference} → ${result}`);
+      } else if (cinetpayStatus === "REFUSED") {
+        await svc.from("transactions").update({
+          status: "failed",
+          completed_at: new Date().toISOString(),
+        }).eq("provider_ref", reference);
+        // Laisse la subscription en pending → cron pourra la marquer expired
+      }
+    } else if (kind === "topup" || kind === "deposit") {
       // Encaissement → settle_payment_charge (alias 0047 forward Paystack)
       // Note : settle_payment_charge attend des subunit (XOF × 100) car
       // forwarde vers paystack_settle_charge. On multiplie.
