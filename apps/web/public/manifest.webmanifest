@@ -4,13 +4,15 @@
   "description": "Sors, réserve, paie — zéro galère. La plateforme fintech & loisirs pour la Côte d'Ivoire.",
   "start_url": "/",
   "scope": "/",
+  "id": "/?source=pwa",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
-  "background_color": "#FAF7F2",
+  "background_color": "#FFFFFF",
   "theme_color": "#FF6B1A",
   "lang": "fr-CI",
   "dir": "ltr",
-  "categories": ["finance", "lifestyle", "food", "social"],
+  "categories": ["finance", "lifestyle", "food", "social", "travel"],
   "icons": [
     {
       "src": "/icons/icon.svg",
@@ -19,10 +21,43 @@
       "purpose": "any"
     },
     {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/icons/icon-1024.png",
       "sizes": "1024x1024",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Logo Soutra-Playce"
     }
   ],
   "shortcuts": [
@@ -31,14 +66,22 @@
       "short_name": "Pro",
       "description": "Dashboard de mon établissement",
       "url": "/pro",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Espace Admin",
       "short_name": "Admin",
       "description": "Tableau de bord administrateur",
       "url": "/admin",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "ci.soutra.paiya",
+      "url": "https://play.google.com/store/apps/details?id=ci.soutra.paiya"
     }
   ]
 }

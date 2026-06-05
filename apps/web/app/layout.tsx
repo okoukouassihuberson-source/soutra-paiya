@@ -40,9 +40,21 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/icons/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icons/icon-512.png', type: 'image/png', sizes: '512x512' },
       { url: '/icons/icon-1024.png', type: 'image/png', sizes: '1024x1024' },
     ],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    other: [
+      // Safari pinned tab (idéalement un SVG monochrome)
+      { rel: 'mask-icon', url: '/icons/icon.svg', color: '#FF6B1A' },
+      // Maskable PWA pour les browsers qui les supportent
+      { rel: 'icon', url: '/icons/icon-maskable-512.png', sizes: '512x512' },
+    ],
   },
   openGraph: {
     title: 'Soutra-Playce',
