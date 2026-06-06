@@ -6,11 +6,13 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import QRCode from 'react-native-qrcode-svg';
+import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +22,10 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 
 type Mode = 'scan' | 'myqr';
 
+// Deep link "soutrapaiya://send?phone=+225XXXXXXXXXX" qui pré-remplit l'écran
+// Envoyer chez le destinataire. Le scheme est défini dans app.json.
+const DEEP_LINK_SCHEME = 'soutrapaiya://send';
+
 export default function Scan() {
   const router = useRouter();
   const { user } = useAuth();
@@ -27,24 +33,48 @@ export default function Scan() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [myName, setMyName] = useState('');
-
-  const myPhone = user?.phone ? `+${user.phone.replace(/^\+/, '')}` : '';
+  // Le numéro est résolu en cascade : auth.user.phone -> profiles.phone.
+  // Certains comptes (email/OAuth) n'ont pas de auth.user.phone — on doit
+  // alors retomber sur profiles.phone pour pouvoir générer le QR.
+  const [myPhone, setMyPhone] = useState<string>('');
+  // loading distinct du QR : on ne sait pas s'il y a un numéro tant que le
+  // profil n'est pas chargé. Sans ce flag, l'UI montrait "Aucun numéro"
+  // pendant le chargement initial → bug perçu "le QR n'apparaît pas".
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!user?.id) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (mounted) setMyName((data as any)?.full_name || '');
+      if (!user?.id) {
+        if (mounted) setProfileLoading(false);
+        return;
+      }
+      try {
+        const authPhone = user?.phone ? `+${user.phone.replace(/^\+/, '')}` : '';
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (!mounted) return;
+        if (error) {
+          console.warn('[scan] profile load error:', error);
+        }
+        const profile = data as { full_name: string | null; phone: string | null } | null;
+        // Préfère auth.user.phone (canonique) sinon profiles.phone.
+        const resolvedPhone = authPhone || profile?.phone || '';
+        setMyPhone(resolvedPhone);
+        setMyName(profile?.full_name || '');
+      } catch (err) {
+        console.warn('[scan] profile fetch failed:', err);
+      } finally {
+        if (mounted) setProfileLoading(false);
+      }
     })();
     return () => {
       mounted = false;
     };
-  }, [user?.id]);
+  }, [user?.id, user?.phone]);
 
   const handleScan = (result: { data: string }) => {
     if (scanned) return;
@@ -113,7 +143,7 @@ export default function Scan() {
           onScan={handleScan}
         />
       ) : (
-        <MyQrArea phone={myPhone} name={myName} />
+        <MyQrArea phone={myPhone} name={myName} loading={profileLoading} router={router} />
       )}
     </SafeAreaView>
   );
@@ -177,23 +207,107 @@ function ScanArea({
   );
 }
 
-function MyQrArea({ phone, name }: { phone: string; name: string }) {
-  if (!phone) {
+function MyQrArea({
+  phone,
+  name,
+  loading,
+  router,
+}: {
+  phone: string;
+  name: string;
+  loading: boolean;
+  router: ReturnType<typeof useRouter>;
+}) {
+  // État loading : on attend la résolution du profil pour décider quoi
+  // afficher. Évite le faux négatif "Aucun numéro" pendant le chargement.
+  if (loading) {
     return (
       <View style={s.center}>
-        <Text style={s.permText}>Aucun numéro associé à ton compte.</Text>
+        <ActivityIndicator size="large" color={colors.primary[500]} />
+        <Text style={s.permText}>Préparation de ton QR…</Text>
       </View>
     );
   }
+
+  // Aucun numéro disponible : on l'explique et on offre une porte de sortie
+  // vers le profil pour saisir un numéro.
+  if (!phone) {
+    return (
+      <View style={s.center}>
+        <Ionicons name="phone-portrait-outline" size={56} color={colors.neutral[400]} />
+        <Text style={s.permTitle}>Aucun numéro associé</Text>
+        <Text style={s.permText}>
+          Ton compte n'a pas de numéro de téléphone enregistré.
+          {'\n'}Ajoute-le pour générer ton QR de paiement.
+        </Text>
+        <Pressable
+          style={s.permBtn}
+          onPress={() => router.push('/profile-edit' as any)}
+        >
+          <Text style={s.permBtnText}>Compléter mon profil</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  // Payload encodé dans le QR (lu côté scanner par parsePaymentQr).
+  const qrValue = buildPaymentQr({ phone, name: name || undefined });
+  // Lien partageable hors de l'app (SMS, WhatsApp, copier-coller).
+  const shareLink = `${DEEP_LINK_SCHEME}?phone=${encodeURIComponent(phone)}`;
+  const shareMessage = name
+    ? `Envoie-moi un paiement Soutra-Playce :\n${shareLink}\nNuméro : ${phone}`
+    : `Envoie-moi un paiement Soutra-Playce :\n${shareLink}`;
+
+  const handleCopy = async () => {
+    try {
+      await Clipboard.setStringAsync(shareLink);
+      Alert.alert('Lien copié', 'Le lien de paiement est dans ton presse-papier.');
+    } catch (err: any) {
+      Alert.alert('Échec', err?.message ?? 'Impossible de copier le lien.');
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({ message: shareMessage });
+    } catch (err: any) {
+      Alert.alert('Échec', err?.message ?? 'Impossible de partager.');
+    }
+  };
+
   return (
     <View style={s.myQrWrap}>
       <View style={s.qrCard}>
         <View style={s.qrCardInner}>
-          <QRCode value={buildPaymentQr({ phone, name: name || undefined })} size={220} />
+          {/* react-native-qrcode-svg crash si value est vide ; on s'est
+              déjà assuré qu'on a un phone à ce stade.
+              Wrapping try/catch impossible côté JSX → on garantit
+              l'invariant (phone non vide) en amont via le branch loading
+              et le fallback "Aucun numéro associé". */}
+          <QRCode value={qrValue} size={220} />
         </View>
         {!!name && <Text style={s.qrName}>{name}</Text>}
         <Text style={s.qrPhone}>{phone}</Text>
       </View>
+
+      {/* Actions : copier le lien + partager */}
+      <View style={s.qrActions}>
+        <Pressable
+          onPress={handleCopy}
+          style={({ pressed }) => [s.qrActionBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
+        >
+          <Ionicons name="copy-outline" size={18} color={colors.primary[600]} />
+          <Text style={s.qrActionText}>Copier le lien</Text>
+        </Pressable>
+        <Pressable
+          onPress={handleShare}
+          style={({ pressed }) => [s.qrActionBtn, s.qrActionBtnPrimary, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
+        >
+          <Ionicons name="share-social-outline" size={18} color="#fff" />
+          <Text style={[s.qrActionText, { color: '#fff' }]}>Partager</Text>
+        </Pressable>
+      </View>
+
       <View style={s.qrHintBox}>
         <Ionicons name="information-circle" size={18} color={colors.primary[500]} />
         <Text style={s.qrHint}>Fais scanner ce code pour recevoir de l'argent.</Text>
@@ -256,6 +370,21 @@ const s = StyleSheet.create({
   qrCardInner: { backgroundColor: '#fff', padding: spacing.md, borderRadius: radius.lg, borderWidth: 2, borderColor: colors.primary[500] },
   qrName: { marginTop: spacing.md, fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
   qrPhone: { marginTop: 4, fontSize: typography.fontSize.base, color: colors.neutral[600], fontFamily: 'monospace' },
+
+  // Actions copier / partager — visibles uniquement quand le QR est rendu.
+  qrActions: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch' },
+  qrActionBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
+    backgroundColor: '#fff', borderRadius: radius.full,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.md,
+    borderWidth: 1.5, borderColor: colors.primary[500],
+  },
+  qrActionBtnPrimary: {
+    backgroundColor: colors.primary[500], borderColor: colors.primary[500],
+    shadowColor: colors.primary[500], shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3,
+  },
+  qrActionText: { fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.primary[600] },
+
   qrHintBox: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: colors.primary[50], paddingHorizontal: spacing.md, paddingVertical: spacing.sm,

@@ -30,13 +30,18 @@ export default function Profile() {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [stats, setStats] = useState<Stats>(null);
   const [themePickerOpen, setThemePickerOpen] = useState(false);
+  // Source de vérité pour révéler "Espace gérant" : true si user possède au
+  // moins 1 venue, organise au moins 1 event, ou a un rôle pro (mig 0049).
+  // On NE peut PAS se fier uniquement à profiles.role car les owners
+  // historiques (avant le trigger d'auto-promotion) sont restés 'user'.
+  const [hasProAccess, setHasProAccess] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       if (!user?.id) return;
       let active = true;
       (async () => {
-        const [profileRes, resCount, postCount, matchRes] = await Promise.all([
+        const [profileRes, resCount, postCount, matchRes, proRes] = await Promise.all([
           supabase
             .from('profiles')
             .select('id, full_name, phone, email, kyc_status, referral_code, role, avatar_url')
@@ -45,6 +50,7 @@ export default function Profile() {
           (supabase as any).from('reservations').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
           (supabase as any).from('posts').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
           (supabase as any).rpc('list_my_matches'),
+          (supabase as any).rpc('has_pro_access'),
         ]);
         if (!active) return;
         if (profileRes.error) console.error('[profile] load error:', profileRes.error);
@@ -54,6 +60,14 @@ export default function Profile() {
           posts: postCount.count ?? 0,
           matches: Array.isArray(matchRes.data) ? matchRes.data.length : 0,
         });
+        // proRes.data est un boolean ; en cas d'erreur (ex: RPC manquante
+        // pendant le déploiement), on retombe sur le check par rôle pour
+        // ne pas casser l'expérience des comptes déjà promus.
+        if (proRes && !proRes.error) {
+          setHasProAccess(proRes.data === true);
+        } else if (proRes?.error) {
+          console.warn('[profile] has_pro_access fallback:', proRes.error);
+        }
       })();
       return () => { active = false; };
     }, [user?.id]),
@@ -146,8 +160,12 @@ export default function Profile() {
           <MenuItem c={c} icon="medkit-outline" label="Mes contacts SOS" onPress={() => router.push('/sos-contacts' as any)} last />
         </View>
 
-        {/* Espace gérant — visible si le user est venue_owner / staff / organizer / admin */}
-        {profile?.role && ['venue_owner', 'staff', 'organizer', 'admin'].includes(profile.role) && (
+        {/* Espace gérant — visible si has_pro_access() OU role pro déjà promu.
+            Double check (RPC + role) pour défense en profondeur si l'un des
+            deux signaux n'est pas encore propagé (cache stale, trigger en
+            retard). Voir migration 0049. */}
+        {(hasProAccess
+          || (profile?.role && ['venue_owner', 'staff', 'organizer', 'admin'].includes(profile.role))) && (
           <>
             <View style={s.sectionTitleRow}>
               <View style={s.sectionAccent} />
