@@ -10,6 +10,7 @@ import { ReportsTab } from './_components/ReportsTab';
 import { ClaimsTab } from './_components/ClaimsTab';
 import { SubmissionsTab } from './_components/SubmissionsTab';
 import { MonetizationTab } from './_components/MonetizationTab';
+import { ModerationTab } from './_components/ModerationTab';
 
 // Lazy-load Recharts : sort ~80 kB du bundle initial /admin et ne les charge
 // que si l'utilisateur affiche un onglet contenant des charts. Le static
@@ -30,13 +31,14 @@ const VenueCategoryBar      = dynamic(() => import('./_components/AdminCharts').
 const RevenueByProviderBar  = dynamic(() => import('./_components/AdminCharts').then(m => m.RevenueByProviderBar),  { ssr: false, loading: ChartLoader });
 const UsersByCityBar        = dynamic(() => import('./_components/AdminCharts').then(m => m.UsersByCityBar),        { ssr: false, loading: ChartLoader });
 
-type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
+type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'moderation' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Vue d\'ensemble', icon: <IcoGrid /> },
   { id: 'analytics', label: 'Analytics', icon: <IcoChart /> },
   { id: 'users', label: 'Utilisateurs', icon: <IcoUsers /> },
   { id: 'venues', label: 'Établissements', icon: <IcoBuilding /> },
+  { id: 'moderation', label: 'Modération Pro', icon: <IcoShield /> },
   { id: 'reports', label: 'Signalements', icon: <IcoAlert /> },
   { id: 'claims', label: 'Revendications', icon: <IcoAlert /> },
   { id: 'submissions', label: 'Contributions', icon: <IcoBuilding /> },
@@ -110,11 +112,17 @@ function AdminDashboard() {
   // bouton retour navigateur, deep-linking).
   const tabParam = searchParams?.get('tab');
   const tab: Tab = (
-    ['overview', 'analytics', 'users', 'venues', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
+    ['overview', 'analytics', 'users', 'venues', 'moderation', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'overview';
   const setTab = useCallback((next: Tab) => {
     router.replace(`/admin?tab=${next}`, { scroll: false });
   }, [router]);
+
+  // Niveau d'accès : 'admin' (tous onglets) ou 'moderator' (uniquement
+  // l'onglet 'moderation'). Récupéré via la RPC get_admin_access_level
+  // qui combine is_admin() et is_moderator() côté serveur (migration 0045).
+  const [accessLevel, setAccessLevel] = useState<'admin' | 'moderator'>('admin');
+  const isModeratorOnly = accessLevel === 'moderator';
 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -222,10 +230,36 @@ function AdminDashboard() {
     async function init() {
       const { data: { user } } = await sb.auth.getUser();
       if (!user) { router.push('/login'); return; }
+
+      // 1) Niveau d'accès (admin vs moderator) → pilote l'affichage + le
+      // chargement des données. Le moderator ne charge pas les KPIs lourds.
+      let isMod = false;
+      try {
+        const { data: lvl } = await (sb.rpc as any)('get_admin_access_level');
+        if (lvl && lvl.is_admin === false && lvl.is_moderator === true) {
+          isMod = true;
+          setAccessLevel('moderator');
+        }
+      } catch (err) {
+        console.error('[admin] get_admin_access_level:', err);
+      }
+
+      if (isMod) {
+        // Modérateur : forcer l'onglet "moderation" — il n'a accès à rien
+        // d'autre via les RLS (ses requêtes loadAll() échoueraient sur la
+        // plupart des tables).
+        if (tab !== 'moderation') {
+          router.replace('/admin?tab=moderation', { scroll: false });
+        }
+        setLoading(false);
+        return;
+      }
+
       await loadAll();
       setLoading(false);
     }
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -492,6 +526,15 @@ function AdminDashboard() {
       </header>
 
       <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+
+          {/* ═══════════ MODÉRATION PRO ═══════════ */}
+          {tab === 'moderation' && <ModerationTab />}
+
+          {/* Les onglets ci-dessous ne sont rendus que pour un admin complet.
+              Le modérateur est forcé sur 'moderation' dans le useEffect d'init
+              et ses RLS bloquent les requêtes ; on coupe le rendu en amont
+              pour éviter les erreurs de chargement et les UI vides. */}
+          {!isModeratorOnly && (<>
 
           {/* ═══════════ OVERVIEW ═══════════ */}
           {tab === 'overview' && (
@@ -1000,6 +1043,8 @@ function AdminDashboard() {
               </div>
             </>
           )}
+
+          </>)}
 
         </div>
     </div>
