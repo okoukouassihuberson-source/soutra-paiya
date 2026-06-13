@@ -70,21 +70,30 @@ const IcoCheck = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+// Icône carte pour l'onglet Abonnements (carte/membership).
+const IcoCard = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <line x1="2" y1="10" x2="22" y2="10" />
+  </svg>
+);
+
 const NAV_ADMIN: NavItem[] = [
-  { id: 'overview',     label: "Vue d'ensemble", href: '/admin?tab=overview',     icon: <IcoGrid />,       inBottomNav: true, match: 'exact' },
-  { id: 'analytics',    label: 'Analytics',      href: '/admin?tab=analytics',    icon: <IcoChart />,      inBottomNav: true, match: 'exact' },
-  { id: 'users',        label: 'Utilisateurs',   href: '/admin?tab=users',        icon: <IcoUsers />,      inBottomNav: true, match: 'exact' },
-  { id: 'venues',       label: 'Établissements', href: '/admin?tab=venues',       icon: <IcoStore />,      inBottomNav: true, match: 'exact' },
-  { id: 'moderation',   label: 'Modération Pro', href: '/admin?tab=moderation',   icon: <IcoCheck />,      inBottomNav: true, match: 'exact' },
-  { id: 'reports',      label: 'Signalements',   href: '/admin?tab=reports',      icon: <IcoFlag />,                          match: 'exact' },
-  { id: 'claims',       label: 'Revendications', href: '/admin?tab=claims',       icon: <IcoKey />,                           match: 'exact' },
-  { id: 'submissions',  label: 'Contributions',  href: '/admin?tab=submissions',  icon: <IcoPlus />,                          match: 'exact' },
-  { id: 'monetization', label: 'Monétisation',   href: '/admin?tab=monetization', icon: <IcoCash />,                          match: 'exact' },
-  { id: 'transactions', label: 'Transactions',   href: '/admin?tab=transactions', icon: <IcoWallet />,                        match: 'exact' },
-  { id: 'reservations', label: 'Réservations',   href: '/admin?tab=reservations', icon: <IcoCalendar />,                      match: 'exact' },
-  { id: 'marketing',    label: 'Marketing',      href: '/admin?tab=marketing',    icon: <IcoMegaphone />,                     match: 'exact' },
-  { id: 'security',     label: 'Sécurité',       href: '/admin?tab=security',     icon: <IcoShield />,                        match: 'exact' },
-  { id: 'settings',     label: 'Paramètres',     href: '/admin?tab=settings',     icon: <IcoGear />,                          match: 'exact' },
+  { id: 'overview',      label: "Vue d'ensemble", href: '/admin?tab=overview',     icon: <IcoGrid />,       inBottomNav: true, match: 'exact' },
+  { id: 'analytics',     label: 'Analytics',      href: '/admin?tab=analytics',    icon: <IcoChart />,      inBottomNav: true, match: 'exact' },
+  { id: 'users',         label: 'Utilisateurs',   href: '/admin?tab=users',        icon: <IcoUsers />,      inBottomNav: true, match: 'exact' },
+  { id: 'venues',        label: 'Établissements', href: '/admin?tab=venues',       icon: <IcoStore />,      inBottomNav: true, match: 'exact' },
+  { id: 'moderation',    label: 'Modération Pro', href: '/admin?tab=moderation',   icon: <IcoCheck />,      inBottomNav: true, match: 'exact' },
+  { id: 'subscriptions', label: 'Abonnements',    href: '/admin?tab=subscriptions',icon: <IcoCard />,                          match: 'exact' },
+  { id: 'reports',       label: 'Signalements',   href: '/admin?tab=reports',      icon: <IcoFlag />,                          match: 'exact' },
+  { id: 'claims',        label: 'Revendications', href: '/admin?tab=claims',       icon: <IcoKey />,                           match: 'exact' },
+  { id: 'submissions',   label: 'Contributions',  href: '/admin?tab=submissions',  icon: <IcoPlus />,                          match: 'exact' },
+  { id: 'monetization',  label: 'Monétisation',   href: '/admin?tab=monetization', icon: <IcoCash />,                          match: 'exact' },
+  { id: 'transactions',  label: 'Transactions',   href: '/admin?tab=transactions', icon: <IcoWallet />,                        match: 'exact' },
+  { id: 'reservations',  label: 'Réservations',   href: '/admin?tab=reservations', icon: <IcoCalendar />,                      match: 'exact' },
+  { id: 'marketing',     label: 'Marketing',      href: '/admin?tab=marketing',    icon: <IcoMegaphone />,                     match: 'exact' },
+  { id: 'security',      label: 'Sécurité',       href: '/admin?tab=security',     icon: <IcoShield />,                        match: 'exact' },
+  { id: 'settings',      label: 'Paramètres',     href: '/admin?tab=settings',     icon: <IcoGear />,                          match: 'exact' },
 ];
 
 // Le modérateur ne voit qu'un seul onglet — c'est le seul outil dont il dispose.
