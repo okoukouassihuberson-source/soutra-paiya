@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { ThemeProvider, useTheme } from '@/lib/theme';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 function RootNav() {
   const { session, loading } = useAuth();
@@ -36,10 +37,12 @@ function RootNav() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <RootNav />
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary zone="root">
+      <ThemeProvider>
+        <AuthProvider>
+          <RootNav />
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

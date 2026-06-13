@@ -17,10 +17,38 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { buildPaymentQr, parsePaymentQr } from '@/lib/qr';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 type Mode = 'scan' | 'myqr';
 
-export default function Scan() {
+/**
+ * Écran QR de paiement Soutra-Playce.
+ *
+ * Historique : avant correctif, `react-native-svg` était absent du
+ * package.json alors que `react-native-qrcode-svg` (utilisé ici pour
+ * afficher "Mon QR") en a besoin comme peer dep. Résultat : un crash JS
+ * silencieux au mount de l'écran → page blanche.
+ *
+ * Correctif appliqué :
+ *   1. `react-native-svg` ajouté au package.json
+ *   2. ErrorBoundary local qui affiche un fallback lisible au lieu d'un blank
+ *      si une erreur survient sur ce sous-arbre (caméra, SVG, navigation…).
+ *   3. Try/catch sur tout le pipeline scan (parse → validation → navigation)
+ *      pour qu'aucune exception ne fasse crasher l'UI.
+ *   4. Logs détaillés à chaque étape clé.
+ */
+export default function ScanRoute() {
+  return (
+    <ErrorBoundary
+      zone="scan"
+      fallbackMessage="Impossible d'ouvrir le scanner QR. Veuillez réessayer."
+    >
+      <Scan />
+    </ErrorBoundary>
+  );
+}
+
+function Scan() {
   const router = useRouter();
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>('scan');
@@ -31,15 +59,32 @@ export default function Scan() {
   const myPhone = user?.phone ? `+${user.phone.replace(/^\+/, '')}` : '';
 
   useEffect(() => {
+    console.log('[QR Scanner] Screen mounted, mode =', mode);
+    return () => {
+      console.log('[QR Scanner] Screen unmounted');
+    };
+    // log au premier mount uniquement
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
     (async () => {
       if (!user?.id) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (mounted) setMyName((data as any)?.full_name || '');
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (error) {
+          console.warn('[QR Scanner] profile load error:', error.message);
+          return;
+        }
+        if (mounted) setMyName((data as any)?.full_name || '');
+      } catch (err) {
+        console.error('[QR Scanner] profile load exception:', err);
+      }
     })();
     return () => {
       mounted = false;
@@ -49,37 +94,52 @@ export default function Scan() {
   const handleScan = (result: { data: string }) => {
     if (scanned) return;
     setScanned(true);
+    console.log('[QR Scanner] QR Detected');
+    console.log('[QR Scanner] QR Data:', result?.data?.slice(0, 200));
 
-    const qr = parsePaymentQr(result.data);
-    if (!qr) {
+    try {
+      const qr = parsePaymentQr(result.data);
+      if (!qr) {
+        console.log('[QR Scanner] QR rejected: unrecognized format');
+        Alert.alert(
+          'QR non reconnu',
+          "Ce code n'est pas un QR de paiement Soutra-Playce.",
+          [
+            { text: 'Réessayer', onPress: () => setScanned(false) },
+            { text: 'Annuler', style: 'cancel', onPress: () => router.back() },
+          ],
+        );
+        return;
+      }
+      if (qr.phone === myPhone) {
+        console.log('[QR Scanner] QR rejected: self-payment');
+        Alert.alert('Ton propre QR', 'Tu ne peux pas te payer toi-même.', [
+          { text: 'OK', onPress: () => setScanned(false) },
+        ]);
+        return;
+      }
+
+      // QR valide : on ouvre l'écran Envoyer pré-rempli.
+      console.log('[QR Scanner] Navigation Success → /send with phone', qr.phone);
+      router.replace({
+        pathname: '/send',
+        params: {
+          phone: qr.phone,
+          ...(qr.amount ? { amount: String(qr.amount) } : {}),
+        },
+      });
+    } catch (err) {
+      console.error('[QR Scanner] handleScan exception:', err);
       Alert.alert(
-        'QR non reconnu',
-        "Ce code n'est pas un QR de paiement Soutra-Playce.",
-        [
-          { text: 'Réessayer', onPress: () => setScanned(false) },
-          { text: 'Annuler', style: 'cancel', onPress: () => router.back() },
-        ],
+        'Erreur',
+        "Impossible de traiter ce QR code. Réessaie.",
+        [{ text: 'OK', onPress: () => setScanned(false) }],
       );
-      return;
     }
-    if (qr.phone === myPhone) {
-      Alert.alert('Ton propre QR', 'Tu ne peux pas te payer toi-même.', [
-        { text: 'OK', onPress: () => setScanned(false) },
-      ]);
-      return;
-    }
-
-    // QR valide : on ouvre l'écran Envoyer pré-rempli.
-    router.replace({
-      pathname: '/send',
-      params: {
-        phone: qr.phone,
-        ...(qr.amount ? { amount: String(qr.amount) } : {}),
-      },
-    });
   };
 
   const switchMode = (m: Mode) => {
+    console.log('[QR Scanner] switch mode →', m);
     setScanned(false);
     setMode(m);
   };
@@ -145,7 +205,21 @@ function ScanArea({
         <Text style={s.permText}>
           Autorise la caméra pour scanner les QR codes de paiement.
         </Text>
-        <Pressable style={s.permBtn} onPress={requestPermission}>
+        <Pressable
+          style={s.permBtn}
+          onPress={() => {
+            console.log('[QR Scanner] Requesting camera permission');
+            try {
+              requestPermission();
+            } catch (err) {
+              console.error('[QR Scanner] requestPermission exception:', err);
+              Alert.alert(
+                'Erreur',
+                "Impossible de demander la permission caméra. Ouvre les réglages système.",
+              );
+            }
+          }}
+        >
           <Text style={s.permBtnText}>Autoriser la caméra</Text>
         </Pressable>
       </View>
@@ -185,11 +259,25 @@ function MyQrArea({ phone, name }: { phone: string; name: string }) {
       </View>
     );
   }
+  // Construit la charge utile une seule fois — si elle est invalide, on log
+  // mais on ne crashe pas l'écran (ErrorBoundary couvrirait une exception
+  // sur QRCode, mais buildPaymentQr est pur).
+  let payload = '';
+  try {
+    payload = buildPaymentQr({ phone, name: name || undefined });
+  } catch (err) {
+    console.error('[QR Scanner] buildPaymentQr exception:', err);
+  }
+
   return (
     <View style={s.myQrWrap}>
       <View style={s.qrCard}>
         <View style={s.qrCardInner}>
-          <QRCode value={buildPaymentQr({ phone, name: name || undefined })} size={220} />
+          {payload ? (
+            <QRCode value={payload} size={220} />
+          ) : (
+            <Text style={s.permText}>QR indisponible</Text>
+          )}
         </View>
         {!!name && <Text style={s.qrName}>{name}</Text>}
         <Text style={s.qrPhone}>{phone}</Text>
