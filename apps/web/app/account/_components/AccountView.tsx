@@ -62,6 +62,25 @@ interface Transaction {
   completed_at: string | null;
 }
 
+interface CashbackStats {
+  ok: boolean;
+  window_days: number;
+  total_all_time_xof: number;
+  period_xof: number;
+  period_count: number;
+  avg_per_tx_xof: number;
+  current_plan: {
+    code: PlanCode;
+    display_name: string;
+    cashback_bps: number;
+  };
+  latest: {
+    amount_xof: number;
+    created_at: string;
+    source_amount_xof: string | null;
+  } | null;
+}
+
 const PLAN_STYLES: Record<PlanCode, { ribbon: string; text: string; accent: string }> = {
   free:           { ribbon: 'from-neutral-200 to-neutral-100',    text: 'text-neutral-700', accent: 'text-neutral-500' },
   standard:       { ribbon: 'from-primary-500 to-amber-500',      text: 'text-white',       accent: 'text-primary-100' },
@@ -95,12 +114,14 @@ export function AccountView({
   subscriptionHistory,
   transactionHistory,
   plans,
+  cashbackStats,
 }: {
   profile: Profile | null;
   currentSubscription: CurrentSub | null;
   subscriptionHistory: Subscription[];
   transactionHistory: Transaction[];
   plans: Plan[];
+  cashbackStats: CashbackStats | null;
 }) {
   const router = useRouter();
   const sb = supabaseBrowser();
@@ -330,6 +351,87 @@ export function AccountView({
           </div>
         </section>
 
+        {/* ═══════════ CASHBACK GAGNÉ ═══════════ */}
+        {cashbackStats?.ok && (
+          <section className="mb-12">
+            <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-500">
+              Cashback gagné
+            </h2>
+            <div className="overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-white to-emerald-500/5 dark:from-emerald-500/15 dark:via-neutral-900/80 dark:to-emerald-500/5">
+              <div className="grid grid-cols-1 gap-px bg-emerald-500/10 sm:grid-cols-3">
+                {/* Total all-time */}
+                <div className="bg-white p-6 dark:bg-neutral-900">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    Total accumulé
+                  </p>
+                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-neutral-900 dark:text-white">
+                    {formatXOF(cashbackStats.total_all_time_xof)}
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Crédité dans ton wallet
+                  </p>
+                </div>
+
+                {/* Sur 30j */}
+                <div className="bg-white p-6 dark:bg-neutral-900">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                    {cashbackStats.window_days} derniers jours
+                  </p>
+                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-neutral-900 dark:text-white">
+                    {formatXOF(cashbackStats.period_xof)}
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {cashbackStats.period_count} transaction{cashbackStats.period_count > 1 ? 's' : ''}
+                    {cashbackStats.period_count > 0 && (
+                      <> · {formatXOF(cashbackStats.avg_per_tx_xof)} en moyenne</>
+                    )}
+                  </p>
+                </div>
+
+                {/* Plan actif + taux */}
+                <div className="bg-white p-6 dark:bg-neutral-900">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                    Ton taux
+                  </p>
+                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+                    {(cashbackStats.current_plan.cashback_bps / 100).toFixed(
+                      cashbackStats.current_plan.cashback_bps % 100 === 0 ? 0 : 1,
+                    )} %
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Plan {cashbackStats.current_plan.display_name}
+                    {cashbackStats.current_plan.code === 'free' && (
+                      <>
+                        {' · '}
+                        <Link href="/subscribe" className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
+                          monter à 5 % →
+                        </Link>
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer : dernière transaction cashback */}
+              {cashbackStats.latest && (
+                <div className="flex flex-wrap items-center gap-3 border-t border-emerald-500/10 bg-white/40 px-6 py-3 text-xs text-neutral-600 dark:bg-neutral-950/40 dark:text-neutral-400">
+                  <span>💰</span>
+                  <span>
+                    Dernier cashback :{' '}
+                    <strong className="text-emerald-700 dark:text-emerald-400">
+                      {formatXOF(cashbackStats.latest.amount_xof)}
+                    </strong>
+                    {cashbackStats.latest.source_amount_xof && (
+                      <> sur une dépense de {formatXOF(Number(cashbackStats.latest.source_amount_xof))}</>
+                    )}
+                    , {formatRelativeTime(cashbackStats.latest.created_at)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* ═══════════ HISTORIQUE PAIEMENTS ═══════════ */}
         <section className="mb-12">
           <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-500">
@@ -551,6 +653,18 @@ function formatDateTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function formatRelativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.round(diff / 60000);
+  if (min < 1) return "à l'instant";
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.round(h / 24);
+  if (d < 7) return `il y a ${d} j`;
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 }
 
 function daysUntil(iso: string): string {

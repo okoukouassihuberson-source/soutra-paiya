@@ -34,6 +34,7 @@ export default async function AccountPage() {
     { data: subData },
     { data: subHistory },
     { data: txHistory },
+    { data: cashbackStats },
   ] = await Promise.all([
     (sb as any)
       .from('profiles')
@@ -55,6 +56,9 @@ export default async function AccountPage() {
       .eq('provider', 'paystack')
       .order('created_at', { ascending: false })
       .limit(30),
+    // RPC de la migration 0051. Si non appliquée → retourne null et l'UI
+    // affiche un fallback. Pas de crash.
+    (sb as any).rpc('get_my_cashback_stats', { p_window_days: 30 }),
   ]);
 
   // Récupère le catalogue des plans pour afficher display_name dans
@@ -76,6 +80,7 @@ export default async function AccountPage() {
       subscriptionHistory={subHistory ?? []}
       transactionHistory={subscriptionTxs}
       plans={plans ?? []}
+      cashbackStats={cashbackStats ?? null}
     />
   );
 }
