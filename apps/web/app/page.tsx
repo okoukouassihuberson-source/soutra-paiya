@@ -215,6 +215,135 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
+      {/*  PREMIUM PLANS — teaser vers /subscribe                */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <section id="premium" className="relative overflow-hidden bg-dark py-16 text-white sm:py-20 lg:py-32">
+        {/* Glow gradients (premium look) */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-1/4 left-1/2 h-[700px] w-[1100px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary-500/20 via-purple-500/15 to-amber-500/10 blur-[140px]" />
+          <div className="absolute -bottom-32 right-0 h-[400px] w-[400px] rounded-full bg-purple-500/15 blur-[120px]" />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary-500/30 bg-primary-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-400">
+              <span className="h-1.5 w-1.5 animate-glow-pulse rounded-full bg-primary-500" />
+              Soutra Premium
+            </span>
+            <h2 className="mt-4 font-display text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
+              Choisis ton{' '}
+              <span className="bg-gradient-to-r from-primary-400 via-purple-400 to-amber-400 bg-clip-text text-transparent">
+                expérience
+              </span>
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base text-neutral-300 sm:text-lg">
+              Cashback jusqu&apos;à <strong className="text-white">5 %</strong>, accès VVIP, concierge dédié.
+              Trois formules pour transformer chaque sortie en récompense.
+            </p>
+          </div>
+
+          {/* Teaser cards : Standard / Pro recommandé / Soutra Premium */}
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3">
+            {/* Standard */}
+            <article className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/[0.05]">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500/15 text-primary-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+                </svg>
+              </div>
+              <h3 className="mt-4 font-display text-xl font-black tracking-tight">Standard</h3>
+              <p className="mt-1 text-sm text-neutral-400">Pour profiter au quotidien</p>
+              <div className="mt-5 flex items-baseline gap-1">
+                <span className="font-display text-3xl font-black tracking-tight">2 000</span>
+                <span className="text-sm text-neutral-500">FCFA / mois</span>
+              </div>
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary-500/15 px-2.5 py-1 text-xs font-bold text-primary-300">
+                💰 Cashback 1 %
+              </div>
+              <ul className="mt-5 space-y-2 text-sm text-neutral-300">
+                <li className="flex items-start gap-2"><Check />Notifications prioritaires</li>
+                <li className="flex items-start gap-2"><Check />Alertes personnalisées</li>
+                <li className="flex items-start gap-2"><Check />Offres exclusives</li>
+              </ul>
+            </article>
+
+            {/* Pro — RECOMMANDÉ (scale + dégradé bleu→violet) */}
+            <article className="group relative rounded-3xl border border-blue-500/40 bg-gradient-to-br from-blue-500/15 via-purple-500/10 to-purple-500/15 p-6 ring-2 ring-blue-500/30 backdrop-blur-xl transition md:-mt-4 md:scale-105 hover:border-blue-500/60">
+              <div className="absolute -top-px left-1/2 -translate-x-1/2 rounded-b-2xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-1 text-[11px] font-black uppercase tracking-wider text-white shadow-lg">
+                🔥 Recommandé
+              </div>
+              <div className="mt-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+              </div>
+              <h3 className="mt-4 font-display text-xl font-black tracking-tight">Pro</h3>
+              <p className="mt-1 text-sm text-blue-300">Meilleur rapport qualité/prix</p>
+              <div className="mt-5 flex items-baseline gap-1">
+                <span className="bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text font-display text-3xl font-black tracking-tight text-transparent">5 000</span>
+                <span className="text-sm text-neutral-400">FCFA / mois</span>
+              </div>
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-2.5 py-1 text-xs font-bold text-blue-300">
+                💰 Cashback 2 %
+              </div>
+              <ul className="mt-5 space-y-2 text-sm text-neutral-200">
+                <li className="flex items-start gap-2"><Check tone="blue" />Sans publicité</li>
+                <li className="flex items-start gap-2"><Check tone="blue" />Concierge IA Sia illimité</li>
+                <li className="flex items-start gap-2"><Check tone="blue" />Support prioritaire</li>
+              </ul>
+            </article>
+
+            {/* Soutra Premium — PRESTIGE (noir → or luxe) */}
+            <article className="group relative rounded-3xl border border-amber-500/40 bg-gradient-to-br from-black via-neutral-950 to-black p-6 shadow-2xl shadow-amber-500/10 transition hover:border-amber-500/60">
+              <div className="absolute -top-px left-1/2 -translate-x-1/2 rounded-b-2xl bg-gradient-to-r from-amber-500 to-amber-300 px-4 py-1 text-[11px] font-black uppercase tracking-wider text-neutral-900 shadow-lg">
+                👑 Prestige
+              </div>
+              <div className="mt-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-neutral-900">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 19l3-12 5 4 4-7 5 7 5-4-3 12H2z" />
+                  <line x1="2" y1="22" x2="22" y2="22" />
+                </svg>
+              </div>
+              <h3 className="mt-4 bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text font-display text-xl font-black tracking-tight text-transparent">
+                Soutra Premium
+              </h3>
+              <p className="mt-1 text-sm text-amber-400/80">L&apos;élite Soutra-Playce</p>
+              <div className="mt-5 flex items-baseline gap-1">
+                <span className="bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text font-display text-3xl font-black tracking-tight text-transparent">30 000</span>
+                <span className="text-sm text-neutral-400">FCFA / mois</span>
+              </div>
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-300 ring-1 ring-amber-500/40">
+                💰 Cashback 5 %
+              </div>
+              <ul className="mt-5 space-y-2 text-sm text-neutral-200">
+                <li className="flex items-start gap-2"><Check tone="gold" />Accès VVIP + Réservations prioritaires</li>
+                <li className="flex items-start gap-2"><Check tone="gold" />Concierge humain dédié</li>
+                <li className="flex items-start gap-2"><Check tone="gold" />Invitations privées exclusives</li>
+              </ul>
+            </article>
+          </div>
+
+          {/* CTA principal */}
+          <div className="mt-12 flex flex-col items-center gap-4 text-center">
+            <Link
+              href="/subscribe"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary-500 via-purple-500 to-amber-500 px-8 py-4 font-display text-base font-bold text-white shadow-2xl shadow-primary-500/30 transition hover:scale-[1.02] hover:shadow-primary-500/50 sm:text-lg"
+            >
+              Voir tous les abonnements
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+            <p className="text-xs text-neutral-500">
+              Paiement sécurisé · Orange Money · MTN · Wave · Visa · Mastercard
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════ */}
       {/*  TESTIMONIALS                                          */}
       {/* ═══════════════════════════════════════════════════════ */}
       <section className="bg-light py-16 sm:py-20 lg:py-32">
@@ -390,6 +519,11 @@ export default function HomePage() {
                   <a href="#how" className="transition hover:text-white">
                     Comment ça marche
                   </a>
+                </li>
+                <li>
+                  <Link href="/subscribe" className="transition hover:text-white">
+                    Abonnements Premium
+                  </Link>
                 </li>
                 <li>
                   <a href="#download" className="transition hover:text-white">
@@ -796,5 +930,26 @@ function IconPlayStore() {
     <svg className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
       <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 010 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.802 8.99l-2.303 2.303-8.635-8.635z" />
     </svg>
+  );
+}
+
+/**
+ * Petit puck check utilisé dans la section Premium pour les bullets
+ * d'avantages. Trois tons selon le plan affiché.
+ */
+function Check({ tone = 'orange' }: { tone?: 'orange' | 'blue' | 'gold' }) {
+  const cls =
+    tone === 'blue'
+      ? 'bg-gradient-to-br from-blue-500 to-purple-600'
+      : tone === 'gold'
+      ? 'bg-gradient-to-br from-amber-400 to-amber-600'
+      : 'bg-primary-500/20';
+  const icon = tone === 'orange' ? 'text-primary-400' : 'text-white';
+  return (
+    <span className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${cls}`}>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className={icon}>
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    </span>
   );
 }

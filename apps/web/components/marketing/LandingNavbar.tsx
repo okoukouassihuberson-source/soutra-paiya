@@ -74,6 +74,15 @@ export function LandingNavbar() {
             <a href="#features" className="text-sm text-neutral-400 transition hover:text-white">
               Fonctionnalités
             </a>
+            <Link
+              href="/subscribe"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-400 transition hover:text-primary-300"
+            >
+              Premium
+              <span className="rounded-full bg-gradient-to-r from-amber-500/20 to-amber-300/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300 ring-1 ring-amber-500/30">
+                Nouveau
+              </span>
+            </Link>
             <Link href="/pro" className="text-sm text-neutral-400 transition hover:text-white">
               Espace Pro
             </Link>
@@ -139,18 +148,28 @@ export function LandingNavbar() {
           >
             <ul className="space-y-1">
               {[
-                { href: '#how', label: 'Comment ça marche' },
-                { href: '#features', label: 'Fonctionnalités' },
-                { href: '/pro', label: 'Espace Pro' },
-                { href: '/login', label: 'Se connecter' },
+                { href: '#how', label: 'Comment ça marche', accent: false },
+                { href: '#features', label: 'Fonctionnalités', accent: false },
+                { href: '/subscribe', label: 'Premium', accent: true },
+                { href: '/pro', label: 'Espace Pro', accent: false },
+                { href: '/login', label: 'Se connecter', accent: false },
               ].map((item) => (
                 <li key={item.href}>
                   <a
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className="block rounded-xl px-4 py-3 text-base font-semibold text-neutral-200 transition hover:bg-white/5 hover:text-white"
+                    className={
+                      item.accent
+                        ? 'flex items-center justify-between rounded-xl bg-gradient-to-r from-primary-500/10 via-purple-500/5 to-amber-500/10 px-4 py-3 text-base font-bold text-primary-300 ring-1 ring-primary-500/20 transition hover:from-primary-500/15'
+                        : 'block rounded-xl px-4 py-3 text-base font-semibold text-neutral-200 transition hover:bg-white/5 hover:text-white'
+                    }
                   >
                     {item.label}
+                    {item.accent && (
+                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-300 ring-1 ring-amber-500/30">
+                        Nouveau
+                      </span>
+                    )}
                   </a>
                 </li>
               ))}
