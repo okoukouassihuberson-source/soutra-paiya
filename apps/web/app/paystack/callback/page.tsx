@@ -1,39 +1,153 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { supabaseBrowser } from '@/lib/supabase';
 
-// Page de retour après un paiement Paystack. Elle redirige immédiatement vers
-// l'application mobile via le deep link soutrapaiya://, ce qui referme le
-// navigateur in-app ouvert par expo-web-browser. L'UI ci-dessous n'est qu'un
-// filet de sécurité si la redirection automatique n'aboutit pas.
+/**
+ * Page de retour après un paiement Paystack.
+ *
+ * Deux flows distincts détectés via le préfixe de la `reference` :
+ *   • `sp-sub-…`   → paiement d'un abonnement depuis /subscribe (web).
+ *     On appelle paystack-verify pour finaliser, puis redirect vers
+ *     /subscribe?status=success|failed avec toast.
+ *   • toute autre → paiement mobile (recharge wallet, acompte réservation).
+ *     On redirige vers le deep link soutrapaiya:// pour ré-ouvrir l'app.
+ */
 export default function PaystackCallbackPage() {
+  return (
+    <Suspense>
+      <CallbackInner />
+    </Suspense>
+  );
+}
+
+function CallbackInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const sb = supabaseBrowser();
+  const [stage, setStage] = useState<'verifying' | 'success' | 'failed' | 'mobile'>(
+    'verifying',
+  );
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deepLink, setDeepLink] = useState('soutrapaiya://paystack');
 
   useEffect(() => {
+    const reference = searchParams?.get('reference') || searchParams?.get('trxref');
+
+    // Pas de reference → on traite comme mobile (filet de sécurité).
+    if (!reference) {
+      setStage('mobile');
+      const target = `soutrapaiya://paystack${window.location.search}`;
+      setDeepLink(target);
+      window.location.href = target;
+      return;
+    }
+
+    // Subscription web : préfixe `sp-sub-`.
+    if (reference.startsWith('sp-sub-')) {
+      (async () => {
+        try {
+          const { data, error } = await (sb.functions as any).invoke('paystack-verify', {
+            body: { reference },
+          });
+          if (error) {
+            setErrorMsg(error.message || 'Erreur de vérification');
+            setStage('failed');
+            window.setTimeout(() => router.replace('/subscribe?status=failed'), 1500);
+            return;
+          }
+          const status = (data as any)?.status;
+          if (status === 'success') {
+            setStage('success');
+            window.setTimeout(() => router.replace('/subscribe?status=success'), 1200);
+          } else if (status === 'pending') {
+            // Encore pending : l'user devra rafraîchir. On le renvoie quand même.
+            setStage('success');
+            window.setTimeout(() => router.replace('/subscribe?status=pending'), 1500);
+          } else {
+            setStage('failed');
+            window.setTimeout(() => router.replace('/subscribe?status=failed'), 1500);
+          }
+        } catch (err) {
+          setErrorMsg(err instanceof Error ? err.message : 'Erreur inattendue');
+          setStage('failed');
+          window.setTimeout(() => router.replace('/subscribe?status=failed'), 1500);
+        }
+      })();
+      return;
+    }
+
+    // Sinon : flow mobile classique → deep link.
+    setStage('mobile');
     const target = `soutrapaiya://paystack${window.location.search}`;
     setDeepLink(target);
     window.location.href = target;
-  }, []);
+  }, [searchParams, sb, router]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-light px-6 text-center">
-      <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow-lg">
-        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-3xl">
-          ✅
-        </div>
-        <h1 className="font-display text-xl font-bold text-dark">
-          Paiement terminé
-        </h1>
-        <p className="mt-2 text-sm text-neutral-600">
-          Tu peux retourner dans l&apos;application Soutra-Playce. Si rien ne se
-          passe automatiquement, touche le bouton ci-dessous.
-        </p>
-        <a
-          href={deepLink}
-          className="mt-6 inline-block w-full rounded-lg bg-primary-500 px-4 py-3 font-semibold text-white"
-        >
-          Rouvrir l&apos;application
-        </a>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-neutral-50 px-6 text-center dark:bg-neutral-950">
+      <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-8 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
+        {stage === 'verifying' && (
+          <>
+            <div className="mx-auto mb-5 h-12 w-12 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500" />
+            <h1 className="font-display text-xl font-bold text-neutral-900 dark:text-white">
+              Vérification du paiement…
+            </h1>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              Quelques secondes seulement.
+            </p>
+          </>
+        )}
+
+        {stage === 'success' && (
+          <>
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-3xl text-emerald-500">
+              ✓
+            </div>
+            <h1 className="font-display text-xl font-bold text-neutral-900 dark:text-white">
+              Paiement confirmé
+            </h1>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              Ton abonnement est activé. Redirection en cours…
+            </p>
+          </>
+        )}
+
+        {stage === 'failed' && (
+          <>
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15 text-3xl text-red-500">
+              ✗
+            </div>
+            <h1 className="font-display text-xl font-bold text-neutral-900 dark:text-white">
+              Paiement non confirmé
+            </h1>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              {errorMsg || 'La transaction n\'a pas été validée. Tu peux réessayer.'}
+            </p>
+          </>
+        )}
+
+        {stage === 'mobile' && (
+          <>
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary-500/15 text-3xl text-primary-500">
+              ✓
+            </div>
+            <h1 className="font-display text-xl font-bold text-neutral-900 dark:text-white">
+              Paiement terminé
+            </h1>
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              Tu peux retourner dans l&apos;application Soutra-Playce. Si rien ne
+              se passe, touche le bouton ci-dessous.
+            </p>
+            <a
+              href={deepLink}
+              className="mt-6 inline-block w-full rounded-2xl bg-primary-500 px-4 py-3 font-semibold text-white shadow-lg shadow-primary-500/30"
+            >
+              Rouvrir l&apos;application
+            </a>
+          </>
+        )}
       </div>
     </main>
   );

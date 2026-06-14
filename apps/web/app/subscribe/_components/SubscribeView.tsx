@@ -134,7 +134,29 @@ export function SubscribeView({
     }).then(({ error }: any) => {
       if (error) console.warn('[subscribe] track view:', error.message);
     });
-  }, [sb]);
+
+    // Toast au retour du callback Paystack (success / failed / pending).
+    // L'URL contient ?status=… ajouté par /paystack/callback.
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('status');
+      if (status === 'success') {
+        setToast({ msg: 'Abonnement activé ✨', ok: true });
+        window.setTimeout(() => setToast(null), 4000);
+        // Nettoie l'URL pour ne pas re-afficher au reload.
+        window.history.replaceState({}, '', '/subscribe');
+        router.refresh();
+      } else if (status === 'failed') {
+        setToast({ msg: 'Paiement non validé. Réessaye quand tu veux.', ok: false });
+        window.setTimeout(() => setToast(null), 4000);
+        window.history.replaceState({}, '', '/subscribe');
+      } else if (status === 'pending') {
+        setToast({ msg: 'Paiement en cours de validation… rafraîchis dans 1 min.', ok: true });
+        window.setTimeout(() => setToast(null), 5000);
+        window.history.replaceState({}, '', '/subscribe');
+      }
+    }
+  }, [sb, router]);
 
   const flash = useCallback((msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -167,18 +189,37 @@ export function SubscribeView({
       router.push('/login');
       return;
     }
-    const { data, error } = await (sb.rpc as any)('subscribe_to_plan_stub', {
-      p_plan_code: plan.code,
-      p_billing_period: billing,
+    // Edge Function paystack-subscribe :
+    //   • plan free → insert direct subscription, retourne {free: true}
+    //   • plan payant → crée tx pending + retourne authorization_url Paystack
+    const { data, error } = await (sb.functions as any).invoke('paystack-subscribe', {
+      body: { plan_code: plan.code, billing_period: billing },
     });
+
     if (error) {
       flash(error.message || 'Souscription impossible', false);
       return;
     }
-    flash(`Abonnement ${plan.display_name} activé ✨`);
-    setModalPlan(null);
-    router.refresh();
-    void data;
+    const result = data as {
+      ok: boolean;
+      free: boolean;
+      authorization_url: string | null;
+      redirect_url?: string;
+    };
+
+    if (result.free) {
+      flash(`Abonnement ${plan.display_name} activé ✨`);
+      setModalPlan(null);
+      router.refresh();
+      return;
+    }
+    if (result.authorization_url) {
+      // Redirection vers Paystack — l'user paie sur leur UI (carte ou
+      // mobile money). Au retour, /paystack/callback nous reprend.
+      window.location.href = result.authorization_url;
+      return;
+    }
+    flash('Réponse inattendue du fournisseur de paiement', false);
   }, [sb, billing, flash, router]);
 
   const currentPlanCode = currentSubscription?.plan?.code ?? 'free';
