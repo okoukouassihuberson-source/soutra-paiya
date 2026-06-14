@@ -170,7 +170,133 @@ async function buildNotifications(
     return out;
   }
 
+  // ──────────────────────────────────────────────────────────────────────
+  //  ABONNEMENTS
+  // ──────────────────────────────────────────────────────────────────────
+
+  // Insert d'un nouvel abonnement actif (paiement Paystack confirmé).
+  // Filtre miroir du trigger SQL : status='active' et plan != free.
+  if (table === "subscriptions" && !oldRecord) {
+    const r = record as {
+      id?: string;
+      user_id?: string;
+      plan_code?: string;
+      status?: string;
+      billing_period?: string;
+      current_period_end?: string;
+    };
+    if (r.status !== "active" || r.plan_code === "free" || !r.user_id) return out;
+    const planName = await getPlanDisplayName(svc, r.plan_code);
+    const periodLabel = r.billing_period === "yearly" ? "annuel" : "mensuel";
+    out.push({
+      user_id: r.user_id,
+      title: `Bienvenue dans ${planName} 🎉`,
+      body: `Ton abonnement ${planName} (${periodLabel}) est activé. Profite de tes avantages dès maintenant !`,
+      data: { route: "/account", kind: "subscribe_success" },
+    });
+    return out;
+  }
+
+  // UPDATE d'une subscription : on notifie sur résiliation (effective ou
+  // programmée) et sur réactivation.
+  if (table === "subscriptions" && oldRecord) {
+    const r = record as {
+      id?: string;
+      user_id?: string;
+      plan_code?: string;
+      status?: string;
+      cancel_at_period_end?: boolean;
+      current_period_end?: string;
+    };
+    const old = oldRecord as { status?: string; cancel_at_period_end?: boolean };
+    if (!r.user_id) return out;
+    const planName = await getPlanDisplayName(svc, r.plan_code);
+    const endDate = r.current_period_end
+      ? new Date(r.current_period_end).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+      : "";
+
+    if (r.status === "cancelled" && old.status !== "cancelled") {
+      out.push({
+        user_id: r.user_id,
+        title: "Abonnement résilié",
+        body: `Ton abonnement ${planName} a été résilié. Tu peux te réabonner à tout moment.`,
+        data: { route: "/subscribe", kind: "cancelled" },
+      });
+      return out;
+    }
+
+    if (r.cancel_at_period_end === true && old.cancel_at_period_end !== true && r.status === "active") {
+      out.push({
+        user_id: r.user_id,
+        title: "Résiliation programmée",
+        body: `Ton abonnement ${planName} restera actif jusqu'au ${endDate}.`,
+        data: { route: "/account", kind: "cancel_scheduled" },
+      });
+      return out;
+    }
+
+    if (r.cancel_at_period_end === false && old.cancel_at_period_end === true) {
+      out.push({
+        user_id: r.user_id,
+        title: "Abonnement réactivé ✨",
+        body: `Bon retour ! Ton abonnement ${planName} continue jusqu'au ${endDate}.`,
+        data: { route: "/account", kind: "reactivated" },
+      });
+      return out;
+    }
+    return out;
+  }
+
+  // Payload custom envoyé par l'Edge Function subscription-reminders pour
+  // les rappels J-7 / J-1. La forme est :
+  //   { table: 'subscription_reminder',
+  //     record: { user_id, plan_code, current_period_end, kind: 'expiring_7d'|'expiring_1d' } }
+  if (table === "subscription_reminder") {
+    const r = record as {
+      user_id?: string;
+      plan_code?: string;
+      current_period_end?: string;
+      kind?: string;
+    };
+    if (!r.user_id || !r.kind) return out;
+    const planName = await getPlanDisplayName(svc, r.plan_code);
+    const endDate = r.current_period_end
+      ? new Date(r.current_period_end).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+      : "bientôt";
+
+    if (r.kind === "expiring_7d") {
+      out.push({
+        user_id: r.user_id,
+        title: "Ton abonnement expire dans 7 jours",
+        body: `${planName} se renouvelle le ${endDate}. Garde tes avantages !`,
+        data: { route: "/subscribe", kind: "expiring_7d" },
+      });
+    } else if (r.kind === "expiring_1d") {
+      out.push({
+        user_id: r.user_id,
+        title: "Ton abonnement expire demain ⏰",
+        body: `${planName} se termine le ${endDate}. Renouvelle pour conserver ton cashback.`,
+        data: { route: "/subscribe", kind: "expiring_1d" },
+      });
+    }
+    return out;
+  }
+
   return out;
+}
+
+// Lookup du display_name d'un plan, avec fallback sur le code si manquant.
+async function getPlanDisplayName(
+  svc: ReturnType<typeof serviceClient>,
+  planCode: string | undefined,
+): Promise<string> {
+  if (!planCode) return "Premium";
+  const { data: plan } = await svc
+    .from("subscription_plans")
+    .select("display_name")
+    .eq("code", planCode)
+    .maybeSingle();
+  return (plan as { display_name?: string } | null)?.display_name || "Premium";
 }
 
 Deno.serve(async (req) => {

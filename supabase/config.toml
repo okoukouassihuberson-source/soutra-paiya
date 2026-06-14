@@ -35,3 +35,8 @@ verify_jwt = false
 # ce header avant d'agir -> aucune source publique n'est acceptée.
 [functions.send-push]
 verify_jwt = false
+
+# Cron job daily (pg_cron de la migration 0050 ou cron externe). S'authentifie
+# avec Authorization = Bearer <service_role_key>, vérifié dans le code.
+[functions.subscription-reminders]
+verify_jwt = false
