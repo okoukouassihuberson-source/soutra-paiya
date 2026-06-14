@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase';
 
@@ -253,6 +254,28 @@ export function SubscribeView({
       )}
 
       <main className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
+
+        {/* Bandeau "Mon abonnement" — visible si l'user a déjà un abo actif */}
+        {currentSubscription?.subscription && (
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-500/30 bg-primary-500/5 px-5 py-3 backdrop-blur-xl">
+            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+              Tu es abonné à{' '}
+              <strong className="text-neutral-900 dark:text-white">
+                {currentSubscription.plan?.display_name || currentPlanCode}
+              </strong>
+            </p>
+            <Link
+              href="/account"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-100 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
+            >
+              Gérer mon abonnement
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+          </div>
+        )}
 
         {/* ═══════════ HERO ═══════════ */}
         <section className="mx-auto max-w-3xl text-center">

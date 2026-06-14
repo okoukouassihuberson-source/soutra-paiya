@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
+import { supabaseBrowser } from '@/lib/supabase';
 
 /**
  * Navbar marketing — fixed-top sur dark hero, burger menu mobile.
@@ -17,12 +18,32 @@ import { cn } from '@/lib/cn';
 export function LandingNavbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  // Détection auth côté client : permet de basculer « Se connecter » →
+  // « Mon compte » dans la navbar dès qu'une session existe. SSR safe :
+  // l'état initial est `null` (= inconnu), on rend rien tant qu'on n'a pas
+  // de réponse pour éviter le flash.
+  const [authed, setAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const sb = supabaseBrowser();
+    sb.auth.getSession().then(({ data }) => {
+      if (!cancelled) setAuthed(!!data.session);
+    });
+    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
+      setAuthed(!!session);
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -89,12 +110,25 @@ export function LandingNavbar() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/login"
-              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white sm:block"
-            >
-              Se connecter
-            </Link>
+            {authed ? (
+              <Link
+                href="/account"
+                className="hidden items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white sm:inline-flex"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Mon compte
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden rounded-lg px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white sm:block"
+              >
+                Se connecter
+              </Link>
+            )}
             <a
               href="#download"
               className="hidden rounded-full bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-600 hover:shadow-primary-500/40 sm:inline-flex"
@@ -152,7 +186,9 @@ export function LandingNavbar() {
                 { href: '#features', label: 'Fonctionnalités', accent: false },
                 { href: '/subscribe', label: 'Premium', accent: true },
                 { href: '/pro', label: 'Espace Pro', accent: false },
-                { href: '/login', label: 'Se connecter', accent: false },
+                authed
+                  ? { href: '/account', label: 'Mon compte', accent: false }
+                  : { href: '/login', label: 'Se connecter', accent: false },
               ].map((item) => (
                 <li key={item.href}>
                   <a
