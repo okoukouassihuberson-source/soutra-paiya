@@ -40,3 +40,8 @@ verify_jwt = false
 # avec Authorization = Bearer <service_role_key>, vérifié dans le code.
 [functions.subscription-reminders]
 verify_jwt = false
+
+# Cron job daily de renouvellement Paystack (migration 0052). S'authentifie
+# avec Authorization = Bearer <service_role_key>, vérifié dans le code.
+[functions.paystack-renew-subscriptions]
+verify_jwt = false

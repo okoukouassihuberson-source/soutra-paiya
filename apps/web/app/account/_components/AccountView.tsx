@@ -43,6 +43,13 @@ interface Subscription {
   metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
+  // Migration 0052 — auto-renouvellement Paystack
+  auto_renew?: boolean;
+  last_authorization_code?: string | null;
+  last_card_brand?: string | null;
+  last_card_last4?: string | null;
+  last_renew_attempt_at?: string | null;
+  last_renew_outcome?: string | null;
 }
 
 interface CurrentSub {
@@ -129,6 +136,10 @@ export function AccountView({
   const [cancelling, setCancelling] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  // Toggle auto-renouvellement : on garde un état local pour un toggle
+  // optimiste (UI bascule immédiatement, rollback si la RPC fail).
+  const [autoRenewLocal, setAutoRenewLocal] = useState<boolean | null>(null);
+  const [savingRenew, setSavingRenew] = useState(false);
 
   const flash = useCallback((msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -169,6 +180,32 @@ export function AccountView({
     await sb.auth.signOut();
     router.push('/');
   }, [sb, router]);
+
+  const handleToggleAutoRenew = useCallback(async (next: boolean) => {
+    if (!currentSub) return;
+    setSavingRenew(true);
+    setAutoRenewLocal(next); // optimiste
+    try {
+      const { error } = await (sb.rpc as any)('set_auto_renew', {
+        p_subscription_id: currentSub.id,
+        p_value: next,
+      });
+      if (error) {
+        // Rollback en cas d'erreur
+        setAutoRenewLocal(currentSub.auto_renew ?? true);
+        flash(error.message || 'Modification impossible', false);
+        return;
+      }
+      flash(
+        next
+          ? 'Renouvellement automatique activé'
+          : 'Renouvellement automatique désactivé',
+      );
+      router.refresh();
+    } finally {
+      setSavingRenew(false);
+    }
+  }, [sb, currentSub, flash, router]);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white">
@@ -332,6 +369,17 @@ export function AccountView({
                       </Link>
                     )}
                   </div>
+
+                  {/* Auto-renouvellement (migration 0052) — visible uniquement
+                      pour les plans payants non résiliés. */}
+                  {currentSub.plan_code !== 'free' && !currentSub.cancel_at_period_end && (
+                    <AutoRenewBlock
+                      sub={currentSub}
+                      localValue={autoRenewLocal}
+                      saving={savingRenew}
+                      onChange={handleToggleAutoRenew}
+                    />
+                  )}
                 </>
               ) : (
                 <div className="py-6 text-center">
@@ -604,6 +652,107 @@ export function AccountView({
 /* ─────────────────────────────────────────────────── *
  *  SUB-COMPONENTS                                     *
  * ─────────────────────────────────────────────────── */
+
+/**
+ * Bloc "Renouvellement automatique" (migration 0052).
+ *
+ * Affiche un toggle si une carte est tokenisée (last_authorization_code
+ * présent). Sinon (paiement mobile money via Paystack ou flux stub initial),
+ * explique pourquoi l'auto-renouvellement n'est pas dispo.
+ */
+function AutoRenewBlock({
+  sub,
+  localValue,
+  saving,
+  onChange,
+}: {
+  sub: Subscription;
+  localValue: boolean | null;
+  saving: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  const hasAuthorization = !!sub.last_authorization_code;
+  // L'état effectif : optimiste si défini, sinon la valeur server (default true).
+  const enabled = localValue ?? sub.auto_renew ?? true;
+
+  if (!hasAuthorization) {
+    return (
+      <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-4 dark:border-neutral-800 dark:bg-neutral-950/60">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-200/60 dark:bg-neutral-800">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-500">
+              <path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+              <line x1="1" y1="10" x2="23" y2="10" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+              Renouvellement automatique
+            </p>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-500">
+              Disponible uniquement pour les paiements par carte. Avec Mobile
+              Money, tu reçois un rappel à J-7 et J-1 pour renouveler en 1 clic.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950/60">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+            enabled ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-neutral-200 text-neutral-500 dark:bg-neutral-800'
+          }`}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+              Renouvellement automatique
+            </p>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              {enabled ? (
+                <>Sera prélevé le {formatDate(sub.current_period_end)} sur ta carte</>
+              ) : (
+                <>Tu devras renouveler manuellement</>
+              )}
+              {sub.last_card_brand && sub.last_card_last4 && (
+                <> · <strong className="text-neutral-700 dark:text-neutral-300 capitalize">{sub.last_card_brand}</strong> •••• {sub.last_card_last4}</>
+              )}
+            </p>
+            {sub.last_renew_outcome && sub.last_renew_outcome !== 'success' && (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                Dernière tentative : {sub.last_renew_outcome}
+              </p>
+            )}
+          </div>
+        </div>
+        {/* Switch toggle natif accessible */}
+        <button
+          role="switch"
+          aria-checked={enabled}
+          disabled={saving}
+          onClick={() => onChange(!enabled)}
+          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition disabled:opacity-50 ${
+            enabled ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-700'
+          }`}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${
+              enabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function StatBlock({
   label, value, sub,

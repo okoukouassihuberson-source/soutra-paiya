@@ -68,6 +68,22 @@ export function initializeTransaction(params: InitializeParams) {
   });
 }
 
+// La réponse /verify renvoie aussi l'objet `authorization` quand la carte
+// est réutilisable (reusable=true) — c'est ce qui permet le débit récurrent.
+export interface PaystackAuthorization {
+  authorization_code: string;
+  bin?: string;
+  last4?: string;
+  exp_month?: string;
+  exp_year?: string;
+  channel?: string;        // 'card' | 'mobile_money' | …
+  card_type?: string;
+  brand?: string;          // 'visa', 'master', 'verve'…
+  reusable?: boolean;
+  signature?: string;
+  account_name?: string | null;
+}
+
 export function verifyTransaction(reference: string) {
   return paystackFetch<{
     status: string;
@@ -75,7 +91,37 @@ export function verifyTransaction(reference: string) {
     amount: number;
     currency: string;
     gateway_response: string;
+    authorization?: PaystackAuthorization;
+    customer?: { email?: string; customer_code?: string };
   }>(`/transaction/verify/${encodeURIComponent(reference)}`, { method: "GET" });
+}
+
+// --- Auto-renouvellement (subscription) ------------------------------------
+
+// Déclenche un débit récurrent en utilisant l'authorization_code obtenu lors
+// de la première charge. Marche pour les cartes uniquement (le mobile money
+// Paystack CI n'expose pas reusable=true). Source de vérité : la doc Paystack
+// `/transaction/charge_authorization`.
+export interface ChargeAuthorizationParams {
+  email: string;
+  amount: number;                    // subunit (FCFA × 100)
+  authorization_code: string;
+  currency?: string;
+  reference?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export function chargeAuthorization(params: ChargeAuthorizationParams) {
+  return paystackFetch<{
+    status: string;                  // 'success' | 'failed' | 'abandoned' | …
+    reference: string;
+    amount: number;
+    gateway_response: string;
+    authorization?: PaystackAuthorization;
+  }>("/transaction/charge_authorization", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
 }
 
 // --- Transferts sortants (retrait) ----------------------------------------

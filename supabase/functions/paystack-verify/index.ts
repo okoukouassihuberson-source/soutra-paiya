@@ -54,6 +54,27 @@ Deno.serve(async (req) => {
     const pstatus = verified.data.status; // success | failed | abandoned | ...
 
     if (pstatus === "success") {
+      // Stocker l'authorization Paystack dans la metadata de la tx pour que
+      // le trigger SQL la propage à la subscription (auto-renouvellement,
+      // migration 0052). Reusable=true requis pour charge_authorization.
+      const auth = verified.data.authorization;
+      if (auth && auth.reusable === true && auth.authorization_code) {
+        await svc.rpc("set_transaction_paystack_authorization", {
+          p_reference: reference,
+          p_authorization: {
+            authorization_code: auth.authorization_code,
+            brand: auth.brand ?? null,
+            last4: auth.last4 ?? null,
+            exp_month: auth.exp_month ?? null,
+            exp_year: auth.exp_year ?? null,
+            channel: auth.channel ?? null,
+            reusable: true,
+          },
+        }).then((res: any) => {
+          if (res.error) console.error("[verify] set_authorization:", res.error);
+        });
+      }
+
       const { data: outcome, error } = await svc.rpc("paystack_settle_charge", {
         p_reference: reference,
         p_paid_subunit: verified.data.amount,
