@@ -13,6 +13,7 @@ import { MonetizationTab } from './_components/MonetizationTab';
 import { ModerationTab } from './_components/ModerationTab';
 import { SubscriptionsTab } from './_components/SubscriptionsTab';
 import { CashbackTab } from './_components/CashbackTab';
+import { SubscribersTab } from './_components/SubscribersTab';
 
 // Lazy-load Recharts : sort ~80 kB du bundle initial /admin et ne les charge
 // que si l'utilisateur affiche un onglet contenant des charts. Le static
@@ -33,7 +34,7 @@ const VenueCategoryBar      = dynamic(() => import('./_components/AdminCharts').
 const RevenueByProviderBar  = dynamic(() => import('./_components/AdminCharts').then(m => m.RevenueByProviderBar),  { ssr: false, loading: ChartLoader });
 const UsersByCityBar        = dynamic(() => import('./_components/AdminCharts').then(m => m.UsersByCityBar),        { ssr: false, loading: ChartLoader });
 
-type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'moderation' | 'subscriptions' | 'cashback' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
+type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'moderation' | 'subscriptions' | 'subscribers' | 'cashback' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Vue d\'ensemble', icon: <IcoGrid /> },
@@ -42,6 +43,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'venues', label: 'Établissements', icon: <IcoBuilding /> },
   { id: 'moderation', label: 'Modération Pro', icon: <IcoShield /> },
   { id: 'subscriptions', label: 'Abonnements', icon: <IcoCurrency /> },
+  { id: 'subscribers', label: 'Abonnés', icon: <IcoUsers /> },
   { id: 'cashback', label: 'Cashback', icon: <IcoCurrency /> },
   { id: 'reports', label: 'Signalements', icon: <IcoAlert /> },
   { id: 'claims', label: 'Revendications', icon: <IcoAlert /> },
@@ -116,7 +118,7 @@ function AdminDashboard() {
   // bouton retour navigateur, deep-linking).
   const tabParam = searchParams?.get('tab');
   const tab: Tab = (
-    ['overview', 'analytics', 'users', 'venues', 'moderation', 'subscriptions', 'cashback', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
+    ['overview', 'analytics', 'users', 'venues', 'moderation', 'subscriptions', 'subscribers', 'cashback', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'overview';
   const setTab = useCallback((next: Tab) => {
     router.replace(`/admin?tab=${next}`, { scroll: false });
@@ -539,6 +541,9 @@ function AdminDashboard() {
 
           {/* ═══════════ CASHBACK (analytics) ═══════════ */}
           {tab === 'cashback' && !isModeratorOnly && <CashbackTab />}
+
+          {/* ═══════════ SUBSCRIBERS (vue agrégée par user) ═══════════ */}
+          {tab === 'subscribers' && !isModeratorOnly && <SubscribersTab />}
 
           {/* Les onglets ci-dessous ne sont rendus que pour un admin complet.
               Le modérateur est forcé sur 'moderation' dans le useEffect d'init
