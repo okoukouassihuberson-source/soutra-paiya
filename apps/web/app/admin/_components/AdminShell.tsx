@@ -85,6 +85,7 @@ const NAV_ADMIN: NavItem[] = [
   { id: 'venues',        label: 'Établissements', href: '/admin?tab=venues',       icon: <IcoStore />,      inBottomNav: true, match: 'exact' },
   { id: 'moderation',    label: 'Modération Pro', href: '/admin?tab=moderation',   icon: <IcoCheck />,      inBottomNav: true, match: 'exact' },
   { id: 'subscriptions', label: 'Abonnements',    href: '/admin?tab=subscriptions',icon: <IcoCard />,                          match: 'exact' },
+  { id: 'cashback',      label: 'Cashback',       href: '/admin?tab=cashback',     icon: <IcoCash />,                          match: 'exact' },
   { id: 'reports',       label: 'Signalements',   href: '/admin?tab=reports',      icon: <IcoFlag />,                          match: 'exact' },
   { id: 'claims',        label: 'Revendications', href: '/admin?tab=claims',       icon: <IcoKey />,                           match: 'exact' },
   { id: 'submissions',   label: 'Contributions',  href: '/admin?tab=submissions',  icon: <IcoPlus />,                          match: 'exact' },
