@@ -95,6 +95,9 @@ export function LandingNavbar() {
             <a href="#features" className="text-sm text-neutral-400 transition hover:text-white">
               Fonctionnalités
             </a>
+            <Link href="/cashback" className="text-sm text-neutral-400 transition hover:text-white">
+              Cashback
+            </Link>
             <Link
               href="/subscribe"
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-400 transition hover:text-primary-300"
@@ -184,6 +187,7 @@ export function LandingNavbar() {
               {[
                 { href: '#how', label: 'Comment ça marche', accent: false },
                 { href: '#features', label: 'Fonctionnalités', accent: false },
+                { href: '/cashback', label: 'Cashback', accent: false },
                 { href: '/subscribe', label: 'Premium', accent: true },
                 { href: '/pro', label: 'Espace Pro', accent: false },
                 authed

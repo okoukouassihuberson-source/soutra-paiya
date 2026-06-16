@@ -526,6 +526,11 @@ export default function HomePage() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/cashback" className="transition hover:text-white">
+                    Cashback jusqu&apos;à 5 %
+                  </Link>
+                </li>
+                <li>
                   <a href="#download" className="transition hover:text-white">
                     Télécharger
                   </a>
