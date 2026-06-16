@@ -522,6 +522,24 @@ export function AccountView({
                           {TX_STATUS[tx.status].label}
                         </span>
                       </div>
+                      {/* Facture PDF — visible uniquement pour les paiements
+                          réussis (les autres n'ont pas de facture légitime). */}
+                      {tx.status === 'success' && tx.provider_ref && (
+                        <Link
+                          href={`/account/invoice/${encodeURIComponent(tx.provider_ref)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Télécharger la facture PDF"
+                          title="Télécharger la facture PDF"
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 transition hover:border-primary-500/40 hover:bg-primary-500/5 hover:text-primary-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:border-primary-500/40 dark:hover:text-primary-400"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                          </svg>
+                        </Link>
+                      )}
                     </li>
                   );
                 })}
