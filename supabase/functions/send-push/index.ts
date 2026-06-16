@@ -77,19 +77,57 @@ async function buildNotifications(
   }
 
   if (table === "transactions") {
-    const r = record as { type?: string; user_id?: string; counterparty_id?: string; amount_xof?: number; status?: string };
-    if (r.type !== "transfer" || r.status !== "success" || !r.counterparty_id || !r.user_id) return out;
-    const { data: sender } = await svc
-      .from("profiles")
-      .select("full_name, phone")
-      .eq("id", r.user_id)
-      .maybeSingle();
-    out.push({
-      user_id: r.counterparty_id,
-      title: "Argent reçu 💰",
-      body: `Tu as reçu ${fmtXof(r.amount_xof || 0)} de ${sender?.full_name || sender?.phone || "un contact"}`,
-      data: { route: "/(tabs)/wallet" },
-    });
+    const r = record as {
+      type?: string;
+      user_id?: string;
+      counterparty_id?: string;
+      amount_xof?: number;
+      status?: string;
+      metadata?: Record<string, unknown> | null;
+    };
+
+    // 1) Transfer P2P reçu → "Argent reçu 💰"
+    if (r.type === "transfer" && r.status === "success" && r.counterparty_id && r.user_id) {
+      const { data: sender } = await svc
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", r.user_id)
+        .maybeSingle();
+      out.push({
+        user_id: r.counterparty_id,
+        title: "Argent reçu 💰",
+        body: `Tu as reçu ${fmtXof(r.amount_xof || 0)} de ${sender?.full_name || sender?.phone || "un contact"}`,
+        data: { route: "/(tabs)/wallet" },
+      });
+      return out;
+    }
+
+    // 2) Cashback automatique (migration 0051) → "+X FCFA cashback ✨"
+    //    Le trigger SQL tg_transactions_apply_cashback insère une nouvelle
+    //    tx type='cashback' status='success' juste après chaque paiement
+    //    marchand confirmé. On notifie le bénéficiaire avec le plan source.
+    if (r.type === "cashback" && r.status === "success" && r.user_id) {
+      const planCode = typeof r.metadata?.plan_code === "string"
+        ? (r.metadata!.plan_code as string)
+        : null;
+      const planName = await getPlanDisplayName(svc, planCode ?? undefined);
+      const bps = typeof r.metadata?.cashback_bps === "number"
+        ? (r.metadata!.cashback_bps as number)
+        : null;
+      const rate = bps != null
+        ? `${(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)} %`
+        : null;
+      out.push({
+        user_id: r.user_id,
+        title: `+${fmtXof(r.amount_xof || 0)} cashback ✨`,
+        body: rate
+          ? `Plan ${planName} (${rate}) crédité sur ton wallet.`
+          : `Crédit sur ton wallet — merci pour ta fidélité Soutra-Playce.`,
+        data: { route: "/cashback", kind: "cashback_credit" },
+      });
+      return out;
+    }
+
     return out;
   }
 

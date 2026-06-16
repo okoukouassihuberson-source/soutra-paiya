@@ -140,6 +140,9 @@ export default function Wallet() {
           ))}
         </View>
 
+        {/* Teaser Cashback — lien vers /cashback */}
+        <CashbackTeaser c={c} userId={user?.id} refreshNonce={refreshNonce} />
+
         {/* Transactions récentes */}
         <View style={s.sectionTitleRow}>
           <View style={s.sectionAccent} />
@@ -272,7 +275,12 @@ function TransactionHistory({
 
 function isCredit(tx: Transaction, userId?: string): boolean {
   if (tx.type === 'transfer') return tx.counterparty_id === userId;
-  return tx.type === 'topup' || tx.type === 'refund' || tx.type === 'escrow_release';
+  return (
+    tx.type === 'topup' ||
+    tx.type === 'refund' ||
+    tx.type === 'escrow_release' ||
+    tx.type === 'cashback' // migration 0051 — cashback automatique
+  );
 }
 
 function txMeta(tx: Transaction, userId: string | undefined, c: ColorPalette): { label: string; icon: keyof typeof Ionicons.glyphMap; bg: string; color: string } {
@@ -291,6 +299,7 @@ function txMeta(tx: Transaction, userId: string | undefined, c: ColorPalette): {
     case 'escrow_hold': return { label: 'Séquestre', icon: 'lock-closed', bg: '#e0e7ff', color: '#4f46e5' };
     case 'escrow_release': return { label: 'Libération séquestre', icon: 'lock-open', bg: '#dcfce7', color: '#16a34a' };
     case 'fee': return { label: 'Frais', icon: 'receipt', bg: c.neutral[100], color: c.neutral[600] };
+    case 'cashback': return { label: 'Cashback', icon: 'gift', bg: '#d1fae5', color: '#059669' };
     default: return { label: tx.type, icon: 'help-circle', bg: c.neutral[100], color: c.neutral[600] };
   }
 }
@@ -306,6 +315,72 @@ function relativeDate(iso: string): string {
   const days = Math.floor(h / 24);
   if (days < 7) return `il y a ${days} j`;
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+/**
+ * Teaser cashback en haut de l'écran wallet : 1 ligne compacte, total
+ * all-time + taux du plan actif, tap → /cashback pour l'historique
+ * complet. N'apparaît que si la migration 0051 est appliquée (RPC
+ * get_my_cashback_stats existe) — sinon silently rendu vide.
+ */
+function CashbackTeaser({
+  c, userId, refreshNonce,
+}: { c: ColorPalette; userId?: string; refreshNonce: number }) {
+  const router = useRouter();
+  const s = useMemo(() => makeStyles(c), [c]);
+  const [stats, setStats] = useState<{
+    total: number;
+    rate: string | null;
+    planName: string | null;
+  } | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const { data, error } = await (supabase.rpc as any)('get_my_cashback_stats', {
+        p_window_days: 30,
+      });
+      if (error) {
+        setLoaded(true);
+        return;
+      }
+      const d = data as any;
+      const bps = d?.current_plan?.cashback_bps;
+      setStats({
+        total: Number(d?.total_all_time_xof ?? 0),
+        rate: bps != null
+          ? `${(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)} %`
+          : null,
+        planName: d?.current_plan?.display_name ?? null,
+      });
+      setLoaded(true);
+    })();
+  }, [userId, refreshNonce]);
+
+  // Si la RPC n'est pas dispo ou pas chargé, on ne rend rien (silencieux).
+  if (!loaded || !stats) return null;
+
+  return (
+    <Pressable
+      onPress={() => router.push('/cashback' as any)}
+      style={({ pressed }) => [s.cashbackTeaser, pressed && { opacity: 0.92 }]}
+    >
+      <View style={s.cashbackTeaserIcon}>
+        <Ionicons name="gift" size={20} color="#fff" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={s.cashbackTeaserLabel}>Cashback gagné</Text>
+        <Text style={s.cashbackTeaserAmount}>{formatXOF(stats.total)}</Text>
+        {stats.rate && stats.planName && (
+          <Text style={s.cashbackTeaserSub}>
+            {stats.rate} sur tes paiements · plan {stats.planName}
+          </Text>
+        )}
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={c.success[600]} />
+    </Pressable>
+  );
 }
 
 function makeStyles(c: ColorPalette) {
@@ -339,6 +414,44 @@ function makeStyles(c: ColorPalette) {
     sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.md },
     sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: c.primary[500] },
     sectionTitle: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: c.dark },
+    // ──── Teaser Cashback ────
+    cashbackTeaser: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginHorizontal: spacing.lg,
+      marginTop: spacing.lg,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      backgroundColor: c.success[50],
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.success[100] ?? '#bbf7d0',
+    },
+    cashbackTeaserIcon: {
+      width: 40, height: 40, borderRadius: 20,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: c.success[600],
+    },
+    cashbackTeaserLabel: {
+      fontSize: typography.fontSize.xs,
+      fontWeight: '700',
+      color: c.success[700] ?? '#15803d',
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+    },
+    cashbackTeaserAmount: {
+      marginTop: 2,
+      fontSize: typography.fontSize.lg,
+      fontWeight: '800',
+      color: c.dark,
+      fontVariant: ['tabular-nums'],
+    },
+    cashbackTeaserSub: {
+      marginTop: 2,
+      fontSize: typography.fontSize.xs,
+      color: c.neutral[600],
+    },
     txList: { marginHorizontal: spacing.lg, backgroundColor: c.neutral[50], borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
     txItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: c.neutral[100] },
     txIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
