@@ -174,9 +174,22 @@ Deno.serve(async (req) => {
         currency: "XOF",
         reference,
         callback_url: callbackUrl,
-        // Channels : Paystack expose carte, mobile money (Orange/MTN/Wave
-        // selon numéro), bank et USSD. L'user choisit dans leur UI.
-        channels: ["card", "mobile_money", "bank", "ussd"],
+        // Channels Paystack — forward-compatible :
+        //   • card, mobile_money, bank, ussd : actifs en XOF aujourd'hui
+        //   • qr : actif pour les paiements par scan code Paystack
+        //   • apple_pay, google_pay : actuellement réservés à NGN/USD côté
+        //     Paystack (silencieusement ignorés en XOF). Listés ici pour
+        //     basculer auto dès que Paystack étend le support à XOF/CI.
+        // Référence : https://paystack.com/docs/payments/payment-channels
+        channels: [
+          "card",
+          "mobile_money",
+          "bank",
+          "ussd",
+          "qr",
+          "apple_pay",
+          "google_pay",
+        ],
         metadata: {
           purpose: "subscription",
           user_id: user.id,

@@ -781,11 +781,20 @@ function SubscribeModal({
     });
   }, [sb, plan.code, billing, price]);
 
+  // Liste des moyens de paiement affichés dans le modal. Le choix RÉEL se
+  // fait sur la page Paystack — ici on guide visuellement l'utilisateur.
+  //  • mobile = Orange / MTN / Wave : actifs en CI
+  //  • card = Visa / Mastercard : actifs en CI
+  //  • apple_pay / google_pay : exposés pour quand Paystack étendra le
+  //    support à XOF. Pour l'instant Paystack les ignore en XOF — l'option
+  //    s'affichera sur la page Paystack uniquement si supportée.
   const providers = [
-    { id: 'orange', label: 'Orange Money', icon: '🟠' },
-    { id: 'mtn', label: 'MTN Money', icon: '🟡' },
-    { id: 'wave', label: 'Wave', icon: '🌊' },
-    { id: 'card', label: 'Visa / Mastercard', icon: '💳' },
+    { id: 'orange', label: 'Orange Money', icon: '🟠', note: null },
+    { id: 'mtn',    label: 'MTN Money',    icon: '🟡', note: null },
+    { id: 'wave',   label: 'Wave',         icon: '🌊', note: null },
+    { id: 'card',   label: 'Visa / Mastercard', icon: '💳', note: null },
+    { id: 'apple',  label: 'Apple Pay',    icon: '', note: 'iPhone' },
+    { id: 'gpay',   label: 'Google Pay',   icon: 'G', note: 'Android' },
   ];
 
   return (
@@ -828,6 +837,9 @@ function SubscribeModal({
           <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
             Moyen de paiement
           </p>
+          <p className="mt-1 text-xs text-neutral-500">
+            Tu choisiras précisément sur la page Paystack sécurisée à l&apos;étape suivante.
+          </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {providers.map((p) => (
               <button
@@ -839,8 +851,13 @@ function SubscribeModal({
                     : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300'
                 }`}
               >
-                <span className="text-lg">{p.icon}</span>
-                <span className="truncate">{p.label}</span>
+                <span className="text-lg leading-none">{p.icon}</span>
+                <span className="min-w-0 flex-1 truncate">{p.label}</span>
+                {p.note && (
+                  <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                    {p.note}
+                  </span>
+                )}
               </button>
             ))}
           </div>
