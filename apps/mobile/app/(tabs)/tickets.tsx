@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, RefreshControl, Alert } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -168,6 +169,10 @@ export default function Tickets() {
   );
 }
 
+// URL de base pour les tickets PDF (route web /reservations/[id]/ticket).
+// Peut être surchargée via app.config extra.webBaseUrl si besoin.
+const WEB_BASE_URL = 'https://soutra-playce.vercel.app';
+
 function openDetail(r: Reservation, c: ColorPalette) {
   Alert.alert(
     r.venue?.name ?? 'Réservation',
@@ -175,8 +180,39 @@ function openDetail(r: Reservation, c: ColorPalette) {
     `Date : ${new Date(r.date_time).toLocaleString('fr-FR')}\n` +
     `Personnes : ${r.party_size}\n` +
     `Dépôt : ${formatXOF(r.deposit_xof)}\n` +
-    `QR : ${r.qr_code.slice(0, 8)}…`
+    `QR : ${r.qr_code.slice(0, 8)}…`,
+    [
+      {
+        text: 'Télécharger le ticket PDF',
+        onPress: () => openTicketPdf(r.id),
+      },
+      { text: 'Fermer', style: 'cancel' },
+    ],
   );
+}
+
+/**
+ * Ouvre la page web /reservations/[id]/ticket dans un navigateur in-app
+ * (expo-web-browser). La page web déclenche automatiquement window.print()
+ * → l'utilisateur peut "Enregistrer en PDF" via la dialog navigateur.
+ *
+ * Auth : la session Supabase web est différente de celle du mobile, donc
+ * l'utilisateur devra se reconnecter en web s'il ne l'est pas déjà. Pour
+ * un flux 100 % offline, basculer plus tard sur expo-print + génération
+ * locale du ticket.
+ */
+async function openTicketPdf(reservationId: string) {
+  const url = `${WEB_BASE_URL}/reservations/${reservationId}/ticket`;
+  try {
+    await WebBrowser.openBrowserAsync(url, {
+      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+      controlsColor: '#FF6B1A',
+      toolbarColor: '#0E1116',
+    });
+  } catch (err) {
+    console.error('[ticket-pdf] openBrowserAsync error:', err);
+    Alert.alert('Erreur', 'Impossible d\'ouvrir le ticket. Réessaie plus tard.');
+  }
 }
 
 function ReservationCard({ c, reservation, onPress, muted }: { c: ColorPalette; reservation: Reservation; onPress: () => void; muted?: boolean }) {
