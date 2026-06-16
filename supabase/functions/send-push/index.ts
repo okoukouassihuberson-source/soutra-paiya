@@ -323,6 +323,161 @@ async function buildNotifications(
   return out;
 }
 
+/* ────────────────────────────────────────────────────────────────────── *
+ *  EMAILS — parallèle à buildNotifications, dispatch sur le même payload.
+ *  Skip silencieux si RESEND_API_KEY absente.
+ * ────────────────────────────────────────────────────────────────────── */
+
+interface EmailJob {
+  user_id: string;
+  subject: string;
+  html: string;
+  // Pour anti-doublon via subscription_notifications.
+  dedupe_kind?: "subscribe_success";
+  dedupe_subscription_id?: string;
+}
+
+async function buildEmails(
+  svc: ReturnType<typeof serviceClient>,
+  table: string,
+  record: Record<string, unknown>,
+  oldRecord: Record<string, unknown> | null,
+): Promise<EmailJob[]> {
+  const out: EmailJob[] = [];
+
+  // INSERT subscriptions avec status=active et plan != free → email
+  // de confirmation de souscription.
+  if (table === "subscriptions" && !oldRecord) {
+    const r = record as {
+      id?: string;
+      user_id?: string;
+      plan_code?: string;
+      status?: string;
+      billing_period?: string;
+      current_period_end?: string;
+      metadata?: { paid_amount_xof?: number } | null;
+    };
+    if (r.status !== "active" || r.plan_code === "free" || !r.user_id || !r.id) {
+      return out;
+    }
+    const planName = await getPlanDisplayName(svc, r.plan_code);
+    // Récupère le montant payé depuis la transaction Paystack associée
+    // (metadata.paid_amount_xof posée par paystack_settle_subscription).
+    const paidXof = Number(r.metadata?.paid_amount_xof ?? 0);
+    const endIso = r.current_period_end ?? null;
+
+    out.push({
+      user_id: r.user_id,
+      subject: `Bienvenue dans ${planName} — Confirmation de paiement`,
+      html: renderSubscribeSuccessEmail({
+        planName,
+        billingPeriod: r.billing_period ?? "monthly",
+        paidXof,
+        currentPeriodEnd: endIso,
+      }),
+      dedupe_kind: "subscribe_success",
+      dedupe_subscription_id: r.id,
+    });
+    return out;
+  }
+
+  return out;
+}
+
+const fmtFr = (iso: string) =>
+  new Date(iso).toLocaleDateString("fr-FR", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+
+function renderSubscribeSuccessEmail(p: {
+  planName: string;
+  billingPeriod: string;
+  paidXof: number;
+  currentPeriodEnd: string | null;
+}): string {
+  const periodLabel = p.billingPeriod === "yearly"
+    ? "Annuel (365 jours)"
+    : "Mensuel (30 jours)";
+  const endLine = p.currentPeriodEnd
+    ? `Prochain renouvellement le <strong style="color:#fff;">${fmtFr(p.currentPeriodEnd)}</strong>.`
+    : "";
+  const amountLine = p.paidXof > 0
+    ? `<tr><td style="padding:8px 0;color:#9CA3AF;">Montant payé</td><td style="padding:8px 0;text-align:right;color:#fff;font-weight:700;">${fmtXof(p.paidXof)}</td></tr>`
+    : "";
+  return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Bienvenue dans ${p.planName}</title></head>
+<body style="margin:0;padding:0;background:#0E1116;color:#E5E7EB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0E1116;padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;background:#1A1F26;border-radius:16px;padding:32px;">
+        <tr><td>
+          <h1 style="margin:0 0 8px;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#10b981;">✓ Paiement confirmé</h1>
+          <h2 style="margin:0 0 16px;font-size:24px;font-weight:800;color:#fff;">Bienvenue dans ${p.planName} 🎉</h2>
+          <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#E5E7EB;">
+            Ton abonnement <strong style="color:#fff;">${p.planName}</strong> est activé. Tu peux profiter de tous tes avantages dès maintenant — cashback, accès VVIP, concierge IA et plus.
+          </p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0E1116;border-radius:12px;padding:16px 20px;margin:0 0 24px;font-size:14px;">
+            <tr><td style="padding:8px 0;color:#9CA3AF;">Plan</td><td style="padding:8px 0;text-align:right;color:#fff;font-weight:700;">${p.planName}</td></tr>
+            <tr><td style="padding:8px 0;color:#9CA3AF;">Période</td><td style="padding:8px 0;text-align:right;color:#fff;font-weight:700;">${periodLabel}</td></tr>
+            ${amountLine}
+          </table>
+          <p style="margin:0 0 24px;font-size:14px;line-height:1.5;color:#9CA3AF;">
+            ${endLine}
+          </p>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="https://soutra-playce.vercel.app/account" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#FF6B1A,#E5500D);color:#fff;text-decoration:none;font-weight:700;border-radius:999px;font-size:15px;">
+              Voir mon compte
+            </a>
+          </div>
+          <p style="margin:24px 0 0;font-size:12px;color:#6B7280;text-align:center;">
+            Une question ? Réponds à cet email ou contacte <strong>support@soutra-paiya.com</strong>.
+          </p>
+          <p style="margin:8px 0 0;font-size:11px;color:#6B7280;text-align:center;">
+            Cet email confirme un paiement effectué sur ton compte Soutra-Playce.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function fmtXof(n: number): string {
+  return new Intl.NumberFormat("fr-FR").format(Math.round(n)) + " FCFA";
+}
+
+/* ────────────────────────────────────────────────────────────────────── *
+ *  Resend send helper                                                     *
+ * ────────────────────────────────────────────────────────────────────── */
+
+async function sendResendEmail(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) return { ok: false, error: "RESEND_API_KEY_MISSING" };
+  const from = Deno.env.get("RESEND_FROM")
+    || "Soutra-Playce <noreply@soutra-paiya.com>";
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to: [to], subject, html }),
+    });
+    if (!res.ok) {
+      const errBody = await res.text();
+      return { ok: false, error: `${res.status} ${errBody.slice(0, 200)}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 // Lookup du display_name d'un plan, avec fallback sur le code si manquant.
 async function getPlanDisplayName(
   svc: ReturnType<typeof serviceClient>,
@@ -357,54 +512,106 @@ Deno.serve(async (req) => {
 
   try {
     const svc = serviceClient();
-    const notifs = await buildNotifications(svc, table, record, oldRecord);
-    if (notifs.length === 0) {
+    const [notifs, emails] = await Promise.all([
+      buildNotifications(svc, table, record, oldRecord),
+      buildEmails(svc, table, record, oldRecord),
+    ]);
+
+    if (notifs.length === 0 && emails.length === 0) {
       return jsonResponse({ ignored: true });
     }
 
-    // Récupère les jetons de tous les destinataires.
-    const userIds = Array.from(new Set(notifs.map((n) => n.user_id)));
-    const { data: tokens } = await svc
-      .from("push_tokens")
-      .select("token, user_id")
-      .in("user_id", userIds);
-    if (!tokens || tokens.length === 0) {
-      return jsonResponse({ sent: 0, reason: "no_tokens" });
+    let pushSent = 0;
+    let emailSent = 0;
+
+    // ─────────── PUSH ───────────
+    if (notifs.length > 0) {
+      const userIds = Array.from(new Set(notifs.map((n) => n.user_id)));
+      const { data: tokens } = await svc
+        .from("push_tokens")
+        .select("token, user_id")
+        .in("user_id", userIds);
+
+      if (tokens && tokens.length > 0) {
+        const tokensByUser = new Map<string, string[]>();
+        for (const t of tokens as Array<{ token: string; user_id: string }>) {
+          const arr = tokensByUser.get(t.user_id) || [];
+          arr.push(t.token);
+          tokensByUser.set(t.user_id, arr);
+        }
+        const messages = notifs.flatMap((n) => {
+          const userTokens = tokensByUser.get(n.user_id) || [];
+          return userTokens.map((tok) => ({
+            to: tok,
+            title: n.title,
+            body: n.body.slice(0, 240),
+            sound: "default",
+            priority: "high",
+            data: n.data || {},
+          }));
+        });
+        if (messages.length > 0) {
+          const res = await fetch(EXPO_PUSH_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify(messages),
+          });
+          if (!res.ok) {
+            console.error("[send-push] Expo:", res.status, await res.text());
+          } else {
+            pushSent = messages.length;
+          }
+        }
+      }
     }
 
-    const tokensByUser = new Map<string, string[]>();
-    for (const t of tokens as Array<{ token: string; user_id: string }>) {
-      const arr = tokensByUser.get(t.user_id) || [];
-      arr.push(t.token);
-      tokensByUser.set(t.user_id, arr);
+    // ─────────── EMAILS via Resend ───────────
+    for (const job of emails) {
+      // Anti-doublon : enqueue_subscription_notification (migration 0050)
+      // utilise un UNIQUE INDEX sur (user_id, subscription_id, kind) —
+      // si déjà envoyé, ALREADY_SENT et on skip silencieusement.
+      if (job.dedupe_kind && job.dedupe_subscription_id) {
+        const { data: dedupeRes } = await svc.rpc(
+          "enqueue_subscription_notification",
+          {
+            p_user_id: job.user_id,
+            p_subscription_id: job.dedupe_subscription_id,
+            p_kind: job.dedupe_kind,
+            p_payload: { channel: "email" },
+          },
+        );
+        if ((dedupeRes as { ok?: boolean } | null)?.ok === false) {
+          // Déjà envoyé pour cette subscription — skip.
+          continue;
+        }
+      }
+
+      // Récupère l'email du destinataire.
+      const { data: profile } = await svc
+        .from("profiles")
+        .select("email")
+        .eq("id", job.user_id)
+        .maybeSingle();
+      const email = (profile as { email?: string } | null)?.email;
+      if (!email) {
+        console.log(`[send-push] no email for user ${job.user_id}, skip email`);
+        continue;
+      }
+
+      const result = await sendResendEmail(email, job.subject, job.html);
+      if (result.ok) {
+        emailSent++;
+      } else {
+        console.error(`[send-push] email error for ${job.user_id}:`, result.error);
+      }
     }
 
-    // Construit une liste de messages aplatie (un par token).
-    const messages = notifs.flatMap((n) => {
-      const userTokens = tokensByUser.get(n.user_id) || [];
-      return userTokens.map((tok) => ({
-        to: tok,
-        title: n.title,
-        body: n.body.slice(0, 240), // Expo limite ~240 chars
-        sound: "default",
-        priority: "high",
-        data: n.data || {},
-      }));
+    return jsonResponse({
+      sent: pushSent,
+      email_sent: emailSent,
+      table,
+      resend_configured: !!Deno.env.get("RESEND_API_KEY"),
     });
-
-    if (messages.length === 0) {
-      return jsonResponse({ sent: 0, reason: "no_tokens_for_targets" });
-    }
-
-    const res = await fetch(EXPO_PUSH_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify(messages),
-    });
-    if (!res.ok) {
-      console.error("[send-push] Expo:", res.status, await res.text());
-    }
-    return jsonResponse({ sent: messages.length, table });
   } catch (err) {
     // 200 pour éviter les renvois en boucle du webhook ; l'incident est loggé.
     console.error("[send-push] fatal:", err);
