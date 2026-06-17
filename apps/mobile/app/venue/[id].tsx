@@ -114,6 +114,29 @@ export default function VenueDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
 
+  // Real-time sync (migration 0058) : quand le Pro modifie ses horaires
+  // ou ses infos depuis le dashboard web, on rafraîchit la fiche mobile
+  // sans que l'utilisateur ait à pull-to-refresh.
+  useEffect(() => {
+    if (!id) return;
+    const channel = supabase
+      .channel(`venue-${id}`)
+      .on(
+        'postgres_changes' as any,
+        { event: 'UPDATE', schema: 'public', table: 'venues', filter: `id=eq.${id}` },
+        (payload: any) => {
+          const next = payload?.new;
+          if (next) {
+            setVenue((prev) => (prev ? { ...prev, ...next } as Venue : (next as Venue)));
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      try { (supabase as any).removeChannel(channel); } catch { /* déjà unsubscribed */ }
+    };
+  }, [id]);
+
   const loadVenue = async () => {
     if (!id) {
       console.warn('[venue] no id provided');

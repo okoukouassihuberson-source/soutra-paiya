@@ -71,7 +71,32 @@ const HOURS_DAYS: { k: string; l: string }[] = [
   { k: 'thu', l: 'Jeudi' }, { k: 'fri', l: 'Vendredi' }, { k: 'sat', l: 'Samedi' },
   { k: 'sun', l: 'Dimanche' },
 ];
-const EMPTY_HOURS: Record<string, string> = { mon: '', tue: '', wed: '', thu: '', fri: '', sat: '', sun: '' };
+// Format normalisé attendu par le mobile + la fonction SQL is_venue_open :
+//   Record<DayKey, [openHHMM, closeHHMM]> avec ex. ['12:00','23:00'].
+// Si un jour est fermé, la clé est OMISE (au lieu d'une string "Fermé"). C'est
+// le contrat strict côté lecture mobile.
+type HoursRange = [string, string];
+type HoursMap = Partial<Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', HoursRange>>;
+
+const EMPTY_HOURS: HoursMap = {};
+
+/** Récupère ['HH:MM','HH:MM'] tolérant à un format legacy string "12:00 - 23:00". */
+function normalizeHoursRange(v: unknown): HoursRange | null {
+  if (Array.isArray(v) && v.length >= 2 && typeof v[0] === 'string' && typeof v[1] === 'string') {
+    // Format correct
+    return [v[0], v[1]];
+  }
+  if (typeof v === 'string') {
+    // Format legacy "12:00 - 23:00" → parse côté front pour ne pas attendre la migration DB
+    const m = v.toLowerCase().match(/(\d{1,2})\s*[h:]?\s*(\d{0,2})\s*[-–—→]+\s*(\d{1,2})\s*[h:]?\s*(\d{0,2})/);
+    if (m) {
+      const open  = `${m[1].padStart(2, '0')}:${(m[2] || '00').padStart(2, '0')}`;
+      const close = `${m[3].padStart(2, '0')}:${(m[4] || '00').padStart(2, '0')}`;
+      return [open, close];
+    }
+  }
+  return null;
+}
 const EMPTY_SOCIALS = { instagram: '', facebook: '', tiktok: '' };
 const AMENITY_SUGGESTIONS = ['Wifi', 'Parking', 'Climatisation', 'Terrasse', 'Privatisable', 'Karaoké', 'Écran géant', 'Piscine'];
 const AMBIANCE_SUGGESTIONS = ['VIP', 'Chill', 'Familial', 'Festif', 'Romantique', 'Branché'];
@@ -83,7 +108,17 @@ function vxFromVenue(v: any) {
     email: v?.email || '',
     district: v?.district || '',
     price: v?.avg_price_xof ? String(v.avg_price_xof) : '',
-    hours: { ...EMPTY_HOURS, ...(v?.opening_hours || {}) } as Record<string, string>,
+    hours: ((): HoursMap => {
+      // Conversion défensive : on lit ce qu'il y a en DB (peut être legacy
+      // string ou array correct) et on normalise vers le bon format.
+      const out: HoursMap = {};
+      const raw = (v?.opening_hours || {}) as Record<string, unknown>;
+      for (const day of ['mon','tue','wed','thu','fri','sat','sun'] as const) {
+        const range = normalizeHoursRange(raw[day]);
+        if (range) out[day] = range;
+      }
+      return out;
+    })(),
     amenities: (v?.amenities || []) as string[],
     ambiance: (v?.ambiance || []) as string[],
     socials: { ...EMPTY_SOCIALS, ...(v?.socials || {}) },
@@ -1591,18 +1626,114 @@ function ProDashboard() {
                     </div>
                   </div>
 
-                  {/* Horaires d'ouverture */}
+                  {/* Horaires d'ouverture
+                      Stockage cohérent mobile/SQL : Record<DayKey, [open, close]>
+                      sans clé si fermé. Lecture mobile : hoursHelpers.computeOpenStatus. */}
                   <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6">
-                    <h3 className="mb-4 font-display text-lg font-bold text-dark">Horaires d&apos;ouverture</h3>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {HOURS_DAYS.map((d) => (
-                        <div key={d.k} className="flex items-center gap-3">
-                          <span className="w-24 shrink-0 text-sm text-neutral-500">{d.l}</span>
-                          <input value={vx.hours[d.k] || ''} onChange={(e) => setVx((p) => ({ ...p, hours: { ...p.hours, [d.k]: e.target.value } }))}
-                            placeholder="12:00 - 23:00 / Fermé"
-                            className="min-w-0 flex-1 rounded-xl border border-neutral-200 px-3 py-2 text-sm text-dark transition focus:border-primary-500 focus:outline-none" />
-                        </div>
-                      ))}
+                    <h3 className="mb-1 font-display text-lg font-bold text-dark">Horaires d&apos;ouverture</h3>
+                    <p className="mb-5 text-xs text-neutral-500">
+                      Pour les fermetures après minuit (ex. 17h → 02h), saisis 02:00 en heure de fermeture. La fonction « Ouvert maintenant » sur mobile gère le wrap automatiquement.
+                    </p>
+                    <div className="grid gap-3">
+                      {HOURS_DAYS.map((d) => {
+                        const dayKey = d.k as keyof HoursMap;
+                        const range = vx.hours[dayKey];
+                        const open  = range?.[0] || '';
+                        const close = range?.[1] || '';
+                        const isClosed = !range;
+
+                        const setRange = (next: HoursRange | null) => {
+                          setVx((p) => {
+                            const nextHours = { ...p.hours };
+                            if (next === null) delete nextHours[dayKey];
+                            else nextHours[dayKey] = next;
+                            return { ...p, hours: nextHours };
+                          });
+                        };
+
+                        return (
+                          <div
+                            key={d.k}
+                            className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 transition ${
+                              isClosed ? 'border-neutral-100 bg-neutral-50' : 'border-neutral-200 bg-white'
+                            }`}
+                          >
+                            <span className="w-20 shrink-0 text-sm font-semibold text-dark">{d.l}</span>
+
+                            {/* Checkbox Fermé */}
+                            <label className="inline-flex items-center gap-2 text-xs text-neutral-600">
+                              <input
+                                type="checkbox"
+                                checked={isClosed}
+                                onChange={(e) => setRange(e.target.checked ? null : ['09:00', '18:00'])}
+                                className="h-4 w-4 rounded border-neutral-300 text-primary-500 focus:ring-primary-500"
+                              />
+                              Fermé
+                            </label>
+
+                            {!isClosed && (
+                              <>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-neutral-500">Ouverture</span>
+                                  <input
+                                    type="time"
+                                    value={open}
+                                    onChange={(e) => setRange([e.target.value || '00:00', close || '23:59'])}
+                                    className="rounded-lg border border-neutral-200 px-2 py-1.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-neutral-500">Fermeture</span>
+                                  <input
+                                    type="time"
+                                    value={close}
+                                    onChange={(e) => setRange([open || '00:00', e.target.value || '23:59'])}
+                                    className="rounded-lg border border-neutral-200 px-2 py-1.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none"
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Quick actions */}
+                    <div className="mt-5 flex flex-wrap gap-2 border-t border-neutral-100 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setVx((p) => ({
+                          ...p,
+                          hours: {
+                            mon: ['09:00', '18:00'], tue: ['09:00', '18:00'], wed: ['09:00', '18:00'],
+                            thu: ['09:00', '18:00'], fri: ['09:00', '18:00'],
+                          },
+                        }))}
+                        className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-700 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
+                      >
+                        ⚡ Lun-Ven 9h-18h
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVx((p) => ({
+                          ...p,
+                          hours: {
+                            mon: ['12:00', '23:00'], tue: ['12:00', '23:00'], wed: ['12:00', '23:00'],
+                            thu: ['12:00', '23:00'], fri: ['12:00', '02:00'], sat: ['12:00', '02:00'],
+                            sun: ['12:00', '22:00'],
+                          },
+                        }))}
+                        className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-700 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
+                      >
+                        ⚡ Resto / Maquis (12h-23h + WE late)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVx((p) => ({ ...p, hours: {} }))}
+                        className="ml-auto rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100"
+                      >
+                        Tout fermer
+                      </button>
                     </div>
                   </div>
 

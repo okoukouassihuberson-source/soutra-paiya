@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { VenueGallery } from '@/components/venue/VenueGallery';
+import { VenueStatusBadge } from '@/components/venue/VenueStatusBadge';
 import { BUSINESS_TYPE_LABELS, type VenueBusinessType } from '@soutra/shared';
 
 interface Venue {
@@ -96,6 +97,12 @@ export function VenueView({
                 <p className="mt-2 text-sm text-neutral-600 sm:text-base">
                   📍 {fullAddress}
                 </p>
+                {/* Badge "Ouvert maintenant" compact, sous l'adresse */}
+                {venue.opening_hours && Object.keys(venue.opening_hours).length > 0 && (
+                  <div className="mt-2">
+                    <VenueStatusBadge hours={venue.opening_hours} compact />
+                  </div>
+                )}
               </div>
               {venue.rating_count > 0 && (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-right">
@@ -137,6 +144,10 @@ export function VenueView({
             {venue.opening_hours && Object.keys(venue.opening_hours).length > 0 && (
               <section className="mt-8">
                 <h2 className="font-display text-xl font-bold">Horaires</h2>
+                {/* Badge "Ouvert / Ferme à" en pleine taille */}
+                <div className="mt-3">
+                  <VenueStatusBadge hours={venue.opening_hours} />
+                </div>
                 <dl className="mt-3 divide-y divide-neutral-200 overflow-hidden rounded-2xl border border-neutral-200 bg-white">
                   {DAY_ORDER.map((d) => {
                     const slot = venue.opening_hours?.[d];
