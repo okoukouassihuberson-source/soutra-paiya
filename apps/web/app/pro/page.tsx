@@ -9,6 +9,8 @@ import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF, slugify, categoriesByGroup } from '@soutra/shared';
 import { VenueAnalytics } from './_components/VenueAnalytics';
 import { ProRevenueDashboard } from './_components/ProRevenueDashboard';
+import { ShopProductsTab } from './_components/ShopProductsTab';
+import { ShopOrdersTab } from './_components/ShopOrdersTab';
 import { VenuePayoutPanel } from './_components/VenuePayoutPanel';
 
 // Picker GPS — chargé en client only (leaflet utilise window au montage).
@@ -17,7 +19,14 @@ const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPick
   loading: () => <div className="py-12 text-center text-sm text-neutral-400">Chargement de la carte…</div>,
 });
 
-type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'analytics' | 'finances' | 'marketing' | 'settings';
+type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'analytics' | 'shop-products' | 'shop-orders' | 'finances' | 'marketing' | 'settings';
+
+// Catégories de venues compatibles avec le module Boutique (produits + orders).
+// Les onglets Catalogue + Commandes ne s'affichent que pour ces catégories.
+const SHOP_COMPATIBLE_CATEGORIES = new Set([
+  'boutique', 'mall', 'supermarche', 'pharmacie',
+  // Catégories que l'on peut ajouter manuellement à la liste si demandé
+]);
 type ResStatus = 'pending' | 'confirmed' | 'arrived' | 'no_show' | 'cancelled' | 'refunded';
 
 interface Venue { id: string; name: string; category: string; city: string; address: string; phone: string; status: string; rating_avg: number; rating_count: number; description: string; logo_url: string | null; cover_url: string | null; gallery_urls: string[] | null; whatsapp: string | null; email: string | null; district: string | null; avg_price_xof: number | null; opening_hours: any; amenities: string[] | null; ambiance: string[] | null; socials: any; }
@@ -103,7 +112,7 @@ function ProDashboard() {
   // sidebar AppShell (Link) et au bouton retour navigateur de fonctionner.
   const tabParam = searchParams?.get('tab');
   const tab: Tab = (
-    ['dashboard', 'reservations', 'events', 'menu', 'analytics', 'finances', 'marketing', 'settings'] as const
+    ['dashboard', 'reservations', 'events', 'menu', 'analytics', 'shop-products', 'shop-orders', 'finances', 'marketing', 'settings'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'dashboard';
   const setTab = useCallback((next: Tab) => {
     router.replace(`/pro?tab=${next}`, { scroll: false });
@@ -1142,6 +1151,35 @@ function ProDashboard() {
               {/* ═══════════ ANALYTICS (PR 9) ═══════════ */}
               {tab === 'analytics' && (
                 <VenueAnalytics venueId={selectedVenueId || null} venueName={selectedVenue?.name} />
+              )}
+
+              {/* ═══════════ BOUTIQUE (catégories compatibles uniquement) ═══════════ */}
+              {tab === 'shop-products' && selectedVenueId && (
+                selectedVenue && SHOP_COMPATIBLE_CATEGORIES.has(selectedVenue.category) ? (
+                  <ShopProductsTab venueId={selectedVenueId} />
+                ) : (
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+                    <p className="text-sm text-neutral-600">
+                      Le module Catalogue n&apos;est disponible que pour les venues catégorie{' '}
+                      <strong>boutique, mall, supermarché ou pharmacie</strong>.
+                    </p>
+                    <p className="mt-2 text-xs text-neutral-500">
+                      Catégorie actuelle : <code className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono">{selectedVenue?.category || '—'}</code>
+                    </p>
+                  </div>
+                )
+              )}
+
+              {tab === 'shop-orders' && selectedVenueId && (
+                selectedVenue && SHOP_COMPATIBLE_CATEGORIES.has(selectedVenue.category) ? (
+                  <ShopOrdersTab venueId={selectedVenueId} />
+                ) : (
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+                    <p className="text-sm text-neutral-600">
+                      Le module Commandes n&apos;est disponible que pour les venues catégorie boutique.
+                    </p>
+                  </div>
+                )
               )}
 
               {/* ═══════════ FINANCES ═══════════ */}
