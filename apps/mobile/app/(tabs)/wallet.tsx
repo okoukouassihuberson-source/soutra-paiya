@@ -157,7 +157,8 @@ export default function Wallet() {
 const QUICK: { label: string; icon: keyof typeof Ionicons.glyphMap; bg: string; color: string; route: string }[] = [
   { label: 'Envoyer', icon: 'send', bg: '#dbeafe', color: '#2563eb', route: '/send' },
   { label: 'Demander', icon: 'download', bg: '#dcfce7', color: '#16a34a', route: '/requests' },
-  { label: 'Split Bill', icon: 'people', bg: '#fef3c7', color: '#d97706', route: '/splits' },
+  { label: 'Commandes', icon: 'receipt', bg: '#ede9fe', color: '#7c3aed', route: '/orders' },
+  { label: 'Panier', icon: 'cart', bg: '#fef3c7', color: '#d97706', route: '/cart' },
   { label: 'Scanner QR', icon: 'qr-code', bg: '#fce7f3', color: '#db2777', route: '/scan' },
 ];
 

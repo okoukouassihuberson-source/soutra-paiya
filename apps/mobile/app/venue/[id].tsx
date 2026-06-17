@@ -15,9 +15,15 @@ import { logVenueEvent } from '@/lib/venue-analytics';
 import { getVenueClaimStatus, CLAIM_STATUS_META, type ClaimStatus } from '@/lib/venue-claims';
 import * as WebBrowser from 'expo-web-browser';
 
+// Catégories qui utilisent le module Boutique (catalogue produits) au lieu de
+// la réservation de table. Doit rester en miroir de SHOP_COMPATIBLE_CATEGORIES
+// côté pro/page.tsx web.
+const SHOP_CATEGORIES = new Set(['boutique', 'mall', 'supermarche', 'pharmacie']);
+
 interface Venue {
   id: string;
   name: string;
+  category: string; // enum venue_category — utilisé pour le switch CTA boutique/réservation
   description: string;
   cover_url: string;
   gallery_urls: string[];
@@ -399,18 +405,38 @@ export default function VenueDetail() {
         style={[s.cta, { paddingBottom: spacing.lg + Math.max(insets.bottom, 0) }]}
         onLayout={onCtaLayout}
       >
-        <Pressable
-          style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
-          onPress={() => {
-            logVenueEvent(venue.id, 'reservation_start');
-            router.push({
-              pathname: '/reservation/[venueId]',
-              params: { venueId: venue.id },
-            });
-          }}
-        >
-          <Text style={s.ctaText}>Réserver une table</Text>
-        </Pressable>
+        {/* CTA dynamique selon la catégorie du venue :
+            - boutique/mall/supermarche/pharmacie → "Voir le catalogue" → /shop/[venueId]
+            - sinon → "Réserver une table" → /reservation/[venueId] (historique) */}
+        {SHOP_CATEGORIES.has(venue.category) ? (
+          <Pressable
+            style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              // Pas de logVenueEvent ici : 'catalog_open' n'est pas encore
+              // dans l'enum venue_event_kind. À ajouter dans une migration
+              // dédiée si on veut tracker cette analytics.
+              router.push({
+                pathname: '/shop/[venueId]',
+                params: { venueId: venue.id },
+              });
+            }}
+          >
+            <Text style={s.ctaText}>🛍️  Voir le catalogue</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              logVenueEvent(venue.id, 'reservation_start');
+              router.push({
+                pathname: '/reservation/[venueId]',
+                params: { venueId: venue.id },
+              });
+            }}
+          >
+            <Text style={s.ctaText}>Réserver une table</Text>
+          </Pressable>
+        )}
       </View>
 
       {/* Modal "Signaler un problème" */}
