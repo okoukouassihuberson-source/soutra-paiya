@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ScrollView, View, Text, Pressable, StyleSheet, RefreshControl,
-  ActivityIndicator, Image, Modal,
+  ActivityIndicator, Image, Modal, Alert,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -183,8 +184,41 @@ function OrderCard({ c, order, onPress }: { c: ColorPalette; order: Order; onPre
 function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: () => void }) {
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
+  const [paying, setPaying] = useState(false);
+
+  const handlePay = useCallback(async () => {
+    if (!order) return;
+    setPaying(true);
+    try {
+      const { data, error } = await (supabase.functions as any).invoke('paystack-pay-order', {
+        body: { order_id: order.id },
+      });
+      if (error) {
+        Alert.alert('Erreur', error.message || 'Impossible de démarrer le paiement');
+        return;
+      }
+      const url = (data as any)?.authorization_url;
+      if (!url) {
+        Alert.alert('Erreur', 'Réponse Paystack invalide');
+        return;
+      }
+      // Ouvre Paystack en in-app browser. Au retour, /paystack/callback
+      // déclenche le deep-link soutrapaiya:// + redirect web /orders.
+      await WebBrowser.openBrowserAsync(url, {
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+        controlsColor: '#FF6B1A',
+        toolbarColor: '#0E1116',
+      });
+    } catch (err) {
+      Alert.alert('Erreur', err instanceof Error ? err.message : 'Erreur inattendue');
+    } finally {
+      setPaying(false);
+    }
+  }, [order]);
+
   if (!order) return null;
   const meta = STATUS_META[order.status];
+  const canPay = order.status === 'pending' && order.payment_status === 'pending';
 
   // Timeline étapes (filtrées selon ce qui s'est passé)
   const steps: { label: string; date: string | null; done: boolean }[] = [
@@ -288,6 +322,24 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
               ))}
             </View>
 
+            {/* CTA Payer si commande non payée */}
+            {canPay && (
+              <Pressable
+                onPress={handlePay}
+                disabled={paying}
+                style={({ pressed }) => [
+                  s.payBtn,
+                  paying && { opacity: 0.6 },
+                  pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                ]}
+              >
+                <Ionicons name="card" size={20} color="#fff" />
+                <Text style={s.payBtnText}>
+                  {paying ? 'Démarrage Paystack…' : `Payer maintenant · ${formatXOF(order.total_xof)}`}
+                </Text>
+              </Pressable>
+            )}
+
             <Pressable onPress={onClose} style={s.closeBtn}>
               <Text style={s.closeBtnText}>Fermer</Text>
             </Pressable>
@@ -374,7 +426,15 @@ function makeStyles(c: ColorPalette) {
     tlLabelDone: { color: c.dark, fontWeight: '700' },
     tlDate: { fontSize: 11, color: c.neutral[500], marginTop: 2 },
 
-    closeBtn: { marginTop: spacing.xl, paddingVertical: spacing.sm, alignItems: 'center' },
+    payBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+      backgroundColor: c.primary[500],
+      paddingVertical: spacing.md + 2, borderRadius: radius.full,
+      marginTop: spacing.xl,
+      shadowColor: c.primary[500], shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+    },
+    payBtnText: { color: '#fff', fontWeight: '800', fontSize: typography.fontSize.base, fontVariant: ['tabular-nums'] },
+    closeBtn: { marginTop: spacing.sm, paddingVertical: spacing.sm, alignItems: 'center' },
     closeBtnText: { color: c.neutral[600], fontWeight: '600' },
   });
 }

@@ -44,8 +44,18 @@ function CallbackInner() {
       return;
     }
 
-    // Subscription web : préfixe `sp-sub-`.
-    if (reference.startsWith('sp-sub-')) {
+    // Détection du type de paiement par préfixe de référence :
+    //   • sp-sub-…  → subscription web → redirect /subscribe?status=…
+    //   • sp-ord-…  → order boutique → redirect /orders?status=… si
+    //                 navigateur web ; sinon deep-link mobile vers
+    //                 soutrapaiya:// pour réouvrir l'app sur l'écran orders
+    //   • autres    → flow mobile historique (recharge wallet, acompte
+    //                 réservation) → deep-link soutrapaiya://
+    const isSub = reference.startsWith('sp-sub-');
+    const isOrder = reference.startsWith('sp-ord-');
+
+    if (isSub || isOrder) {
+      const targetRoute = isSub ? '/subscribe' : '/orders';
       (async () => {
         try {
           const { data, error } = await (sb.functions as any).invoke('paystack-verify', {
@@ -54,25 +64,31 @@ function CallbackInner() {
           if (error) {
             setErrorMsg(error.message || 'Erreur de vérification');
             setStage('failed');
-            window.setTimeout(() => router.replace('/subscribe?status=failed'), 1500);
+            window.setTimeout(() => {
+              // Pour les orders mobiles, tente deep-link soutrapaiya://
+              // pour ré-ouvrir l'app sur /orders. Le filet web reste si
+              // l'utilisateur est dans un navigateur classique.
+              if (isOrder) {
+                window.location.href = `soutrapaiya://paystack${window.location.search}`;
+              }
+              router.replace(`${targetRoute}?status=failed`);
+            }, 1500);
             return;
           }
           const status = (data as any)?.status;
-          if (status === 'success') {
-            setStage('success');
-            window.setTimeout(() => router.replace('/subscribe?status=success'), 1200);
-          } else if (status === 'pending') {
-            // Encore pending : l'user devra rafraîchir. On le renvoie quand même.
-            setStage('success');
-            window.setTimeout(() => router.replace('/subscribe?status=pending'), 1500);
-          } else {
-            setStage('failed');
-            window.setTimeout(() => router.replace('/subscribe?status=failed'), 1500);
-          }
+          const outcome = status === 'success' ? 'success' : status === 'pending' ? 'pending' : 'failed';
+          setStage(outcome === 'failed' ? 'failed' : 'success');
+          window.setTimeout(() => {
+            if (isOrder) {
+              // Tente d'abord le deep-link mobile (silencieux si pas mobile)
+              window.location.href = `soutrapaiya://paystack${window.location.search}`;
+            }
+            router.replace(`${targetRoute}?status=${outcome}`);
+          }, 1200);
         } catch (err) {
           setErrorMsg(err instanceof Error ? err.message : 'Erreur inattendue');
           setStage('failed');
-          window.setTimeout(() => router.replace('/subscribe?status=failed'), 1500);
+          window.setTimeout(() => router.replace(`${targetRoute}?status=failed`), 1500);
         }
       })();
       return;
