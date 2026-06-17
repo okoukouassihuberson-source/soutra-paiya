@@ -10,6 +10,11 @@ import { formatXOF } from '@soutra/shared';
 
 type ProductStatus = 'active' | 'out_of_stock' | 'archived';
 
+interface ProductVariant {
+  name: string;          // ex: "Taille"
+  values: string[];      // ex: ["S", "M", "L"]
+}
+
 interface Product {
   id: string;
   venue_id: string;
@@ -20,7 +25,7 @@ interface Product {
   sku: string | null;
   category: string | null;
   photos: string[];
-  variants: any[];
+  variants: ProductVariant[];
   status: ProductStatus;
   position: number | null;
   created_at: string;
@@ -244,7 +249,9 @@ function ProductFormModal({
   const [stockUnlimited, setStockUnlimited] = useState<boolean>(product?.stock_quantity == null);
   const [sku, setSku] = useState(product?.sku || '');
   const [category, setCategory] = useState(product?.category || '');
-  const [photoUrl, setPhotoUrl] = useState(product?.photos?.[0] || '');
+  // Liste de photos (URLs publiques Supabase Storage)
+  const [photos, setPhotos] = useState<string[]>(product?.photos ?? []);
+  const [variants, setVariants] = useState<ProductVariant[]>(product?.variants ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -263,6 +270,11 @@ function ProductFormModal({
       return;
     }
 
+    // Nettoie les variants vides (name vide ou pas de values)
+    const cleanedVariants = variants
+      .map((v) => ({ name: v.name.trim(), values: v.values.map((x) => x.trim()).filter(Boolean) }))
+      .filter((v) => v.name && v.values.length > 0);
+
     const payload = {
       venue_id: venueId,
       name: name.trim(),
@@ -271,7 +283,8 @@ function ProductFormModal({
       stock_quantity: stockNum,
       sku: sku.trim() || null,
       category: category.trim() || null,
-      photos: photoUrl.trim() ? [photoUrl.trim()] : [],
+      photos,
+      variants: cleanedVariants,
     };
 
     setSaving(true);
@@ -285,7 +298,7 @@ function ProductFormModal({
       return;
     }
     onSaved();
-  }, [sb, venueId, product, name, description, price, stock, stockUnlimited, sku, category, photoUrl, onSaved]);
+  }, [sb, venueId, product, name, description, price, stock, stockUnlimited, sku, category, photos, variants, onSaved]);
 
   return (
     <div
@@ -377,15 +390,17 @@ function ProductFormModal({
               placeholder="TS-RED-M"
             />
           </Field>
-          <Field label="Photo principale (URL)" className="sm:col-span-2">
-            <input
-              type="url" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm focus:border-primary-500 focus:outline-none"
-              placeholder="https://…"
+          <Field label="Photos" className="sm:col-span-2">
+            <PhotosUploader
+              venueId={venueId}
+              productId={product?.id ?? null}
+              photos={photos}
+              onChange={setPhotos}
             />
-            <p className="mt-1 text-[11px] text-neutral-500">
-              Pour l&apos;instant : copier-coller l&apos;URL d&apos;une image. Upload Supabase Storage à venir.
-            </p>
+          </Field>
+
+          <Field label="Variantes (taille, couleur, etc.)" className="sm:col-span-2">
+            <VariantsEditor variants={variants} onChange={setVariants} />
           </Field>
         </div>
 
@@ -418,5 +433,279 @@ function Field({
       </span>
       {children}
     </label>
+  );
+}
+
+/* ─────────────────────────────────────────────────── *
+ *  PHOTOS UPLOADER (Supabase Storage)                 *
+ * ─────────────────────────────────────────────────── */
+
+const MAX_PHOTOS = 5;
+const MAX_PHOTO_SIZE_MB = 5;
+
+function PhotosUploader({
+  venueId, productId, photos, onChange,
+}: {
+  venueId: string;
+  productId: string | null;
+  photos: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const sb = supabaseBrowser();
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleUpload = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setError(null);
+
+    const remainingSlots = MAX_PHOTOS - photos.length;
+    if (remainingSlots <= 0) {
+      setError(`Maximum ${MAX_PHOTOS} photos`);
+      return;
+    }
+    const toUpload = Array.from(files).slice(0, remainingSlots);
+
+    // Vérif taille
+    for (const file of toUpload) {
+      if (file.size > MAX_PHOTO_SIZE_MB * 1024 * 1024) {
+        setError(`${file.name} trop volumineux (>${MAX_PHOTO_SIZE_MB} Mo)`);
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        setError(`${file.name} n'est pas une image`);
+        return;
+      }
+    }
+
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+
+    for (const file of toUpload) {
+      // Chemin : venue-media/<venue_id>/products/<product_id_or_drafts>/<uuid>.<ext>
+      // Si productId null (création), on stocke dans _drafts/<uuid> — le merchant
+      // doit créer une fois sans photos puis éditer pour uploader idéalement,
+      // mais on tolère le draft (cleanup manuel possible côté admin).
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const uid = crypto.randomUUID();
+      const path = `${venueId}/products/${productId ?? '_drafts'}/${uid}.${ext}`;
+
+      const { error: upErr } = await sb.storage
+        .from('venue-media')
+        .upload(path, file, {
+          cacheControl: '31536000',
+          upsert: false,
+          contentType: file.type,
+        });
+      if (upErr) {
+        console.error('[upload] err:', upErr);
+        setError(upErr.message || `Upload de ${file.name} échoué`);
+        break;
+      }
+      const { data: pub } = sb.storage.from('venue-media').getPublicUrl(path);
+      uploadedUrls.push(pub.publicUrl);
+    }
+
+    setUploading(false);
+    if (uploadedUrls.length > 0) {
+      onChange([...photos, ...uploadedUrls]);
+    }
+  }, [sb, venueId, productId, photos, onChange]);
+
+  const handleRemove = useCallback((idx: number) => {
+    onChange(photos.filter((_, i) => i !== idx));
+  }, [photos, onChange]);
+
+  const handleMoveToFirst = useCallback((idx: number) => {
+    if (idx === 0) return;
+    const next = [...photos];
+    const [moved] = next.splice(idx, 1);
+    next.unshift(moved);
+    onChange(next);
+  }, [photos, onChange]);
+
+  return (
+    <div>
+      {error && (
+        <p className="mb-2 text-xs font-semibold text-red-600">⚠ {error}</p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {photos.map((url, i) => (
+          <div key={url + i} className="group relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt={`Photo ${i + 1}`}
+              className={`h-24 w-24 rounded-xl object-cover ring-2 ${
+                i === 0 ? 'ring-primary-500' : 'ring-neutral-200'
+              }`}
+            />
+            {i === 0 && (
+              <span className="absolute left-1 top-1 rounded-full bg-primary-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white shadow">
+                Principale
+              </span>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center gap-1 rounded-xl bg-black/60 opacity-0 transition group-hover:opacity-100">
+              {i !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleMoveToFirst(i)}
+                  title="Mettre en principale"
+                  className="rounded-full bg-white/90 p-1.5 text-neutral-900 transition hover:bg-white"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => handleRemove(i)}
+                title="Supprimer"
+                className="rounded-full bg-red-500 p-1.5 text-white transition hover:bg-red-600"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {photos.length < MAX_PHOTOS && (
+          <label className={`flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed transition ${
+            uploading
+              ? 'border-primary-400 bg-primary-50'
+              : 'border-neutral-300 bg-neutral-50 hover:border-primary-400 hover:bg-primary-50'
+          }`}>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={uploading}
+              onChange={(e) => { handleUpload(e.target.files); e.target.value = ''; }}
+              className="sr-only"
+            />
+            {uploading ? (
+              <>
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-300 border-t-primary-500" />
+                <span className="text-[10px] text-primary-600">Upload…</span>
+              </>
+            ) : (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-500">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <span className="text-[10px] font-semibold text-neutral-600">+ Photo</span>
+              </>
+            )}
+          </label>
+        )}
+      </div>
+      <p className="mt-2 text-[11px] text-neutral-500">
+        {photos.length}/{MAX_PHOTOS} photos · max {MAX_PHOTO_SIZE_MB} Mo/image · la 1<sup>re</sup> est la photo principale (cliquer ⭐ pour la changer)
+      </p>
+      {!productId && photos.length > 0 && (
+        <p className="mt-1 text-[11px] text-amber-600">
+          ⚠ Photos uploadées avant création — elles seront rattachées au produit à l&apos;enregistrement.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────── *
+ *  VARIANTS EDITOR                                    *
+ * ─────────────────────────────────────────────────── */
+
+function VariantsEditor({
+  variants, onChange,
+}: {
+  variants: ProductVariant[];
+  onChange: (next: ProductVariant[]) => void;
+}) {
+  const addVariant = () => {
+    if (variants.length >= 3) return;
+    onChange([...variants, { name: '', values: [] }]);
+  };
+  const updateVariant = (idx: number, patch: Partial<ProductVariant>) => {
+    onChange(variants.map((v, i) => (i === idx ? { ...v, ...patch } : v)));
+  };
+  const removeVariant = (idx: number) => {
+    onChange(variants.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div>
+      {variants.length === 0 ? (
+        <button
+          type="button"
+          onClick={addVariant}
+          className="w-full rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-4 py-3 text-sm font-semibold text-neutral-600 transition hover:border-primary-400 hover:bg-primary-50 hover:text-primary-700"
+        >
+          + Ajouter une variante (Taille, Couleur, …)
+        </button>
+      ) : (
+        <div className="space-y-2">
+          {variants.map((v, i) => (
+            <div key={i} className="rounded-xl border border-neutral-200 bg-neutral-50/50 p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={v.name}
+                  onChange={(e) => updateVariant(i, { name: e.target.value })}
+                  placeholder="Nom (ex: Taille)"
+                  className="w-32 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none"
+                  maxLength={30}
+                />
+                <input
+                  type="text"
+                  value={v.values.join(', ')}
+                  onChange={(e) => updateVariant(i, {
+                    values: e.target.value.split(',').map((x) => x.trim()).filter(Boolean),
+                  })}
+                  placeholder="Valeurs séparées par virgule (S, M, L)"
+                  className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeVariant(i)}
+                  className="rounded-lg p-1.5 text-red-600 transition hover:bg-red-50"
+                  title="Supprimer cette variante"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+                  </svg>
+                </button>
+              </div>
+              {v.values.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {v.values.map((val) => (
+                    <span key={val} className="rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-semibold text-primary-700">
+                      {val}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          {variants.length < 3 && (
+            <button
+              type="button"
+              onClick={addVariant}
+              className="w-full rounded-lg border border-dashed border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-600 transition hover:border-primary-400 hover:text-primary-700"
+            >
+              + Ajouter une autre variante
+            </button>
+          )}
+        </div>
+      )}
+      <p className="mt-2 text-[11px] text-neutral-500">
+        Max 3 variantes par produit. Le client pourra choisir une valeur de chaque sur la fiche produit.
+      </p>
+    </div>
   );
 }
