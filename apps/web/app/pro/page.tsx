@@ -11,6 +11,8 @@ import { VenueAnalytics } from './_components/VenueAnalytics';
 import { ProRevenueDashboard } from './_components/ProRevenueDashboard';
 import { ShopProductsTab } from './_components/ShopProductsTab';
 import { ShopOrdersTab } from './_components/ShopOrdersTab';
+import { HotelRoomsTab } from './_components/HotelRoomsTab';
+import { HotelBookingsTab } from './_components/HotelBookingsTab';
 import { VenuePayoutPanel } from './_components/VenuePayoutPanel';
 
 // Picker GPS — chargé en client only (leaflet utilise window au montage).
@@ -19,13 +21,18 @@ const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPick
   loading: () => <div className="py-12 text-center text-sm text-neutral-400">Chargement de la carte…</div>,
 });
 
-type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'analytics' | 'shop-products' | 'shop-orders' | 'finances' | 'marketing' | 'settings';
+type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'analytics' | 'shop-products' | 'shop-orders' | 'hotel-rooms' | 'hotel-bookings' | 'finances' | 'marketing' | 'settings';
 
 // Catégories de venues compatibles avec le module Boutique (produits + orders).
 // Les onglets Catalogue + Commandes ne s'affichent que pour ces catégories.
 const SHOP_COMPATIBLE_CATEGORIES = new Set([
   'boutique', 'mall', 'supermarche', 'pharmacie',
-  // Catégories que l'on peut ajouter manuellement à la liste si demandé
+]);
+
+// Catégories compatibles avec le module Hôtel (chambres + bookings nuitées).
+// Cohérent avec businessType='hotel_rooms' côté shared (PR1 migration 0057).
+const HOTEL_COMPATIBLE_CATEGORIES = new Set([
+  'hotel', 'villa', 'resort', 'auberge', 'residence_meublee',
 ]);
 type ResStatus = 'pending' | 'confirmed' | 'arrived' | 'no_show' | 'cancelled' | 'refunded';
 
@@ -147,7 +154,7 @@ function ProDashboard() {
   // sidebar AppShell (Link) et au bouton retour navigateur de fonctionner.
   const tabParam = searchParams?.get('tab');
   const tab: Tab = (
-    ['dashboard', 'reservations', 'events', 'menu', 'analytics', 'shop-products', 'shop-orders', 'finances', 'marketing', 'settings'] as const
+    ['dashboard', 'reservations', 'events', 'menu', 'analytics', 'shop-products', 'shop-orders', 'hotel-rooms', 'hotel-bookings', 'finances', 'marketing', 'settings'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'dashboard';
   const setTab = useCallback((next: Tab) => {
     router.replace(`/pro?tab=${next}`, { scroll: false });
@@ -1212,6 +1219,35 @@ function ProDashboard() {
                   <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
                     <p className="text-sm text-neutral-600">
                       Le module Commandes n&apos;est disponible que pour les venues catégorie boutique.
+                    </p>
+                  </div>
+                )
+              )}
+
+              {/* ═══════════ HÔTEL (catégories compatibles uniquement) ═══════════ */}
+              {tab === 'hotel-rooms' && selectedVenueId && (
+                selectedVenue && HOTEL_COMPATIBLE_CATEGORIES.has(selectedVenue.category) ? (
+                  <HotelRoomsTab venueId={selectedVenueId} />
+                ) : (
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+                    <p className="text-sm text-neutral-600">
+                      Le module Chambres n&apos;est disponible que pour les venues catégorie{' '}
+                      <strong>hôtel, villa, resort, auberge ou résidence meublée</strong>.
+                    </p>
+                    <p className="mt-2 text-xs text-neutral-500">
+                      Catégorie actuelle : <code className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono">{selectedVenue?.category || '—'}</code>
+                    </p>
+                  </div>
+                )
+              )}
+
+              {tab === 'hotel-bookings' && selectedVenueId && (
+                selectedVenue && HOTEL_COMPATIBLE_CATEGORIES.has(selectedVenue.category) ? (
+                  <HotelBookingsTab venueId={selectedVenueId} />
+                ) : (
+                  <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+                    <p className="text-sm text-neutral-600">
+                      Le module Réservations chambres n&apos;est disponible que pour les venues hôteliers.
                     </p>
                   </div>
                 )
