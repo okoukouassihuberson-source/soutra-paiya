@@ -13,6 +13,8 @@
 //   - profile_likes         -> « C'est un match avec X ! » (si like mutuel)
 //   - post_comments         -> « X a commenté ton post »
 //   - reservations (UPDATE) -> « Ta réservation chez X est confirmée »
+//   - orders (INSERT/UPDATE)-> « Nouvelle commande » (merchant) / statuts (client)
+//   - room_bookings (INSERT/UPDATE) -> « Nouvelle réservation » (merchant) / statuts (client)
 // ============================================================================
 
 import { jsonResponse, serviceClient } from "../_shared/supabase.ts";
@@ -353,6 +355,140 @@ async function buildNotifications(
       body: `${r.order_number || ""} · ${r.items_count || 0} article(s) · ${fmtXof(r.total_xof || 0)}`,
       data: { route: "/pro?tab=shop-orders", kind: "new_order", order_id: r.id },
     });
+    return out;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  //  ROOM_BOOKINGS (module hôtel — migration 0059)
+  //  INSERT  → notif au MERCHANT (venue owner) : "Nouvelle réservation"
+  //  UPDATE  → notif au CLIENT (user_id) : transition de statut
+  //            + au MERCHANT si annulation côté client
+  // ──────────────────────────────────────────────────────────────────────
+
+  if (table === "room_bookings" && !oldRecord) {
+    const r = record as {
+      id?: string;
+      booking_number?: string;
+      user_id?: string;
+      venue_id?: string;
+      room_id?: string;
+      nights_count?: number;
+      guests_count?: number;
+      total_xof?: number;
+      check_in_date?: string;
+      check_out_date?: string;
+    };
+    if (!r.venue_id || !r.id) return out;
+
+    const [{ data: venue }, { data: room }] = await Promise.all([
+      svc.from("venues").select("owner_id, name").eq("id", r.venue_id).maybeSingle(),
+      svc.from("rooms").select("name").eq("id", r.room_id || "").maybeSingle(),
+    ]);
+    const ownerId = (venue as { owner_id?: string } | null)?.owner_id;
+    const roomName = (room as { name?: string } | null)?.name || "une chambre";
+    if (!ownerId) return out;
+
+    const checkIn = r.check_in_date
+      ? new Date(r.check_in_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+      : "";
+
+    out.push({
+      user_id: ownerId,
+      title: "Nouvelle réservation 🛏️",
+      body: `${r.booking_number || ""} · ${roomName} · ${r.nights_count || 0} nuit${(r.nights_count || 0) > 1 ? "s" : ""}${checkIn ? " dès le " + checkIn : ""} · ${fmtXof(r.total_xof || 0)}`,
+      data: { route: "/pro?tab=hotel-bookings", kind: "new_room_booking", booking_id: r.id },
+    });
+    return out;
+  }
+
+  if (table === "room_bookings" && oldRecord) {
+    const r = record as {
+      id?: string;
+      booking_number?: string;
+      user_id?: string;
+      venue_id?: string;
+      room_id?: string;
+      status?: string;
+      payment_status?: string;
+      total_xof?: number;
+      check_in_date?: string;
+      check_out_date?: string;
+    };
+    const old = oldRecord as { status?: string; payment_status?: string };
+    if (!r.user_id || !r.id || !r.status) return out;
+
+    // Skip si aucune transition pertinente
+    const statusChanged = r.status !== old.status;
+    const paymentChanged = r.payment_status !== old.payment_status;
+    if (!statusChanged && !paymentChanged) return out;
+
+    const [{ data: venue }, { data: room }] = await Promise.all([
+      svc.from("venues").select("name, owner_id").eq("id", r.venue_id || "").maybeSingle(),
+      svc.from("rooms").select("name").eq("id", r.room_id || "").maybeSingle(),
+    ]);
+    const venueName = (venue as { name?: string } | null)?.name || "L'hôtel";
+    const roomName = (room as { name?: string } | null)?.name || "ta chambre";
+    const ownerId = (venue as { owner_id?: string } | null)?.owner_id;
+
+    const checkIn = r.check_in_date
+      ? new Date(r.check_in_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+      : "";
+
+    // 1) Paiement confirmé → notif au client (Paystack settle)
+    if (paymentChanged && r.payment_status === "paid") {
+      out.push({
+        user_id: r.user_id,
+        title: "Réservation confirmée 🎉",
+        body: `${roomName} chez ${venueName}${checkIn ? " dès le " + checkIn : ""}. Bon séjour !`,
+        data: { route: "/room-bookings", kind: "room_booking_paid", booking_id: r.id },
+      });
+      // PAS de return ici : on peut aussi vouloir notifier le merchant ci-dessous
+    }
+
+    // 2) Transitions de statut côté client
+    if (statusChanged) {
+      let title: string | null = null;
+      let body: string | null = null;
+      switch (r.status) {
+        case "checked_in":
+          title = "Check-in enregistré 🔑";
+          body = `Bienvenue chez ${venueName} ! Profite bien de ton séjour.`;
+          break;
+        case "checked_out":
+          title = "Séjour terminé";
+          body = `Merci d'avoir choisi ${venueName}. Note ton expérience.`;
+          break;
+        case "cancelled":
+          title = "Réservation annulée";
+          body = `${r.booking_number || "Ta réservation"} chez ${venueName} a été annulée.`;
+          break;
+        case "refunded":
+          title = "Réservation remboursée";
+          body = `${fmtXof(r.total_xof || 0)} de ${r.booking_number || ""} ont été remboursés.`;
+          break;
+        default:
+          title = null;
+      }
+      if (title && body) {
+        out.push({
+          user_id: r.user_id,
+          title,
+          body,
+          data: { route: "/room-bookings", kind: "room_booking_status", booking_id: r.id, status: r.status },
+        });
+      }
+
+      // 3) Annulation côté client → notifier aussi le merchant
+      if (r.status === "cancelled" && ownerId && ownerId !== r.user_id) {
+        out.push({
+          user_id: ownerId,
+          title: "Réservation annulée",
+          body: `${r.booking_number || ""} · ${roomName}${checkIn ? " du " + checkIn : ""} — chambre à nouveau disponible.`,
+          data: { route: "/pro?tab=hotel-bookings", kind: "room_booking_cancelled_by_client", booking_id: r.id },
+        });
+      }
+    }
+
     return out;
   }
 

@@ -24,8 +24,9 @@ import { ScreenHeader } from '@/components/ScreenHeader';
  *   4) RPC create_room_booking → invoke paystack-pay-room-booking
  *   5) WebBrowser.openBrowserAsync(authorization_url)
  *
- * Le sélecteur de dates utilise DateTimePicker natif (iOS=spinner, Android=
- * popup). Par défaut : check-in = aujourd'hui, check-out = demain.
+ * Schéma DB (migration 0059) : 1 chambre = 1 ressource indivisible. Anti-
+ * overbooking garanti par EXCLUDE constraint GIST. RPCs prennent `p_guests`
+ * (un entier unique), pas adults/children séparés.
  */
 
 interface VenueLite {
@@ -36,17 +37,17 @@ interface VenueLite {
   cover_url: string | null;
 }
 
+// Schéma exact de list_available_rooms (migration 0059)
 interface AvailableRoom {
-  room_id: string;
+  id: string;
   name: string;
-  room_type: string | null;
-  capacity_adults: number;
-  capacity_children: number;
-  price_per_night_xof: number;
-  amenities: string[];
-  photos: string[];
   description: string | null;
-  available_count: number;
+  room_type: string | null;
+  capacity: number;
+  price_per_night_xof: number;
+  total_for_stay_xof: number;
+  photos: string[];
+  amenities: string[];
 }
 
 function fmtDate(d: Date): string {
@@ -78,8 +79,7 @@ export default function HotelScreen() {
   const [venue, setVenue] = useState<VenueLite | null>(null);
   const [checkIn, setCheckIn] = useState<Date>(today);
   const [checkOut, setCheckOut] = useState<Date>(tomorrow);
-  const [guestsAdults, setGuestsAdults] = useState(2);
-  const [guestsChildren, setGuestsChildren] = useState(0);
+  const [guests, setGuests] = useState(2);
 
   const [rooms, setRooms] = useState<AvailableRoom[]>([]);
   const [loadingVenue, setLoadingVenue] = useState(true);
@@ -122,8 +122,7 @@ export default function HotelScreen() {
         p_venue_id: venueId,
         p_check_in: fmtDate(checkIn),
         p_check_out: fmtDate(checkOut),
-        p_guests_adults: guestsAdults,
-        p_guests_children: guestsChildren,
+        p_guests: guests,
       });
       if (error) throw error;
       setRooms((data as AvailableRoom[]) ?? []);
@@ -134,19 +133,16 @@ export default function HotelScreen() {
     } finally {
       setSearching(false);
     }
-  }, [venueId, checkIn, checkOut, guestsAdults, guestsChildren]);
+  }, [venueId, checkIn, checkOut, guests]);
 
   // Auto-search au 1er chargement quand venue prêt
   useEffect(() => { if (venue && !searched) void search(); }, [venue, searched, search]);
 
-  // Date picker handlers — DateTimePicker se ferme automatiquement sur Android
-  // après sélection; sur iOS reste ouvert jusqu'à dismiss manuel.
   const onCheckInChange = useCallback((_e: any, d?: Date) => {
     if (Platform.OS !== 'ios') setShowCheckIn(false);
     if (!d) return;
     d.setHours(12, 0, 0, 0);
     setCheckIn(d);
-    // Si check_out devient <= check_in, on l'avance
     if (d.getTime() >= checkOut.getTime()) {
       const next = new Date(d); next.setDate(next.getDate() + 1);
       setCheckOut(next);
@@ -177,15 +173,16 @@ export default function HotelScreen() {
     try {
       // 1) Créer le booking pending
       const { data: bk, error: bkErr } = await (supabase.rpc as any)('create_room_booking', {
-        p_room_id: room.room_id,
+        p_room_id: room.id,
         p_check_in: fmtDate(checkIn),
         p_check_out: fmtDate(checkOut),
-        p_guests_adults: guestsAdults,
-        p_guests_children: guestsChildren,
-        p_guest_notes: null,
+        p_guests: guests,
+        p_contact_name: null,
+        p_contact_phone: null,
+        p_notes: null,
       });
       if (bkErr) throw bkErr;
-      const bookingId = (bk as any)?.booking_id ?? (typeof bk === 'string' ? bk : null);
+      const bookingId = (bk as any)?.booking_id;
       if (!bookingId) throw new Error('Réservation créée sans identifiant');
 
       // 2) Initier le paiement
@@ -198,18 +195,18 @@ export default function HotelScreen() {
       if (!url) throw new Error('Lien de paiement indisponible');
 
       setSelected(null);
-      // 3) Ouvrir Paystack
+      // 3) Ouvrir Paystack — au retour, /paystack/callback web fera le deep-link
       await WebBrowser.openBrowserAsync(url);
-      // Au retour, l'utilisateur arrive sur la callback web → deep-link soutrapaiya://
-      // On rafraîchit la liste de chambres pour refléter l'unavailability
+      // Rafraîchit la dispo pour refléter l'unavailability
       void search();
     } catch (err: any) {
       console.error('[hotel] reserve:', err);
-      Alert.alert('Erreur', err.message || 'Réservation impossible');
+      const msg = mapBookingError(err?.message);
+      Alert.alert('Erreur', msg);
     } finally {
       setBooking(false);
     }
-  }, [user, checkIn, checkOut, guestsAdults, guestsChildren, router, search]);
+  }, [user, checkIn, checkOut, guests, router, search]);
 
   if (loadingVenue) {
     return (
@@ -265,8 +262,7 @@ export default function HotelScreen() {
             <View>
               <Text style={s.searchLabel}>Voyageurs</Text>
               <Text style={s.searchValue}>
-                {guestsAdults} adulte{guestsAdults > 1 ? 's' : ''}
-                {guestsChildren > 0 ? ` · ${guestsChildren} enfant${guestsChildren > 1 ? 's' : ''}` : ''}
+                {guests} {guests > 1 ? 'personnes' : 'personne'}
               </Text>
             </View>
             <Ionicons name="chevron-down" size={20} color={c.neutral[500]} />
@@ -300,7 +296,7 @@ export default function HotelScreen() {
         ) : (
           <View style={s.roomList}>
             {rooms.map((r) => (
-              <RoomCard key={r.room_id} c={c} room={r} nights={nights} onPress={() => setSelected(r)} />
+              <RoomCard key={r.id} c={c} room={r} nights={nights} onPress={() => setSelected(r)} />
             ))}
           </View>
         )}
@@ -333,20 +329,28 @@ export default function HotelScreen() {
           <View style={s.modalSheet}>
             <View style={s.modalHandle} />
             <Text style={s.modalTitle}>Voyageurs</Text>
-            <GuestRow
-              c={c}
-              label="Adultes"
-              value={guestsAdults}
-              min={1} max={10}
-              onChange={(v) => { setGuestsAdults(v); setSearched(false); }}
-            />
-            <GuestRow
-              c={c}
-              label="Enfants"
-              value={guestsChildren}
-              min={0} max={10}
-              onChange={(v) => { setGuestsChildren(v); setSearched(false); }}
-            />
+            <View style={s.guestRow}>
+              <Text style={s.guestLabel}>Nombre de personnes</Text>
+              <View style={s.qtyRow}>
+                <Pressable
+                  onPress={() => { setGuests((g) => Math.max(1, g - 1)); setSearched(false); }}
+                  style={[s.qtyBtn, guests <= 1 && s.qtyBtnDisabled]}
+                  hitSlop={6}
+                  disabled={guests <= 1}
+                >
+                  <Ionicons name="remove" size={18} color={guests <= 1 ? c.neutral[400] : c.dark} />
+                </Pressable>
+                <Text style={s.qtyValue}>{guests}</Text>
+                <Pressable
+                  onPress={() => { setGuests((g) => Math.min(20, g + 1)); setSearched(false); }}
+                  style={[s.qtyBtn, guests >= 20 && s.qtyBtnDisabled]}
+                  hitSlop={6}
+                  disabled={guests >= 20}
+                >
+                  <Ionicons name="add" size={18} color={guests >= 20 ? c.neutral[400] : c.dark} />
+                </Pressable>
+              </View>
+            </View>
             <Pressable
               style={({ pressed }) => [s.addBtn, pressed && { opacity: 0.9 }]}
               onPress={() => { setShowGuests(false); void search(); }}
@@ -369,13 +373,25 @@ export default function HotelScreen() {
   );
 }
 
+// Mappe les erreurs SQL en messages utilisateur lisibles
+function mapBookingError(msg?: string): string {
+  if (!msg) return 'Réservation impossible';
+  const m = msg.toUpperCase();
+  if (m.includes('PERIOD_TAKEN')) return 'Cette chambre vient d\'être réservée. Essaie une autre.';
+  if (m.includes('CAPACITY_EXCEEDED')) return 'Cette chambre n\'accueille pas autant de voyageurs.';
+  if (m.includes('ROOM_NOT_BOOKABLE')) return 'Cette chambre n\'est plus réservable.';
+  if (m.includes('CHECK_IN_IN_PAST')) return 'La date d\'arrivée est dans le passé.';
+  if (m.includes('INVALID_PERIOD')) return 'Période invalide : départ avant arrivée.';
+  if (m.includes('NOT_AUTHENTICATED')) return 'Connexion requise.';
+  return msg;
+}
+
 /* ─────────────────────────────────────────────────── *
  *  ROOM CARD                                          *
  * ─────────────────────────────────────────────────── */
 
 function RoomCard({ c, room, nights, onPress }: { c: ColorPalette; room: AvailableRoom; nights: number; onPress: () => void }) {
   const s = useMemo(() => makeStyles(c), [c]);
-  const total = room.price_per_night_xof * nights;
   return (
     <Pressable style={({ pressed }) => [s.roomCard, pressed && { opacity: 0.95, transform: [{ scale: 0.99 }] }]} onPress={onPress}>
       <View style={s.roomImg}>
@@ -386,13 +402,6 @@ function RoomCard({ c, room, nights, onPress }: { c: ColorPalette; room: Availab
             <Ionicons name="bed-outline" size={36} color={c.neutral[400]} />
           </View>
         )}
-        {room.available_count <= 2 && (
-          <View style={s.scarcityBadge}>
-            <Text style={s.scarcityText}>
-              Plus que {room.available_count} dispo{room.available_count > 1 ? 's' : ''}
-            </Text>
-          </View>
-        )}
       </View>
       <View style={s.roomBody}>
         {room.room_type && <Text style={s.roomType}>{room.room_type}</Text>}
@@ -400,8 +409,7 @@ function RoomCard({ c, room, nights, onPress }: { c: ColorPalette; room: Availab
         <View style={s.roomMeta}>
           <Ionicons name="people-outline" size={14} color={c.neutral[600]} />
           <Text style={s.roomMetaText}>
-            {room.capacity_adults} adulte{room.capacity_adults > 1 ? 's' : ''}
-            {room.capacity_children > 0 ? ` · ${room.capacity_children} enf.` : ''}
+            Jusqu&apos;à {room.capacity} {room.capacity > 1 ? 'pers.' : 'pers.'}
           </Text>
         </View>
         {room.amenities?.length > 0 && (
@@ -423,45 +431,11 @@ function RoomCard({ c, room, nights, onPress }: { c: ColorPalette; room: Availab
           </View>
           <View style={s.roomTotalBox}>
             <Text style={s.roomTotalLabel}>{nights} nuit{nights > 1 ? 's' : ''}</Text>
-            <Text style={s.roomTotal}>{formatXOF(total)}</Text>
+            <Text style={s.roomTotal}>{formatXOF(room.total_for_stay_xof)}</Text>
           </View>
         </View>
       </View>
     </Pressable>
-  );
-}
-
-/* ─────────────────────────────────────────────────── *
- *  GUEST ROW                                          *
- * ─────────────────────────────────────────────────── */
-
-function GuestRow({ c, label, value, min, max, onChange }: {
-  c: ColorPalette; label: string; value: number; min: number; max: number; onChange: (v: number) => void;
-}) {
-  const s = useMemo(() => makeStyles(c), [c]);
-  return (
-    <View style={s.guestRow}>
-      <Text style={s.guestLabel}>{label}</Text>
-      <View style={s.qtyRow}>
-        <Pressable
-          onPress={() => onChange(Math.max(min, value - 1))}
-          style={[s.qtyBtn, value <= min && s.qtyBtnDisabled]}
-          hitSlop={6}
-          disabled={value <= min}
-        >
-          <Ionicons name="remove" size={18} color={value <= min ? c.neutral[400] : c.dark} />
-        </Pressable>
-        <Text style={s.qtyValue}>{value}</Text>
-        <Pressable
-          onPress={() => onChange(Math.min(max, value + 1))}
-          style={[s.qtyBtn, value >= max && s.qtyBtnDisabled]}
-          hitSlop={6}
-          disabled={value >= max}
-        >
-          <Ionicons name="add" size={18} color={value >= max ? c.neutral[400] : c.dark} />
-        </Pressable>
-      </View>
-    </View>
   );
 }
 
@@ -479,7 +453,7 @@ function RoomDetailModal({ room, nights, booking, onClose, onReserve }: {
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
   if (!room) return null;
-  const total = room.price_per_night_xof * nights;
+  const total = room.total_for_stay_xof;
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -495,10 +469,7 @@ function RoomDetailModal({ room, nights, booking, onClose, onReserve }: {
             <Text style={s.modalName}>{room.name}</Text>
             <View style={s.roomMeta}>
               <Ionicons name="people-outline" size={14} color={c.neutral[600]} />
-              <Text style={s.roomMetaText}>
-                {room.capacity_adults} adulte{room.capacity_adults > 1 ? 's' : ''}
-                {room.capacity_children > 0 ? ` · ${room.capacity_children} enf.` : ''}
-              </Text>
+              <Text style={s.roomMetaText}>Jusqu&apos;à {room.capacity} personnes</Text>
             </View>
             {room.description && <Text style={s.modalDesc}>{room.description}</Text>}
             {room.amenities?.length > 0 && (
@@ -562,7 +533,6 @@ function makeStyles(c: ColorPalette) {
     hero: { width: '100%', height: 180 },
     heroPlaceholder: { backgroundColor: c.neutral[100], alignItems: 'center', justifyContent: 'center' },
 
-    // Search card
     searchCard: {
       margin: spacing.md,
       marginTop: -spacing.lg,
@@ -589,12 +559,10 @@ function makeStyles(c: ColorPalette) {
     },
     searchBtnText: { color: '#fff', fontWeight: '800', fontSize: typography.fontSize.base },
 
-    // Empty
     empty: { alignItems: 'center', padding: spacing.xl, gap: spacing.sm, marginTop: spacing.lg },
     emptyTitle: { fontSize: typography.fontSize.base, fontWeight: '700', color: c.dark },
     emptyBody: { fontSize: typography.fontSize.sm, color: c.neutral[600], textAlign: 'center', paddingHorizontal: spacing.lg },
 
-    // Room list
     roomList: { paddingHorizontal: spacing.md, gap: spacing.md, paddingTop: spacing.sm },
     roomCard: {
       backgroundColor: '#fff',
@@ -605,12 +573,6 @@ function makeStyles(c: ColorPalette) {
     roomImg: { width: '100%', height: 160, position: 'relative' },
     roomImgFill: { ...StyleSheet.absoluteFillObject },
     roomImgPlaceholder: { backgroundColor: c.neutral[100], alignItems: 'center', justifyContent: 'center' },
-    scarcityBadge: {
-      position: 'absolute', top: spacing.sm, left: spacing.sm,
-      backgroundColor: c.warning?.[500] ?? '#f59e0b',
-      paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full,
-    },
-    scarcityText: { color: '#fff', fontWeight: '700', fontSize: 10, letterSpacing: 0.5 },
     roomBody: { padding: spacing.md, gap: spacing.xs },
     roomType: { fontSize: 10, color: c.primary[600], fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
     roomName: { fontSize: typography.fontSize.base, fontWeight: '700', color: c.dark },
@@ -631,7 +593,6 @@ function makeStyles(c: ColorPalette) {
     roomTotalLabel: { fontSize: 10, color: c.neutral[500], fontWeight: '700' },
     roomTotal: { fontSize: typography.fontSize.base, fontWeight: '800', color: c.primary[600], fontVariant: ['tabular-nums'] },
 
-    // Modal
     modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
     modalSheet: {
       backgroundColor: c.light,
@@ -657,7 +618,6 @@ function makeStyles(c: ColorPalette) {
     priceTotalLabel: { fontSize: typography.fontSize.base, fontWeight: '800', color: c.dark },
     priceTotalAmt: { fontSize: typography.fontSize.lg, fontWeight: '900', color: c.primary[600], fontVariant: ['tabular-nums'] },
 
-    // Guest modal
     guestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.md, paddingHorizontal: spacing.lg, borderBottomWidth: 1, borderBottomColor: c.neutral[100] },
     guestLabel: { fontSize: typography.fontSize.base, fontWeight: '600', color: c.dark },
     qtyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
