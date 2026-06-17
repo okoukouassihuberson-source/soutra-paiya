@@ -320,6 +320,103 @@ async function buildNotifications(
     return out;
   }
 
+  // ──────────────────────────────────────────────────────────────────────
+  //  ORDERS (boutique — migration 0055)
+  //  INSERT  → notif au MERCHANT (venue owner) : "Nouvelle commande"
+  //  UPDATE  → notif au CLIENT (user_id) : transition de statut
+  // ──────────────────────────────────────────────────────────────────────
+
+  if (table === "orders" && !oldRecord) {
+    const r = record as {
+      id?: string;
+      order_number?: string;
+      user_id?: string;
+      venue_id?: string;
+      items_count?: number;
+      total_xof?: number;
+      delivery_method?: string;
+    };
+    if (!r.venue_id || !r.id) return out;
+
+    const { data: venue } = await svc
+      .from("venues")
+      .select("owner_id, name")
+      .eq("id", r.venue_id)
+      .maybeSingle();
+    const ownerId = (venue as { owner_id?: string } | null)?.owner_id;
+    if (!ownerId) return out;
+
+    const deliveryIcon = r.delivery_method === "delivery" ? "🚚" : "🏪";
+    out.push({
+      user_id: ownerId,
+      title: `Nouvelle commande ${deliveryIcon}`,
+      body: `${r.order_number || ""} · ${r.items_count || 0} article(s) · ${fmtXof(r.total_xof || 0)}`,
+      data: { route: "/pro?tab=shop-orders", kind: "new_order", order_id: r.id },
+    });
+    return out;
+  }
+
+  if (table === "orders" && oldRecord) {
+    const r = record as {
+      id?: string;
+      order_number?: string;
+      user_id?: string;
+      venue_id?: string;
+      status?: string;
+      total_xof?: number;
+    };
+    const old = oldRecord as { status?: string };
+    if (!r.user_id || !r.id || !r.status) return out;
+    // Skip si pas de transition de statut
+    if (r.status === old.status) return out;
+
+    const { data: venue } = await svc
+      .from("venues")
+      .select("name")
+      .eq("id", r.venue_id || "")
+      .maybeSingle();
+    const venueName = (venue as { name?: string } | null)?.name || "Le marchand";
+
+    let title: string | null = null;
+    let body: string | null = null;
+    switch (r.status) {
+      case "confirmed":
+        title = "Commande confirmée ✓";
+        body = `${venueName} a reçu ton paiement pour ${r.order_number || ""}.`;
+        break;
+      case "preparing":
+        title = "Préparation en cours";
+        body = `${venueName} prépare ta commande ${r.order_number || ""}.`;
+        break;
+      case "ready":
+        title = "Commande prête 📦";
+        body = `${r.order_number || "Ta commande"} est prête chez ${venueName}.`;
+        break;
+      case "delivered":
+        title = "Commande livrée 🎉";
+        body = `Bon usage ! Note ton expérience avec ${venueName}.`;
+        break;
+      case "cancelled":
+        title = "Commande annulée";
+        body = `${r.order_number || "Ta commande"} chez ${venueName} a été annulée.`;
+        break;
+      case "refunded":
+        title = "Commande remboursée";
+        body = `${fmtXof(r.total_xof || 0)} de ${r.order_number || ""} ont été remboursés.`;
+        break;
+      default:
+        return out;
+    }
+
+    out.push({
+      user_id: r.user_id,
+      title,
+      body,
+      data: { route: "/orders", kind: "order_status", order_id: r.id, status: r.status },
+    });
+    return out;
+  }
+
   return out;
 }
 
