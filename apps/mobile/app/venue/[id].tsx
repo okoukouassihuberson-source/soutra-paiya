@@ -3,7 +3,7 @@ import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Alert
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { colors, typography, radius, spacing, formatXOF, businessTypeOf, BUSINESS_TYPE_LABELS } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { openDirections, dialPhone, openWhatsApp } from '@/lib/maps';
@@ -15,10 +15,14 @@ import { logVenueEvent } from '@/lib/venue-analytics';
 import { getVenueClaimStatus, CLAIM_STATUS_META, type ClaimStatus } from '@/lib/venue-claims';
 import * as WebBrowser from 'expo-web-browser';
 
-// Catégories qui utilisent le module Boutique (catalogue produits) au lieu de
-// la réservation de table. Doit rester en miroir de SHOP_COMPATIBLE_CATEGORIES
-// côté pro/page.tsx web.
-const SHOP_CATEGORIES = new Set(['boutique', 'mall', 'supermarche', 'pharmacie']);
+// Le CTA est désormais sélectionné via `businessTypeOf(venue.category)` du
+// package @soutra/shared (migration 0057). 3 routes supportées sur mobile :
+//   - product_catalog → /shop/[venueId]
+//   - hotel_rooms     → /hotel/[venueId]
+//   - autres (reservation_table, time_slot, event_tickets, ...)
+//                     → /reservation/[venueId] (flow historique table)
+// Les autres business_type (vtc_ride, service_quote, venue_visit) tombent
+// dans le fallback réservation en attendant leurs écrans dédiés (PR6).
 
 interface Venue {
   id: string;
@@ -428,38 +432,61 @@ export default function VenueDetail() {
         style={[s.cta, { paddingBottom: spacing.lg + Math.max(insets.bottom, 0) }]}
         onLayout={onCtaLayout}
       >
-        {/* CTA dynamique selon la catégorie du venue :
-            - boutique/mall/supermarche/pharmacie → "Voir le catalogue" → /shop/[venueId]
-            - sinon → "Réserver une table" → /reservation/[venueId] (historique) */}
-        {SHOP_CATEGORIES.has(venue.category) ? (
-          <Pressable
-            style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
-            onPress={() => {
-              // Pas de logVenueEvent ici : 'catalog_open' n'est pas encore
-              // dans l'enum venue_event_kind. À ajouter dans une migration
-              // dédiée si on veut tracker cette analytics.
-              router.push({
-                pathname: '/shop/[venueId]',
-                params: { venueId: venue.id },
-              });
-            }}
-          >
-            <Text style={s.ctaText}>🛍️  Voir le catalogue</Text>
-          </Pressable>
-        ) : (
-          <Pressable
-            style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
-            onPress={() => {
-              logVenueEvent(venue.id, 'reservation_start');
-              router.push({
-                pathname: '/reservation/[venueId]',
-                params: { venueId: venue.id },
-              });
-            }}
-          >
-            <Text style={s.ctaText}>Réserver une table</Text>
-          </Pressable>
-        )}
+        {/* CTA dynamique sélectionné via businessTypeOf (migration 0057). */}
+        {(() => {
+          const bt = businessTypeOf(venue.category);
+          const meta = BUSINESS_TYPE_LABELS[bt];
+
+          if (bt === 'product_catalog') {
+            return (
+              <Pressable
+                style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/shop/[venueId]',
+                    params: { venueId: venue.id },
+                  });
+                }}
+              >
+                <Text style={s.ctaText}>{meta.emoji}  {meta.verb}</Text>
+              </Pressable>
+            );
+          }
+
+          if (bt === 'hotel_rooms') {
+            return (
+              <Pressable
+                style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
+                onPress={() => {
+                  router.push({
+                    pathname: '/hotel/[venueId]',
+                    params: { venueId: venue.id },
+                  });
+                }}
+              >
+                <Text style={s.ctaText}>{meta.emoji}  {meta.verb}</Text>
+              </Pressable>
+            );
+          }
+
+          // Fallback : reservation_table + tous les autres types non encore
+          // implémentés (time_slot, event_tickets, service_quote, vtc_ride,
+          // venue_visit) tombent sur le flow réservation historique.
+          return (
+            <Pressable
+              style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
+              onPress={() => {
+                logVenueEvent(venue.id, 'reservation_start');
+                router.push({
+                  pathname: '/reservation/[venueId]',
+                  params: { venueId: venue.id },
+                });
+              }}
+            >
+              <Text style={s.ctaText}>{meta.emoji}  {meta.verb}</Text>
+            </Pressable>
+          );
+        })()}
       </View>
 
       {/* Modal "Signaler un problème" */}

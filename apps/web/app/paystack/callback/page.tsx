@@ -53,9 +53,10 @@ function CallbackInner() {
     //                 réservation) → deep-link soutrapaiya://
     const isSub = reference.startsWith('sp-sub-');
     const isOrder = reference.startsWith('sp-ord-');
+    const isBooking = reference.startsWith('sp-bkg-');
 
-    if (isSub || isOrder) {
-      const targetRoute = isSub ? '/subscribe' : '/orders';
+    if (isSub || isOrder || isBooking) {
+      const targetRoute = isSub ? '/subscribe' : isOrder ? '/orders' : '/room-bookings';
       (async () => {
         try {
           const { data, error } = await (sb.functions as any).invoke('paystack-verify', {
