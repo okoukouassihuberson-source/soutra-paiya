@@ -166,8 +166,10 @@ export type VenueCategory =
   | 'grande_ecole' | 'formation' | 'bibliotheque' | 'residence_universitaire'
   // Santé
   | 'hopital' | 'clinique' | 'pharmacie' | 'laboratoire'
-  // Services
+  // Services (migration 0057 — ajout salle_reception / organisateur_evenements
+  // / prestataire_services / vtc_transport)
   | 'banque' | 'assurance' | 'immobilier' | 'voyage' | 'comptable' | 'juridique'
+  | 'salle_reception' | 'organisateur_evenements' | 'prestataire_services' | 'vtc_transport'
   // Tourisme
   | 'site_touristique' | 'musee' | 'monument' | 'reserve_naturelle' | 'attraction'
   // Autres
