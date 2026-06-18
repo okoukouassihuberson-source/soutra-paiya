@@ -635,22 +635,39 @@ function ProDashboard() {
   async function createVenue() {
     if (!nv.name.trim() || !nv.address.trim()) { flash('Nom et adresse requis', 'error'); return; }
     setCreating(true);
-    const slug = `${slugify(nv.name)}-${Math.random().toString(36).slice(2, 7)}`;
-    const { error } = await (supabase as any).from('venues').insert({
-      owner_id: userId,
-      name: nv.name.trim(),
-      slug,
-      category: nv.category,
-      city: nv.city.trim() || 'Abidjan',
-      address: nv.address.trim(),
-      phone: nv.phone.trim() || null,
-      whatsapp: nv.whatsapp.trim() || null,
-      description: nv.description.trim() || null,
-      status: 'draft',
+    // Migration 0061 : RPC pro_create_venue → activation immédiate (status='active')
+    // + defaults intelligents (horaires + cover par businessType). Plus de
+    // status='draft' bloquant en attente d'un admin.
+    const { data, error } = await (supabase.rpc as any)('pro_create_venue', {
+      p_name: nv.name.trim(),
+      p_category: nv.category,
+      p_address: nv.address.trim(),
+      p_city: nv.city.trim() || 'Abidjan',
+      p_phone: nv.phone.trim() || null,
+      p_whatsapp: nv.whatsapp.trim() || null,
+      p_description: nv.description.trim() || null,
     });
     setCreating(false);
-    if (error) { flash(error.message, 'error'); return; }
-    flash('Établissement créé — en attente de validation');
+    if (error) {
+      const msg = String(error.message || '');
+      if (msg.includes('NAME_REQUIRED')) flash('Nom requis', 'error');
+      else if (msg.includes('ADDRESS_REQUIRED')) flash('Adresse requise', 'error');
+      else if (msg.includes('NAME_TOO_LONG')) flash('Nom trop long (200 caractères max)', 'error');
+      else if (msg.includes('INVALID_CATEGORY')) flash('Catégorie invalide', 'error');
+      else if (msg.includes('NOT_AUTHENTICATED')) flash('Session expirée — reconnecte-toi', 'error');
+      else flash(error.message || 'Création impossible', 'error');
+      return;
+    }
+    const result = data as { ok: boolean; reason?: string; venue_id?: string };
+    if (!result?.ok) {
+      if (result?.reason === 'ALREADY_EXISTS') {
+        flash('Tu as déjà un établissement avec ce nom et cette adresse', 'error');
+      } else {
+        flash('Création impossible', 'error');
+      }
+      return;
+    }
+    flash('Établissement créé et actif — tu peux commencer !');
     await loadInitialData();
   }
 
@@ -882,7 +899,10 @@ function ProDashboard() {
               <div className="mb-6 text-center">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-50"><IcoGrid className="h-8 w-8 text-primary-500" /></div>
                 <h2 className="mt-4 font-display text-2xl font-bold text-dark">Crée ton établissement</h2>
-                <p className="mt-1 text-sm text-neutral-500">Renseigne les infos de base — tu pourras tout compléter ensuite dans Paramètres.</p>
+                <p className="mt-1 text-sm text-neutral-500">
+                  Renseigne les infos de base — ton fiche sera <span className="font-semibold text-emerald-600">active immédiatement</span>.
+                  Tu pourras tout compléter ensuite dans Paramètres.
+                </p>
               </div>
               <div className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6">
                 <ProInput label="Nom de l'établissement" value={nv.name} onChange={(v) => setNv((p) => ({ ...p, name: v }))} placeholder="Le Maquis du Coin" />
