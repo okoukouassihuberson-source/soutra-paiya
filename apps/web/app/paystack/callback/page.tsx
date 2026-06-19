@@ -49,13 +49,21 @@ function CallbackInner() {
     //   • sp-ord-…  → order boutique → redirect /orders?status=… si
     //                 navigateur web ; sinon deep-link mobile vers
     //                 soutrapaiya:// pour réouvrir l'app sur l'écran orders
+    //   • sp-bkg-…  → room_booking hôtel → redirect /hotel-bookings?status=… si
+    //                 navigateur web ; sinon deep-link mobile
     //   • autres    → flow mobile historique (recharge wallet, acompte
     //                 réservation) → deep-link soutrapaiya://
     const isSub = reference.startsWith('sp-sub-');
     const isOrder = reference.startsWith('sp-ord-');
+    const isBooking = reference.startsWith('sp-bkg-');
 
-    if (isSub || isOrder) {
-      const targetRoute = isSub ? '/subscribe' : '/orders';
+    if (isSub || isOrder || isBooking) {
+      const targetRoute = isSub
+        ? '/subscribe'
+        : isOrder
+          ? '/orders'
+          : '/hotel-bookings';
+      const wantsDeepLink = isOrder || isBooking;
       (async () => {
         try {
           const { data, error } = await (sb.functions as any).invoke('paystack-verify', {
@@ -65,10 +73,7 @@ function CallbackInner() {
             setErrorMsg(error.message || 'Erreur de vérification');
             setStage('failed');
             window.setTimeout(() => {
-              // Pour les orders mobiles, tente deep-link soutrapaiya://
-              // pour ré-ouvrir l'app sur /orders. Le filet web reste si
-              // l'utilisateur est dans un navigateur classique.
-              if (isOrder) {
+              if (wantsDeepLink) {
                 window.location.href = `soutrapaiya://paystack${window.location.search}`;
               }
               router.replace(`${targetRoute}?status=failed`);
@@ -79,8 +84,7 @@ function CallbackInner() {
           const outcome = status === 'success' ? 'success' : status === 'pending' ? 'pending' : 'failed';
           setStage(outcome === 'failed' ? 'failed' : 'success');
           window.setTimeout(() => {
-            if (isOrder) {
-              // Tente d'abord le deep-link mobile (silencieux si pas mobile)
+            if (wantsDeepLink) {
               window.location.href = `soutrapaiya://paystack${window.location.search}`;
             }
             router.replace(`${targetRoute}?status=${outcome}`);

@@ -19,6 +19,9 @@ import * as WebBrowser from 'expo-web-browser';
 // la réservation de table. Doit rester en miroir de SHOP_COMPATIBLE_CATEGORIES
 // côté pro/page.tsx web.
 const SHOP_CATEGORIES = new Set(['boutique', 'mall', 'supermarche', 'pharmacie']);
+// Catégories qui utilisent le module Hôtel (réservation de chambre nuitée).
+// Doit rester aligné avec businessTypeOf() === 'hotel_rooms' (migration 0057).
+const HOTEL_CATEGORIES = new Set(['hotel', 'villa', 'resort', 'auberge', 'residence_meublee']);
 
 interface Venue {
   id: string;
@@ -430,6 +433,7 @@ export default function VenueDetail() {
       >
         {/* CTA dynamique selon la catégorie du venue :
             - boutique/mall/supermarche/pharmacie → "Voir le catalogue" → /shop/[venueId]
+            - hotel/villa/resort/auberge/residence_meublee → "Réserver une chambre" → /hotel/[venueId]
             - sinon → "Réserver une table" → /reservation/[venueId] (historique) */}
         {SHOP_CATEGORIES.has(venue.category) ? (
           <Pressable
@@ -445,6 +449,19 @@ export default function VenueDetail() {
             }}
           >
             <Text style={s.ctaText}>🛍️  Voir le catalogue</Text>
+          </Pressable>
+        ) : HOTEL_CATEGORIES.has(venue.category) ? (
+          <Pressable
+            style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              logVenueEvent(venue.id, 'reservation_start');
+              router.push({
+                pathname: '/hotel/[venueId]',
+                params: { venueId: venue.id },
+              });
+            }}
+          >
+            <Text style={s.ctaText}>🛏️  Réserver une chambre</Text>
           </Pressable>
         ) : (
           <Pressable

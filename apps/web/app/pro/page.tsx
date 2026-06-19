@@ -6,7 +6,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
-import { formatXOF, slugify, categoriesByGroup } from '@soutra/shared';
+import {
+  formatXOF, slugify, categoriesByGroup,
+  isShopCategory, isHotelCategory,
+  businessTypeOf, modulesForBusinessType,
+  type ProModule,
+} from '@soutra/shared';
 import { VenueAnalytics } from './_components/VenueAnalytics';
 import { ProRevenueDashboard } from './_components/ProRevenueDashboard';
 import { ShopProductsTab } from './_components/ShopProductsTab';
@@ -23,17 +28,9 @@ const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPick
 
 type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'analytics' | 'shop-products' | 'shop-orders' | 'hotel-rooms' | 'hotel-bookings' | 'finances' | 'marketing' | 'settings';
 
-// Catégories de venues compatibles avec le module Boutique (produits + orders).
-// Les onglets Catalogue + Commandes ne s'affichent que pour ces catégories.
-const SHOP_COMPATIBLE_CATEGORIES = new Set([
-  'boutique', 'mall', 'supermarche', 'pharmacie',
-]);
-
-// Catégories compatibles avec le module Hôtel (chambres + bookings nuitées).
-// Cohérent avec businessType='hotel_rooms' côté shared (PR1 migration 0057).
-const HOTEL_COMPATIBLE_CATEGORIES = new Set([
-  'hotel', 'villa', 'resort', 'auberge', 'residence_meublee',
-]);
+// Note : la compatibilité boutique/hôtel passe par isShopCategory() /
+// isHotelCategory() du shared (source unique avec la sidebar dynamique
+// PR2 onboarding). Plus de Sets de catégories à maintenir ici.
 type ResStatus = 'pending' | 'confirmed' | 'arrived' | 'no_show' | 'cancelled' | 'refunded';
 
 interface Venue { id: string; name: string; category: string; city: string; address: string; phone: string; status: string; rating_avg: number; rating_count: number; description: string; logo_url: string | null; cover_url: string | null; gallery_urls: string[] | null; whatsapp: string | null; email: string | null; district: string | null; avg_price_xof: number | null; opening_hours: any; amenities: string[] | null; ambiance: string[] | null; socials: any; }
@@ -57,16 +54,24 @@ const STATUS_META_EVT: Record<'draft' | 'published' | 'sold_out' | 'cancelled' |
   done: { label: 'Terminé', color: 'text-blue-700', bg: 'bg-blue-50' },
 };
 
-const SIDEBAR: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: <IcoGrid /> },
-  { id: 'reservations', label: 'Réservations', icon: <IcoCalendar /> },
-  { id: 'events', label: 'Événements', icon: <IcoTicket /> },
-  { id: 'menu', label: 'Menu', icon: <IcoUtensils /> },
-  { id: 'analytics', label: 'Analytics', icon: <IcoTrend /> },
-  { id: 'finances', label: 'Finances', icon: <IcoWallet /> },
-  { id: 'marketing', label: 'Marketing', icon: <IcoMegaphone /> },
-  { id: 'settings', label: 'Paramètres', icon: <IcoGear /> },
-];
+// Catalogue complet des entrées de la "quick nav" du dashboard, indexé par
+// ProModule. La liste effective est filtrée à l'exécution selon le
+// businessType du venue actif (PR2 onboarding) — alignée avec la sidebar
+// du shell (ProShell.tsx) et MODULES_BY_BUSINESS_TYPE (@soutra/shared).
+const QUICK_NAV: Record<Tab, { id: Tab; label: string; icon: React.ReactNode }> = {
+  'dashboard':      { id: 'dashboard',      label: 'Dashboard',              icon: <IcoGrid /> },
+  'reservations':   { id: 'reservations',   label: 'Réservations',           icon: <IcoCalendar /> },
+  'events':         { id: 'events',         label: 'Événements',             icon: <IcoTicket /> },
+  'menu':           { id: 'menu',           label: 'Menu',                   icon: <IcoUtensils /> },
+  'shop-products':  { id: 'shop-products',  label: 'Catalogue',              icon: <IcoUtensils /> },
+  'shop-orders':    { id: 'shop-orders',    label: 'Commandes',              icon: <IcoCalendar /> },
+  'hotel-rooms':    { id: 'hotel-rooms',    label: 'Chambres',               icon: <IcoUtensils /> },
+  'hotel-bookings': { id: 'hotel-bookings', label: 'Réservations chambres',  icon: <IcoCalendar /> },
+  'analytics':      { id: 'analytics',      label: 'Analytics',              icon: <IcoTrend /> },
+  'finances':       { id: 'finances',       label: 'Finances',               icon: <IcoWallet /> },
+  'marketing':      { id: 'marketing',      label: 'Marketing',              icon: <IcoMegaphone /> },
+  'settings':       { id: 'settings',       label: 'Paramètres',             icon: <IcoGear /> },
+};
 
 // Catégories d'établissement — désormais sourcées de @soutra/shared
 // (migrations 0001 + 0013 + 0033). Les <select> utilisent <optgroup> pour
@@ -153,11 +158,16 @@ function ProDashboard() {
   // L'onglet actif est désormais piloté par ?tab=… ce qui permet à la
   // sidebar AppShell (Link) et au bouton retour navigateur de fonctionner.
   const tabParam = searchParams?.get('tab');
+  const venueParam = searchParams?.get('venue');
   const tab: Tab = (
     ['dashboard', 'reservations', 'events', 'menu', 'analytics', 'shop-products', 'shop-orders', 'hotel-rooms', 'hotel-bookings', 'finances', 'marketing', 'settings'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'dashboard';
   const setTab = useCallback((next: Tab) => {
-    router.replace(`/pro?tab=${next}`, { scroll: false });
+    // Préserve ?venue= dans l'URL pour que ProShell continue de filtrer
+    // la sidebar selon le venue actif.
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', next);
+    router.replace(`/pro${url.search}`, { scroll: false });
   }, [router]);
 
   const [userName, setUserName] = useState('');
@@ -282,8 +292,14 @@ function ProDashboard() {
 
     if (ownedVenues && ownedVenues.length > 0) {
       setVenues(ownedVenues as Venue[]);
-      setSelectedVenueId(ownedVenues[0].id);
-      const v = ownedVenues[0];
+      // Priorise ?venue=ID si présent ET appartient au user (sinon premier).
+      // Permet à ProShell de piloter le filtrage de la sidebar selon le
+      // venue actif (PR2 onboarding).
+      const fromUrl = venueParam
+        ? ownedVenues.find((x: { id: string }) => x.id === venueParam)
+        : null;
+      const v = (fromUrl ?? ownedVenues[0]) as Venue;
+      setSelectedVenueId(v.id);
       setSettingsName(v.name || '');
       setSettingsCity(v.city || '');
       setSettingsAddress(v.address || '');
@@ -292,6 +308,10 @@ function ProDashboard() {
       setSettingsCategory(v.category || '');
       setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [], videos: (v as any).video_urls || [], tour360: (v as any).tour_360_url || null }); setTour360Input((v as any).tour_360_url || '');
       setVx(vxFromVenue(v));
+    } else {
+      // PR3 onboarding : aucun venue → wizard /pro/onboard (4 étapes).
+      router.replace('/pro/onboard');
+      return;
     }
 
     // Load wallet
@@ -363,6 +383,27 @@ function ProDashboard() {
     loadPromos(selectedVenueId);
     if (userId) loadTxs();
   }, [selectedVenueId, loading]);
+
+  // Modules disponibles pour le venue actif. Pilote la quick nav du dashboard
+  // (alignée avec la sidebar de ProShell). Fallback liste minimale tant que
+  // le venue n'est pas chargé.
+  const selectedCategory = useMemo(
+    () => venues.find((v) => v.id === selectedVenueId)?.category ?? null,
+    [venues, selectedVenueId],
+  );
+  const availableModules = useMemo<ProModule[]>(
+    () => modulesForBusinessType(selectedCategory ? businessTypeOf(selectedCategory) : null),
+    [selectedCategory],
+  );
+
+  // Si le tab actif n'est plus dispo pour ce businessType (ex: l'user change
+  // de venue restau → magasin), bascule sur 'dashboard' en silence.
+  useEffect(() => {
+    if (!selectedCategory) return;
+    if (tab !== 'dashboard' && !availableModules.includes(tab as ProModule)) {
+      setTab('dashboard');
+    }
+  }, [tab, availableModules, selectedCategory, setTab]);
 
   useEffect(() => {
     if (!selectedVenueId) return;
@@ -635,22 +676,39 @@ function ProDashboard() {
   async function createVenue() {
     if (!nv.name.trim() || !nv.address.trim()) { flash('Nom et adresse requis', 'error'); return; }
     setCreating(true);
-    const slug = `${slugify(nv.name)}-${Math.random().toString(36).slice(2, 7)}`;
-    const { error } = await (supabase as any).from('venues').insert({
-      owner_id: userId,
-      name: nv.name.trim(),
-      slug,
-      category: nv.category,
-      city: nv.city.trim() || 'Abidjan',
-      address: nv.address.trim(),
-      phone: nv.phone.trim() || null,
-      whatsapp: nv.whatsapp.trim() || null,
-      description: nv.description.trim() || null,
-      status: 'draft',
+    // Migration 0061 : RPC pro_create_venue → activation immédiate (status='active')
+    // + defaults intelligents (horaires + cover par businessType). Plus de
+    // status='draft' bloquant en attente d'un admin.
+    const { data, error } = await (supabase.rpc as any)('pro_create_venue', {
+      p_name: nv.name.trim(),
+      p_category: nv.category,
+      p_address: nv.address.trim(),
+      p_city: nv.city.trim() || 'Abidjan',
+      p_phone: nv.phone.trim() || null,
+      p_whatsapp: nv.whatsapp.trim() || null,
+      p_description: nv.description.trim() || null,
     });
     setCreating(false);
-    if (error) { flash(error.message, 'error'); return; }
-    flash('Établissement créé — en attente de validation');
+    if (error) {
+      const msg = String(error.message || '');
+      if (msg.includes('NAME_REQUIRED')) flash('Nom requis', 'error');
+      else if (msg.includes('ADDRESS_REQUIRED')) flash('Adresse requise', 'error');
+      else if (msg.includes('NAME_TOO_LONG')) flash('Nom trop long (200 caractères max)', 'error');
+      else if (msg.includes('INVALID_CATEGORY')) flash('Catégorie invalide', 'error');
+      else if (msg.includes('NOT_AUTHENTICATED')) flash('Session expirée — reconnecte-toi', 'error');
+      else flash(error.message || 'Création impossible', 'error');
+      return;
+    }
+    const result = data as { ok: boolean; reason?: string; venue_id?: string };
+    if (!result?.ok) {
+      if (result?.reason === 'ALREADY_EXISTS') {
+        flash('Tu as déjà un établissement avec ce nom et cette adresse', 'error');
+      } else {
+        flash('Création impossible', 'error');
+      }
+      return;
+    }
+    flash('Établissement créé et actif — tu peux commencer !');
     await loadInitialData();
   }
 
@@ -860,7 +918,15 @@ function ProDashboard() {
             {venues.length > 1 && (
               <select
                 value={selectedVenueId}
-                onChange={(e) => setSelectedVenueId(e.target.value)}
+                onChange={(e) => {
+                  const nextId = e.target.value;
+                  setSelectedVenueId(nextId);
+                  // Synchronise ?venue= dans l'URL pour que ProShell recharge
+                  // la sidebar selon le businessType du venue choisi.
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('venue', nextId);
+                  router.replace(`/pro${url.search}`, { scroll: false });
+                }}
                 className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-dark transition focus:border-primary-500 focus:outline-none sm:w-auto sm:px-4 sm:py-2.5"
               >
                 {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -882,7 +948,10 @@ function ProDashboard() {
               <div className="mb-6 text-center">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-50"><IcoGrid className="h-8 w-8 text-primary-500" /></div>
                 <h2 className="mt-4 font-display text-2xl font-bold text-dark">Crée ton établissement</h2>
-                <p className="mt-1 text-sm text-neutral-500">Renseigne les infos de base — tu pourras tout compléter ensuite dans Paramètres.</p>
+                <p className="mt-1 text-sm text-neutral-500">
+                  Renseigne les infos de base — ton fiche sera <span className="font-semibold text-emerald-600">active immédiatement</span>.
+                  Tu pourras tout compléter ensuite dans Paramètres.
+                </p>
               </div>
               <div className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6">
                 <ProInput label="Nom de l'établissement" value={nv.name} onChange={(v) => setNv((p) => ({ ...p, name: v }))} placeholder="Le Maquis du Coin" />
@@ -928,9 +997,12 @@ function ProDashboard() {
                     <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-600" label="Note moyenne" value={`★ ${selectedVenue?.rating_avg?.toFixed(1) || '—'}`} sub={`${selectedVenue?.rating_count || 0} avis`} />
                   </div>
 
-                  {/* Quick nav */}
+                  {/* Quick nav — filtrée selon les modules disponibles pour
+                      le businessType du venue actif (PR2 onboarding). */}
                   <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 lg:gap-3">
-                    {SIDEBAR.filter((s) => s.id !== 'dashboard').map((s) => (
+                    {availableModules.filter((m) => m !== 'dashboard').map((m) => {
+                      const s = QUICK_NAV[m];
+                      return (
                       <button
                         key={s.id}
                         onClick={() => setTab(s.id)}
@@ -938,7 +1010,8 @@ function ProDashboard() {
                       >
                         {s.label}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <ReservationTable reservations={filtered} tableLoading={tableLoading} search={search} onSearch={setSearch} statusFilter={statusFilter} onStatusFilter={setStatusFilter} actionLoading={actionLoading} onUpdateStatus={updateStatus} />
@@ -1197,7 +1270,7 @@ function ProDashboard() {
 
               {/* ═══════════ BOUTIQUE (catégories compatibles uniquement) ═══════════ */}
               {tab === 'shop-products' && selectedVenueId && (
-                selectedVenue && SHOP_COMPATIBLE_CATEGORIES.has(selectedVenue.category) ? (
+                selectedVenue && isShopCategory(selectedVenue.category) ? (
                   <ShopProductsTab venueId={selectedVenueId} />
                 ) : (
                   <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
@@ -1213,7 +1286,7 @@ function ProDashboard() {
               )}
 
               {tab === 'shop-orders' && selectedVenueId && (
-                selectedVenue && SHOP_COMPATIBLE_CATEGORIES.has(selectedVenue.category) ? (
+                selectedVenue && isShopCategory(selectedVenue.category) ? (
                   <ShopOrdersTab venueId={selectedVenueId} />
                 ) : (
                   <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
@@ -1226,7 +1299,7 @@ function ProDashboard() {
 
               {/* ═══════════ HÔTEL (catégories compatibles uniquement) ═══════════ */}
               {tab === 'hotel-rooms' && selectedVenueId && (
-                selectedVenue && HOTEL_COMPATIBLE_CATEGORIES.has(selectedVenue.category) ? (
+                selectedVenue && isHotelCategory(selectedVenue.category) ? (
                   <HotelRoomsTab venueId={selectedVenueId} />
                 ) : (
                   <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
@@ -1242,7 +1315,7 @@ function ProDashboard() {
               )}
 
               {tab === 'hotel-bookings' && selectedVenueId && (
-                selectedVenue && HOTEL_COMPATIBLE_CATEGORIES.has(selectedVenue.category) ? (
+                selectedVenue && isHotelCategory(selectedVenue.category) ? (
                   <HotelBookingsTab venueId={selectedVenueId} />
                 ) : (
                   <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">

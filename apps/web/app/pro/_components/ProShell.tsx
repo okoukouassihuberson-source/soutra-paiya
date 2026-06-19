@@ -1,16 +1,22 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   AppShell,
   type NavItem,
   type ShellUser,
   IcoGrid, IcoCalendar, IcoTicket, IcoUtensils,
   IcoWallet, IcoMegaphone, IcoGear, IcoLogout,
+  IcoChart,
 } from '@/components/layout';
 import { Button } from '@/components/ui';
 import { supabaseBrowser } from '@/lib/supabase';
+import {
+  businessTypeOf,
+  modulesForBusinessType,
+  type ProModule,
+} from '@soutra/shared';
 
 /**
  * Wrapper Client Component pour l'AppShell de /pro.
@@ -19,6 +25,11 @@ import { supabaseBrowser } from '@/lib/supabase';
  * reste monolithique pour cette PR — sa refonte profonde en routes séparées
  * sera faite plus tard. Cela permet d'avoir le shell responsive immédiatement
  * sans casser la logique métier (1500+ lignes).
+ *
+ * PR2 onboarding : la sidebar est filtrée dynamiquement selon le businessType
+ * du venue actif (Restaurant → Réservations/Menu ; Hôtel → Chambres/Bookings ;
+ * Magasin → Catalogue/Commandes ; etc.). Le venue actif vient de ?venue=ID
+ * dans l'URL si présent, sinon du 1er venue de l'owner (fallback).
  */
 // Icône panier pour les onglets boutique (Catalogue + Commandes)
 const IcoCart = (p: React.SVGProps<SVGSVGElement>) => (
@@ -49,27 +60,78 @@ const IcoKey = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const NAV: NavItem[] = [
-  { id: 'dashboard',     label: 'Dashboard',    href: '/pro?tab=dashboard',     icon: <IcoGrid />,      inBottomNav: true, match: 'exact' },
-  { id: 'reservations',  label: 'Réservations', href: '/pro?tab=reservations',  icon: <IcoCalendar />,  inBottomNav: true, match: 'exact' },
-  { id: 'events',        label: 'Événements',   href: '/pro?tab=events',        icon: <IcoTicket />,    inBottomNav: true, match: 'exact' },
-  { id: 'menu',          label: 'Menu',         href: '/pro?tab=menu',          icon: <IcoUtensils />,                     match: 'exact' },
-  // Onglets BOUTIQUE — visibles uniquement si le venue a une catégorie compatible
-  // (gate côté pro/page.tsx via la prop venue.category). Si non compatible, le
-  // tab simplement ne rend rien et la sidebar le masque via CSS.
-  { id: 'shop-products', label: 'Catalogue',    href: '/pro?tab=shop-products', icon: <IcoBox />,                          match: 'exact' },
-  { id: 'shop-orders',   label: 'Commandes',    href: '/pro?tab=shop-orders',   icon: <IcoCart />,                         match: 'exact' },
-  // Onglets HÔTEL — visibles si businessType='hotel_rooms' (gate dans pro/page.tsx)
-  { id: 'hotel-rooms',   label: 'Chambres',     href: '/pro?tab=hotel-rooms',   icon: <IcoBed />,                          match: 'exact' },
-  { id: 'hotel-bookings',label: 'Réservations chambres', href: '/pro?tab=hotel-bookings', icon: <IcoKey />,                match: 'exact' },
-  { id: 'finances',      label: 'Finances',     href: '/pro?tab=finances',      icon: <IcoWallet />,    inBottomNav: true, match: 'exact' },
-  { id: 'marketing',     label: 'Marketing',    href: '/pro?tab=marketing',     icon: <IcoMegaphone />,                    match: 'exact' },
-  { id: 'settings',      label: 'Paramètres',   href: '/pro?tab=settings',      icon: <IcoGear />,                         match: 'exact' },
-];
+/**
+ * Catalogue complet des onglets Pro. Une fois calculée, la nav effective
+ * = filtrée selon les modules disponibles pour le businessType du venue
+ * actif (cf. MODULES_BY_BUSINESS_TYPE dans @soutra/shared).
+ */
+const ALL_NAV_ITEMS: Record<ProModule, NavItem> = {
+  'dashboard':      { id: 'dashboard',      label: 'Dashboard',              href: '/pro?tab=dashboard',      icon: <IcoGrid />,      inBottomNav: true, match: 'exact' },
+  'reservations':   { id: 'reservations',   label: 'Réservations',           href: '/pro?tab=reservations',   icon: <IcoCalendar />,  inBottomNav: true, match: 'exact' },
+  'events':         { id: 'events',         label: 'Événements',             href: '/pro?tab=events',         icon: <IcoTicket />,    inBottomNav: true, match: 'exact' },
+  'menu':           { id: 'menu',           label: 'Menu',                   href: '/pro?tab=menu',           icon: <IcoUtensils />,                     match: 'exact' },
+  'shop-products':  { id: 'shop-products',  label: 'Catalogue',              href: '/pro?tab=shop-products',  icon: <IcoBox />,                          match: 'exact' },
+  'shop-orders':    { id: 'shop-orders',    label: 'Commandes',              href: '/pro?tab=shop-orders',    icon: <IcoCart />,                         match: 'exact' },
+  'hotel-rooms':    { id: 'hotel-rooms',    label: 'Chambres',               href: '/pro?tab=hotel-rooms',    icon: <IcoBed />,                          match: 'exact' },
+  'hotel-bookings': { id: 'hotel-bookings', label: 'Réservations chambres',  href: '/pro?tab=hotel-bookings', icon: <IcoKey />,                          match: 'exact' },
+  'analytics':      { id: 'analytics',      label: 'Analytics',              href: '/pro?tab=analytics',      icon: <IcoChart />,                        match: 'exact' },
+  'finances':       { id: 'finances',       label: 'Finances',               href: '/pro?tab=finances',       icon: <IcoWallet />,    inBottomNav: true, match: 'exact' },
+  'marketing':      { id: 'marketing',      label: 'Marketing',              href: '/pro?tab=marketing',      icon: <IcoMegaphone />,                    match: 'exact' },
+  'settings':       { id: 'settings',       label: 'Paramètres',             href: '/pro?tab=settings',       icon: <IcoGear />,                         match: 'exact' },
+};
+
+/** Fallback safe quand l'user n'a pas encore de venue : nav minimale. */
+const FALLBACK_MODULES: ProModule[] = ['dashboard', 'analytics', 'marketing', 'finances', 'settings'];
 
 export function ProShell({ user, children }: { user: ShellUser; children: ReactNode }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const supabase = supabaseBrowser();
+
+  // PR3 onboarding : le wizard /pro/onboard tourne en pleine largeur sans
+  // sidebar (le user n'a pas encore de venue, donc pas de navigation utile).
+  // On bypass simplement AppShell — l'auth garde-fou reste assurée par
+  // apps/web/app/pro/layout.tsx côté server.
+  if (pathname?.startsWith('/pro/onboard')) {
+    return <>{children}</>;
+  }
+
+  // Catégorie du venue actif. Lue depuis la DB côté client pour piloter le
+  // filtrage de la nav. Si l'URL contient ?venue=ID on prend ce venue ; sinon
+  // on prend le premier venue dont le user est owner.
+  const venueIdFromUrl = searchParams?.get('venue') ?? null;
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data: { user: u } } = await supabase.auth.getUser();
+      if (!u) return;
+      let query = (supabase as any)
+        .from('venues')
+        .select('category')
+        .eq('owner_id', u.id);
+      if (venueIdFromUrl) {
+        query = query.eq('id', venueIdFromUrl);
+      }
+      query = query.limit(1).maybeSingle();
+      const { data } = await query;
+      if (mounted) setActiveCategory((data as { category?: string } | null)?.category ?? null);
+    })();
+    return () => { mounted = false; };
+  }, [supabase, venueIdFromUrl]);
+
+  const navItems = useMemo<NavItem[]>(() => {
+    // Tant qu'on n'a pas la catégorie : nav minimale (évite un flash de la
+    // nav complète puis filtrage).
+    if (activeCategory === null) {
+      return FALLBACK_MODULES.map((m) => ALL_NAV_ITEMS[m]);
+    }
+    const bt = businessTypeOf(activeCategory);
+    const modules = modulesForBusinessType(bt);
+    return modules.map((m) => ALL_NAV_ITEMS[m]);
+  }, [activeCategory]);
 
   const onSignOut = async () => {
     await supabase.auth.signOut();
@@ -80,7 +142,7 @@ export function ProShell({ user, children }: { user: ShellUser; children: ReactN
     <AppShell
       appLabel="Espace Pro"
       homeHref="/"
-      navItems={NAV}
+      navItems={navItems}
       user={user}
       sidebarFooter={
         <Button variant="ghost" size="sm" fullWidth onClick={onSignOut} leftIcon={<IcoLogout />}>

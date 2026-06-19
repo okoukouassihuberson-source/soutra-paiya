@@ -5,10 +5,12 @@ import { ClaimsTab } from './ClaimsTab';
 import { SubmissionsTab } from './SubmissionsTab';
 import { ReportsTab } from './ReportsTab';
 import { ProKycTab } from './ProKycTab';
+import { AutoFlagsTab } from './AutoFlagsTab';
 
-type SubTab = 'kyc' | 'claims' | 'submissions' | 'reports';
+type SubTab = 'auto-flags' | 'kyc' | 'claims' | 'submissions' | 'reports';
 
 const SUB_TABS: { id: SubTab; label: string; desc: string }[] = [
+  { id: 'auto-flags',  label: 'À vérifier',       desc: 'Venues auto-flaggés à la création (PR4)' },
   { id: 'kyc',         label: 'KYC Pro',          desc: 'Vérifier l\'identité des propriétaires' },
   { id: 'claims',      label: 'Revendications',   desc: 'Approuver les demandes de propriété' },
   { id: 'submissions', label: 'Contributions',    desc: 'Valider les nouveaux établissements' },
@@ -18,18 +20,19 @@ const SUB_TABS: { id: SubTab; label: string; desc: string }[] = [
 /**
  * Onglet « Modération Pro » du dashboard /admin.
  *
- * Regroupe les 4 outils de validation que peuvent utiliser l'admin et le
+ * Regroupe les outils de validation que peuvent utiliser l'admin et le
  * modérateur (numéro hardcodé en migration 0045) :
- *   1. KYC Pro          → ProKycTab
- *   2. Revendications   → ClaimsTab (devenir venue_owner)
- *   3. Contributions    → SubmissionsTab (ajouter un nouvel établissement)
- *   4. Signalements     → ReportsTab (rapports communautaires)
+ *   1. À vérifier       → AutoFlagsTab (modération a posteriori, PR4)
+ *   2. KYC Pro          → ProKycTab
+ *   3. Revendications   → ClaimsTab (devenir venue_owner)
+ *   4. Contributions    → SubmissionsTab (ajouter un nouvel établissement)
+ *   5. Signalements     → ReportsTab (rapports communautaires)
  *
  * Les sous-onglets sont gérés en state local — pas de query param pour ne pas
  * polluer le `?tab=` du dashboard principal.
  */
 export function ModerationTab() {
-  const [subTab, setSubTab] = useState<SubTab>('kyc');
+  const [subTab, setSubTab] = useState<SubTab>('auto-flags');
 
   const active = SUB_TABS.find((s) => s.id === subTab) ?? SUB_TABS[0];
 
@@ -54,7 +57,7 @@ export function ModerationTab() {
       </div>
 
       {/* Sous-onglets */}
-      <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-5">
         {SUB_TABS.map((s) => {
           const isActive = s.id === subTab;
           return (
@@ -80,6 +83,7 @@ export function ModerationTab() {
       </p>
 
       {/* Contenu du sous-onglet */}
+      {subTab === 'auto-flags' && <AutoFlagsTab />}
       {subTab === 'kyc' && <ProKycTab />}
       {subTab === 'claims' && <ClaimsTab />}
       {subTab === 'submissions' && <SubmissionsTab />}
