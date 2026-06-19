@@ -11,6 +11,7 @@ import { Gallery } from '@/components/venue/Gallery';
 import { HoursCompact } from '@/components/venue/HoursCompact';
 import { ReportSheet } from '@/components/venue/ReportSheet';
 import { ClaimSheet } from '@/components/venue/ClaimSheet';
+import { PaymentMethodsStrip } from '@/components/PaymentMethodsStrip';
 import { logVenueEvent } from '@/lib/venue-analytics';
 import { getVenueClaimStatus, CLAIM_STATUS_META, type ClaimStatus } from '@/lib/venue-claims';
 import * as WebBrowser from 'expo-web-browser';
@@ -42,6 +43,7 @@ interface Venue {
   opening_hours: Record<string, [string, string]>;
   avg_price_xof: number;
   amenities: string[];
+  payment_methods: string[] | null;
   rating_avg: number;
   rating_count: number;
 }
@@ -407,6 +409,12 @@ export default function VenueDetail() {
               </View>
             )}
           </View>
+
+          {/* Moyens de paiement acceptés (migration 0063) */}
+          {/* Le Pro choisit la liste depuis /pro Paramètres. Effet confiance
+              avant même la réservation : "Je sais que je peux payer en
+              Orange Money / Wave / etc." */}
+          <PaymentMethodsStrip methods={venue.payment_methods} variant="venue-card" />
 
           {/* Amenities */}
           {venue.amenities && venue.amenities.length > 0 && (
