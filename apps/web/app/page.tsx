@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { LandingNavbar } from '@/components/marketing/LandingNavbar';
+import { PaymentLogo } from '@/components/marketing/PaymentLogo';
 
 export default function HomePage() {
   return (
@@ -77,20 +78,80 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/*  TRUST BAR                                             */}
+      {/*  TRUST — PAIEMENT SÉCURISÉ                              */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="border-b border-neutral-100 bg-white py-12">
+      {/* Section premium confiance : logos officiels des moyens de
+          paiement supportés + checklist garanties. Spec PO : "l'utilisateur
+          doit comprendre en moins de 3 secondes que Soutra-Paiya accepte
+          Mobile Money + cartes internationales + wallet". */}
+      <section
+        id="payments"
+        aria-labelledby="payments-title"
+        className="border-b border-neutral-100 bg-gradient-to-b from-white via-white to-neutral-50 py-16 sm:py-20"
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <p className="mb-8 text-center text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
-            Paiements sécurisés
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 opacity-40 grayscale transition-all duration-500 hover:opacity-60 hover:grayscale-0 sm:gap-x-10 sm:gap-y-6 lg:gap-x-14">
-            {['Orange Money', 'Wave', 'MTN MoMo', 'Moov Money', 'Visa', 'Mastercard'].map((name) => (
-              <span key={name} className="text-sm font-bold text-neutral-600 sm:text-base lg:text-lg">
-                {name}
-              </span>
+          <div className="mx-auto max-w-2xl text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Cryptage de niveau bancaire
+            </span>
+            <h2
+              id="payments-title"
+              className="mt-4 font-display text-3xl font-bold text-dark sm:text-4xl"
+            >
+              🔒 Paiement 100% sécurisé
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-base text-neutral-600">
+              Payez en toute confiance avec les moyens de paiement les plus utilisés
+              en Côte d&apos;Ivoire et à l&apos;international.
+            </p>
+          </div>
+
+          {/* Grille logos */}
+          <div
+            role="list"
+            aria-label="Moyens de paiement acceptés"
+            className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+          >
+            {(['visa', 'mastercard', 'orange-money', 'mtn-money', 'moov-money', 'wave', 'paiya-pay'] as const).map((name) => (
+              <div
+                key={name}
+                role="listitem"
+                className="group relative flex items-center justify-center rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-lg hover:shadow-primary-500/5"
+              >
+                <PaymentLogo name={name} className="h-10 w-auto sm:h-11" />
+              </div>
             ))}
           </div>
+
+          {/* Garanties checklist */}
+          <ul
+            role="list"
+            className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4"
+          >
+            {[
+              { icon: '🔒', label: 'Transactions sécurisées',          sub: 'Chiffrement TLS 1.3 de bout en bout' },
+              { icon: '⚡', label: 'Paiement instantané',              sub: 'Confirmation en moins de 5 secondes' },
+              { icon: '📱', label: 'Mobile Money & Cartes',            sub: 'Orange, MTN, Moov, Wave, Visa, Mastercard' },
+              { icon: '🛡️', label: 'Protection des données',           sub: 'Conforme RGPD & PCI-DSS niveau 1' },
+            ].map((item) => (
+              <li
+                key={item.label}
+                className="flex items-start gap-3 rounded-xl border border-neutral-100 bg-white p-4 shadow-sm"
+              >
+                <span aria-hidden className="text-xl">{item.icon}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-dark">{item.label}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-neutral-500">
+                    {item.sub}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
