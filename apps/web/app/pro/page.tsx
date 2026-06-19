@@ -19,6 +19,7 @@ import { ShopOrdersTab } from './_components/ShopOrdersTab';
 import { HotelRoomsTab } from './_components/HotelRoomsTab';
 import { HotelBookingsTab } from './_components/HotelBookingsTab';
 import { VenuePayoutPanel } from './_components/VenuePayoutPanel';
+import { PaymentMethodsPanel } from './_components/PaymentMethodsPanel';
 
 // Picker GPS — chargé en client only (leaflet utilise window au montage).
 const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPicker'), {
@@ -1542,6 +1543,13 @@ function ProDashboard() {
               {/* ═══════════ SETTINGS ═══════════ */}
               {tab === 'settings' && (
                 <>
+                  {/* PR Paiements — moyens de paiement acceptés (migration 0063) */}
+                  {selectedVenueId && (
+                    <div className="mb-6">
+                      <PaymentMethodsPanel venueId={selectedVenueId} />
+                    </div>
+                  )}
+
                   {/* Médias de la vitrine */}
                   <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6">
                     <h3 className="mb-5 font-display text-lg font-bold text-dark">Médias de la vitrine</h3>
