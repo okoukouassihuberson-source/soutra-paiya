@@ -25,7 +25,13 @@ interface Props {
 
 // Détection Expo Go (Mapbox natif indisponible)
 const isExpoGo = Constants.appOwnership === 'expo';
-const token = Constants.expoConfig?.extra?.mapboxPublicToken as string | undefined;
+// Lecture du token avec priorité env var > app.json :
+//   1. process.env.EXPO_PUBLIC_MAPBOX_TOKEN (injecté au build par Expo dès
+//      qu'il existe dans .env / EAS Secrets). Ne fuite jamais via git.
+//   2. fallback Constants.expoConfig?.extra?.mapboxPublicToken (legacy).
+const token =
+  (process.env.EXPO_PUBLIC_MAPBOX_TOKEN as string | undefined) ||
+  (Constants.expoConfig?.extra?.mapboxPublicToken as string | undefined);
 const tokenMissing = !token || token.startsWith('REPLACE_WITH');
 
 // Import dynamique pour éviter le crash en Expo Go
