@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { PaymentMethodsStrip } from '@/components/PaymentMethodsStrip';
 
 /**
  * /orders — mes commandes mobile.
@@ -51,7 +52,12 @@ interface Order {
   ready_at: string | null;
   delivered_at: string | null;
   cancelled_at: string | null;
-  venue: { name: string; cover_url: string | null; category: string | null } | null;
+  venue: {
+    name: string;
+    cover_url: string | null;
+    category: string | null;
+    payment_methods: string[] | null;
+  } | null;
 }
 
 const STATUS_META: Record<OrderStatus, { label: string; color: string; icon: string }> = {
@@ -86,7 +92,7 @@ export default function OrdersScreen() {
           delivery_method, delivery_address, delivery_notes,
           contact_phone, contact_name, payment_status,
           created_at, confirmed_at, ready_at, delivered_at, cancelled_at,
-          venue:venues(name, cover_url, category)
+          venue:venues(name, cover_url, category, payment_methods)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -324,20 +330,24 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
 
             {/* CTA Payer si commande non payée */}
             {canPay && (
-              <Pressable
-                onPress={handlePay}
-                disabled={paying}
-                style={({ pressed }) => [
-                  s.payBtn,
-                  paying && { opacity: 0.6 },
-                  pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
-                ]}
-              >
-                <Ionicons name="card" size={20} color="#fff" />
-                <Text style={s.payBtnText}>
-                  {paying ? 'Démarrage Paystack…' : `Payer maintenant · ${formatXOF(order.total_xof)}`}
-                </Text>
-              </Pressable>
+              <>
+                {/* Strip "Moyens disponibles" — effet confiance avant Paystack */}
+                <PaymentMethodsStrip methods={order.venue?.payment_methods} />
+                <Pressable
+                  onPress={handlePay}
+                  disabled={paying}
+                  style={({ pressed }) => [
+                    s.payBtn,
+                    paying && { opacity: 0.6 },
+                    pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                  ]}
+                >
+                  <Ionicons name="card" size={20} color="#fff" />
+                  <Text style={s.payBtnText}>
+                    {paying ? 'Démarrage Paystack…' : `Payer maintenant · ${formatXOF(order.total_xof)}`}
+                  </Text>
+                </Pressable>
+              </>
             )}
 
             <Pressable onPress={onClose} style={s.closeBtn}>
