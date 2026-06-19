@@ -12,12 +12,13 @@ import { useState } from 'react';
  * Utilisé par Topbar + Sidebar de l'AppShell.
  */
 export function BrandMark({ size = 'md', className = '' }: {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
 }) {
   const [imgError, setImgError] = useState(false);
 
   const sizeClass =
+    size === 'xs' ? 'h-7 w-7' :
     size === 'sm' ? 'h-8 w-8' :
     size === 'lg' ? 'h-10 w-10' :
                     'h-9 w-9';
