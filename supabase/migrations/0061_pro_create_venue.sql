@@ -77,8 +77,18 @@ as $$
       'sat', jsonb_build_array('09:00', '22:00'),
       'sun', jsonb_build_array('09:00', '22:00')
     )
-    -- Services pro / VTC : heures de bureau lun-ven 8-18h, sam 9-13h
-    when 'service_quote', 'vtc_ride' then jsonb_build_object(
+    -- Services pro : heures de bureau lun-ven 8-18h, sam 9-13h
+    when 'service_quote' then jsonb_build_object(
+      'mon', jsonb_build_array('08:00', '18:00'),
+      'tue', jsonb_build_array('08:00', '18:00'),
+      'wed', jsonb_build_array('08:00', '18:00'),
+      'thu', jsonb_build_array('08:00', '18:00'),
+      'fri', jsonb_build_array('08:00', '18:00'),
+      'sat', jsonb_build_array('09:00', '13:00')
+    )
+    -- VTC : mêmes horaires que services pro (PostgreSQL CASE simple ne
+    -- supporte pas "WHEN a, b THEN x" → on duplique la branche).
+    when 'vtc_ride' then jsonb_build_object(
       'mon', jsonb_build_array('08:00', '18:00'),
       'tue', jsonb_build_array('08:00', '18:00'),
       'wed', jsonb_build_array('08:00', '18:00'),
