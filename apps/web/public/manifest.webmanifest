@@ -13,6 +13,12 @@
   "categories": ["finance", "lifestyle", "food", "social"],
   "icons": [
     {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/icons/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
@@ -22,7 +28,7 @@
       "src": "/icons/icon-1024.png",
       "sizes": "1024x1024",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -31,14 +37,14 @@
       "short_name": "Pro",
       "description": "Dashboard de mon établissement",
       "url": "/pro",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/logo.png", "sizes": "any" }]
     },
     {
       "name": "Espace Admin",
       "short_name": "Admin",
       "description": "Tableau de bord administrateur",
       "url": "/admin",
-      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/logo.png", "sizes": "any" }]
     }
   ]
 }

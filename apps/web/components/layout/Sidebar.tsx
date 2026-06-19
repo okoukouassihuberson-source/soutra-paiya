@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Avatar } from '@/components/ui/Avatar';
 import { cn } from '@/lib/cn';
+import { BrandMark } from './BrandMark';
 import { isActiveNav, type NavItem, type ShellUser } from './AppShell';
 
 interface Props {
@@ -40,13 +41,7 @@ export function Sidebar({
           href={homeHref}
           className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4"
         >
-          <span
-            aria-hidden
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-extrabold text-white shadow-sm"
-            style={{ background: 'linear-gradient(135deg,#FF6B1A,#E5500D)' }}
-          >
-            SP
-          </span>
+          <BrandMark size="md" />
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-extrabold tracking-tight text-dark">
               Soutra-Playce
