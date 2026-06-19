@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { supabaseBrowser } from '@/lib/supabase';
+import { BrandMark } from '@/components/layout/BrandMark';
 
 /**
  * Navbar marketing — fixed-top sur dark hero, burger menu mobile.
@@ -75,13 +76,7 @@ export function LandingNavbar() {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 font-display text-lg font-bold tracking-tight sm:text-xl"
           >
-            <span
-              aria-hidden
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-extrabold text-white shadow-sm"
-              style={{ background: 'linear-gradient(135deg,#FF6B1A,#E5500D)' }}
-            >
-              SP
-            </span>
+            <BrandMark size="xs" />
             <span>
               <span className="text-white">Soutra</span>
               <span className="text-primary-400">-Playce</span>
