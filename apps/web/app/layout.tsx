@@ -38,11 +38,15 @@ export const metadata: Metadata = {
   },
   formatDetection: { telephone: false },
   icons: {
+    // /logo.png est la source unique du logo (marker bleu/orange Soutra-Paiya).
+    // Les anciens icons/icon.svg + icons/icon-1024.png restent en fallback PWA.
     icon: [
+      { url: '/logo.png', type: 'image/png' },
       { url: '/icons/icon.svg', type: 'image/svg+xml' },
       { url: '/icons/icon-1024.png', type: 'image/png', sizes: '1024x1024' },
     ],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    apple: [{ url: '/logo.png', type: 'image/png' }],
+    shortcut: '/logo.png',
   },
   openGraph: {
     title: 'Soutra-Playce',
@@ -50,8 +54,9 @@ export const metadata: Metadata = {
     locale: 'fr_CI',
     type: 'website',
     siteName: 'Soutra-Playce',
+    images: [{ url: '/logo.png', width: 1024, height: 1024, alt: 'Soutra-Playce' }],
   },
-  twitter: { card: 'summary_large_image', title: 'Soutra-Playce' },
+  twitter: { card: 'summary_large_image', title: 'Soutra-Playce', images: ['/logo.png'] },
 };
 
 // Hôte Supabase pré-connecté pour économiser le handshake DNS/TLS au premier

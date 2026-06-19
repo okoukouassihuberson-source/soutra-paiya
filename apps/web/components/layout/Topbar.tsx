@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { IconButton } from '@/components/ui/IconButton';
 import { Avatar } from '@/components/ui/Avatar';
+import { BrandMark } from './BrandMark';
 import type { ShellUser } from './AppShell';
 
 interface Props {
@@ -30,13 +31,7 @@ export function Topbar({ appLabel, homeHref, user, actions, onMenuClick }: Props
       </IconButton>
 
       <Link href={homeHref} className="flex min-w-0 items-center gap-2">
-        <span
-          aria-hidden
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-extrabold text-white shadow-sm"
-          style={{ background: 'linear-gradient(135deg,#FF6B1A,#E5500D)' }}
-        >
-          SP
-        </span>
+        <BrandMark size="sm" />
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-sm font-extrabold tracking-tight text-dark">
             Soutra-Playce
