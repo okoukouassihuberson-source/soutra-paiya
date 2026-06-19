@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { PaymentMethodsStrip } from '@/components/PaymentMethodsStrip';
 
 /**
  * /hotel-bookings — mes réservations hôtel mobile.
@@ -169,6 +170,25 @@ function BookingDetailModal({
   const s = useMemo(() => makeStyles(c), [c]);
   const [paying, setPaying] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  // Fetch des moyens de paiement acceptés par le venue (migration 0063).
+  // La RPC list_my_room_bookings ne les inclut pas — on charge à l'ouverture.
+  const [paymentMethods, setPaymentMethods] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!booking?.venue_id) { setPaymentMethods(null); return; }
+    let mounted = true;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('venues')
+        .select('payment_methods')
+        .eq('id', booking.venue_id)
+        .maybeSingle();
+      if (mounted) {
+        setPaymentMethods((data?.payment_methods as string[] | null) ?? null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [booking?.venue_id]);
 
   const handlePay = useCallback(async () => {
     if (!booking) return;
@@ -305,20 +325,24 @@ function BookingDetailModal({
 
             {/* CTA Payer si réservation non payée */}
             {canPay && (
-              <Pressable
-                onPress={handlePay}
-                disabled={paying}
-                style={({ pressed }) => [
-                  s.payBtn,
-                  paying && { opacity: 0.6 },
-                  pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
-                ]}
-              >
-                <Ionicons name="card" size={20} color="#fff" />
-                <Text style={s.payBtnText}>
-                  {paying ? 'Démarrage Paystack…' : `Payer maintenant · ${formatXOF(booking.total_xof)}`}
-                </Text>
-              </Pressable>
+              <>
+                {/* Strip "Moyens disponibles" — effet confiance avant Paystack */}
+                <PaymentMethodsStrip methods={paymentMethods} />
+                <Pressable
+                  onPress={handlePay}
+                  disabled={paying}
+                  style={({ pressed }) => [
+                    s.payBtn,
+                    paying && { opacity: 0.6 },
+                    pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                  ]}
+                >
+                  <Ionicons name="card" size={20} color="#fff" />
+                  <Text style={s.payBtnText}>
+                    {paying ? 'Démarrage Paystack…' : `Payer maintenant · ${formatXOF(booking.total_xof)}`}
+                  </Text>
+                </Pressable>
+              </>
             )}
 
             {canCancel && (
