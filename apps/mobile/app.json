@@ -3,7 +3,14 @@
     "name": "Soutra-Playce",
     "slug": "soutra-paiya",
     "scheme": "soutrapaiya",
-    "version": "0.1.2",
+    "version": "0.6.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a530c184-6d1b-4b0f-a3f4-3793b4f999e5",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
