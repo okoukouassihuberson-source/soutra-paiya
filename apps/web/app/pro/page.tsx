@@ -308,6 +308,10 @@ function ProDashboard() {
       setSettingsCategory(v.category || '');
       setMedia({ logo: v.logo_url, cover: v.cover_url, gallery: v.gallery_urls || [], videos: (v as any).video_urls || [], tour360: (v as any).tour_360_url || null }); setTour360Input((v as any).tour_360_url || '');
       setVx(vxFromVenue(v));
+    } else {
+      // PR3 onboarding : aucun venue → wizard /pro/onboard (4 étapes).
+      router.replace('/pro/onboard');
+      return;
     }
 
     // Load wallet

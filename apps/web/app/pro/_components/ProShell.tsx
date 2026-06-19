@@ -1,7 +1,7 @@
 'use client';
 
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   AppShell,
   type NavItem,
@@ -86,7 +86,16 @@ const FALLBACK_MODULES: ProModule[] = ['dashboard', 'analytics', 'marketing', 'f
 export function ProShell({ user, children }: { user: ShellUser; children: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const supabase = supabaseBrowser();
+
+  // PR3 onboarding : le wizard /pro/onboard tourne en pleine largeur sans
+  // sidebar (le user n'a pas encore de venue, donc pas de navigation utile).
+  // On bypass simplement AppShell — l'auth garde-fou reste assurée par
+  // apps/web/app/pro/layout.tsx côté server.
+  if (pathname?.startsWith('/pro/onboard')) {
+    return <>{children}</>;
+  }
 
   // Catégorie du venue actif. Lue depuis la DB côté client pour piloter le
   // filtrage de la nav. Si l'URL contient ?venue=ID on prend ce venue ; sinon
