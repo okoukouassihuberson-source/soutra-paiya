@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Skeleton } from '@/components/Skeleton';
+import { CashbackLevelCard } from '@/components/CashbackLevelCard';
 
 // URL de la page d'abonnement web : 5 plans + simulateur + paiement Paystack.
 // Pas de duplication mobile — l'expérience web est déjà complète et le retour
@@ -150,6 +151,12 @@ export default function CashbackScreen() {
           )}
           <Text style={s.heroSub}>depuis ton inscription</Text>
         </View>
+
+        {/* ═══════════ Gamification niveaux (PR3 audit UX) ═══════════ */}
+        <CashbackLevelCard
+          totalXof={stats?.total_all_time_xof ?? 0}
+          loading={loading}
+        />
 
         {/* ═══════════ KPI grid ═══════════ */}
         <View style={s.kpiGrid}>
