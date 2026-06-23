@@ -21,6 +21,12 @@ interface Props {
   zoom?: number;
   onMarkerPress?: (v: MapVenue) => void;
   style?: any;
+  /** Position GPS de l'utilisateur (lng, lat). Affiche un marqueur bleu pulsé. */
+  userLocation?: [number, number] | null;
+  /** Rayon en km autour de userLocation. Si défini, dessine un cercle. */
+  radiusKm?: number | null;
+  /** Si vrai, recadre auto sur userLocation au chargement. */
+  followUser?: boolean;
 }
 
 // Détection Expo Go (Mapbox natif indisponible)
@@ -46,9 +52,47 @@ try {
   Mapbox = null;
 }
 
-export function MapboxMap({ venues, center = ABIDJAN, zoom = 12, onMarkerPress, style }: Props) {
+export function MapboxMap({
+  venues, center = ABIDJAN, zoom = 12, onMarkerPress, style,
+  userLocation, radiusKm, followUser,
+}: Props) {
   const cameraRef = useRef<any>(null);
   const [ready, setReady] = useState(false);
+
+  // Re-center quand userLocation change et followUser=true (PR5 audit UX).
+  useEffect(() => {
+    if (!followUser || !userLocation || !cameraRef.current) return;
+    cameraRef.current.setCamera({
+      centerCoordinate: userLocation,
+      zoomLevel: radiusKm ? Math.max(11, 15 - Math.log2(radiusKm)) : 14,
+      animationMode: 'flyTo',
+      animationDuration: 1000,
+    });
+  }, [followUser, userLocation, radiusKm]);
+
+  // Effective center : si followUser, on prend userLocation comme point initial
+  const effectiveCenter = followUser && userLocation ? userLocation : center;
+
+  // GeoJSON cercle de rayon autour de l'user (approximation 64 segments).
+  const radiusGeojson = useMemo(() => {
+    if (!userLocation || !radiusKm) return null;
+    const [lng, lat] = userLocation;
+    const points: [number, number][] = [];
+    const km = radiusKm;
+    // 1° latitude ≈ 111 km. Pour lng, on ajuste par cos(lat) à cette latitude.
+    const latRad = (lat * Math.PI) / 180;
+    for (let i = 0; i <= 64; i++) {
+      const angle = (i / 64) * 2 * Math.PI;
+      const dLat = (km * Math.sin(angle)) / 111;
+      const dLng = (km * Math.cos(angle)) / (111 * Math.cos(latRad));
+      points.push([lng + dLng, lat + dLat]);
+    }
+    return {
+      type: 'Feature' as const,
+      properties: {},
+      geometry: { type: 'Polygon' as const, coordinates: [points] },
+    };
+  }, [userLocation, radiusKm]);
 
   // Fallback si on tourne dans Expo Go ou si le token est absent
   if (!Mapbox || isExpoGo || tokenMissing) {
@@ -68,10 +112,35 @@ export function MapboxMap({ venues, center = ABIDJAN, zoom = 12, onMarkerPress, 
         <Mapbox.Camera
           ref={cameraRef}
           zoomLevel={zoom}
-          centerCoordinate={center}
+          centerCoordinate={effectiveCenter}
           animationMode="flyTo"
           animationDuration={1200}
         />
+
+        {/* Cercle rayon de recherche autour de l'user (PR5) */}
+        {radiusGeojson && Mapbox.ShapeSource && Mapbox.FillLayer && (
+          <Mapbox.ShapeSource id="radius-source" shape={radiusGeojson}>
+            <Mapbox.FillLayer
+              id="radius-fill"
+              style={{
+                fillColor: '#3B82F6',
+                fillOpacity: 0.12,
+                fillOutlineColor: '#3B82F6',
+              }}
+            />
+          </Mapbox.ShapeSource>
+        )}
+
+        {/* Marqueur position utilisateur (PR5) — point bleu pulsé */}
+        {userLocation && Mapbox.PointAnnotation && (
+          <Mapbox.PointAnnotation id="user-location" coordinate={userLocation}>
+            <View style={s.userMarker}>
+              <View style={s.userMarkerHalo} />
+              <View style={s.userMarkerDot} />
+            </View>
+          </Mapbox.PointAnnotation>
+        )}
+
         {venues.map((v) => (
           <Mapbox.PointAnnotation
             key={v.id}
@@ -82,7 +151,7 @@ export function MapboxMap({ venues, center = ABIDJAN, zoom = 12, onMarkerPress, 
             <View style={s.marker}>
               <View style={s.markerDot}>
                 <Text style={s.markerEmoji}>
-                  {v.category === 'maquis' ? '🍻' : v.category === 'restaurant' ? '🍽️' : v.category === 'club' ? '🎉' : '📍'}
+                  {markerEmoji(v.category)}
                 </Text>
               </View>
               {v.price ? (
@@ -95,11 +164,64 @@ export function MapboxMap({ venues, center = ABIDJAN, zoom = 12, onMarkerPress, 
         ))}
       </Mapbox.MapView>
 
-      <Pressable style={s.recenter} onPress={() => cameraRef.current?.setCamera({ centerCoordinate: center, zoomLevel: zoom, animationDuration: 800 })}>
+      <Pressable
+        style={s.recenter}
+        onPress={() =>
+          cameraRef.current?.setCamera({
+            centerCoordinate: effectiveCenter,
+            zoomLevel: zoom,
+            animationDuration: 800,
+          })
+        }
+      >
         <Ionicons name="locate" size={20} color={colors.primary[500]} />
       </Pressable>
     </View>
   );
+}
+
+/** Emoji marker selon la catégorie de venue (étendu vs version initiale). */
+function markerEmoji(category?: string): string {
+  switch (category) {
+    case 'maquis':       return '🍻';
+    case 'restaurant':   return '🍽️';
+    case 'club':         return '🎉';
+    case 'bar':          return '🍸';
+    case 'lounge':       return '🛋️';
+    case 'cafe':         return '☕';
+    case 'fast_food':    return '🍔';
+    case 'hotel':
+    case 'villa':
+    case 'resort':
+    case 'auberge':
+    case 'residence_meublee': return '🏨';
+    case 'boutique':
+    case 'mall':         return '🛍️';
+    case 'supermarche':  return '🛒';
+    case 'pharmacie':    return '💊';
+    case 'cinema':       return '🎬';
+    case 'casino':       return '🎰';
+    case 'piscine':      return '🏊';
+    case 'fitness':
+    case 'salle_sport':  return '💪';
+    case 'sport':
+    case 'terrain_football': return '⚽';
+    case 'event_space':  return '🎪';
+    case 'parc':         return '🌳';
+    case 'beach':        return '🏖️';
+    case 'musee':        return '🖼️';
+    case 'monument':     return '🗿';
+    case 'maternelle':
+    case 'primaire':
+    case 'college':
+    case 'lycee':
+    case 'universite':
+    case 'grande_ecole': return '🎓';
+    case 'hopital':
+    case 'clinique':     return '🏥';
+    case 'vtc_transport':return '🚖';
+    default:             return '📍';
+  }
 }
 
 function FallbackMap({ reason, venues, onMarkerPress, style }: { reason: 'expo-go' | 'token'; venues: MapVenue[]; onMarkerPress?: (v: MapVenue) => void; style?: any }) {
@@ -135,6 +257,26 @@ const s = StyleSheet.create({
     backgroundColor: colors.neutral[100],
   },
   map: { flex: 1 },
+  // User location marker (PR5 audit UX)
+  userMarker: {
+    width: 28, height: 28,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  userMarkerHalo: {
+    position: 'absolute',
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: '#3B82F6',
+    opacity: 0.25,
+  },
+  userMarkerDot: {
+    width: 14, height: 14, borderRadius: 7,
+    backgroundColor: '#3B82F6',
+    borderWidth: 3, borderColor: '#fff',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
+      android: { elevation: 5 },
+    }),
+  },
   marker: { alignItems: 'center' },
   markerDot: {
     width: 36, height: 36, borderRadius: 18,
