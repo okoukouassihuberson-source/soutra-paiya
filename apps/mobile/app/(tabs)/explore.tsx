@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { MapboxMap, type MapVenue, ABIDJAN } from '@/components/MapboxMap';
+import { QuickVenueSheet, type QuickVenue } from '@/components/QuickVenueSheet';
 import { TabHeader } from '@/components/TabHeader';
 import { VenueCardSkeleton } from '@/components/Skeleton';
 import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/VoiceSearchSheet';
@@ -81,8 +82,40 @@ export default function Explore() {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const voiceAvailable = isVoiceRecognitionAvailable();
 
+  // Fiche rapide (PR5 audit UX) : ouverte au tap sur un marqueur carte.
+  const [quickVenue, setQuickVenue] = useState<Venue | null>(null);
+
   useEffect(() => {
     loadVenues();
+  }, []);
+
+  // PR5 audit UX : "Au chargement, demander autorisation GPS, récupérer
+  // position actuelle, centrer automatiquement la carte." On le fait UNE
+  // FOIS au mount, en silence — si refus pas de crash, l'user peut toujours
+  // cliquer "Près de moi" plus tard. La position est posée dans userPos
+  // pour afficher le marqueur bleu pulsé même sans activer le mode nearMe.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const existing = await Location.getForegroundPermissionsAsync();
+        let granted = existing.granted;
+        if (!granted && existing.canAskAgain) {
+          const ask = await Location.requestForegroundPermissionsAsync();
+          granted = ask.granted;
+        }
+        if (!granted) return;
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (active) {
+          setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        }
+      } catch (err) {
+        console.warn('[explore] geoloc auto-prompt:', err);
+      }
+    })();
+    return () => { active = false; };
   }, []);
 
   // Si « près de moi » est actif ou si les filtres changent, on recharge.
@@ -342,7 +375,14 @@ export default function Explore() {
           venues={mapVenues}
           center={ABIDJAN}
           zoom={11.5}
-          onMarkerPress={(v) => goToVenue(v.id)}
+          userLocation={userPos ? [userPos.lng, userPos.lat] : null}
+          radiusKm={nearMe ? radiusKm : null}
+          followUser={nearMe}
+          onMarkerPress={(v) => {
+            // PR5 audit UX : ouvre la fiche rapide au lieu de naviguer.
+            const full = venues.find((x) => x.id === v.id) ?? null;
+            if (full) setQuickVenue(full);
+          }}
         />
 
         {loading ? (
@@ -464,8 +504,36 @@ export default function Explore() {
         onResult={(text) => { setSearchQuery(text); setVoiceOpen(false); }}
         locale="fr-FR"
       />
+
+      {/* Fiche rapide flottante au tap sur marqueur carte (PR5 audit UX) */}
+      <QuickVenueSheet
+        venue={quickVenue ? toQuickVenue(quickVenue) : null}
+        onClose={() => setQuickVenue(null)}
+        onOpen={() => {
+          const id = quickVenue?.id;
+          setQuickVenue(null);
+          if (id) goToVenue(id);
+        }}
+      />
     </SafeAreaView>
   );
+}
+
+/** Projette un Venue (vue venues_public) sur le shape attendu par QuickVenueSheet (PR5). */
+function toQuickVenue(v: Venue): QuickVenue {
+  return {
+    id: v.id,
+    name: v.name,
+    category: v.category,
+    cover_url: v.cover_url,
+    rating_avg: v.rating_avg,
+    rating_count: v.rating_count,
+    distance_km: v.distance_km ?? null,
+    avg_price_xof: v.avg_price_xof,
+    is_open_now: v.is_open_now ?? null,
+    lat: v.lat,
+    lng: v.lng,
+  };
 }
 
 function labelForCategory(c: string): string {
