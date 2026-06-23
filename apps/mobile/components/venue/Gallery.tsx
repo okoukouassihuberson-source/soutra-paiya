@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { Lightbox, type MediaItem } from './Lightbox';
+import { VideoPreview } from './VideoPreview';
 
 interface Props {
   /** Cover photo principale (premium en haut). Si absente, on prend la première de gallery. */
@@ -87,10 +88,7 @@ export function Gallery({ cover, gallery, videos }: Props) {
           {hero.kind === 'image' ? (
             <Image source={{ uri: hero.url }} style={s.heroImg} />
           ) : (
-            <View style={s.videoHero}>
-              <Ionicons name="play-circle" size={72} color="rgba(255,255,255,0.95)" />
-              <Text style={s.videoHeroHint}>Visite vidéo</Text>
-            </View>
+            <VideoPreview uri={hero.url} style={s.heroImg} badgeSize={20} />
           )}
           {allMedia.length > 1 && (
             <View style={s.counterPill}>
@@ -120,9 +118,7 @@ export function Gallery({ cover, gallery, videos }: Props) {
                   {m.kind === 'image' ? (
                     <Image source={{ uri: m.url }} style={s.thumbImg} />
                   ) : (
-                    <View style={s.thumbVideoFallback}>
-                      <Ionicons name="play-circle" size={36} color="rgba(255,255,255,0.95)" />
-                    </View>
+                    <VideoPreview uri={m.url} style={s.thumbImg} badgeSize={12} />
                   )}
                   {/* Mini badge ▶ sur les thumbnails vidéo (au-dessus de la photo si jamais) */}
                   {m.kind === 'video' && !showRemaining && (
