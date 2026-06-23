@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { ScrollView, View, Text, Pressable, StyleSheet, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
@@ -9,6 +10,23 @@ import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Skeleton } from '@/components/Skeleton';
+
+// URL de la page d'abonnement web : 5 plans + simulateur + paiement Paystack.
+// Pas de duplication mobile — l'expérience web est déjà complète et le retour
+// au paiement passe par deep-link soutrapaiya:// (cf. paystack/callback web).
+const SUBSCRIBE_URL = 'https://soutra-paiya.vercel.app/subscribe';
+
+async function openSubscribePage() {
+  try {
+    await WebBrowser.openBrowserAsync(SUBSCRIBE_URL, {
+      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
+      controlsColor: '#FF6B1A',
+      toolbarColor: '#0E1116',
+    });
+  } catch (err) {
+    Alert.alert('Erreur', err instanceof Error ? err.message : 'Impossible d\'ouvrir la page abonnement');
+  }
+}
 
 /**
  * /cashback — écran historique cashback mobile.
@@ -149,7 +167,7 @@ export default function CashbackScreen() {
 
         {/* ═══════════ Plan actif ═══════════ */}
         {stats?.current_plan && (
-          <Pressable style={s.planCard} onPress={() => router.push('/subscribe' as any)}>
+          <Pressable style={s.planCard} onPress={openSubscribePage}>
             <View style={s.planLeft}>
               <Text style={s.planLabel}>Plan actuel</Text>
               <Text style={s.planName}>{stats.current_plan.display_name}</Text>
@@ -167,7 +185,7 @@ export default function CashbackScreen() {
         {stats?.current_plan?.code === 'free' && (
           <Pressable
             style={s.boosterCta}
-            onPress={() => router.push('/subscribe' as any)}
+            onPress={openSubscribePage}
           >
             <Ionicons name="rocket" size={20} color="#fff" />
             <View style={{ flex: 1 }}>
