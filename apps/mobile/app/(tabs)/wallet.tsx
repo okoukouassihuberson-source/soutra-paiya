@@ -163,6 +163,11 @@ const QUICK: { label: string; icon: keyof typeof Ionicons.glyphMap; bg: string; 
   { label: 'Scanner QR', icon: 'qr-code', bg: '#fce7f3', color: '#db2777', route: '/scan' },
 ];
 
+interface PartyProfile {
+  full_name: string | null;
+  phone: string | null;
+}
+
 interface Transaction {
   id: string;
   type: string;
@@ -172,6 +177,9 @@ interface Transaction {
   description?: string;
   user_id: string;
   counterparty_id: string | null;
+  // Jointures profiles (PR2 audit UX) — affiche prénom+nom au lieu d'UUID
+  sender: PartyProfile | null;
+  counterparty: PartyProfile | null;
 }
 
 function TransactionHistory({
@@ -194,7 +202,12 @@ function TransactionHistory({
       try {
         const { data, error } = await supabase
           .from('transactions')
-          .select('id, type, amount_xof, status, created_at, description, user_id, counterparty_id')
+          .select(`
+            id, type, amount_xof, status, created_at, description,
+            user_id, counterparty_id,
+            sender:user_id(full_name, phone),
+            counterparty:counterparty_id(full_name, phone)
+          `)
           .or(`user_id.eq.${userId},counterparty_id.eq.${userId}`)
           .order('created_at', { ascending: false })
           .limit(15);
@@ -285,12 +298,31 @@ function isCredit(tx: Transaction, userId?: string): boolean {
   );
 }
 
+/** Formate le prénom+nom d'une contrepartie, fallback sur téléphone, puis tiret. */
+function partyDisplay(p: PartyProfile | null): string {
+  if (!p) return '';
+  const name = (p.full_name ?? '').trim();
+  if (name.length > 0) return name;
+  if (p.phone) return p.phone;
+  return '';
+}
+
 function txMeta(tx: Transaction, userId: string | undefined, c: ColorPalette): { label: string; icon: keyof typeof Ionicons.glyphMap; bg: string; color: string } {
   if (tx.type === 'transfer') {
     const received = tx.counterparty_id === userId;
-    return received
-      ? { label: 'Transfert reçu', icon: 'arrow-down', bg: '#dcfce7', color: '#16a34a' }
-      : { label: 'Transfert envoyé', icon: 'arrow-up', bg: '#dbeafe', color: '#2563eb' };
+    // L'autre partie : si reçu, c'est l'envoyeur (tx.sender) ; si envoyé,
+    // c'est le destinataire (tx.counterparty).
+    const other = received ? partyDisplay(tx.sender) : partyDisplay(tx.counterparty);
+    if (received) {
+      return {
+        label: other ? `Reçu de ${other}` : 'Transfert reçu',
+        icon: 'arrow-down', bg: '#dcfce7', color: '#16a34a',
+      };
+    }
+    return {
+      label: other ? `Envoyé à ${other}` : 'Transfert envoyé',
+      icon: 'arrow-up', bg: '#dbeafe', color: '#2563eb',
+    };
   }
   switch (tx.type) {
     case 'topup': return { label: 'Rechargement', icon: 'add-circle', bg: '#dcfce7', color: '#16a34a' };
@@ -316,7 +348,8 @@ function relativeDate(iso: string): string {
   if (h < 24) return `il y a ${h} h`;
   const days = Math.floor(h / 24);
   if (days < 7) return `il y a ${days} j`;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  // Au-delà d'une semaine, date + heure (spec audit UX wallet PR2).
+  return d.toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 /**
