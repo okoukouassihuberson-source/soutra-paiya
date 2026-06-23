@@ -18,6 +18,7 @@ interface ProfileRow {
   referral_code: string | null;
   role: string | null;
   avatar_url: string | null;
+  cover_url: string | null;
 }
 
 type Stats = { reservations: number; posts: number; matches: number } | null;
@@ -39,7 +40,7 @@ export default function Profile() {
         const [profileRes, resCount, postCount, matchRes] = await Promise.all([
           supabase
             .from('profiles')
-            .select('id, full_name, phone, email, kyc_status, referral_code, role, avatar_url')
+            .select('id, full_name, phone, email, kyc_status, referral_code, role, avatar_url, cover_url')
             .eq('id', user.id)
             .maybeSingle(),
           (supabase as any).from('reservations').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
@@ -73,10 +74,20 @@ export default function Profile() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing['2xl'] }}>
-        {/* Hero header */}
+        {/* Hero header — style FB/LinkedIn avec photo couverture optionnelle (PR4 audit UX) */}
         <View style={s.hero}>
-          <View style={s.bgCircle1} />
-          <View style={s.bgCircle2} />
+          {profile?.cover_url ? (
+            <>
+              <Image source={{ uri: profile.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              {/* Overlay sombre pour préserver la lisibilité du texte blanc */}
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.42)' }]} />
+            </>
+          ) : (
+            <>
+              <View style={s.bgCircle1} />
+              <View style={s.bgCircle2} />
+            </>
+          )}
 
           <View style={s.heroTop}>
             <Text style={s.heroEyebrow}>Mon profil</Text>
