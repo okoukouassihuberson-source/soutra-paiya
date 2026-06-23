@@ -10,6 +10,7 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { pickAvatarFromGallery, pickAvatarFromCamera, uploadAvatar, removeAvatar } from '@/lib/profile-photo';
+import { pickCoverFromGallery, pickCoverFromCamera, uploadCover, removeCover } from '@/lib/profile-cover';
 
 export default function ProfileEdit() {
   const router = useRouter();
@@ -20,9 +21,11 @@ export default function ProfileEdit() {
   const [city, setCity] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [coverBusy, setCoverBusy] = useState(false);
 
   useEffect(() => {
     if (!user?.id) { setLoading(false); return; }
@@ -30,7 +33,7 @@ export default function ProfileEdit() {
     (async () => {
       const { data } = await sb
         .from('profiles')
-        .select('full_name, city, bio, avatar_url')
+        .select('full_name, city, bio, avatar_url, cover_url')
         .eq('id', user.id)
         .maybeSingle();
       if (!mounted) return;
@@ -39,11 +42,49 @@ export default function ProfileEdit() {
         setCity(data.city ?? 'Abidjan');
         setBio(data.bio ?? '');
         setAvatarUrl(data.avatar_url ?? null);
+        setCoverUrl(data.cover_url ?? null);
       }
       setLoading(false);
     })();
     return () => { mounted = false; };
   }, [user?.id]);
+
+  async function changeCover(source: 'gallery' | 'camera') {
+    if (!user?.id || coverBusy) return;
+    const asset = source === 'gallery' ? await pickCoverFromGallery() : await pickCoverFromCamera();
+    if (!asset) return;
+    setCoverBusy(true);
+    try {
+      const url = await uploadCover(user.id, asset);
+      setCoverUrl(url);
+    } catch (err: any) {
+      Alert.alert('Erreur', err?.message ?? 'Upload impossible.');
+    } finally {
+      setCoverBusy(false);
+    }
+  }
+
+  function askChangeCover() {
+    Alert.alert('Photo de couverture', undefined, [
+      { text: 'Galerie', onPress: () => changeCover('gallery') },
+      { text: 'Caméra', onPress: () => changeCover('camera') },
+      ...(coverUrl ? [{ text: 'Retirer la couverture', style: 'destructive' as const, onPress: () => removeCoverPhoto() }] : []),
+      { text: 'Annuler', style: 'cancel' as const },
+    ]);
+  }
+
+  async function removeCoverPhoto() {
+    if (!user?.id) return;
+    setCoverBusy(true);
+    try {
+      await removeCover(user.id);
+      setCoverUrl(null);
+    } catch (err: any) {
+      Alert.alert('Erreur', err?.message ?? 'Suppression impossible.');
+    } finally {
+      setCoverBusy(false);
+    }
+  }
 
   async function changePhoto(source: 'gallery' | 'camera') {
     if (!user?.id || photoBusy) return;
@@ -127,6 +168,32 @@ export default function ProfileEdit() {
           style={{ flex: 1 }}
         >
           <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+            {/* Cover photo block (PR4 audit UX) — style FB/LinkedIn */}
+            <Pressable
+              onPress={askChangeCover}
+              disabled={coverBusy}
+              style={s.coverBlock}
+              accessibilityRole="imagebutton"
+              accessibilityLabel="Modifier la photo de couverture"
+            >
+              {coverUrl ? (
+                <Image source={{ uri: coverUrl }} style={s.coverImg} resizeMode="cover" />
+              ) : (
+                <View style={[s.coverImg, s.coverPlaceholder]}>
+                  <Ionicons name="image-outline" size={32} color={colors.neutral[400]} />
+                  <Text style={s.coverPlaceholderText}>Ajouter une photo de couverture</Text>
+                </View>
+              )}
+              {coverBusy ? (
+                <View style={s.coverOverlay}><ActivityIndicator color="#fff" /></View>
+              ) : (
+                <View style={s.coverEditBadge}>
+                  <Ionicons name="camera" size={14} color="#fff" />
+                  <Text style={s.coverEditText}>{coverUrl ? 'Modifier' : 'Ajouter'}</Text>
+                </View>
+              )}
+            </Pressable>
+
             {/* Avatar block */}
             <View style={s.avatarBlock}>
               <Pressable onPress={askChangePhoto} style={s.avatarWrap} disabled={photoBusy}>
@@ -205,6 +272,49 @@ const s = StyleSheet.create({
   },
   headerTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: colors.dark },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  // PR4 cover photo
+  coverBlock: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.neutral[100],
+    marginBottom: spacing.lg,
+  },
+  coverImg: { width: '100%', height: '100%' },
+  coverPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    borderWidth: 2,
+    borderColor: colors.neutral[200],
+    borderStyle: 'dashed',
+    borderRadius: radius.lg,
+  },
+  coverPlaceholderText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.neutral[500],
+    fontWeight: '600',
+  },
+  coverEditBadge: {
+    position: 'absolute',
+    bottom: spacing.sm,
+    right: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+  },
+  coverEditText: { color: '#fff', fontSize: typography.fontSize.xs, fontWeight: '700' },
+  coverOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center', justifyContent: 'center',
+  },
   avatarBlock: { alignItems: 'center', marginBottom: spacing.xl, gap: spacing.sm },
   avatarWrap: { width: 120, height: 120, position: 'relative' },
   avatarImg: { width: 120, height: 120, borderRadius: 60, backgroundColor: colors.primary[500] },
