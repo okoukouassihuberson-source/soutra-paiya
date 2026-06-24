@@ -46,6 +46,7 @@ ios/
 android/
 google-services.json
 GoogleService-Info.plist
+apps/mobile/credentials/
 
 # TypeScript
 *.tsbuildinfo

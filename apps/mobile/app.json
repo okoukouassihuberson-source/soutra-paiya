@@ -54,13 +54,20 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Soutra-Playce accède à tes photos pour ta vérification d'identité (KYC)."
+          "photosPermission": "Soutra-Playce accède à tes photos pour ta vérification d'identité (KYC) et ta photo de profil.",
+          "cameraPermission": "Soutra-Playce utilise la caméra pour prendre ta photo KYC ou ta photo de profil."
         }
       ],
       [
         "expo-camera",
         {
           "cameraPermission": "Soutra-Playce utilise la caméra pour scanner les QR codes de paiement."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Soutra-Playce utilise ta position pour afficher les établissements proches et te localiser sur la carte."
         }
       ],
       [
