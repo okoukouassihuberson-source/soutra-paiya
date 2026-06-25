@@ -136,8 +136,15 @@ async function staleWhileRevalidate(req) {
       if (res.ok) cache.put(req, res.clone());
       return res;
     })
-    .catch(() => cached);
-  return cached || networkPromise;
+    .catch(() => null);
+  // Si cached existe, on le sert immédiatement (revalidate en background).
+  // Sinon on attend le réseau ; si même le réseau a échoué et qu'on n'a rien
+  // en cache, on DOIT renvoyer une Response valide — respondWith(undefined)
+  // plante avec "Failed to convert value to 'Response'".
+  if (cached) return cached;
+  const fresh = await networkPromise;
+  if (fresh) return fresh;
+  return new Response('', { status: 504, statusText: 'Gateway Timeout' });
 }
 
 // Messaging : permet à la page d'envoyer { type: 'SKIP_WAITING' } pour

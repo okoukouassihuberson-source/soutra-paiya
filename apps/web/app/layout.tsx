@@ -36,6 +36,12 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Soutra',
   },
+  // appleWebApp.capable génère <meta name="apple-mobile-web-app-capable"> qui est
+  // déprécié en faveur du standard W3C <meta name="mobile-web-app-capable">.
+  // On garde le iOS pour rétro-compat et on ajoute le standard côté Android/Chrome.
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   formatDetection: { telephone: false },
   icons: {
     // /logo.png est la source unique du logo (marker bleu/orange Soutra-Paiya).
