@@ -89,21 +89,20 @@ export function ProShell({ user, children }: { user: ShellUser; children: ReactN
   const pathname = usePathname();
   const supabase = supabaseBrowser();
 
-  // PR3 onboarding : le wizard /pro/onboard tourne en pleine largeur sans
-  // sidebar (le user n'a pas encore de venue, donc pas de navigation utile).
-  // On bypass simplement AppShell — l'auth garde-fou reste assurée par
-  // apps/web/app/pro/layout.tsx côté server.
-  if (pathname?.startsWith('/pro/onboard')) {
-    return <>{children}</>;
-  }
-
   // Catégorie du venue actif. Lue depuis la DB côté client pour piloter le
   // filtrage de la nav. Si l'URL contient ?venue=ID on prend ce venue ; sinon
   // on prend le premier venue dont le user est owner.
   const venueIdFromUrl = searchParams?.get('venue') ?? null;
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+  // Sur /pro/onboard le user n'a pas encore de venue → on skip la requête
+  // pour économiser un round-trip Supabase. La règle des hooks impose
+  // toutefois d'appeler useEffect inconditionnellement (le bypass JSX est
+  // plus bas, après tous les hooks).
+  const isOnboard = !!pathname?.startsWith('/pro/onboard');
+
   useEffect(() => {
+    if (isOnboard) return;
     let mounted = true;
     (async () => {
       const { data: { user: u } } = await supabase.auth.getUser();
@@ -120,7 +119,7 @@ export function ProShell({ user, children }: { user: ShellUser; children: ReactN
       if (mounted) setActiveCategory((data as { category?: string } | null)?.category ?? null);
     })();
     return () => { mounted = false; };
-  }, [supabase, venueIdFromUrl]);
+  }, [supabase, venueIdFromUrl, isOnboard]);
 
   const navItems = useMemo<NavItem[]>(() => {
     // Tant qu'on n'a pas la catégorie : nav minimale (évite un flash de la
@@ -137,6 +136,14 @@ export function ProShell({ user, children }: { user: ShellUser; children: ReactN
     await supabase.auth.signOut();
     router.push('/login');
   };
+
+  // PR3 onboarding : le wizard /pro/onboard tourne en pleine largeur sans
+  // sidebar (le user n'a pas encore de venue, donc pas de navigation utile).
+  // On bypass AppShell — l'auth garde-fou reste assurée par apps/web/app/pro/layout.tsx
+  // côté server. Le early return DOIT rester après tous les hooks (React rules).
+  if (isOnboard) {
+    return <>{children}</>;
+  }
 
   return (
     <AppShell
