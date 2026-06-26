@@ -1,7 +1,14 @@
-import { View } from 'react-native';
+import { View, Image } from 'react-native';
 import Svg, {
   Rect, Circle, Text as SvgText, Path, Defs, LinearGradient, Stop, G, TSpan,
 } from 'react-native-svg';
+
+/**
+ * Asset Wave officiel — remplace simplement le PNG suivant par le vrai logo
+ * officiel téléchargé depuis Wave (https://www.wave.com/) en gardant le même
+ * nom de fichier. Aucun code à modifier après remplacement.
+ */
+const WAVE_LOGO = require('@/assets/payment-logos/wave.png') as number;
 
 /**
  * PaymentLogo (mobile) — version React Native du composant web.
@@ -202,42 +209,29 @@ function MoovMoneySvg({ width, height }: SvgProps) {
 }
 
 function WaveSvg({ width, height }: SvgProps) {
+  // Logo Wave officiel via <Image>. Le PNG est dans assets/payment-logos/wave.png
+  // — il suffit de l'écraser par le vrai logo officiel téléchargé depuis Wave.
+  // resizeMode "contain" préserve le ratio quelle que soit la taille du PNG fourni.
+  const radius = Math.round(height * 0.16);
   return (
-    <Svg width={width} height={height} viewBox="0 0 160 50">
-      <Rect width="160" height="50" rx="8" fill="#1DC8FB" />
-
-      {/* Pingouin Wave (gauche) */}
-      <G x={6} y={4}>
-        {/* Bras levé */}
-        <Path d="M 9 19 Q 1 14, 3 6 Q 5 1, 9 3 L 12 18 Z" fill="#000000" />
-        {/* Corps noir */}
-        <Circle cx="20" cy="23" r="17" fill="#000000" />
-        {/* Ventre blanc */}
-        <Circle cx="20" cy="27" r="11" fill="#FFFFFF" />
-        {/* Œil gauche */}
-        <Circle cx="14" cy="14" r="2" fill="#FFFFFF" />
-        <Circle cx="14.3" cy="14.3" r="1.2" fill="#000000" />
-        {/* Œil droit */}
-        <Circle cx="24" cy="14" r="2" fill="#FFFFFF" />
-        <Circle cx="24.3" cy="14.3" r="1.2" fill="#000000" />
-        {/* Bec orange (diamant) */}
-        <Path d="M 19 18 L 14 21 L 19 25 L 24 21 Z" fill="#FF9933" />
-        {/* Pieds orange */}
-        <Path d="M 12 40 a 4 2 0 1 0 8 0 a 4 2 0 1 0 -8 0 Z" fill="#FF9933" />
-        <Path d="M 22 40 a 4 2 0 1 0 8 0 a 4 2 0 1 0 -8 0 Z" fill="#FF9933" />
-      </G>
-
-      {/* Texte "wave" en noir */}
-      <SvgText
-        x="56" y="32"
-        fontFamily="Arial"
-        fontWeight="900"
-        fontSize="22"
-        fill="#000000"
-      >
-        wave
-      </SvgText>
-    </Svg>
+    <View
+      style={{
+        width,
+        height,
+        backgroundColor: '#1DC8FB',
+        borderRadius: radius,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <Image
+        source={WAVE_LOGO}
+        style={{ width: '100%', height: '100%' }}
+        resizeMode="contain"
+        accessible={false}
+      />
+    </View>
   );
 }
 
