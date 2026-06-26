@@ -87,66 +87,103 @@ export default function HomePage() {
       <section
         id="payments"
         aria-labelledby="payments-title"
-        className="border-b border-neutral-100 bg-gradient-to-b from-white via-white to-neutral-50 py-16 sm:py-20"
+        className="relative overflow-hidden border-b border-neutral-100 bg-gradient-to-b from-white via-white to-neutral-50 py-20 sm:py-24"
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Glow décoratifs */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-32 left-1/4 h-72 w-72 rounded-full bg-emerald-400/8 blur-3xl" />
+          <div className="absolute -bottom-32 right-1/4 h-72 w-72 rounded-full bg-primary-400/8 blur-3xl" />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-gradient-to-r from-emerald-500/15 to-emerald-400/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700 shadow-sm shadow-emerald-500/10 backdrop-blur-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
               Cryptage de niveau bancaire
             </span>
             <h2
               id="payments-title"
-              className="mt-4 font-display text-3xl font-bold text-dark sm:text-4xl"
+              className="mt-5 font-display text-3xl font-bold text-dark sm:text-4xl lg:text-5xl"
             >
-              🔒 Paiement 100% sécurisé
+              Paiement <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent">100 % sécurisé</span>
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-base text-neutral-600">
+            <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-neutral-600 sm:text-lg">
               Payez en toute confiance avec les moyens de paiement les plus utilisés
               en Côte d&apos;Ivoire et à l&apos;international.
             </p>
           </div>
 
-          {/* Grille logos */}
+          {/* Grille logos paiement */}
           <div
             role="list"
             aria-label="Moyens de paiement acceptés"
-            className="mx-auto mt-10 grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+            className="mx-auto mt-12 grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
           >
             {(['visa', 'mastercard', 'orange-money', 'mtn-money', 'moov-money', 'wave', 'paiya-pay'] as const).map((name) => (
               <div
                 key={name}
                 role="listitem"
-                className="group relative flex items-center justify-center rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-lg hover:shadow-primary-500/5"
+                className="group relative flex h-20 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-inset ring-white/60 transition-all duration-300 hover:-translate-y-1 hover:border-primary-300 hover:shadow-xl hover:shadow-primary-500/10"
               >
-                <PaymentLogo name={name} className="h-10 w-auto sm:h-11" />
+                <span aria-hidden className="absolute inset-0 -z-0 bg-gradient-to-br from-primary-500/0 via-primary-500/0 to-primary-500/0 opacity-0 transition-opacity duration-300 group-hover:from-primary-500/[0.03] group-hover:to-primary-500/[0.06] group-hover:opacity-100" />
+                <PaymentLogo name={name} className="relative h-10 w-auto max-w-full object-contain sm:h-11" />
               </div>
             ))}
           </div>
 
-          {/* Garanties checklist */}
+          {/* Garanties */}
           <ul
             role="list"
-            className="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4"
+            className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4"
           >
             {[
-              { icon: '🔒', label: 'Transactions sécurisées',          sub: 'Chiffrement TLS 1.3 de bout en bout' },
-              { icon: '⚡', label: 'Paiement instantané',              sub: 'Confirmation en moins de 5 secondes' },
-              { icon: '📱', label: 'Mobile Money & Cartes',            sub: 'Orange, MTN, Moov, Wave, Visa, Mastercard' },
-              { icon: '🛡️', label: 'Protection des données',           sub: 'Conforme RGPD & PCI-DSS niveau 1' },
-            ].map((item) => (
+              {
+                label: 'Transactions sécurisées',
+                sub: 'Chiffrement TLS 1.3 de bout en bout',
+                bg: 'from-emerald-500/10 to-emerald-400/5',
+                ring: 'ring-emerald-500/20',
+                iconBg: 'bg-emerald-500/15 text-emerald-600',
+                Icon: GuaranteeIconLock,
+              },
+              {
+                label: 'Paiement instantané',
+                sub: 'Confirmation en moins de 5 secondes',
+                bg: 'from-amber-500/10 to-amber-400/5',
+                ring: 'ring-amber-500/20',
+                iconBg: 'bg-amber-500/15 text-amber-600',
+                Icon: GuaranteeIconBolt,
+              },
+              {
+                label: 'Mobile Money & Cartes',
+                sub: 'Orange, MTN, Moov, Wave, Visa, Mastercard',
+                bg: 'from-primary-500/10 to-primary-400/5',
+                ring: 'ring-primary-500/20',
+                iconBg: 'bg-primary-500/15 text-primary-600',
+                Icon: GuaranteeIconPhone,
+              },
+              {
+                label: 'Protection des données',
+                sub: 'Conforme RGPD & PCI-DSS niveau 1',
+                bg: 'from-blue-500/10 to-blue-400/5',
+                ring: 'ring-blue-500/20',
+                iconBg: 'bg-blue-500/15 text-blue-600',
+                Icon: GuaranteeIconShield,
+              },
+            ].map(({ label, sub, bg, ring, iconBg, Icon }) => (
               <li
-                key={item.label}
-                className="flex items-start gap-3 rounded-xl border border-neutral-100 bg-white p-4 shadow-sm"
+                key={label}
+                className={`group relative flex items-start gap-3 overflow-hidden rounded-2xl border border-neutral-100 bg-gradient-to-br ${bg} bg-white/80 p-4 shadow-sm ring-1 ${ring} backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md`}
               >
-                <span aria-hidden className="text-xl">{item.icon}</span>
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconBg} transition-transform duration-300 group-hover:scale-110`}>
+                  <Icon />
+                </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-dark">{item.label}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-neutral-500">
-                    {item.sub}
+                  <p className="text-sm font-bold text-dark">{label}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-neutral-600">
+                    {sub}
                   </p>
                 </div>
               </li>
@@ -158,41 +195,53 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  HOW IT WORKS                                          */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section id="how" className="bg-light py-16 sm:py-20 lg:py-32">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section id="how" className="relative overflow-hidden bg-gradient-to-b from-light via-white to-light py-20 sm:py-24 lg:py-32">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute left-0 top-1/3 h-72 w-72 rounded-full bg-primary-400/8 blur-3xl" />
+          <div className="absolute right-0 bottom-1/3 h-72 w-72 rounded-full bg-secondary-500/8 blur-3xl" />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="text-sm font-semibold uppercase tracking-widest text-primary-500">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
               Simple comme bonjour
             </span>
-            <h2 className="mt-3 font-display text-3xl font-bold text-dark sm:text-4xl">
-              Comment ça marche
+            <h2 className="mt-5 font-display text-3xl font-bold text-dark sm:text-4xl lg:text-5xl">
+              Comment <span className="bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">ça marche</span>
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-neutral-500">
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-neutral-600 sm:text-lg">
               Trois étapes pour profiter de ta soirée sans stress.
             </p>
           </div>
 
-          <div className="relative mt-16 grid gap-8 md:grid-cols-3">
+          <div className="relative mt-20 grid gap-10 md:grid-cols-3 md:gap-6">
             {/* Connector line (desktop) */}
-            <div className="absolute left-[16.5%] right-[16.5%] top-12 hidden h-px bg-gradient-to-r from-primary-200 via-primary-300 to-secondary-500 md:block" />
+            <div aria-hidden className="absolute left-[16%] right-[16%] top-12 hidden h-0.5 bg-gradient-to-r from-primary-200 via-primary-400 to-secondary-500 md:block">
+              <div className="absolute -top-1 left-1/4 h-2 w-2 -translate-x-1/2 animate-pulse rounded-full bg-primary-500 shadow-lg shadow-primary-500/50" />
+              <div className="absolute -top-1 left-3/4 h-2 w-2 -translate-x-1/2 animate-pulse rounded-full bg-secondary-500 shadow-lg shadow-secondary-500/50" />
+            </div>
 
             <Step
               num="01"
               title="Découvre"
               desc="Parcours les maquis, restos et événements autour de toi. Filtre par budget, ambiance ou distance."
               icon={<IconSearch />}
+              accent="primary"
             />
             <Step
               num="02"
               title="Réserve"
               desc="Choisis ta table, ton créneau, le nombre de personnes. Confirmation instantanée."
               icon={<IconCalendar />}
+              accent="amber"
             />
             <Step
               num="03"
               title="Paie & profite"
               desc="Paie par mobile money ou carte. Ton acompte est protégé. Remboursé si problème."
               icon={<IconShield />}
+              accent="emerald"
             />
           </div>
         </div>
@@ -201,74 +250,140 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  FEATURES — Bento Grid                                 */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section id="features" className="bg-white py-16 sm:py-20 lg:py-32">
+      <section id="features" className="relative overflow-hidden bg-white py-20 sm:py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="text-sm font-semibold uppercase tracking-widest text-primary-500">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
               Fonctionnalités
             </span>
-            <h2 className="mt-3 font-display text-3xl font-bold text-dark sm:text-4xl">
-              Tout pour sortir tranquille
+            <h2 className="mt-5 font-display text-3xl font-bold text-dark sm:text-4xl lg:text-5xl">
+              Tout pour <span className="bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">sortir tranquille</span>
             </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-neutral-600 sm:text-lg">
+              Une app, zéro galère — de la découverte au paiement, en passant par la réservation.
+            </p>
           </div>
 
           <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Large card — Discover (spans 2 cols and 2 rows) */}
-            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-500 to-primary-700 p-8 text-white md:col-span-2 lg:col-span-2 lg:row-span-2">
-              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl transition-all duration-500 group-hover:bg-white/20" />
+            {/* Large card — Discover */}
+            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 p-8 text-white shadow-xl shadow-primary-500/20 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary-500/40 md:col-span-2 lg:col-span-2 lg:row-span-2">
+              <div aria-hidden className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl transition-all duration-500 group-hover:bg-white/20" />
+              <div aria-hidden className="absolute -bottom-32 -left-20 h-64 w-64 rounded-full bg-amber-400/20 blur-3xl transition-all duration-500 group-hover:bg-amber-400/30" />
+              {/* Pattern grid décoratif */}
+              <div aria-hidden className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
               <div className="relative">
-                <div className="mb-4 inline-flex rounded-2xl bg-white/20 p-3 backdrop-blur-sm">
-                  <IconMap />
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex rounded-2xl bg-white/20 p-3 backdrop-blur-sm ring-1 ring-white/30">
+                    <IconMap />
+                  </div>
+                  <span className="rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white/90 backdrop-blur-sm ring-1 ring-white/20">
+                    ✨ IA intégrée
+                  </span>
                 </div>
-                <h3 className="font-display text-2xl font-bold lg:text-3xl">
+                <h3 className="mt-5 font-display text-2xl font-bold lg:text-3xl">
                   Carte interactive &amp; IA
                 </h3>
-                <p className="mt-3 max-w-md text-base leading-relaxed text-white/80">
+                <p className="mt-3 max-w-md text-base leading-relaxed text-white/85">
                   Dis-nous ton budget et ton humeur. Notre IA te propose les meilleurs
                   spots autour de toi, avec carte en temps réel.
                 </p>
-                <div className="mt-8 grid grid-cols-3 gap-4">
-                  {['Budget personnalisé', 'Filtres avancés', 'Temps réel'].map((t) => (
+
+                {/* Features grid avec icônes */}
+                <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {[
+                    { label: 'Budget personnalisé', icon: '💰' },
+                    { label: 'Filtres avancés', icon: '🎯' },
+                    { label: 'Temps réel', icon: '⚡' },
+                  ].map((t) => (
                     <div
-                      key={t}
-                      className="rounded-2xl bg-white/10 p-4 text-sm font-medium backdrop-blur-sm"
+                      key={t.label}
+                      className="flex items-center gap-2 rounded-2xl bg-white/10 p-3 text-sm font-medium backdrop-blur-sm ring-1 ring-white/20 transition-all duration-300 hover:bg-white/15"
                     >
-                      {t}
+                      <span aria-hidden className="text-lg">{t.icon}</span>
+                      <span>{t.label}</span>
                     </div>
                   ))}
+                </div>
+
+                {/* Mini preview "résultat IA" */}
+                <div className="mt-6 hidden rounded-2xl border border-white/15 bg-white/5 p-4 backdrop-blur-md lg:block">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">Suggestion IA — Vendredi soir, 25K FCFA</p>
+                  <div className="mt-2.5 space-y-2">
+                    {[
+                      { name: 'Allocodrome Cocody', tag: '🔥 Trendy', dist: '1.2 km' },
+                      { name: 'Maquis Le Toit', tag: '🎵 Live music', dist: '2.4 km' },
+                    ].map((s) => (
+                      <div key={s.name} className="flex items-center justify-between rounded-xl bg-white/10 px-3 py-2 ring-1 ring-white/10">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">{s.name}</p>
+                          <p className="text-[10px] text-white/60">{s.tag} · {s.dist}</p>
+                        </div>
+                        <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300 ring-1 ring-emerald-400/30">98%</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Payment card */}
-            <div className="group relative overflow-hidden rounded-3xl bg-dark p-8 text-white">
-              <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-secondary-500/20 blur-3xl transition-all duration-500 group-hover:bg-secondary-500/30" />
+            {/* Payment card — Soutra-Pay */}
+            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-neutral-900 via-dark to-neutral-950 p-8 text-white shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-secondary-500/30">
+              <div aria-hidden className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-secondary-500/20 blur-3xl transition-all duration-500 group-hover:bg-secondary-500/40" />
+
               <div className="relative">
-                <div className="mb-4 inline-flex rounded-2xl bg-secondary-500/20 p-3">
+                <div className="mb-4 inline-flex rounded-2xl bg-secondary-500/20 p-3 ring-1 ring-secondary-500/30">
                   <IconWallet />
                 </div>
                 <h3 className="font-display text-xl font-bold">Soutra-Pay</h3>
                 <p className="mt-2 text-sm leading-relaxed text-neutral-400">
-                  Wallet rechargeable. Orange Money, Wave, MTN. QR Pay et Split Bill
-                  entre amis.
+                  Wallet rechargeable. QR Pay et Split Bill entre amis.
+                </p>
+
+                {/* Mini logos paiement */}
+                <div className="mt-5 flex flex-wrap items-center gap-1.5">
+                  {(['wave', 'orange-money', 'mtn-money', 'moov-money'] as const).map((name) => (
+                    <span key={name} className="inline-flex items-center justify-center rounded-lg bg-white/95 p-1 shadow-sm">
+                      <PaymentLogo name={name} className="h-5 w-auto" />
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                  + Visa &amp; Mastercard
                 </p>
               </div>
             </div>
 
             {/* Reservation card */}
-            <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-neutral-50 to-neutral-100 p-8">
-              <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-warning/10 blur-3xl transition-all duration-500 group-hover:bg-warning/20" />
+            <div className="group relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-8 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-500/15">
+              <div aria-hidden className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-amber-500/15 blur-3xl transition-all duration-500 group-hover:bg-amber-500/30" />
+
               <div className="relative">
-                <div className="mb-4 inline-flex rounded-2xl bg-warning/10 p-3">
-                  <IconTicket />
+                <div className="mb-4 inline-flex rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 p-3 ring-1 ring-amber-500/20">
+                  <span className="text-amber-600">
+                    <IconTicket />
+                  </span>
                 </div>
                 <h3 className="font-display text-xl font-bold text-dark">
                   Réservation sécurisée
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+                <p className="mt-2 text-sm leading-relaxed text-neutral-600">
                   Acompte protégé en séquestre. Remboursé automatiquement si le lieu
                   annule.
                 </p>
+
+                {/* Badges garanties */}
+                <div className="mt-5 flex flex-wrap gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-500/20">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+                    Acompte protégé
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-bold text-blue-700 ring-1 ring-blue-500/20">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5.6 3.8 10.7 9 12 5.2-1.3 9-6.4 9-12V5l-9-4z"/></svg>
+                    Garantie 100%
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -407,15 +522,28 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  TESTIMONIALS                                          */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="bg-light py-16 sm:py-20 lg:py-32">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-gradient-to-b from-light via-white to-light py-20 sm:py-24 lg:py-32">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-32 left-1/3 h-72 w-72 rounded-full bg-amber-400/8 blur-3xl" />
+          <div className="absolute -bottom-32 right-1/3 h-72 w-72 rounded-full bg-primary-400/8 blur-3xl" />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="text-sm font-semibold uppercase tracking-widest text-primary-500">
+            <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
               Témoignages
             </span>
-            <h2 className="mt-3 font-display text-3xl font-bold text-dark sm:text-4xl">
-              Ils sortent avec Soutra
+            <h2 className="mt-5 font-display text-3xl font-bold text-dark sm:text-4xl lg:text-5xl">
+              Ils sortent avec <span className="bg-gradient-to-r from-primary-500 to-amber-500 bg-clip-text text-transparent">Soutra</span>
             </h2>
+            <div className="mt-5 flex items-center justify-center gap-2 text-amber-500">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <IconStar key={i} className="h-5 w-5" />
+              ))}
+              <span className="ml-1 text-sm font-bold text-neutral-700">4.8/5</span>
+              <span className="text-sm text-neutral-500">· 2 400+ avis</span>
+            </div>
           </div>
 
           <div className="mt-16 grid gap-6 md:grid-cols-3">
@@ -424,21 +552,24 @@ export default function HomePage() {
               name="Aminata K."
               role="Étudiante, Cocody"
               initials="AK"
-              accentClass="bg-primary-100 text-primary-600"
+              avatarBg="bg-gradient-to-br from-primary-400 to-primary-600"
+              ringClass="ring-primary-500/20"
             />
             <TestimonialCard
               quote="Je réserve mon resto en 30 secondes. Plus besoin d'appeler. Et si le lieu annule, je suis remboursé direct."
               name="Jean-Marc D."
               role="Cadre, Plateau"
               initials="JD"
-              accentClass="bg-secondary-50 text-secondary-600"
+              avatarBg="bg-gradient-to-br from-emerald-400 to-teal-600"
+              ringClass="ring-emerald-500/20"
             />
             <TestimonialCard
               quote="Orange Money, Wave, MTN — je paie comme je veux. Et le QR code au maquis c'est trop simple."
               name="Fatou B."
               role="Entrepreneuse, Marcory"
               initials="FB"
-              accentClass="bg-primary-50 text-warning"
+              avatarBg="bg-gradient-to-br from-amber-400 to-orange-600"
+              ringClass="ring-amber-500/20"
             />
           </div>
         </div>
@@ -679,27 +810,60 @@ function HeroStat({ value, label }: { value: string; label: string }) {
   );
 }
 
+const STEP_ACCENTS = {
+  primary: {
+    iconBg: 'bg-gradient-to-br from-primary-50 to-primary-100',
+    iconColor: 'text-primary-600',
+    badgeBg: 'bg-gradient-to-br from-primary-500 to-primary-600',
+    glow: 'shadow-primary-500/20 group-hover:shadow-primary-500/40',
+    ringHover: 'group-hover:ring-primary-500/20',
+  },
+  amber: {
+    iconBg: 'bg-gradient-to-br from-amber-50 to-amber-100',
+    iconColor: 'text-amber-600',
+    badgeBg: 'bg-gradient-to-br from-amber-500 to-orange-500',
+    glow: 'shadow-amber-500/20 group-hover:shadow-amber-500/40',
+    ringHover: 'group-hover:ring-amber-500/20',
+  },
+  emerald: {
+    iconBg: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
+    iconColor: 'text-emerald-600',
+    badgeBg: 'bg-gradient-to-br from-emerald-500 to-teal-500',
+    glow: 'shadow-emerald-500/20 group-hover:shadow-emerald-500/40',
+    ringHover: 'group-hover:ring-emerald-500/20',
+  },
+} as const;
+
 function Step({
   num,
   title,
   desc,
   icon,
+  accent = 'primary',
 }: {
   num: string;
   title: string;
   desc: string;
   icon: React.ReactNode;
+  accent?: keyof typeof STEP_ACCENTS;
 }) {
+  const a = STEP_ACCENTS[accent];
   return (
-    <div className="relative text-center">
-      <div className="relative z-10 mx-auto flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-lg shadow-neutral-200/50 transition-shadow duration-300 hover:shadow-xl">
-        <div className="text-primary-500">{icon}</div>
+    <div className="group relative text-center">
+      {/* Médaillon icône + badge numéro */}
+      <div className="relative z-10 mx-auto h-24 w-24">
+        <div className={`flex h-24 w-24 items-center justify-center rounded-3xl ${a.iconBg} ring-1 ring-white/60 transition-all duration-500 group-hover:-translate-y-1 group-hover:rotate-3 group-hover:scale-105 shadow-xl ${a.glow}`}>
+          <div className={a.iconColor}>{icon}</div>
+        </div>
+        <span className={`absolute -top-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full ${a.badgeBg} text-xs font-black text-white shadow-lg ring-4 ring-white`}>
+          {num}
+        </span>
       </div>
-      <span className="mt-6 inline-block font-display text-xs font-bold uppercase tracking-widest text-primary-500">
-        {num}
-      </span>
-      <h3 className="mt-2 font-display text-xl font-bold text-dark">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-neutral-500">{desc}</p>
+      {/* Card titre + desc */}
+      <div className={`mt-6 rounded-2xl border border-neutral-200/60 bg-white p-6 shadow-sm ring-1 ring-transparent transition-all duration-300 group-hover:-translate-y-0.5 group-hover:shadow-md ${a.ringHover}`}>
+        <h3 className="font-display text-xl font-bold text-dark">{title}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-neutral-600">{desc}</p>
+      </div>
     </div>
   );
 }
@@ -709,30 +873,47 @@ function TestimonialCard({
   name,
   role,
   initials,
-  accentClass,
+  avatarBg,
+  ringClass,
 }: {
   quote: string;
   name: string;
   role: string;
   initials: string;
-  accentClass: string;
+  avatarBg: string;
+  ringClass: string;
 }) {
   return (
-    <div className="rounded-3xl bg-white p-8 shadow-sm transition-all duration-300 hover:shadow-lg">
-      <div className="mb-6 text-primary-500/20">
+    <div className={`group relative flex flex-col rounded-3xl border border-neutral-200/80 bg-white p-7 shadow-sm ring-1 ring-transparent transition-all duration-500 hover:-translate-y-1 hover:border-transparent hover:shadow-xl hover:shadow-neutral-900/5 ${ringClass} hover:ring-2`}>
+      {/* Étoiles 5/5 */}
+      <div className="flex items-center gap-0.5 text-amber-400">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <IconStar key={i} className="h-4 w-4" />
+        ))}
+      </div>
+
+      {/* Guillemet décoratif */}
+      <div aria-hidden className="absolute right-7 top-7 text-primary-500/10 transition-transform duration-500 group-hover:scale-110 group-hover:text-primary-500/20">
         <IconQuote />
       </div>
-      <p className="text-sm leading-relaxed text-neutral-600">{quote}</p>
-      <div className="mt-6 flex items-center gap-3">
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${accentClass}`}
-        >
+
+      <p className="mt-5 flex-1 text-sm leading-relaxed text-neutral-700">
+        « {quote} »
+      </p>
+
+      <div className="mt-6 flex items-center gap-3 border-t border-neutral-100 pt-5">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-black text-white shadow-md ring-2 ring-white ${avatarBg}`}>
           {initials}
         </div>
-        <div>
-          <div className="text-sm font-semibold text-dark">{name}</div>
-          <div className="text-xs text-neutral-400">{role}</div>
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-dark">{name}</div>
+          <div className="text-xs text-neutral-500">{role}</div>
         </div>
+        {/* Badge "vérifié" */}
+        <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-500/20">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+          Vérifié
+        </span>
       </div>
     </div>
   );
@@ -979,6 +1160,58 @@ function IconQuote() {
   return (
     <svg className="h-10 w-10" viewBox="0 0 40 40" fill="currentColor">
       <path d="M10.7 27.3c-2.4 0-4.3-.8-5.8-2.3C3.3 23.4 2.5 21.5 2.5 19.1c0-3.1 1-5.8 3.1-8.1C7.7 8.7 10.4 7 13.8 6l1.3 2.7c-2.4.8-4.2 2-5.4 3.5-1.2 1.5-1.8 3.1-1.8 4.6.3-.1.7-.1 1.2-.1 1.8 0 3.3.6 4.5 1.8 1.2 1.2 1.8 2.7 1.8 4.5 0 1.8-.6 3.3-1.9 4.5-1.2 1.2-2.8 1.8-4.8 1.8zm20 0c-2.4 0-4.3-.8-5.8-2.3-1.5-1.6-2.2-3.5-2.2-5.9 0-3.1 1-5.8 3.1-8.1C27.7 8.7 30.4 7 33.8 6l1.3 2.7c-2.4.8-4.2 2-5.4 3.5-1.2 1.5-1.8 3.1-1.8 4.6.3-.1.7-.1 1.2-.1 1.8 0 3.3.6 4.5 1.8 1.2 1.2 1.8 2.7 1.8 4.5 0 1.8-.6 3.3-1.9 4.5-1.2 1.2-2.8 1.8-4.8 1.8z" />
+    </svg>
+  );
+}
+
+function IconStar({ filled = true, className = 'h-4 w-4' }: { filled?: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.563.563 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+    </svg>
+  );
+}
+
+function GuaranteeIconLock() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="14" height="10" x="5" y="11" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      <circle cx="12" cy="16" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function GuaranteeIconBolt() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M13.5 1.5a1 1 0 0 1 .92 1.39L11.5 9.5h6.27a1 1 0 0 1 .77 1.64l-9 11a1 1 0 0 1-1.7-.94l2.66-7.7H4.23a1 1 0 0 1-.77-1.64l9-11a1 1 0 0 1 1.04-.36Z" />
+    </svg>
+  );
+}
+
+function GuaranteeIconPhone() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="12" height="20" x="6" y="2" rx="3" />
+      <path d="M11 18h2" />
+      <path d="M9 6h6" />
+    </svg>
+  );
+}
+
+function GuaranteeIconShield() {
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2 4 5v6c0 5 3.5 9.4 8 11 4.5-1.6 8-6 8-11V5l-8-3Z" />
+      <path d="m9 12 2 2 4-4" />
     </svg>
   );
 }
