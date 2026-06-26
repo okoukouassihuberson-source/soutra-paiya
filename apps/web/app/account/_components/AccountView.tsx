@@ -625,12 +625,12 @@ export function AccountView({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[200] flex items-end justify-center bg-neutral-900/70 backdrop-blur-md sm:items-center"
+          className="fixed inset-0 z-[200] flex items-end justify-center overflow-hidden bg-neutral-900/70 backdrop-blur-md sm:items-center sm:p-4"
           onClick={() => !cancelling && setConfirmOpen(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="animate-sheet-slide-up w-full max-w-md rounded-t-3xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 sm:rounded-3xl sm:p-8"
+            className="animate-sheet-slide-up max-h-[100dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 sm:max-h-[90vh] sm:rounded-3xl sm:p-8"
           >
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-700 sm:hidden" />
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-3xl text-red-500">

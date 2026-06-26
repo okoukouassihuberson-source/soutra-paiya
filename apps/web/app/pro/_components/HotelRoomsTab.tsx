@@ -288,34 +288,39 @@ function RoomFormModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[200] flex items-end justify-center bg-neutral-900/70 backdrop-blur-md sm:items-center"
+      className="fixed inset-0 z-[200] flex items-end justify-center overflow-hidden bg-neutral-900/70 backdrop-blur-md sm:items-center sm:p-4"
       onClick={onClose}
     >
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="animate-sheet-slide-up flex w-full max-w-xl flex-col rounded-t-3xl border border-neutral-200 bg-white p-6 shadow-2xl sm:rounded-3xl sm:p-8"
+        className="animate-sheet-slide-up flex max-h-[100dvh] w-full max-w-xl flex-col rounded-t-3xl border border-neutral-200 bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl"
       >
-        <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 sm:hidden" />
+        {/* Header — non scrollable */}
+        <div className="flex-shrink-0 px-6 pt-6 sm:px-8 sm:pt-8">
+          <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 sm:hidden" />
 
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="font-display text-xl font-bold text-neutral-900">
-            {room ? 'Modifier la chambre' : 'Nouvelle chambre'}
-          </h3>
-          <button type="button" onClick={onClose} className="rounded-full p-2 text-neutral-500 hover:bg-neutral-100">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="font-display text-xl font-bold text-neutral-900">
+              {room ? 'Modifier la chambre' : 'Nouvelle chambre'}
+            </h3>
+            <button type="button" onClick={onClose} className="rounded-full p-2 text-neutral-500 hover:bg-neutral-100">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          {error && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              ⚠ {error}
+            </div>
+          )}
         </div>
 
-        {error && (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            ⚠ {error}
-          </div>
-        )}
-
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {/* Body scrollable */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5 sm:px-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Nom de la chambre *" className="sm:col-span-2">
             <input
               type="text" value={name} onChange={(e) => setName(e.target.value)}
@@ -419,9 +424,14 @@ function RoomFormModal({
               ))}
             </div>
           </Field>
+          </div>
         </div>
 
-        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {/* Footer — non scrollable, sticky bottom */}
+        <div
+          className="flex flex-shrink-0 flex-col-reverse gap-2 border-t border-neutral-100 bg-white px-6 py-4 sm:flex-row sm:justify-end sm:rounded-b-3xl sm:px-8 sm:py-5"
+          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        >
           <button
             type="button" onClick={onClose} disabled={saving}
             className="rounded-2xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
