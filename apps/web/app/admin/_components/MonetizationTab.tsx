@@ -407,16 +407,18 @@ function RuleEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl border border-neutral-800 bg-neutral-950 p-5 sm:rounded-2xl">
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+    <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden bg-black/70 p-0 sm:items-center sm:p-4">
+      <div className="flex max-h-[100dvh] w-full max-w-3xl flex-col rounded-t-2xl border border-neutral-800 bg-neutral-950 sm:max-h-[92vh] sm:rounded-2xl">
+        {/* Header — non scrollable */}
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-neutral-800 px-5 pb-3 pt-5">
           <h3 className="font-display text-lg font-bold text-white">
             {isCreating ? '+ Nouvelle règle' : '✏️ Éditer la règle'}
           </h3>
           <button onClick={onClose} className="text-neutral-400 hover:text-white">✕</button>
         </div>
 
-        <div className="mt-4 space-y-4">
+        {/* Body scrollable */}
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4">
           {/* Identité */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Nom *">
@@ -573,18 +575,23 @@ function RuleEditor({
             </label>
           </div>
 
-          <div className="flex justify-end gap-2 border-t border-neutral-800 pt-3">
-            <button onClick={onClose} className="rounded-full bg-neutral-700/40 px-4 py-2 text-xs font-semibold text-neutral-200 hover:bg-neutral-700/70">
-              Annuler
-            </button>
-            <button
-              onClick={save}
-              disabled={saving}
-              className="rounded-full bg-primary-500 px-5 py-2 text-xs font-bold text-white hover:bg-primary-600 disabled:opacity-50"
-            >
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
-          </div>
+        </div>
+
+        {/* Footer — non scrollable, sticky bottom */}
+        <div
+          className="flex flex-shrink-0 justify-end gap-2 border-t border-neutral-800 bg-neutral-950 px-5 py-3 sm:rounded-b-2xl"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        >
+          <button onClick={onClose} className="rounded-full bg-neutral-700/40 px-4 py-2 text-xs font-semibold text-neutral-200 hover:bg-neutral-700/70">
+            Annuler
+          </button>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="rounded-full bg-primary-500 px-5 py-2 text-xs font-bold text-white hover:bg-primary-600 disabled:opacity-50"
+          >
+            {saving ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
         </div>
       </div>
 

@@ -801,39 +801,44 @@ function SubscribeModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[200] flex items-end justify-center bg-neutral-900/70 backdrop-blur-md sm:items-center"
+      className="fixed inset-0 z-[200] flex items-end justify-center overflow-hidden bg-neutral-900/70 backdrop-blur-md sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="animate-sheet-slide-up flex w-full max-w-lg flex-col rounded-t-3xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 sm:rounded-3xl sm:p-8"
+        className="animate-sheet-slide-up flex max-h-[100dvh] w-full max-w-lg flex-col rounded-t-3xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 sm:max-h-[90vh] sm:rounded-3xl"
       >
-        {/* Handle (mobile) */}
-        <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-700 sm:hidden" />
+        {/* Header — non scrollable */}
+        <div className="flex-shrink-0 px-6 pt-6 sm:px-8 sm:pt-8">
+          {/* Handle (mobile) */}
+          <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-700 sm:hidden" />
 
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Souscription</p>
-            <h3 className="mt-1 font-display text-2xl font-black tracking-tight text-neutral-900 dark:text-white">
-              {plan.display_name}
-            </h3>
-            <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
-              {formatXOF(price)} / {billing === 'monthly' ? 'mois' : 'an'}
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Souscription</p>
+              <h3 className="mt-1 font-display text-2xl font-black tracking-tight text-neutral-900 dark:text-white">
+                {plan.display_name}
+              </h3>
+              <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
+                {formatXOF(price)} / {billing === 'monthly' ? 'mois' : 'an'}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Fermer"
+              className="rounded-full p-2 text-neutral-500 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Fermer"
-            className="rounded-full p-2 text-neutral-500 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
         </div>
 
-        <div className="mt-6">
+        {/* Body scrollable */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5 sm:px-8">
+        <div className="mt-0">
           <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
             Moyen de paiement
           </p>
@@ -876,7 +881,13 @@ function SubscribeModal({
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        </div>
+
+        {/* Footer — non scrollable, sticky bottom */}
+        <div
+          className="flex flex-shrink-0 flex-col-reverse gap-2 border-t border-neutral-100 bg-white px-6 py-4 dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row sm:justify-end sm:rounded-b-3xl sm:px-8 sm:py-5"
+          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        >
           <button
             onClick={onClose}
             className="rounded-2xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
