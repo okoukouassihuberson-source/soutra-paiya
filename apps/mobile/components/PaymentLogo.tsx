@@ -205,19 +205,35 @@ function WaveSvg({ width, height }: SvgProps) {
   return (
     <Svg width={width} height={height} viewBox="0 0 160 50">
       <Rect width="160" height="50" rx="8" fill="#1DC8FB" />
-      <Path
-        d="M14 30 Q 24 20, 34 30 T 54 30"
-        stroke="#FFFFFF"
-        strokeWidth="3"
-        strokeLinecap="round"
-        fill="none"
-      />
+
+      {/* Pingouin Wave (gauche) */}
+      <G x={6} y={4}>
+        {/* Bras levé */}
+        <Path d="M 9 19 Q 1 14, 3 6 Q 5 1, 9 3 L 12 18 Z" fill="#000000" />
+        {/* Corps noir */}
+        <Circle cx="20" cy="23" r="17" fill="#000000" />
+        {/* Ventre blanc */}
+        <Circle cx="20" cy="27" r="11" fill="#FFFFFF" />
+        {/* Œil gauche */}
+        <Circle cx="14" cy="14" r="2" fill="#FFFFFF" />
+        <Circle cx="14.3" cy="14.3" r="1.2" fill="#000000" />
+        {/* Œil droit */}
+        <Circle cx="24" cy="14" r="2" fill="#FFFFFF" />
+        <Circle cx="24.3" cy="14.3" r="1.2" fill="#000000" />
+        {/* Bec orange (diamant) */}
+        <Path d="M 19 18 L 14 21 L 19 25 L 24 21 Z" fill="#FF9933" />
+        {/* Pieds orange */}
+        <Path d="M 12 40 a 4 2 0 1 0 8 0 a 4 2 0 1 0 -8 0 Z" fill="#FF9933" />
+        <Path d="M 22 40 a 4 2 0 1 0 8 0 a 4 2 0 1 0 -8 0 Z" fill="#FF9933" />
+      </G>
+
+      {/* Texte "wave" en noir */}
       <SvgText
-        x="62" y="34"
+        x="56" y="32"
         fontFamily="Arial"
         fontWeight="900"
         fontSize="22"
-        fill="#FFFFFF"
+        fill="#000000"
       >
         wave
       </SvgText>
