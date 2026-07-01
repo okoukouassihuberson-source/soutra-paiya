@@ -12,9 +12,11 @@
 // ============================================================================
 import {
   corsHeaders,
+  extractJwt,
   getAuthUser,
   jsonResponse,
   serviceClient,
+  userClient,
 } from "../_shared/supabase.ts";
 import { initializePayment } from "../_shared/geniuspay.ts";
 
@@ -41,7 +43,16 @@ Deno.serve(async (req) => {
 
     const svc = serviceClient();
 
-    const { data: info, error: infoErr } = await svc.rpc(
+    // get_room_booking_payment_info utilise auth.uid() → doit être appelée
+    // avec le JWT de l'utilisateur, pas le service role. On construit un
+    // userClient dédié le temps de la RPC ; le reste (insert transaction,
+    // update en cas d'échec GeniusPay) continue de passer par svc.
+    const jwt = extractJwt(req);
+    if (!jwt) {
+      return jsonResponse({ error: "Non authentifié" }, 401);
+    }
+    const userSvc = userClient(jwt);
+    const { data: info, error: infoErr } = await userSvc.rpc(
       "get_room_booking_payment_info",
       { p_booking_id: bookingId },
     );
