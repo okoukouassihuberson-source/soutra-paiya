@@ -19,7 +19,7 @@ import { PaymentMethodsStrip } from '@/components/PaymentMethodsStrip';
  * Pattern miroir de /orders mais pour room_bookings :
  *   - List via RPC list_my_room_bookings (RLS = self)
  *   - Modal détail avec timeline workflow
- *   - CTA "Payer maintenant" → Edge Function paystack-pay-booking
+ *   - CTA "Payer maintenant" → Edge Function geniuspay-pay-booking
  *   - Annulation possible si status in (pending, confirmed)
  */
 
@@ -194,16 +194,16 @@ function BookingDetailModal({
     if (!booking) return;
     setPaying(true);
     try {
-      const { data, error } = await (supabase.functions as any).invoke('paystack-pay-booking', {
+      const { data, error } = await (supabase.functions as any).invoke('geniuspay-pay-booking', {
         body: { booking_id: booking.booking_id },
       });
       if (error) {
         Alert.alert('Erreur', error.message || 'Impossible de démarrer le paiement');
         return;
       }
-      const url = (data as any)?.authorization_url;
+      const url = (data as any)?.checkout_url;
       if (!url) {
-        Alert.alert('Erreur', 'Réponse Paystack invalide');
+        Alert.alert('Erreur', 'Réponse GeniusPay invalide');
         return;
       }
       await WebBrowser.openBrowserAsync(url, {

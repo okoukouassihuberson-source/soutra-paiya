@@ -8,7 +8,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { colors, typography, radius, spacing, formatXOF, reservationFormSchema } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
-import { payWithPaystack } from '@/lib/paystack';
+import { payWithGeniuspay } from '@/lib/geniuspay';
 import { validatePromoCode, applyDiscount, reasonLabel } from '@/lib/promo';
 
 interface Venue {
@@ -205,9 +205,9 @@ export default function ReservationForm() {
         return;
       }
 
-      // 3. Paiement de l'acompte via Paystack. Le montant est déterminé
+      // 3. Paiement de l'acompte via GeniusPay. Le montant est déterminé
       //    côté serveur à partir de la réservation.
-      const result = await payWithPaystack({
+      const result = await payWithGeniuspay({
         purpose: 'reservation_deposit',
         reservationId: resaId,
       });

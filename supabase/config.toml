@@ -27,7 +27,15 @@ enable_confirmations = false
 # Son authenticité est garantie par la vérification de signature HMAC-SHA512
 # dans le code (cf. supabase/functions/paystack-webhook). Les autres fonctions
 # (initialize, verify, withdraw) gardent verify_jwt = true par défaut.
+# NOTE : conservé pendant la migration Paystack → GeniusPay pour l'abonnement
+# et les payouts, qui ne basculent qu'en PR #3 et PR #4.
 [functions.paystack-webhook]
+verify_jwt = false
+
+# Le webhook GeniusPay est appelé par GeniusPay lui-même. Son authenticité est
+# garantie par la vérification HMAC-SHA256 du header X-Webhook-Signature +
+# fenêtre anti-replay 5 min (cf. supabase/functions/_shared/geniuspay.ts).
+[functions.geniuspay-webhook]
 verify_jwt = false
 
 # Déclenchée par les Database Webhooks Supabase, qui s'authentifient via
