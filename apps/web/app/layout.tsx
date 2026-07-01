@@ -23,14 +23,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://soutra-paiya.vercel.app'),
   title: {
-    default: 'Soutra-Playce — Sors, réserve, paie. Zéro galère.',
-    template: '%s · Soutra-Playce',
+    default: 'Soutra-Explore — Sors, réserve, paie. Zéro galère.',
+    template: '%s · Soutra-Explore',
   },
   description:
     "Découvre les meilleurs maquis, restos et événements à Abidjan. Paie avec Orange Money, Wave, MTN MoMo. Réservation garantie.",
   keywords: ['Abidjan', 'réservation', 'restaurant', 'maquis', 'paiement mobile', 'Orange Money', 'Wave', "Côte d'Ivoire"],
   manifest: '/manifest.webmanifest',
-  applicationName: 'Soutra-Playce',
+  applicationName: 'Soutra-Explore',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -55,14 +55,14 @@ export const metadata: Metadata = {
     shortcut: '/logo.png',
   },
   openGraph: {
-    title: 'Soutra-Playce',
+    title: 'Soutra-Explore',
     description: 'Sors, réserve, paie — zéro galère.',
     locale: 'fr_CI',
     type: 'website',
-    siteName: 'Soutra-Playce',
-    images: [{ url: '/logo.png', width: 1024, height: 1024, alt: 'Soutra-Playce' }],
+    siteName: 'Soutra-Explore',
+    images: [{ url: '/logo.png', width: 1024, height: 1024, alt: 'Soutra-Explore' }],
   },
-  twitter: { card: 'summary_large_image', title: 'Soutra-Playce', images: ['/logo.png'] },
+  twitter: { card: 'summary_large_image', title: 'Soutra-Explore', images: ['/logo.png'] },
 };
 
 // Hôte Supabase pré-connecté pour économiser le handshake DNS/TLS au premier

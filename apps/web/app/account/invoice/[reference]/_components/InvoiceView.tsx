@@ -101,14 +101,14 @@ export function InvoiceView({
         <section className="invoice-parties">
           <div>
             <p className="party-label">Émetteur</p>
-            <p className="party-name">Soutra-Playce</p>
+            <p className="party-name">Soutra-Explore</p>
             <p className="party-line">Abidjan, Côte d&apos;Ivoire</p>
             <p className="party-line">support@soutra-paiya.com</p>
             <p className="party-line">+225 07 08 81 74 09</p>
           </div>
           <div>
             <p className="party-label">Facturé à</p>
-            <p className="party-name">{profile?.full_name || 'Utilisateur Soutra-Playce'}</p>
+            <p className="party-name">{profile?.full_name || 'Utilisateur Soutra-Explore'}</p>
             {profile?.phone && <p className="party-line">📞 {profile.phone}</p>}
             {profile?.email && <p className="party-line">✉ {profile.email}</p>}
             {profile?.city && <p className="party-line">{profile.city}</p>}
@@ -191,7 +191,7 @@ export function InvoiceView({
             <strong>support@soutra-paiya.com</strong>.
           </p>
           <p className="small mt2 brand-mention">
-            Soutra-Playce — Le wallet fintech de la Côte d&apos;Ivoire
+            Soutra-Explore — Le wallet fintech de la Côte d&apos;Ivoire
           </p>
         </footer>
       </article>

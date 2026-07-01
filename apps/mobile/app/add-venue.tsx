@@ -169,7 +169,7 @@ export default function AddVenue() {
       } else {
         Alert.alert(
           'Contribution envoyée ✓',
-          'Merci ! L\'équipe Soutra-Playce va vérifier les infos et publier la fiche sous 24-48 h.',
+          'Merci ! L\'équipe Soutra-Explore va vérifier les infos et publier la fiche sous 24-48 h.',
           [{ text: 'OK', onPress: () => router.back() }],
         );
       }

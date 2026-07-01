@@ -12,7 +12,7 @@ import { LandingNavbar } from '@/components/marketing/LandingNavbar';
 
 type AccentColor =
   | 'neutral'      // Free
-  | 'orange'       // Standard (couleurs Soutra-Playce)
+  | 'orange'       // Standard (couleurs Soutra-Explore)
   | 'blue-purple'  // Pro
   | 'purple-gold'  // Premium
   | 'black-gold';  // Soutra Premium
@@ -287,12 +287,12 @@ export function SubscribeView({
         <section className="mx-auto max-w-3xl text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-500/30 bg-primary-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
             <span className="h-1.5 w-1.5 animate-glow-pulse rounded-full bg-primary-500" />
-            Premium Soutra-Playce
+            Premium Soutra-Explore
           </div>
           <h1 className="font-display text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             Choisissez votre expérience{' '}
             <span className="bg-gradient-to-r from-primary-500 via-purple-500 to-amber-500 bg-clip-text text-transparent">
-              Soutra-Playce
+              Soutra-Explore
             </span>
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 sm:text-lg">
@@ -578,7 +578,7 @@ function CashbackSimulator({ plans, billing }: { plans: Plan[]; billing: Billing
               Estime tes économies
             </h2>
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              Selon tes dépenses mensuelles avec Soutra-Playce.
+              Selon tes dépenses mensuelles avec Soutra-Explore.
             </p>
           </div>
           <div className="text-right">
@@ -667,7 +667,7 @@ function CashbackSimulator({ plans, billing }: { plans: Plan[]; billing: Billing
         </div>
 
         <p className="mt-6 text-xs text-neutral-500 dark:text-neutral-500">
-          ⓘ Estimation basée sur le taux de cashback de chaque plan, appliqué au montant indiqué. Les frais Mobile Money et plafonds Soutra-Playce ne sont pas inclus.
+          ⓘ Estimation basée sur le taux de cashback de chaque plan, appliqué au montant indiqué. Les frais Mobile Money et plafonds Soutra-Explore ne sont pas inclus.
         </p>
       </div>
     </div>

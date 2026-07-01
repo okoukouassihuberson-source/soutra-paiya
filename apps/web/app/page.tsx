@@ -484,7 +484,7 @@ export default function HomePage() {
               <h3 className="mt-4 bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text font-display text-xl font-black tracking-tight text-transparent">
                 Soutra Premium
               </h3>
-              <p className="mt-1 text-sm text-amber-400/80">L&apos;élite Soutra-Playce</p>
+              <p className="mt-1 text-sm text-amber-400/80">L&apos;élite Soutra-Explore</p>
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text font-display text-3xl font-black tracking-tight text-transparent">30 000</span>
                 <span className="text-sm text-neutral-400">FCFA / mois</span>
@@ -778,7 +778,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-neutral-800 pt-8 text-sm md:flex-row">
-            <span>© {new Date().getFullYear()} Soutra-Playce. Tous droits réservés.</span>
+            <span>© {new Date().getFullYear()} Soutra-Explore. Tous droits réservés.</span>
             <div className="flex gap-6">
               <a href="#" className="transition hover:text-white">
                 Instagram

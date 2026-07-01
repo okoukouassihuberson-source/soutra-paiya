@@ -26,12 +26,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     .eq('status', 'active')
     .maybeSingle();
   if (!venue) {
-    return { title: 'Lieu introuvable — Soutra-Playce', robots: { index: false } };
+    return { title: 'Lieu introuvable — Soutra-Explore', robots: { index: false } };
   }
 
   const title = `${venue.name} — ${categoryLabel(venue.category)} à ${venue.city}`;
   const description = venue.description?.slice(0, 160)
-    || `Découvre ${venue.name}, ${categoryLabel(venue.category)} à ${[venue.district, venue.city].filter(Boolean).join(', ')}. Réserve sur Soutra-Playce.`;
+    || `Découvre ${venue.name}, ${categoryLabel(venue.category)} à ${[venue.district, venue.city].filter(Boolean).join(', ')}. Réserve sur Soutra-Explore.`;
 
   return {
     title,
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       type: 'website',
       url: `/v/${venue.slug}`,
       images: venue.cover_url ? [{ url: venue.cover_url, width: 1200, height: 630, alt: venue.name }] : [],
-      siteName: 'Soutra-Playce',
+      siteName: 'Soutra-Explore',
       locale: 'fr_CI',
     },
     twitter: {

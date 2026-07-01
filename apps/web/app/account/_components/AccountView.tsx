@@ -500,7 +500,7 @@ export function AccountView({
                     <li key={tx.id} className="flex flex-wrap items-center gap-3 px-5 py-4 sm:px-6">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold">
-                          {planName || tx.description || 'Abonnement Soutra-Playce'}
+                          {planName || tx.description || 'Abonnement Soutra-Explore'}
                           {billingPeriod && (
                             <span className="ml-2 text-xs font-normal text-neutral-500">
                               ({billingPeriod === 'monthly' ? 'Mensuel' : 'Annuel'})

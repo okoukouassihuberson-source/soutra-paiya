@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 // ============================================================================
-// Soutra-Playce — Service Worker (vanilla, no build tooling)
+// Soutra-Explore — Service Worker (vanilla, no build tooling)
 // ============================================================================
 // Stratégies par type de requête :
 //   • static (JS/CSS/fonts/images) → cache-first, mis à jour en arrière-plan

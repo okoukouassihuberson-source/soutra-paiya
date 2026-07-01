@@ -86,7 +86,7 @@ const VALID_CATEGORIES = new Set([
 // ----------------------------------------------------------------------------
 // Prompt système pour Claude : extraction stricte en JSON.
 // ----------------------------------------------------------------------------
-const SYSTEM_PROMPT = `Tu es un parseur d'intention pour Soutra-Playce (Côte d'Ivoire).
+const SYSTEM_PROMPT = `Tu es un parseur d'intention pour Soutra-Explore (Côte d'Ivoire).
 À partir de la requête naturelle de l'utilisateur, retourne UNIQUEMENT un objet JSON (pas de markdown, pas de texte hors JSON) avec les clés suivantes :
 
 {

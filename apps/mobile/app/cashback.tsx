@@ -130,7 +130,7 @@ export default function CashbackScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Cashback" subtitle="Tes récompenses Soutra-Playce" />
+      <ScreenHeader title="Cashback" subtitle="Tes récompenses Soutra-Explore" />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}

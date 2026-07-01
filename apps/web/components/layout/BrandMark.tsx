@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 /**
- * Badge logo Soutra-Playce.
+ * Badge logo Soutra-Explore.
  *
  * Affiche /logo.png si le fichier est déployé, sinon fallback sur le badge
  * dégradé orange « SP » (préserve un état visuel propre si l'image n'a pas
@@ -38,7 +38,7 @@ export function BrandMark({ size = 'md', className = '' }: {
   return (
     <img
       src="/logo.png"
-      alt="Soutra-Playce"
+      alt="Soutra-Explore"
       width={64}
       height={64}
       onError={() => setImgError(true)}

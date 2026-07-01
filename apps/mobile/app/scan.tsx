@@ -22,7 +22,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 type Mode = 'scan' | 'myqr';
 
 /**
- * Écran QR de paiement Soutra-Playce.
+ * Écran QR de paiement Soutra-Explore.
  *
  * Historique : avant correctif, `react-native-svg` était absent du
  * package.json alors que `react-native-qrcode-svg` (utilisé ici pour
@@ -103,7 +103,7 @@ function Scan() {
         console.log('[QR Scanner] QR rejected: unrecognized format');
         Alert.alert(
           'QR non reconnu',
-          "Ce code n'est pas un QR de paiement Soutra-Playce.",
+          "Ce code n'est pas un QR de paiement Soutra-Explore.",
           [
             { text: 'Réessayer', onPress: () => setScanned(false) },
             { text: 'Annuler', style: 'cancel', onPress: () => router.back() },
@@ -244,7 +244,7 @@ function ScanArea({
         </View>
         <View style={s.scanHintWrap}>
           <Ionicons name="qr-code" size={16} color="#fff" />
-          <Text style={s.scanHint}>Vise un QR de paiement Soutra-Playce</Text>
+          <Text style={s.scanHint}>Vise un QR de paiement Soutra-Explore</Text>
         </View>
       </View>
     </View>

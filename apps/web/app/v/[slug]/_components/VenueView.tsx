@@ -184,7 +184,7 @@ export function VenueView({
                 <span>{cta.verb}</span>
               </a>
               <p className="mt-2 text-center text-[11px] text-neutral-500">
-                Ouvre l&apos;app Soutra-Playce
+                Ouvre l&apos;app Soutra-Explore
               </p>
 
               {/* Contact rapide */}
@@ -256,7 +256,7 @@ export function VenueView({
             <p className="mt-4 text-center text-xs text-neutral-500">
               Découvre plus de venues sur l&apos;app{' '}
               <Link href="/" className="font-semibold text-primary-600 hover:underline">
-                Soutra-Playce
+                Soutra-Explore
               </Link>
             </p>
           </aside>

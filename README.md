@@ -1,4 +1,4 @@
-# Soutra-Playce
+# Soutra-Explore
 
 > Plateforme fintech & loisirs pour la Côte d'Ivoire.
 > Sortir, réserver, payer — sans la galère.

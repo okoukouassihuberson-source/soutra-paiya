@@ -294,7 +294,7 @@ export function buildRevenueReportHtml(opts: RevenueReportOptions): string {
 
 <div class="header">
   <div>
-    <div class="brand">Soutra-Playce</div>
+    <div class="brand">Soutra-Explore</div>
     <div class="brand-sub">Rapport de revenus établissement</div>
   </div>
   <div class="meta-right">
@@ -319,7 +319,7 @@ export function buildRevenueReportHtml(opts: RevenueReportOptions): string {
     <div class="kpi-sub">Total des flux générés</div>
   </div>
   <div class="kpi kpi-amber">
-    <div class="kpi-label">Commission Soutra-Playce</div>
+    <div class="kpi-label">Commission Soutra-Explore</div>
     <div class="kpi-value">${formatXOF(summary.commission_xof)}</div>
     <div class="kpi-sub">${summary.commission_rate_pct}% du brut</div>
   </div>
@@ -364,7 +364,7 @@ ${events.length > 0 ? `
 ` : ''}
 
 <div class="footer">
-  <div>Soutra-Playce · soutra-paiya.vercel.app</div>
+  <div>Soutra-Explore · soutra-paiya.vercel.app</div>
   <div>Généré automatiquement — document non contractuel</div>
 </div>
 
