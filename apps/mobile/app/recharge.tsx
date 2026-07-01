@@ -4,11 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
-import { payWithPaystack } from '@/lib/paystack';
+import { payWithGeniuspay } from '@/lib/geniuspay';
 import { ScreenHeader } from '@/components/ScreenHeader';
 
 const QUICK_AMOUNTS = [1000, 2000, 5000, 10000, 25000];
-const MIN_XOF = 100;
+// Minimum imposé par GeniusPay = 200 XOF.
+const MIN_XOF = 200;
 const MAX_XOF = 2_000_000;
 
 export default function Recharge() {
@@ -29,7 +30,7 @@ export default function Recharge() {
     }
     try {
       setSubmitting(true);
-      const result = await payWithPaystack({ purpose: 'topup', amountXof: amountNum });
+      const result = await payWithGeniuspay({ purpose: 'topup', amountXof: amountNum });
       if (result.status === 'success') {
         Alert.alert('Recharge réussie 🎉', `Ton wallet a été crédité de ${formatXOF(amountNum)}.`, [{ text: 'OK', onPress: () => router.back() }]);
       } else if (result.status === 'pending') {

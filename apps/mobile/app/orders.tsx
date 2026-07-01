@@ -196,20 +196,20 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
     if (!order) return;
     setPaying(true);
     try {
-      const { data, error } = await (supabase.functions as any).invoke('paystack-pay-order', {
+      const { data, error } = await (supabase.functions as any).invoke('geniuspay-pay-order', {
         body: { order_id: order.id },
       });
       if (error) {
         Alert.alert('Erreur', error.message || 'Impossible de démarrer le paiement');
         return;
       }
-      const url = (data as any)?.authorization_url;
+      const url = (data as any)?.checkout_url;
       if (!url) {
-        Alert.alert('Erreur', 'Réponse Paystack invalide');
+        Alert.alert('Erreur', 'Réponse GeniusPay invalide');
         return;
       }
-      // Ouvre Paystack en in-app browser. Au retour, /paystack/callback
-      // déclenche le deep-link soutrapaiya:// + redirect web /orders.
+      // Ouvre GeniusPay en in-app browser. Au retour, /geniuspay/callback
+      // déclenche le deep-link soutrapaiya://geniuspay + redirect web /orders.
       await WebBrowser.openBrowserAsync(url, {
         presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
         controlsColor: '#FF6B1A',
