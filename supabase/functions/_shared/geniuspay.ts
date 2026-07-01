@@ -3,8 +3,11 @@
 // Les credentials (X-API-Key / X-API-Secret) et le webhook secret ne vivent QUE
 // dans cet environnement serveur, jamais sur le mobile ni le web.
 //
-// Base URL : https://pay.genius.ci/api/v1/merchant (sandbox = même URL,
-// distinction par préfixe de clé : pk_sandbox_* vs pk_live_*).
+// Base URL : https://geniuspay.ci/api/v1/merchant (sandbox = même URL,
+// distinction par la clé : sk_sandbox_* / sk_live_* pour l'API Key et
+// ss_sandbox_* / ss_live_* pour l'API Secret — GeniusPay a un naming
+// custom où sk_ = « Clé publique (API Key) » et ss_ = « Clé secrète
+// (API Secret) », cf. dashboard geniuspay.ci/dashboard/integrations).
 //
 // Différences clés vs ancien client Paystack :
 //   - Montants en XOF entier (min 200), pas en subunit ×100.
@@ -18,7 +21,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { Buffer } from "node:buffer";
 
 const GENIUSPAY_BASE =
-  Deno.env.get("GENIUSPAY_BASE_URL") ?? "https://pay.genius.ci/api/v1/merchant";
+  Deno.env.get("GENIUSPAY_BASE_URL") ?? "https://geniuspay.ci/api/v1/merchant";
 
 function apiKey(): string {
   const key = Deno.env.get("GENIUSPAY_API_KEY");
