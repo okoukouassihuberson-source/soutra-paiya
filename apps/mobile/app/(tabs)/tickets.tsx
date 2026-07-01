@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, RefreshControl, Alert } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors } from '@/lib/theme';
+import { exportTicketPdf } from '@/lib/ticket-pdf';
 
 // ============================================================================
 // Onglet Billets — vue unifiée réservations resto + orders boutique +
@@ -36,10 +36,8 @@ interface Ticket {
   qrCode?: string;           // reservations only pour l'instant (voir PR C)
 }
 
-// URL de base pour les tickets PDF (route web /reservations/[id]/ticket).
-// Utilisé aujourd'hui uniquement pour les reservations resto — PR C
-// basculera vers une génération PDF locale via expo-print pour les 3 types.
-const WEB_BASE_URL = 'https://soutra-playce.com';
+// PR C : génération PDF LOCALE pour les 3 types via expo-print +
+// react-native-qrcode-svg. Voir lib/ticket-pdf.ts.
 
 // ============================================================================
 // Sources
@@ -321,6 +319,8 @@ export default function Tickets() {
 function openDetail(t: Ticket, c: ColorPalette) {
   const status = statusMeta(t.kind, t.status, c);
   const dateStr = t.date.toLocaleString('fr-FR');
+  const pdfButton = { text: 'Télécharger le ticket PDF', onPress: () => downloadTicketPdf(t, c) };
+  const closeButton = { text: 'Fermer', style: 'cancel' as const };
 
   if (t.kind === 'reservation') {
     const r = t.raw as RawReservation;
@@ -331,10 +331,7 @@ function openDetail(t: Ticket, c: ColorPalette) {
       `Personnes : ${r.party_size}\n` +
       `Dépôt : ${formatXOF(t.amount)}\n` +
       `QR : ${r.qr_code.slice(0, 8)}…`,
-      [
-        { text: 'Télécharger le ticket PDF', onPress: () => openTicketPdf(t.id) },
-        { text: 'Fermer', style: 'cancel' },
-      ],
+      [pdfButton, closeButton],
     );
     return;
   }
@@ -349,9 +346,7 @@ function openDetail(t: Ticket, c: ColorPalette) {
       `Livraison : ${o.delivery_method === 'delivery' ? 'À domicile' : 'À retirer'}\n` +
       `Total : ${formatXOF(t.amount)}\n` +
       `Passée le : ${dateStr}`,
-      [
-        { text: 'Fermer', style: 'cancel' },
-      ],
+      [pdfButton, closeButton],
     );
     return;
   }
@@ -366,24 +361,61 @@ function openDetail(t: Ticket, c: ColorPalette) {
     `Check-out : ${new Date(b.check_out_date).toLocaleDateString('fr-FR')}\n` +
     `${b.nights_count} nuit${b.nights_count > 1 ? 's' : ''}\n` +
     `Total : ${formatXOF(t.amount)}`,
-    [
-      { text: 'Fermer', style: 'cancel' },
-    ],
+    [pdfButton, closeButton],
   );
 }
 
-async function openTicketPdf(reservationId: string) {
-  const url = `${WEB_BASE_URL}/reservations/${reservationId}/ticket`;
-  try {
-    await WebBrowser.openBrowserAsync(url, {
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-      controlsColor: '#FF6B1A',
-      toolbarColor: '#0E1116',
-    });
-  } catch (err) {
-    console.error('[ticket-pdf] openBrowserAsync error:', err);
-    Alert.alert('Erreur', 'Impossible d\'ouvrir le ticket. Réessaie plus tard.');
+/**
+ * Passe le Ticket (union) au format TicketPdfPayload puis délègue à
+ * lib/ticket-pdf.ts pour la génération HTML+SVG+PDF+partage.
+ */
+function downloadTicketPdf(t: Ticket, c: ColorPalette) {
+  const status = statusMeta(t.kind, t.status, c);
+  const dateStr = t.date.toLocaleString('fr-FR', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+  });
+
+  const detailsLines: Array<{ label: string; value: string }> = [];
+
+  let code: string;
+  if (t.kind === 'reservation') {
+    const r = t.raw as RawReservation;
+    code = r.qr_code;
+    detailsLines.push(
+      { label: 'Personnes', value: String(r.party_size) },
+    );
+    if (r.notes) detailsLines.push({ label: 'Notes', value: r.notes });
+  } else if (t.kind === 'order') {
+    const o = t.raw as RawOrder;
+    code = o.order_number;
+    detailsLines.push(
+      { label: 'N° commande', value: o.order_number },
+      { label: 'Articles', value: String(o.items_count) },
+      { label: 'Livraison', value: o.delivery_method === 'delivery' ? 'À domicile' : 'À retirer' },
+    );
+  } else {
+    const b = t.raw as RawBooking;
+    code = b.booking_number;
+    detailsLines.push(
+      { label: 'N° réservation', value: b.booking_number },
+      { label: 'Check-in', value: new Date(b.check_in_date).toLocaleDateString('fr-FR') },
+      { label: 'Check-out', value: new Date(b.check_out_date).toLocaleDateString('fr-FR') },
+      { label: 'Durée', value: `${b.nights_count} nuit${b.nights_count > 1 ? 's' : ''}` },
+    );
   }
+
+  void exportTicketPdf({
+    kind: t.kind,
+    id: t.id,
+    code,
+    title: t.title,
+    subtitle: t.location ?? undefined,
+    date: dateStr,
+    status: status.label,
+    amountXof: t.amount,
+    detailsLines,
+  });
 }
 
 // ============================================================================
