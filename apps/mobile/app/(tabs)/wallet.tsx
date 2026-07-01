@@ -154,12 +154,14 @@ export default function Wallet() {
   );
 }
 
+// Actions rapides du wallet. Réservations resto, orders boutique et
+// bookings hôtel sont désormais consolidés dans l'onglet Billets (tab
+// tickets), donc ils ne sont plus exposés ici. Split Note remplace ces
+// entrées pour offrir la découpe d'addition entre amis.
 const QUICK: { label: string; icon: keyof typeof Ionicons.glyphMap; bg: string; color: string; route: string }[] = [
   { label: 'Envoyer', icon: 'send', bg: '#dbeafe', color: '#2563eb', route: '/send' },
   { label: 'Demander', icon: 'download', bg: '#dcfce7', color: '#16a34a', route: '/requests' },
-  { label: 'Commandes', icon: 'receipt', bg: '#ede9fe', color: '#7c3aed', route: '/orders' },
-  { label: 'Mes nuits', icon: 'bed', bg: '#cffafe', color: '#0891b2', route: '/hotel-bookings' },
-  { label: 'Panier', icon: 'cart', bg: '#fef3c7', color: '#d97706', route: '/cart' },
+  { label: 'Split Note', icon: 'people', bg: '#ede9fe', color: '#7c3aed', route: '/split-bill' },
   { label: 'Scanner QR', icon: 'qr-code', bg: '#fce7f3', color: '#db2777', route: '/scan' },
 ];
 
