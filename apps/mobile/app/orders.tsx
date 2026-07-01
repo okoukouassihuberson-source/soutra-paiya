@@ -204,16 +204,19 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
         return;
       }
       const url = (data as any)?.checkout_url;
-      if (!url) {
+      const reference = (data as any)?.reference;
+      if (!url || !reference) {
         Alert.alert('Erreur', 'Réponse GeniusPay invalide');
         return;
       }
-      // Ouvre GeniusPay en in-app browser. Au retour, /geniuspay/callback
-      // déclenche le deep-link soutrapaiya://geniuspay + redirect web /orders.
-      await WebBrowser.openBrowserAsync(url, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-        controlsColor: '#FF6B1A',
-        toolbarColor: '#0E1116',
+      // openAuthSessionAsync (au lieu de openBrowserAsync) referme
+      // automatiquement le navigateur quand la page callback deep-linke vers
+      // soutrapaiya://geniuspay. Ensuite on force la vérification côté serveur
+      // pour que la transaction passe de pending → success sans attendre
+      // uniquement le webhook (qui reste la source de vérité serveur).
+      await WebBrowser.openAuthSessionAsync(url, 'soutrapaiya://geniuspay');
+      await (supabase.functions as any).invoke('geniuspay-verify', {
+        body: { reference },
       });
     } catch (err) {
       Alert.alert('Erreur', err instanceof Error ? err.message : 'Erreur inattendue');

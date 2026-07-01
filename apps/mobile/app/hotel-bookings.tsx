@@ -202,16 +202,20 @@ function BookingDetailModal({
         return;
       }
       const url = (data as any)?.checkout_url;
-      if (!url) {
+      const reference = (data as any)?.reference;
+      if (!url || !reference) {
         Alert.alert('Erreur', 'Réponse GeniusPay invalide');
         return;
       }
-      await WebBrowser.openBrowserAsync(url, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FORM_SHEET,
-        controlsColor: '#FF6B1A',
-        toolbarColor: '#0E1116',
+      // openAuthSessionAsync referme automatiquement le browser quand la
+      // page callback deep-linke vers soutrapaiya://geniuspay. Ensuite on
+      // force la vérification serveur pour transition pending → success
+      // sans attendre uniquement le webhook.
+      await WebBrowser.openAuthSessionAsync(url, 'soutrapaiya://geniuspay');
+      await (supabase.functions as any).invoke('geniuspay-verify', {
+        body: { reference },
       });
-      // Au retour, on rafraîchit pour récupérer le nouveau statut
+      // Rafraîchit la liste pour afficher le nouveau statut
       onChanged();
     } catch (err) {
       Alert.alert('Erreur', err instanceof Error ? err.message : 'Erreur inattendue');
