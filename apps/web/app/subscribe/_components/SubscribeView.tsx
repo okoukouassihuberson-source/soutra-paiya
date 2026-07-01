@@ -136,8 +136,9 @@ export function SubscribeView({
       if (error) console.warn('[subscribe] track view:', error.message);
     });
 
-    // Toast au retour du callback Paystack (success / failed / pending).
-    // L'URL contient ?status=… ajouté par /paystack/callback.
+    // Toast au retour du callback (success / failed / pending). L'URL
+    // contient ?status=… ajouté par /geniuspay/callback (PR #3) ou par
+    // /paystack/callback (subs legacy pré-migration).
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const status = params.get('status');
@@ -190,10 +191,10 @@ export function SubscribeView({
       router.push('/login');
       return;
     }
-    // Edge Function paystack-subscribe :
+    // Edge Function geniuspay-subscribe :
     //   • plan free → insert direct subscription, retourne {free: true}
-    //   • plan payant → crée tx pending + retourne authorization_url Paystack
-    const { data, error } = await (sb.functions as any).invoke('paystack-subscribe', {
+    //   • plan payant → crée tx pending + retourne checkout_url GeniusPay
+    const { data, error } = await (sb.functions as any).invoke('geniuspay-subscribe', {
       body: { plan_code: plan.code, billing_period: billing },
     });
 
@@ -204,7 +205,7 @@ export function SubscribeView({
     const result = data as {
       ok: boolean;
       free: boolean;
-      authorization_url: string | null;
+      checkout_url: string | null;
       redirect_url?: string;
     };
 
@@ -214,10 +215,11 @@ export function SubscribeView({
       router.refresh();
       return;
     }
-    if (result.authorization_url) {
-      // Redirection vers Paystack — l'user paie sur leur UI (carte ou
-      // mobile money). Au retour, /paystack/callback nous reprend.
-      window.location.href = result.authorization_url;
+    if (result.checkout_url) {
+      // Redirection vers GeniusPay — l'user paie sur leur UI (carte ou
+      // mobile money). Au retour, /geniuspay/callback nous reprend et
+      // redirige vers /subscribe?status=… avec toast.
+      window.location.href = result.checkout_url;
       return;
     }
     flash('Réponse inattendue du fournisseur de paiement', false);
