@@ -79,7 +79,7 @@ export function LandingNavbar() {
             <BrandMark size="xs" />
             <span>
               <span className="text-white">Soutra</span>
-              <span className="text-primary-400">-Playce</span>
+              <span className="text-primary-400">-Explore</span>
             </span>
           </Link>
 
