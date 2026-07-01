@@ -1,13 +1,24 @@
 // ============================================================================
-// geniuspay-verify — confirme un encaissement auprès de GeniusPay.
-// Appelée par le callback web (et éventuellement le mobile) au retour de la
-// page de paiement. Chemin rapide pour mettre à jour l'UX sans attendre le
-// webhook — le crédit reste idempotent (RPC geniuspay_settle_charge).
+// geniuspay-verify — confirme un encaissement en polling la DB Supabase.
 //
-// Différence critique vs paystack-verify : le montant est comparé en XOF
-// entier (pas en subunit ×100), et les statuts GeniusPay sont completed /
-// failed / cancelled / expired / refunded (au lieu de success / failed /
-// abandoned / reversed).
+// Appelée par le callback web (et le mobile pour topup/reservation/order/
+// booking) au retour de la page de paiement.
+//
+// STRATÉGIE : le webhook GeniusPay est la SOURCE DE VÉRITÉ — c'est lui qui
+// settle la transaction via geniuspay_settle_charge. verify ne fait PLUS
+// d'appel à GET /payments côté GeniusPay pour deux raisons :
+//   1. En sandbox, GET /payments renvoie 404 tant que le paiement n'est pas
+//      complété (constaté empiriquement 2026-07-01). Le round-trip
+//      POST/GET est incohérent.
+//   2. Même en prod, le webhook arrive typiquement dans les ~1s après le
+//      paiement. Un polling court de la DB suffit largement à donner un
+//      feedback UX rapide sans risquer de racer avec le webhook.
+//
+// Comportement :
+//   - Si la tx est déjà success/failed → retourne le statut immédiatement.
+//   - Sinon (pending), poll toutes les 500 ms jusqu'à 4 s. Si settle par
+//     le webhook entretemps → success/failed. Sinon → pending (le user
+//     reste en attente, un refresh manuel montrera le statut final).
 // ============================================================================
 import {
   corsHeaders,
@@ -15,7 +26,13 @@ import {
   jsonResponse,
   serviceClient,
 } from "../_shared/supabase.ts";
-import { getPayment } from "../_shared/geniuspay.ts";
+
+const POLL_INTERVAL_MS = 500;
+const POLL_TIMEOUT_MS = 4000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -39,7 +56,7 @@ Deno.serve(async (req) => {
 
     const { data: tx } = await svc
       .from("transactions")
-      .select("id, user_id, status, amount_xof, metadata")
+      .select("id, user_id, status, amount_xof")
       .eq("provider_ref", reference)
       .maybeSingle();
     if (!tx || tx.user_id !== user.id) {
@@ -52,58 +69,35 @@ Deno.serve(async (req) => {
       return jsonResponse({ status: "failed" });
     }
 
-    // Confirmation auprès de GeniusPay. IMPORTANT : leur API attend leur propre
-    // référence (MTX-…) qu'on a stockée en metadata.geniuspay_reference au
-    // moment de l'init. Notre référence Soutra (sp-…) leur est inconnue et
-    // renvoie 404. Fallback sur notre référence si la metadata n'a pas été
-    // sauvegardée (ne devrait pas arriver, sinon la tx est bloquée en pending
-    // jusqu'au webhook).
-    const gpReference =
-      (tx.metadata as { geniuspay_reference?: string } | null)
-        ?.geniuspay_reference ?? reference;
-    // Mapping de statut :
-    //   completed        → success (débit encaissé, on règle)
-    //   failed | cancelled | expired | refunded → failed
-    //   pending | processing → still pending, on ne change rien
-    const verified = await getPayment(gpReference);
-    const data = verified.data;
-    if (!data) {
-      return jsonResponse({ status: "pending" });
-    }
-    const gpStatus = data.status;
-
-    if (gpStatus === "completed") {
-      const { data: outcome, error } = await svc.rpc(
-        "geniuspay_settle_charge",
-        {
-          p_reference: reference,
-          p_paid_amount_xof: Number(data.amount),
-        },
-      );
-      if (error) {
-        console.error("[gp-verify] settle_charge:", error);
-        return jsonResponse({ error: "Erreur de règlement" }, 500);
+    // Polling DB : on attend que le webhook settle la transaction.
+    const start = Date.now();
+    let currentStatus: string = tx.status;
+    while (
+      currentStatus === "pending" && (Date.now() - start) < POLL_TIMEOUT_MS
+    ) {
+      await sleep(POLL_INTERVAL_MS);
+      const { data: refreshed } = await svc
+        .from("transactions")
+        .select("status, amount_xof")
+        .eq("id", tx.id)
+        .single();
+      if (refreshed) {
+        currentStatus = refreshed.status;
       }
-      const ok = outcome === "settled" || outcome === "already_settled";
+    }
+
+    if (currentStatus === "success") {
       return jsonResponse({
-        status: ok ? "success" : "failed",
+        status: "success",
         amount_xof: tx.amount_xof,
       });
     }
-
-    if (
-      gpStatus === "failed" || gpStatus === "cancelled" ||
-      gpStatus === "expired" || gpStatus === "refunded"
-    ) {
-      await svc
-        .from("transactions")
-        .update({ status: "failed", completed_at: new Date().toISOString() })
-        .eq("id", tx.id)
-        .eq("status", "pending");
+    if (currentStatus === "failed") {
       return jsonResponse({ status: "failed" });
     }
-
-    // pending / processing → paiement pas encore finalisé côté GeniusPay.
+    // Timeout — le webhook n'est pas encore arrivé. Le user reste sur
+    // "pending" et pourra refresh pour voir l'état final quand le
+    // webhook aura settle.
     return jsonResponse({ status: "pending" });
   } catch (err) {
     console.error("[gp-verify] fatal:", err);
