@@ -11,7 +11,41 @@ import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors } from '@/lib/theme';
 
-interface Reservation {
+// ============================================================================
+// Onglet Billets — vue unifiée réservations resto + orders boutique +
+// room_bookings hôtel. Chaque source est normalisée en Ticket via une des
+// fonctions mapXxxToTicket. Le tri se fait sur `date` (date de service pour
+// les reservations/bookings, created_at pour les orders).
+// ============================================================================
+
+type TicketKind = 'reservation' | 'order' | 'booking';
+
+// Vue normalisée d'un billet : ce que la card affiche + une backref
+// vers l'objet source pour le modal détail spécifique.
+interface Ticket {
+  id: string;
+  kind: TicketKind;
+  title: string;             // venue name / order number / booking number
+  date: Date;                // date_time / check_in_date / created_at
+  status: string;
+  amount: number;            // deposit_xof / total_xof
+  coverUrl: string | null;
+  location?: string | null;  // district / delivery_address
+  nightsOrCountOrSize: number;
+  raw: unknown;              // objet source (Reservation | Order | RoomBooking)
+  qrCode?: string;           // reservations only pour l'instant (voir PR C)
+}
+
+// URL de base pour les tickets PDF (route web /reservations/[id]/ticket).
+// Utilisé aujourd'hui uniquement pour les reservations resto — PR C
+// basculera vers une génération PDF locale via expo-print pour les 3 types.
+const WEB_BASE_URL = 'https://soutra-playce.com';
+
+// ============================================================================
+// Sources
+// ============================================================================
+
+interface RawReservation {
   id: string;
   venue_id: string;
   date_time: string;
@@ -30,38 +64,148 @@ interface Reservation {
   } | null;
 }
 
+interface RawOrder {
+  order_id: string;
+  order_number: string;
+  status: string;
+  payment_status: string;
+  total_xof: number;
+  items_count: number;
+  delivery_method: string;
+  created_at: string;
+  venue_name: string | null;
+  venue_cover_url: string | null;
+}
+
+interface RawBooking {
+  booking_id: string;
+  booking_number: string;
+  status: string;
+  payment_status: string;
+  total_xof: number;
+  nights_count: number;
+  check_in_date: string;
+  check_out_date: string;
+  venue_name: string | null;
+  venue_cover_url: string | null;
+  venue_district: string | null;
+}
+
+function mapReservationToTicket(r: RawReservation): Ticket {
+  return {
+    id: r.id,
+    kind: 'reservation',
+    title: r.venue?.name ?? 'Lieu inconnu',
+    date: new Date(r.date_time),
+    status: r.status,
+    amount: r.deposit_xof,
+    coverUrl: r.venue?.cover_url ?? null,
+    location: r.venue?.district ?? r.venue?.city ?? null,
+    nightsOrCountOrSize: r.party_size,
+    raw: r,
+    qrCode: r.qr_code,
+  };
+}
+
+function mapOrderToTicket(o: RawOrder): Ticket {
+  return {
+    id: o.order_id,
+    kind: 'order',
+    title: o.venue_name ?? 'Boutique',
+    date: new Date(o.created_at),
+    status: o.status,
+    amount: o.total_xof,
+    coverUrl: o.venue_cover_url,
+    location: o.delivery_method === 'delivery' ? 'Livraison' : 'À retirer',
+    nightsOrCountOrSize: o.items_count,
+    raw: o,
+  };
+}
+
+function mapBookingToTicket(b: RawBooking): Ticket {
+  return {
+    id: b.booking_id,
+    kind: 'booking',
+    title: b.venue_name ?? 'Hôtel',
+    date: new Date(b.check_in_date),
+    status: b.status,
+    amount: b.total_xof,
+    coverUrl: b.venue_cover_url,
+    location: b.venue_district,
+    nightsOrCountOrSize: b.nights_count,
+    raw: b,
+  };
+}
+
+// ============================================================================
+// Composant principal
+// ============================================================================
+
 export default function Tickets() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadReservations = useCallback(async () => {
-    if (!user?.id) { setReservations([]); setLoading(false); setRefreshing(false); return; }
+  const loadAll = useCallback(async () => {
+    if (!user?.id) {
+      setTickets([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
-      const { data, error } = await supabase
-        .from('reservations')
-        .select(`
-          id, venue_id, date_time, party_size, deposit_xof, status, qr_code, notes, created_at,
-          venue:venues(id, name, cover_url, city, district)
-        `)
-        .eq('user_id', user.id)
-        .order('date_time', { ascending: false })
-        .limit(50);
-      if (error) {
-        console.error('[tickets] load error:', error);
-        Alert.alert('Erreur', `Impossible de charger les réservations : ${error.message}`);
-        setReservations([]);
+      // Charge les 3 sources en parallèle. Un échec sur l'une ne bloque
+      // pas l'affichage des autres — chaque promesse est isolée.
+      const [resRes, orderRes, bookRes] = await Promise.all([
+        supabase
+          .from('reservations')
+          .select(`
+            id, venue_id, date_time, party_size, deposit_xof, status, qr_code, notes, created_at,
+            venue:venues(id, name, cover_url, city, district)
+          `)
+          .eq('user_id', user.id)
+          .order('date_time', { ascending: false })
+          .limit(50),
+        (supabase.rpc as any)('list_my_orders', { p_limit: 50 }),
+        (supabase.rpc as any)('list_my_room_bookings', { p_limit: 50 }),
+      ]);
+
+      const collected: Ticket[] = [];
+
+      if (resRes.error) {
+        console.error('[tickets] reservations:', resRes.error);
       } else {
-        setReservations((data ?? []) as unknown as Reservation[]);
+        for (const r of (resRes.data ?? []) as unknown as RawReservation[]) {
+          collected.push(mapReservationToTicket(r));
+        }
       }
+
+      if (orderRes.error) {
+        console.error('[tickets] orders:', orderRes.error);
+      } else {
+        for (const o of (orderRes.data ?? []) as RawOrder[]) {
+          collected.push(mapOrderToTicket(o));
+        }
+      }
+
+      if (bookRes.error) {
+        console.error('[tickets] bookings:', bookRes.error);
+      } else {
+        for (const b of (bookRes.data ?? []) as RawBooking[]) {
+          collected.push(mapBookingToTicket(b));
+        }
+      }
+
+      collected.sort((a, b) => b.date.getTime() - a.date.getTime());
+      setTickets(collected);
     } catch (err: any) {
       console.error('[tickets] unexpected:', err);
       Alert.alert('Erreur', err?.message ?? 'Erreur inattendue');
-      setReservations([]);
+      setTickets([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -70,24 +214,24 @@ export default function Tickets() {
 
   useEffect(() => {
     if (authLoading) return;
-    loadReservations();
-  }, [authLoading, loadReservations]);
+    loadAll();
+  }, [authLoading, loadAll]);
 
   const { upcoming, past } = useMemo(() => {
     const now = Date.now();
-    const up: Reservation[] = [];
-    const dn: Reservation[] = [];
-    for (const r of reservations) {
-      const ts = new Date(r.date_time).getTime();
-      if (ts >= now && r.status !== 'cancelled' && r.status !== 'refunded') up.push(r);
-      else dn.push(r);
+    const up: Ticket[] = [];
+    const dn: Ticket[] = [];
+    for (const t of tickets) {
+      if (isTicketUpcoming(t, now)) up.push(t);
+      else dn.push(t);
     }
-    up.sort((a, b) => +new Date(a.date_time) - +new Date(b.date_time));
+    // upcoming trié du plus proche au plus lointain
+    up.sort((a, b) => a.date.getTime() - b.date.getTime());
     return { upcoming: up, past: dn };
-  }, [reservations]);
+  }, [tickets]);
 
-  const subtitle = reservations.length === 0
-    ? 'Aucune réservation pour l\'instant'
+  const subtitle = tickets.length === 0
+    ? 'Aucun billet pour l\'instant'
     : `${upcoming.length} à venir · ${past.length} dans l'historique`;
 
   if (authLoading || loading) {
@@ -105,20 +249,21 @@ export default function Tickets() {
     );
   }
 
-  if (!reservations.length) {
+  if (!tickets.length) {
     return (
       <SafeAreaView style={s.safe}>
         <TabHeader subtitle={subtitle} />
         <ScrollView
           contentContainerStyle={s.emptyBody}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadReservations(); }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAll(); }} />}
         >
           <View style={s.emptyIconWrap}>
             <Ionicons name="ticket-outline" size={56} color={c.primary[400]} />
           </View>
-          <Text style={s.emptyTitle}>Pas encore de réservation</Text>
+          <Text style={s.emptyTitle}>Pas encore de billet</Text>
           <Text style={s.emptyText}>
-            Réserve une table dans un maquis, restaurant ou bar — tes billets apparaîtront ici.
+            Réserve une table, commande dans une boutique ou une nuit d&apos;hôtel —
+            tes billets apparaîtront tous ici.
           </Text>
           <Pressable
             style={({ pressed }) => [s.cta, pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}
@@ -137,7 +282,7 @@ export default function Tickets() {
       <TabHeader subtitle={subtitle} />
       <ScrollView
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadReservations(); }} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAll(); }} />}
       >
         {upcoming.length > 0 && (
           <>
@@ -146,8 +291,8 @@ export default function Tickets() {
               <Text style={s.sectionTitle}>À venir</Text>
               <Text style={s.sectionCount}>{upcoming.length}</Text>
             </View>
-            {upcoming.map((r) => (
-              <ReservationCard c={c} key={r.id} reservation={r} onPress={() => openDetail(r, c)} />
+            {upcoming.map((t) => (
+              <TicketCard c={c} key={`${t.kind}-${t.id}`} ticket={t} onPress={() => openDetail(t, c)} />
             ))}
           </>
         )}
@@ -159,8 +304,8 @@ export default function Tickets() {
               <Text style={s.sectionTitle}>Historique</Text>
               <Text style={s.sectionCount}>{past.length}</Text>
             </View>
-            {past.map((r) => (
-              <ReservationCard c={c} key={r.id} reservation={r} muted onPress={() => openDetail(r, c)} />
+            {past.map((t) => (
+              <TicketCard c={c} key={`${t.kind}-${t.id}`} ticket={t} muted onPress={() => openDetail(t, c)} />
             ))}
           </>
         )}
@@ -169,38 +314,64 @@ export default function Tickets() {
   );
 }
 
-// URL de base pour les tickets PDF (route web /reservations/[id]/ticket).
-// Peut être surchargée via app.config extra.webBaseUrl si besoin.
-const WEB_BASE_URL = 'https://soutra-playce.vercel.app';
+// ============================================================================
+// Détail — Alert par type. PR C remplacera par un modal + génération PDF+QR.
+// ============================================================================
 
-function openDetail(r: Reservation, c: ColorPalette) {
+function openDetail(t: Ticket, c: ColorPalette) {
+  const status = statusMeta(t.kind, t.status, c);
+  const dateStr = t.date.toLocaleString('fr-FR');
+
+  if (t.kind === 'reservation') {
+    const r = t.raw as RawReservation;
+    Alert.alert(
+      t.title,
+      `Statut : ${status.label}\n` +
+      `Date : ${dateStr}\n` +
+      `Personnes : ${r.party_size}\n` +
+      `Dépôt : ${formatXOF(t.amount)}\n` +
+      `QR : ${r.qr_code.slice(0, 8)}…`,
+      [
+        { text: 'Télécharger le ticket PDF', onPress: () => openTicketPdf(t.id) },
+        { text: 'Fermer', style: 'cancel' },
+      ],
+    );
+    return;
+  }
+
+  if (t.kind === 'order') {
+    const o = t.raw as RawOrder;
+    Alert.alert(
+      `Commande ${o.order_number}`,
+      `Boutique : ${t.title}\n` +
+      `Statut : ${status.label}\n` +
+      `${o.items_count} article${o.items_count > 1 ? 's' : ''}\n` +
+      `Livraison : ${o.delivery_method === 'delivery' ? 'À domicile' : 'À retirer'}\n` +
+      `Total : ${formatXOF(t.amount)}\n` +
+      `Passée le : ${dateStr}`,
+      [
+        { text: 'Fermer', style: 'cancel' },
+      ],
+    );
+    return;
+  }
+
+  // booking
+  const b = t.raw as RawBooking;
   Alert.alert(
-    r.venue?.name ?? 'Réservation',
-    `Statut : ${statusMeta(r.status, c).label}\n` +
-    `Date : ${new Date(r.date_time).toLocaleString('fr-FR')}\n` +
-    `Personnes : ${r.party_size}\n` +
-    `Dépôt : ${formatXOF(r.deposit_xof)}\n` +
-    `QR : ${r.qr_code.slice(0, 8)}…`,
+    `Réservation ${b.booking_number}`,
+    `Hôtel : ${t.title}\n` +
+    `Statut : ${status.label}\n` +
+    `Check-in : ${new Date(b.check_in_date).toLocaleDateString('fr-FR')}\n` +
+    `Check-out : ${new Date(b.check_out_date).toLocaleDateString('fr-FR')}\n` +
+    `${b.nights_count} nuit${b.nights_count > 1 ? 's' : ''}\n` +
+    `Total : ${formatXOF(t.amount)}`,
     [
-      {
-        text: 'Télécharger le ticket PDF',
-        onPress: () => openTicketPdf(r.id),
-      },
       { text: 'Fermer', style: 'cancel' },
     ],
   );
 }
 
-/**
- * Ouvre la page web /reservations/[id]/ticket dans un navigateur in-app
- * (expo-web-browser). La page web déclenche automatiquement window.print()
- * → l'utilisateur peut "Enregistrer en PDF" via la dialog navigateur.
- *
- * Auth : la session Supabase web est différente de celle du mobile, donc
- * l'utilisateur devra se reconnecter en web s'il ne l'est pas déjà. Pour
- * un flux 100 % offline, basculer plus tard sur expo-print + génération
- * locale du ticket.
- */
 async function openTicketPdf(reservationId: string) {
   const url = `${WEB_BASE_URL}/reservations/${reservationId}/ticket`;
   try {
@@ -215,11 +386,108 @@ async function openTicketPdf(reservationId: string) {
   }
 }
 
-function ReservationCard({ c, reservation, onPress, muted }: { c: ColorPalette; reservation: Reservation; onPress: () => void; muted?: boolean }) {
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function isTicketUpcoming(t: Ticket, nowMs: number): boolean {
+  const alive = !['cancelled', 'refunded', 'no_show', 'delivered'].includes(t.status);
+  if (!alive) return false;
+  if (t.kind === 'reservation') return t.date.getTime() >= nowMs;
+  if (t.kind === 'booking') return t.date.getTime() >= nowMs;
+  // orders : "à venir" = pas encore livrée (pending/confirmed/preparing/ready)
+  return ['pending', 'confirmed', 'preparing', 'ready'].includes(t.status);
+}
+
+function statusMeta(kind: TicketKind, status: string, c: ColorPalette): { color: string; label: string; icon: keyof typeof Ionicons.glyphMap } {
+  // Reservations
+  if (kind === 'reservation') {
+    switch (status) {
+      case 'pending': return { color: c.warning, label: 'En attente', icon: 'time-outline' };
+      case 'confirmed': return { color: c.success, label: 'Confirmée', icon: 'checkmark-circle' };
+      case 'arrived': return { color: c.primary[600], label: 'Arrivé', icon: 'walk' };
+      case 'no_show': return { color: c.danger, label: 'No show', icon: 'alert-circle' };
+      case 'cancelled': return { color: c.danger, label: 'Annulée', icon: 'close-circle' };
+      case 'refunded': return { color: c.neutral[500], label: 'Remboursée', icon: 'arrow-undo' };
+    }
+  }
+  // Orders
+  if (kind === 'order') {
+    switch (status) {
+      case 'pending': return { color: c.warning, label: 'En attente', icon: 'time-outline' };
+      case 'confirmed': return { color: '#3b82f6', label: 'Confirmée', icon: 'checkmark-circle' };
+      case 'preparing': return { color: '#6366f1', label: 'En préparation', icon: 'cube-outline' };
+      case 'ready': return { color: c.success, label: 'Prête', icon: 'bag-check' };
+      case 'delivered': return { color: '#059669', label: 'Livrée', icon: 'checkmark-done' };
+      case 'cancelled': return { color: c.danger, label: 'Annulée', icon: 'close-circle' };
+      case 'refunded': return { color: c.neutral[500], label: 'Remboursée', icon: 'arrow-undo' };
+    }
+  }
+  // Bookings
+  if (kind === 'booking') {
+    switch (status) {
+      case 'pending': return { color: c.warning, label: 'En attente', icon: 'time-outline' };
+      case 'confirmed': return { color: c.success, label: 'Confirmée', icon: 'checkmark-circle' };
+      case 'checked_in': return { color: c.primary[600], label: 'Check-in', icon: 'log-in' };
+      case 'checked_out': return { color: '#059669', label: 'Séjour terminé', icon: 'log-out' };
+      case 'cancelled': return { color: c.danger, label: 'Annulée', icon: 'close-circle' };
+      case 'refunded': return { color: c.neutral[500], label: 'Remboursée', icon: 'arrow-undo' };
+    }
+  }
+  return { color: c.neutral[500], label: status, icon: 'help-circle' };
+}
+
+function kindMeta(kind: TicketKind): { label: string; icon: keyof typeof Ionicons.glyphMap; color: string } {
+  switch (kind) {
+    case 'reservation': return { label: 'Réservation', icon: 'restaurant', color: '#f97316' };
+    case 'order':       return { label: 'Commande',    icon: 'bag',        color: '#7c3aed' };
+    case 'booking':     return { label: 'Hôtel',       icon: 'bed',        color: '#0891b2' };
+  }
+}
+
+function relativeDateTime(d: Date): string {
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
+  const isTomorrow = d.toDateString() === tomorrow.toDateString();
+  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  if (sameDay) return `Aujourd'hui à ${time}`;
+  if (isTomorrow) return `Demain à ${time}`;
+  const diffDays = Math.round((d.getTime() - now.getTime()) / (24 * 3600 * 1000));
+  if (diffDays > 1 && diffDays <= 7) return `Dans ${diffDays} jours`;
+  if (diffDays < -1 && diffDays >= -7) return `Il y a ${Math.abs(diffDays)} jours`;
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ============================================================================
+// Card générique
+// ============================================================================
+
+function TicketCard({
+  c,
+  ticket,
+  onPress,
+  muted,
+}: {
+  c: ColorPalette;
+  ticket: Ticket;
+  onPress: () => void;
+  muted?: boolean;
+}) {
   const s = useMemo(() => makeStyles(c), [c]);
-  const dateTime = new Date(reservation.date_time);
-  const { color: statusColor, label: statusLabel, icon: statusIcon } = statusMeta(reservation.status, c);
-  const dateLabel = relativeDateTime(dateTime);
+  const kind = kindMeta(ticket.kind);
+  const status = statusMeta(ticket.kind, ticket.status, c);
+  const dateLabel = relativeDateTime(ticket.date);
+
+  // Sous-ligne contextuelle selon le type
+  let secondaryLine: string;
+  if (ticket.kind === 'reservation') {
+    secondaryLine = `${ticket.nightsOrCountOrSize} personne${ticket.nightsOrCountOrSize > 1 ? 's' : ''}`;
+  } else if (ticket.kind === 'order') {
+    secondaryLine = `${ticket.nightsOrCountOrSize} article${ticket.nightsOrCountOrSize > 1 ? 's' : ''}`;
+  } else {
+    secondaryLine = `${ticket.nightsOrCountOrSize} nuit${ticket.nightsOrCountOrSize > 1 ? 's' : ''}`;
+  }
 
   return (
     <Pressable
@@ -227,37 +495,40 @@ function ReservationCard({ c, reservation, onPress, muted }: { c: ColorPalette; 
       onPress={onPress}
     >
       <View style={s.thumbWrap}>
-        {reservation.venue?.cover_url ? (
-          <Image source={{ uri: reservation.venue.cover_url }} style={s.thumb} />
+        {ticket.coverUrl ? (
+          <Image source={{ uri: ticket.coverUrl }} style={s.thumb} />
         ) : (
           <View style={[s.thumb, s.thumbPlaceholder]}>
-            <Ionicons name="restaurant" size={28} color={c.neutral[400]} />
+            <Ionicons name={kind.icon} size={28} color={c.neutral[400]} />
           </View>
         )}
+        <View style={[s.kindBadge, { backgroundColor: kind.color }]}>
+          <Ionicons name={kind.icon} size={10} color="#fff" />
+        </View>
       </View>
       <View style={s.cardBody}>
-        <Text style={s.venueName} numberOfLines={1}>{reservation.venue?.name ?? 'Lieu inconnu'}</Text>
+        <Text style={s.venueName} numberOfLines={1}>{ticket.title}</Text>
         <View style={s.metaRow}>
           <Ionicons name="calendar-outline" size={13} color={c.neutral[500]} />
           <Text style={s.metaText}>{dateLabel}</Text>
         </View>
         <View style={s.metaRow}>
-          <Ionicons name="people-outline" size={13} color={c.neutral[500]} />
-          <Text style={s.metaText}>{reservation.party_size} personne{reservation.party_size > 1 ? 's' : ''}</Text>
-          {reservation.venue?.district ? (
+          <Ionicons name={kind.icon} size={13} color={c.neutral[500]} />
+          <Text style={s.metaText}>{secondaryLine}</Text>
+          {ticket.location ? (
             <>
               <Text style={s.metaSep}>·</Text>
               <Ionicons name="location-outline" size={13} color={c.neutral[500]} />
-              <Text style={s.metaText} numberOfLines={1}>{reservation.venue.district}</Text>
+              <Text style={s.metaText} numberOfLines={1}>{ticket.location}</Text>
             </>
           ) : null}
         </View>
         <View style={s.footerRow}>
-          <View style={[s.statusBadge, { backgroundColor: statusColor + '1A', borderColor: statusColor + '40' }]}>
-            <Ionicons name={statusIcon} size={11} color={statusColor} />
-            <Text style={[s.statusText, { color: statusColor }]}>{statusLabel}</Text>
+          <View style={[s.statusBadge, { backgroundColor: status.color + '1A', borderColor: status.color + '40' }]}>
+            <Ionicons name={status.icon} size={11} color={status.color} />
+            <Text style={[s.statusText, { color: status.color }]}>{status.label}</Text>
           </View>
-          <Text style={s.deposit}>{formatXOF(reservation.deposit_xof)}</Text>
+          <Text style={s.deposit}>{formatXOF(ticket.amount)}</Text>
         </View>
       </View>
       <Ionicons name="chevron-forward" size={18} color={c.neutral[400]} style={s.chev} />
@@ -277,32 +548,6 @@ function TicketSkeleton({ c }: { c: ColorPalette }) {
       </View>
     </View>
   );
-}
-
-function relativeDateTime(d: Date): string {
-  const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
-  const isTomorrow = d.toDateString() === tomorrow.toDateString();
-  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  if (sameDay) return `Aujourd'hui à ${time}`;
-  if (isTomorrow) return `Demain à ${time}`;
-  const diffDays = Math.round((d.getTime() - now.getTime()) / (24 * 3600 * 1000));
-  if (diffDays > 1 && diffDays <= 7) return `Dans ${diffDays} jours à ${time}`;
-  if (diffDays < -1 && diffDays >= -7) return `Il y a ${Math.abs(diffDays)} jours`;
-  return `${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} à ${time}`;
-}
-
-function statusMeta(status: string, c: ColorPalette): { color: string; label: string; icon: keyof typeof Ionicons.glyphMap } {
-  switch (status) {
-    case 'pending': return { color: c.warning, label: 'En attente', icon: 'time-outline' };
-    case 'confirmed': return { color: c.success, label: 'Confirmée', icon: 'checkmark-circle' };
-    case 'arrived': return { color: c.primary[600], label: 'Arrivé', icon: 'walk' };
-    case 'no_show': return { color: c.danger, label: 'No show', icon: 'alert-circle' };
-    case 'cancelled': return { color: c.danger, label: 'Annulée', icon: 'close-circle' };
-    case 'refunded': return { color: c.neutral[500], label: 'Remboursée', icon: 'arrow-undo' };
-    default: return { color: c.neutral[500], label: status, icon: 'help-circle' };
-  }
 }
 
 function makeStyles(c: ColorPalette) {
@@ -333,9 +578,15 @@ function makeStyles(c: ColorPalette) {
       elevation: 2, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
     },
     cardMuted: { opacity: 0.78 },
-    thumbWrap: { width: 88, height: 88 },
+    thumbWrap: { width: 88, height: 88, position: 'relative' },
     thumb: { width: 88, height: 88, borderRadius: 12, backgroundColor: c.neutral[100] },
     thumbPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+    kindBadge: {
+      position: 'absolute', bottom: -4, right: -4,
+      width: 22, height: 22, borderRadius: 11,
+      alignItems: 'center', justifyContent: 'center',
+      borderWidth: 2, borderColor: c.neutral[50],
+    },
     cardBody: { flex: 1, gap: 4 },
     venueName: { fontSize: typography.fontSize.base, fontWeight: '700', color: c.dark },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
