@@ -176,12 +176,10 @@ export function SubscribeView({
 
   const onChoose = useCallback((plan: Plan) => {
     trackClick(plan);
-    if (plan.code === 'free') {
-      // Free : pas de modal, on tente direct le subscribe stub.
-      handleSubscribeStub(plan);
-      return;
-    }
-    setModalPlan(plan);
+    // Redirection directe vers GeniusPay (ou activation Free sans modal).
+    // GeniusPay affiche déjà la sélection complète des moyens de paiement sur
+    // sa page checkout, donc la modal intermédiaire n'apporte rien.
+    handleSubscribeStub(plan);
   }, [trackClick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubscribeStub = useCallback(async (plan: Plan) => {
