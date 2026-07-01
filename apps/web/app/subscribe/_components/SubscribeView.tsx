@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase';
+import { LandingNavbar } from '@/components/marketing/LandingNavbar';
 
 /* ─────────────────────────────────────────────────── *
  *  TYPES                                              *
@@ -233,16 +234,20 @@ export function SubscribeView({
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white">
+      {/* Navbar site (fixed top). Sur bg light la nav dark reste lisible et
+          garde la cohérence avec home + /cashback qui l'utilisent aussi. */}
+      <LandingNavbar />
+
       {/* Glow background — premium fintech */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 left-1/2 h-[600px] w-[1000px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary-500/20 via-purple-500/15 to-amber-500/10 blur-[120px]" />
         <div className="absolute -bottom-32 right-10 h-[400px] w-[400px] rounded-full bg-purple-500/10 blur-[100px]" />
       </div>
 
-      {/* Toast */}
+      {/* Toast — décalé sous la navbar (72 = navbar 64px + 8px marge) */}
       {toast && (
         <div
-          className={`fixed left-1/2 top-6 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur-xl ${
+          className={`fixed left-1/2 top-20 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur-xl ${
             toast.ok
               ? 'bg-emerald-500/95 text-white'
               : 'bg-red-500/95 text-white'
@@ -253,7 +258,8 @@ export function SubscribeView({
         </div>
       )}
 
-      <main className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-24">
+      {/* pt-24 (sm:pt-28, lg:pt-36) pour laisser la place à la navbar fixed */}
+      <main className="relative mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 sm:pb-16 sm:pt-28 lg:px-8 lg:pb-24 lg:pt-36">
 
         {/* Bandeau "Mon abonnement" — visible si l'user a déjà un abo actif */}
         {currentSubscription?.subscription && (
