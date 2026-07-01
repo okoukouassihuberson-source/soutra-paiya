@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
     const { data: tx } = await svc
       .from("transactions")
-      .select("id, user_id, status, amount_xof")
+      .select("id, user_id, status, amount_xof, metadata")
       .eq("provider_ref", reference)
       .maybeSingle();
     if (!tx || tx.user_id !== user.id) {
@@ -52,11 +52,20 @@ Deno.serve(async (req) => {
       return jsonResponse({ status: "failed" });
     }
 
-    // Confirmation auprès de GeniusPay. Le mapping de statut :
+    // Confirmation auprès de GeniusPay. IMPORTANT : leur API attend leur propre
+    // référence (MTX-…) qu'on a stockée en metadata.geniuspay_reference au
+    // moment de l'init. Notre référence Soutra (sp-…) leur est inconnue et
+    // renvoie 404. Fallback sur notre référence si la metadata n'a pas été
+    // sauvegardée (ne devrait pas arriver, sinon la tx est bloquée en pending
+    // jusqu'au webhook).
+    const gpReference =
+      (tx.metadata as { geniuspay_reference?: string } | null)
+        ?.geniuspay_reference ?? reference;
+    // Mapping de statut :
     //   completed        → success (débit encaissé, on règle)
     //   failed | cancelled | expired | refunded → failed
     //   pending | processing → still pending, on ne change rien
-    const verified = await getPayment(reference);
+    const verified = await getPayment(gpReference);
     const data = verified.data;
     if (!data) {
       return jsonResponse({ status: "pending" });
