@@ -21,7 +21,7 @@ export async function createSplit(params: {
   for (const p of params.participants) {
     const user = await lookupRecipient(p.phone);
     if (!user) {
-      throw new Error(`Numéro non inscrit sur Soutra-Playce : ${p.phone}`);
+      throw new Error(`Numéro non inscrit sur Soutra-Explore : ${p.phone}`);
     }
     resolved.push({ payer_id: user.id, amount: p.amountXof });
   }

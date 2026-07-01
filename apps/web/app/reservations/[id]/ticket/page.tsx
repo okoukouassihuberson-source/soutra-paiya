@@ -4,8 +4,8 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { TicketView } from './_components/TicketView';
 
 export const metadata: Metadata = {
-  title: 'Ticket de réservation — Soutra-Playce',
-  description: 'Ticket de réservation Soutra-Playce',
+  title: 'Ticket de réservation — Soutra-Explore',
+  description: 'Ticket de réservation Soutra-Explore',
   robots: { index: false, follow: false },
 };
 

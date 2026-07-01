@@ -4,8 +4,8 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { InvoiceView } from './_components/InvoiceView';
 
 export const metadata: Metadata = {
-  title: 'Facture — Soutra-Playce',
-  description: 'Facture de souscription Soutra-Playce',
+  title: 'Facture — Soutra-Explore',
+  description: 'Facture de souscription Soutra-Explore',
   robots: { index: false, follow: false }, // factures pas indexables
 };
 

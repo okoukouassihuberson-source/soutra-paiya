@@ -511,7 +511,7 @@ function AdminDashboard() {
               {TABS.find((t) => t.id === tab)?.label || 'Admin'}
             </h1>
             <p className="mt-0.5 truncate text-xs text-neutral-500 sm:text-sm">
-              Centre de contrôle Soutra-Playce
+              Centre de contrôle Soutra-Explore
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">

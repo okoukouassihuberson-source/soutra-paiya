@@ -102,7 +102,7 @@ export function PWAInstallPrompt() {
         </div>
         <div className="min-w-0 flex-1">
           <p id="pwa-install-title" className="text-sm font-bold text-dark">
-            Installer Soutra-Playce
+            Installer Soutra-Explore
           </p>
           {variant === 'android' ? (
             <p className="mt-0.5 text-xs leading-snug text-neutral-600">

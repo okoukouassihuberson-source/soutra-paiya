@@ -34,7 +34,7 @@ export function Topbar({ appLabel, homeHref, user, actions, onMenuClick }: Props
         <BrandMark size="sm" />
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-sm font-extrabold tracking-tight text-dark">
-            Soutra-Playce
+            Soutra-Explore
           </div>
           <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
             {appLabel}

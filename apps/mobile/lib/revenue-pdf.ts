@@ -57,7 +57,7 @@ export async function exportRevenuePdf(params: ExportRevenuePdfParams): Promise<
     if (canShare) {
       await Sharing.shareAsync(uri, {
         mimeType: 'application/pdf',
-        dialogTitle: 'Rapport de revenus Soutra-Playce',
+        dialogTitle: 'Rapport de revenus Soutra-Explore',
         UTI: 'com.adobe.pdf',
       });
     } else {

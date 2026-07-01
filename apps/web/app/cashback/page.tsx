@@ -3,7 +3,7 @@ import { CashbackView } from './_components/CashbackView';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Cashback Soutra-Playce — Jusqu\'à 5% sur chaque paiement',
+  title: 'Cashback Soutra-Explore — Jusqu\'à 5% sur chaque paiement',
   description:
     'Récupère jusqu\'à 5% de cashback automatique sur tous tes paiements marchand. Cashback crédité directement sur ton wallet Soutra-Pay, sans démarche.',
 };

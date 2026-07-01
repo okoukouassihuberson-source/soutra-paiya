@@ -8,7 +8,7 @@ import { formatXOF, buildRevenueReportHtml, type RevenueReportVenue } from '@sou
 // Pro Revenue Dashboard — bloc à intégrer dans l'onglet Finances de /pro.
 //
 // Côté gérant : il voit ses revenus bruts (montant des flux), la commission
-// retenue par Soutra-Playce, son revenu net, les frais qu'on lui facture +
+// retenue par Soutra-Explore, son revenu net, les frais qu'on lui facture +
 // la timeline jour par jour et le détail des derniers events.
 // ============================================================================
 
@@ -175,7 +175,7 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
     <div className="space-y-6">
       {/* Period filter + export PDF */}
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Revenus Soutra-Playce</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Revenus Soutra-Explore</p>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {PERIODS.map((p) => (
             <button

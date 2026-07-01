@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
       const localNumber = phone.replace(/^\+225/, "");
       const recipient = await createRecipient({
         type: "mobile_money",
-        name: profile.full_name || "Client Soutra-Playce",
+        name: profile.full_name || "Client Soutra-Explore",
         account_number: localNumber,
         bank_code: bankCode,
         currency: "XOF",

@@ -21,7 +21,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY"); // optionnel
 const RESEND_FROM = Deno.env.get("RESEND_FROM") ||
-  "Soutra-Playce <noreply@soutra-paiya.com>";
+  "Soutra-Explore <noreply@soutra-paiya.com>";
 
 interface ExpiringRow {
   subscription_id: string;
@@ -203,7 +203,7 @@ function renderReminderEmail(p: {
     <tr><td align="center">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;background:#1A1F26;border-radius:16px;padding:32px;">
         <tr><td>
-          <h1 style="margin:0 0 8px;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#FF6B1A;">Soutra-Playce</h1>
+          <h1 style="margin:0 0 8px;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#FF6B1A;">Soutra-Explore</h1>
           <h2 style="margin:0 0 16px;font-size:24px;font-weight:800;color:#fff;">${headline}</h2>
           <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#E5E7EB;">
             ${greeting}<br><br>
@@ -218,7 +218,7 @@ function renderReminderEmail(p: {
             </a>
           </div>
           <p style="margin:24px 0 0;font-size:12px;color:#6B7280;text-align:center;">
-            Tu reçois cet email parce que tu as un abonnement actif sur Soutra-Playce.<br>
+            Tu reçois cet email parce que tu as un abonnement actif sur Soutra-Explore.<br>
             Si tu n'es pas à l'origine de cet abonnement, ignore ce message.
           </p>
         </td></tr>

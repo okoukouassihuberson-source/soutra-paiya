@@ -157,7 +157,7 @@ function CallbackInner() {
               Paiement terminé
             </h1>
             <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-              Tu peux retourner dans l&apos;application Soutra-Playce. Si rien ne
+              Tu peux retourner dans l&apos;application Soutra-Explore. Si rien ne
               se passe, touche le bouton ci-dessous.
             </p>
             <a

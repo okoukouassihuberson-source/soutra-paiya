@@ -44,7 +44,7 @@ export function Sidebar({
           <BrandMark size="md" />
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-extrabold tracking-tight text-dark">
-              Soutra-Playce
+              Soutra-Explore
             </span>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
               {appLabel}

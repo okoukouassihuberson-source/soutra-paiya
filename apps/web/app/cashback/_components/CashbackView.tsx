@@ -78,7 +78,7 @@ export function CashbackView({ plans }: { plans: Plan[] }) {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base text-neutral-300 sm:text-lg lg:text-xl">
-            Le cashback Soutra-Playce est <strong className="text-white">automatique</strong>,
+            Le cashback Soutra-Explore est <strong className="text-white">automatique</strong>,
             crédité directement sur ton wallet Soutra-Pay à chaque paiement marchand.
             Aucune démarche, aucun seuil minimum.
           </p>

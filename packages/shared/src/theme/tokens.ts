@@ -1,4 +1,4 @@
-// Design tokens — Soutra-Playce
+// Design tokens — Soutra-Explore
 // Source unique pour Tailwind (web) et StyleSheet (mobile).
 //
 // Convention pour le dark mode :

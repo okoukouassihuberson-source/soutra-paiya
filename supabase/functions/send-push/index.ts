@@ -122,7 +122,7 @@ async function buildNotifications(
         title: `+${fmtXof(r.amount_xof || 0)} cashback ✨`,
         body: rate
           ? `Plan ${planName} (${rate}) crédité sur ton wallet.`
-          : `Crédit sur ton wallet — merci pour ta fidélité Soutra-Playce.`,
+          : `Crédit sur ton wallet — merci pour ta fidélité Soutra-Explore.`,
         data: { route: "/cashback", kind: "cashback_credit" },
       });
       return out;
@@ -530,7 +530,7 @@ function renderSubscribeSuccessEmail(p: {
             Une question ? Réponds à cet email ou contacte <strong>support@soutra-paiya.com</strong>.
           </p>
           <p style="margin:8px 0 0;font-size:11px;color:#6B7280;text-align:center;">
-            Cet email confirme un paiement effectué sur ton compte Soutra-Playce.
+            Cet email confirme un paiement effectué sur ton compte Soutra-Explore.
           </p>
         </td></tr>
       </table>
@@ -555,7 +555,7 @@ async function sendResendEmail(
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { ok: false, error: "RESEND_API_KEY_MISSING" };
   const from = Deno.env.get("RESEND_FROM")
-    || "Soutra-Playce <noreply@soutra-paiya.com>";
+    || "Soutra-Explore <noreply@soutra-paiya.com>";
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",

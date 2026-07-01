@@ -160,7 +160,7 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
       } else {
         Alert.alert(
           'Demande envoyée ✓',
-          'L\'équipe Soutra-Playce va vérifier ton dossier sous 24-48 h. Tu seras notifié.',
+          'L\'équipe Soutra-Explore va vérifier ton dossier sous 24-48 h. Tu seras notifié.',
         );
         onSubmitted?.();
       }

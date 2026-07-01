@@ -1,5 +1,5 @@
 // ============================================================================
-// chatbot — assistant conversationnel pour Soutra-Playce, propulsé par Claude.
+// chatbot — assistant conversationnel pour Soutra-Explore, propulsé par Claude.
 //
 // JWT requis (verify_jwt = true par défaut). Reçoit un historique de messages
 // + le dernier message du user, appelle l'API Anthropic Messages, renvoie la
@@ -23,7 +23,7 @@ const MAX_TOKENS = 1024;
 const MAX_HISTORY = 20;
 
 // Prompt système : décrit l'app et le rôle de l'assistant.
-const SYSTEM_PROMPT = `Tu es SIA (Soutra Intelligent Assistant), l'assistant officiel de Soutra-Playce — une application mobile et web ivoirienne qui permet de :
+const SYSTEM_PROMPT = `Tu es SIA (Soutra Intelligent Assistant), l'assistant officiel de Soutra-Explore — une application mobile et web ivoirienne qui permet de :
 - découvrir maquis, restaurants, hôtels, bars, cafés et événements à Abidjan ;
 - réserver une table avec acompte payé via Soutra-Pay (le wallet intégré) ;
 - payer en mobile money (Orange Money, MTN MoMo, Wave) ou carte ;

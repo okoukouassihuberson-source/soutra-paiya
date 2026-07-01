@@ -67,9 +67,9 @@ Les scores diffèrent : `/admin` sera le plus chargé (graphes, tables), `/login
 ### Android Chrome
 
 1. Ouvrir https://soutra-paiya.vercel.app sur ton téléphone Android (Chrome ou Edge)
-2. **Banner « Installer Soutra-Playce »** doit apparaître dans les 1-2 secondes (depuis la PR #36)
+2. **Banner « Installer Soutra-Explore »** doit apparaître dans les 1-2 secondes (depuis la PR #36)
 3. Si pas de banner : menu Chrome (`⋮`) → **Ajouter à l'écran d'accueil** ou **Installer l'application**
-4. Confirmer → l'icône Soutra-Playce apparaît dans le drawer d'apps
+4. Confirmer → l'icône Soutra-Explore apparaît dans le drawer d'apps
 5. Lancer l'app → ouverture en mode **standalone** (pas de barre URL, pas d'onglets)
 6. Splash screen orange brand pendant 1-2s
 
@@ -113,7 +113,7 @@ Les scores diffèrent : `/admin` sera le plus chargé (graphes, tables), `/login
 1. Ouvrir https://soutra-paiya.vercel.app
 2. F12 → onglet **Application**
 3. **Manifest** (menu de gauche) :
-   - Identity : `Soutra-Playce` / short_name `Soutra`
+   - Identity : `Soutra-Explore` / short_name `Soutra`
    - Presentation : `standalone`, theme #FF6B1A, bg #FAF7F2
    - Icons : 2 icônes (SVG + PNG 1024) listées, pas d'erreur rouge
    - Shortcuts : 2 raccourcis (Pro / Admin)

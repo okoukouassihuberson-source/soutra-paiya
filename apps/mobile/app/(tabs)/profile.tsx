@@ -205,7 +205,7 @@ export default function Profile() {
           <Ionicons name="log-out-outline" size={18} color={c.danger} />
           <Text style={s.signOutText}>Se déconnecter</Text>
         </Pressable>
-        <Text style={s.version}>Soutra-Playce · Version 0.1.2 · Beta</Text>
+        <Text style={s.version}>Soutra-Explore · Version 0.1.2 · Beta</Text>
       </ScrollView>
 
       <ThemePickerModal visible={themePickerOpen} onClose={() => setThemePickerOpen(false)} />

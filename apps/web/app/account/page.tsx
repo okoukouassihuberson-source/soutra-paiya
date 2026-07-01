@@ -4,8 +4,8 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { AccountView } from './_components/AccountView';
 
 export const metadata: Metadata = {
-  title: 'Mon compte — Soutra-Playce',
-  description: 'Gère ton abonnement Soutra-Playce : plan actuel, échéances, historique de paiement, résiliation.',
+  title: 'Mon compte — Soutra-Explore',
+  description: 'Gère ton abonnement Soutra-Explore : plan actuel, échéances, historique de paiement, résiliation.',
 };
 
 /**
