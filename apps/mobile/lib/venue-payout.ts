@@ -83,9 +83,12 @@ export async function listVenuePayouts(
 }
 
 /**
- * Déclenche une demande de payout via l'Edge function.
+ * Déclenche une demande de payout via l'Edge function GeniusPay.
  * L'Edge function fait toutes les vérifs (owner, KYC, solde) et orchestre
- * le transfer Paystack. Renvoie 'success' (transfer immédiat) ou 'pending'.
+ * le POST /payouts GeniusPay. Renvoie 'success' (transfer immédiat) ou
+ * 'pending' (le webhook payout.completed / payout.failed règlera).
+ *
+ * Migré depuis venue-payout-initiate (Paystack) en PR #4.
  */
 export async function requestVenuePayout(
   params: RequestVenuePayoutParams,
@@ -94,7 +97,7 @@ export async function requestVenuePayout(
     status?: 'success' | 'pending';
     reference: string;
     payout_id: string;
-  }>('venue-payout-initiate', {
+  }>('geniuspay-venue-payout', {
     venue_id: params.venueId,
     amount_xof: params.amountXof,
     provider: params.provider,
