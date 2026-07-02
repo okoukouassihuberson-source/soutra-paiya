@@ -4,15 +4,16 @@
 // l'appelle directement. L'authenticité est garantie par la vérification
 // HMAC-SHA256 du header X-Webhook-Signature avec fenêtre anti-replay 5 min.
 //
-// Événements traités en PR #2 (encaissements) :
+// Événements traités :
 //   - payment.success   → geniuspay_settle_charge (dispatch par purpose)
 //   - payment.failed    → marque la transaction failed
 //   - payment.cancelled → idem failed
 //   - payment.expired   → idem failed
-//
-// Événements ignorés en PR #2 (traités en PR #3/#4) :
-//   - subscription.*    → PR #3
-//   - payout.*          → PR #4
+//   - payout.completed  → dispatch selon préfixe de la référence :
+//                          • sp-wd- → geniuspay_settle_payout (user withdraw)
+//                          • sp-vp- → settle_venue_payout (venue payout)
+//   - payout.failed     → dispatch identique avec outcome = 'failed'
+//                          (refund automatique du wallet / de la balance venue)
 // ============================================================================
 import { jsonResponse, serviceClient } from "../_shared/supabase.ts";
 import { verifyWebhookSignature } from "../_shared/geniuspay.ts";
@@ -83,10 +84,45 @@ Deno.serve(async (req) => {
         .eq("status", "pending");
       if (error) console.error("[gp-webhook] mark failed:", error);
       else console.log(`[gp-webhook] ${type} ${reference} -> failed`);
+    } else if (
+      (type === "payout.completed" || type === "payout.failed") && reference
+    ) {
+      // Dispatch par préfixe de référence (aligné sur ce que
+      // geniuspay-withdraw et geniuspay-venue-payout génèrent).
+      const outcome = type === "payout.completed" ? "success" : "failed";
+      if (reference.startsWith("sp-vp-")) {
+        const { data: result, error } = await svc.rpc("settle_venue_payout", {
+          p_reference: reference,
+          p_outcome: outcome,
+          p_failure_reason: outcome === "failed"
+            ? (typeof (data as { reason?: unknown }).reason === "string"
+              ? (data as { reason: string }).reason
+              : null)
+            : null,
+          p_metadata_patch: { webhook_event: type },
+        });
+        if (error) console.error("[gp-webhook] settle_venue_payout:", error);
+        else console.log(
+          `[gp-webhook] ${type} ${reference} (venue) -> ${result}`,
+        );
+      } else if (reference.startsWith("sp-wd-")) {
+        const { data: result, error } = await svc.rpc(
+          "geniuspay_settle_payout",
+          { p_reference: reference, p_outcome: outcome },
+        );
+        if (error) console.error("[gp-webhook] settle_payout:", error);
+        else console.log(
+          `[gp-webhook] ${type} ${reference} (wallet) -> ${result}`,
+        );
+      } else {
+        console.warn(
+          `[gp-webhook] ${type} ${reference} — préfixe inconnu, ignoré`,
+        );
+      }
     } else if (type === "webhook.test") {
       console.log("[gp-webhook] webhook.test received");
     } else {
-      // subscription.* et payout.* seront traités en PR #3/#4.
+      // subscription.* pas encore traité — cf. PR #3 note dans la doc.
       console.log(`[gp-webhook] événement ignoré : ${type}`);
     }
   } catch (err) {

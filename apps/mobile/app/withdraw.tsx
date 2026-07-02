@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
-import { requestWithdrawal, type WithdrawParams } from '@/lib/paystack';
+import { requestWithdrawal, type WithdrawParams } from '@/lib/geniuspay';
 import { ScreenHeader } from '@/components/ScreenHeader';
 
 type Provider = WithdrawParams['provider'];

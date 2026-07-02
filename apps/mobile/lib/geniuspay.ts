@@ -54,3 +54,31 @@ export async function payWithGeniuspay(
 
   return { status: result?.status ?? 'pending', amountXof: result?.amount_xof };
 }
+
+// ============================================================================
+// Retrait wallet — mobile money via GeniusPay.
+// Migré depuis paystack-withdraw en PR #4.
+// ============================================================================
+
+export interface WithdrawParams {
+  amountXof: number;
+  provider: 'orange' | 'mtn' | 'wave' | 'moov';
+  phone: string;
+}
+
+// Demande un retrait du wallet vers un compte mobile money via GeniusPay.
+// Le webhook payout.completed / payout.failed règle la transaction
+// (crédit final ou remboursement) — voir geniuspay-webhook.
+export async function requestWithdrawal(
+  params: WithdrawParams,
+): Promise<PaymentResult> {
+  const result = await invokeEdge<{ status: PaymentStatus }>(
+    'geniuspay-withdraw',
+    {
+      amount_xof: params.amountXof,
+      provider: params.provider,
+      phone: params.phone,
+    },
+  );
+  return { status: result?.status ?? 'pending', amountXof: params.amountXof };
+}
