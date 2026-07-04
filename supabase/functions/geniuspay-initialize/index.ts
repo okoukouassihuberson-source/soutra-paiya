@@ -19,8 +19,6 @@ import { initializePayment } from "../_shared/geniuspay.ts";
 
 const MIN_XOF = 200; // Minimum imposé par GeniusPay.
 const MAX_XOF = 2_000_000;
-const CALLBACK_URL = Deno.env.get("GENIUSPAY_CALLBACK_URL") ??
-  "https://soutra-paiya.vercel.app/geniuspay/callback";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -133,13 +131,15 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Impossible de créer la transaction" }, 500);
     }
 
-    // Inclure la reference dans success_url : ainsi le callback web la
-    // retrouve toujours en query param, quelle que soit la stratégie de
-    // redirection de GeniusPay.
-    const successUrl = `${CALLBACK_URL}?reference=${
+    // Cette fonction ne sert que le flow mobile (topup / acompte réservation —
+    // jamais appelée depuis le web). On redirige donc GeniusPay directement
+    // vers le deep link de l'app : WebBrowser.openAuthSessionAsync intercepte
+    // cette redirection et referme le navigateur in-app immédiatement, sans
+    // jamais afficher la page web /geniuspay/callback (soutra-playce.com).
+    const successUrl = `soutrapaiya://geniuspay?reference=${
       encodeURIComponent(reference)
     }`;
-    const errorUrl = `${CALLBACK_URL}?reference=${
+    const errorUrl = `soutrapaiya://geniuspay?reference=${
       encodeURIComponent(reference)
     }&status=failed`;
 
