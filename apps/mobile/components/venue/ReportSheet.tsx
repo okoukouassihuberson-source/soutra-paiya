@@ -84,7 +84,7 @@ export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
       } else {
         Alert.alert(
           'Signalement envoyé ✓',
-          'Merci ! L\'équipe Soutra-Explore va vérifier l\'info et mettre à jour la fiche si besoin.',
+          'Merci ! L\'équipe Soutra-Playce va vérifier l\'info et mettre à jour la fiche si besoin.',
         );
       }
       reset();

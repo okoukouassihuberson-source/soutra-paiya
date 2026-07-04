@@ -229,7 +229,7 @@ export default function SearchAI() {
                   </View>
                   <Text style={s.emptyTitle}>Aucun résultat</Text>
                   <Text style={s.emptyText}>
-                    Affine ta recherche ou élargis le rayon. Soutra-Explore
+                    Affine ta recherche ou élargis le rayon. Soutra-Playce
                     n'a pas encore tous les lieux référencés — tu peux en
                     ajouter via le bouton « Signaler ».
                   </Text>

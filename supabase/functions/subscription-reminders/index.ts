@@ -21,7 +21,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY"); // optionnel
 const RESEND_FROM = Deno.env.get("RESEND_FROM") ||
-  "Soutra-Explore <noreply@soutra-paiya.com>";
+  "Soutra-Playce <noreply@soutra-paiya.com>";
 
 interface ExpiringRow {
   subscription_id: string;
@@ -203,14 +203,14 @@ function renderReminderEmail(p: {
     <tr><td align="center">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;background:#1A1F26;border-radius:16px;padding:32px;">
         <tr><td>
-          <h1 style="margin:0 0 8px;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#FF6B1A;">Soutra-Explore</h1>
+          <h1 style="margin:0 0 8px;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#FF6B1A;">Soutra-Playce</h1>
           <h2 style="margin:0 0 16px;font-size:24px;font-weight:800;color:#fff;">${headline}</h2>
           <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#E5E7EB;">
             ${greeting}<br><br>
             Ton abonnement <strong style="color:#fff;">${p.planName}</strong> se termine le <strong style="color:#FF6B1A;">${p.endDate}</strong>.
           </p>
           <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#9CA3AF;">
-            Garde tes avantages — cashback, accès VVIP, concierge — en renouvelant ton abonnement en 1 clic.
+            Garde tes avantages — accès VVIP, concierge — en renouvelant ton abonnement en 1 clic.
           </p>
           <div style="text-align:center;margin:32px 0;">
             <a href="${cta}" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#FF6B1A,#E5500D);color:#fff;text-decoration:none;font-weight:700;border-radius:999px;font-size:15px;">
@@ -218,7 +218,7 @@ function renderReminderEmail(p: {
             </a>
           </div>
           <p style="margin:24px 0 0;font-size:12px;color:#6B7280;text-align:center;">
-            Tu reçois cet email parce que tu as un abonnement actif sur Soutra-Explore.<br>
+            Tu reçois cet email parce que tu as un abonnement actif sur Soutra-Playce.<br>
             Si tu n'es pas à l'origine de cet abonnement, ignore ce message.
           </p>
         </td></tr>

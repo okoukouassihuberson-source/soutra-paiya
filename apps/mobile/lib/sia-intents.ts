@@ -27,11 +27,11 @@ const ROUTES: { keywords: string[]; pathname: string; label: string }[] = [
     pathname: '/(tabs)/wallet',
     label: 'Wallet',
   },
-  // Cashback
+  // Fidélité
   {
-    keywords: ['cashback', 'cash back', 'mes gains', 'mes recompenses', 'mes récompenses', 'mes points'],
-    pathname: '/cashback',
-    label: 'Cashback',
+    keywords: ['fidelite', 'fidélité', 'mes gains', 'mes recompenses', 'mes récompenses', 'mes points', 'mon niveau', 'mon classement'],
+    pathname: '/loyalty',
+    label: 'Fidélité',
   },
   // Explore
   {
@@ -153,7 +153,7 @@ export function parseSiaIntent(text: string): SiaIntent {
 
   // Heuristique : la requête doit contenir un verbe d'action ou commencer par
   // un mot-clé direct, sinon on considère que c'est une question (ex:
-  // "qu'est-ce que le cashback ?" ne doit PAS naviguer).
+  // "qu'est-ce que la fidélité ?" ne doit PAS naviguer).
   const hasNavVerb = NAV_VERBS.some((v) => norm.includes(v));
 
   for (const route of ROUTES) {
@@ -169,7 +169,7 @@ export function parseSiaIntent(text: string): SiaIntent {
           spoken: `J'ouvre ${route.label} pour toi.`,
         };
       }
-      // Cas 2 : la requête EST quasi-uniquement le mot-clé ("wallet", "cashback")
+      // Cas 2 : la requête EST quasi-uniquement le mot-clé ("wallet", "fidélité")
       // → on assume que c'est une commande implicite.
       if (norm === kwNorm || norm.startsWith('sia ' + kwNorm) || norm.startsWith('soutra ' + kwNorm)) {
         return {

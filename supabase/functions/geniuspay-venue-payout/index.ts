@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
       .eq("id", user.id)
       .maybeSingle();
     const recipientName = (profile as { full_name?: string } | null)
-      ?.full_name || "Gérant Soutra-Explore";
+      ?.full_name || "Gérant Soutra-Playce";
 
     // ── 3. Initie le payout GeniusPay ──
     try {
@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
         },
         amount: amountXof,
         currency: "XOF",
-        description: "Retrait revenus Soutra-Explore",
+        description: "Retrait revenus Soutra-Playce",
         metadata: {
           purpose: "venue_payout",
           user_id: user.id,

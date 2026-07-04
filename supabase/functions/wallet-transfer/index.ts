@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!recipient) {
       return jsonResponse(
-        { error: "Aucun compte Soutra-Explore avec ce numéro" },
+        { error: "Aucun compte Soutra-Playce avec ce numéro" },
         404,
       );
     }
@@ -92,6 +92,19 @@ Deno.serve(async (req) => {
     }
 
     const data = result as { transaction_id: string; sender_balance: number };
+
+    // Best-effort : alimente le carnet de bénéficiaires (migration 0071).
+    // N'échoue jamais la réponse si ça rate — c'est un confort, pas critique.
+    try {
+      await svc.rpc("upsert_beneficiary", {
+        p_owner_id: user.id,
+        p_phone: recipientPhone,
+        p_nickname: null,
+      });
+    } catch (err) {
+      console.warn("[wallet-transfer] upsert_beneficiary:", err);
+    }
+
     return jsonResponse({
       status: "success",
       transaction_id: data.transaction_id,

@@ -20,7 +20,6 @@ interface Subscriber {
   sub_id: string | null;
   plan_code: PlanCode | null;
   plan_display_name: string | null;
-  plan_cashback_bps: number | null;
   status: 'active' | 'trialing' | 'past_due' | 'cancelled' | 'expired' | null;
   billing_period: 'monthly' | 'yearly' | null;
   current_period_start: string | null;
@@ -252,7 +251,7 @@ export function SubscribersTab() {
                   <th className="px-4 py-3">Statut</th>
                   <th className="px-4 py-3 text-right">MRR</th>
                   <th className="px-4 py-3 text-right">Payé total</th>
-                  <th className="px-4 py-3 text-right">Cashback reçu</th>
+                  <th className="px-4 py-3 text-right">Ristourne (historique)</th>
                   <th className="px-4 py-3 text-right">LTV net</th>
                   <th className="px-4 py-3">Renouv.</th>
                   <th className="px-4 py-3 text-center">Auto</th>

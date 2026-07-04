@@ -72,9 +72,14 @@ export default function Wallet() {
         <TabHeader
           subtitle="Ton portefeuille Soutra-Pay"
           trailing={(
-            <Pressable hitSlop={10} onPress={() => router.push('/settings')} style={s.iconBtn}>
-              <Ionicons name="settings-outline" size={20} color={c.dark} />
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <Pressable hitSlop={10} onPress={() => router.push('/search')} style={s.iconBtn}>
+                <Ionicons name="search-outline" size={20} color={c.dark} />
+              </Pressable>
+              <Pressable hitSlop={10} onPress={() => router.push('/settings')} style={s.iconBtn}>
+                <Ionicons name="settings-outline" size={20} color={c.dark} />
+              </Pressable>
+            </View>
           )}
         />
 
@@ -140,8 +145,11 @@ export default function Wallet() {
           ))}
         </View>
 
-        {/* Teaser Cashback — lien vers /cashback */}
-        <CashbackTeaser c={c} userId={user?.id} refreshNonce={refreshNonce} />
+        {/* Teaser Fidélité — lien vers /loyalty */}
+        <LoyaltyTeaser c={c} userId={user?.id} refreshNonce={refreshNonce} />
+
+        {/* Ce mois-ci — dépenses/revenus */}
+        <SpendingSummary c={c} userId={user?.id} refreshNonce={refreshNonce} />
 
         {/* Transactions récentes */}
         <View style={s.sectionTitleRow}>
@@ -211,6 +219,9 @@ function TransactionHistory({
             counterparty:counterparty_id(full_name, phone)
           `)
           .or(`user_id.eq.${userId},counterparty_id.eq.${userId}`)
+          // Cashback déprécié (migration 0069) : l'historique reste en base
+          // pour l'audit comptable mais n'est plus affiché dans l'UI.
+          .neq('type', 'cashback')
           .order('created_at', { ascending: false })
           .limit(15);
         if (!mounted) return;
@@ -295,8 +306,7 @@ function isCredit(tx: Transaction, userId?: string): boolean {
   return (
     tx.type === 'topup' ||
     tx.type === 'refund' ||
-    tx.type === 'escrow_release' ||
-    tx.type === 'cashback' // migration 0051 — cashback automatique
+    tx.type === 'escrow_release'
   );
 }
 
@@ -335,7 +345,6 @@ function txMeta(tx: Transaction, userId: string | undefined, c: ColorPalette): {
     case 'escrow_hold': return { label: 'Séquestre', icon: 'lock-closed', bg: '#e0e7ff', color: '#4f46e5' };
     case 'escrow_release': return { label: 'Libération séquestre', icon: 'lock-open', bg: '#dcfce7', color: '#16a34a' };
     case 'fee': return { label: 'Frais', icon: 'receipt', bg: c.neutral[100], color: c.neutral[600] };
-    case 'cashback': return { label: 'Cashback', icon: 'gift', bg: '#d1fae5', color: '#059669' };
     default: return { label: tx.type, icon: 'help-circle', bg: c.neutral[100], color: c.neutral[600] };
   }
 }
@@ -355,27 +364,27 @@ function relativeDate(iso: string): string {
 }
 
 /**
- * Teaser cashback en haut de l'écran wallet : 1 ligne compacte, total
- * all-time + taux du plan actif, tap → /cashback pour l'historique
- * complet. N'apparaît que si la migration 0051 est appliquée (RPC
- * get_my_cashback_stats existe) — sinon silently rendu vide.
+ * Teaser fidélité en haut de l'écran wallet : 1 ligne compacte, solde de
+ * points + niveau, tap → /loyalty pour le détail complet. N'apparaît que
+ * si la migration 0068 est appliquée (RPC get_my_loyalty_stats existe) —
+ * sinon silently rendu vide.
  */
-function CashbackTeaser({
+function LoyaltyTeaser({
   c, userId, refreshNonce,
 }: { c: ColorPalette; userId?: string; refreshNonce: number }) {
   const router = useRouter();
   const s = useMemo(() => makeStyles(c), [c]);
   const [stats, setStats] = useState<{
-    total: number;
-    rate: string | null;
-    planName: string | null;
+    balance: number;
+    levelLabel: string | null;
+    levelEmoji: string | null;
   } | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
     (async () => {
-      const { data, error } = await (supabase.rpc as any)('get_my_cashback_stats', {
+      const { data, error } = await (supabase.rpc as any)('get_my_loyalty_stats', {
         p_window_days: 30,
       });
       if (error) {
@@ -383,40 +392,113 @@ function CashbackTeaser({
         return;
       }
       const d = data as any;
-      const bps = d?.current_plan?.cashback_bps;
       setStats({
-        total: Number(d?.total_all_time_xof ?? 0),
-        rate: bps != null
-          ? `${(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)} %`
-          : null,
-        planName: d?.current_plan?.display_name ?? null,
+        balance: Number(d?.points_balance ?? 0),
+        levelLabel: d?.level?.label ?? null,
+        levelEmoji: d?.level?.emoji ?? null,
       });
       setLoaded(true);
     })();
   }, [userId, refreshNonce]);
 
-  // Si la RPC n'est pas dispo ou pas chargé, on ne rend rien (silencieux).
+  // Si la RPC n'est pas dispo ou pas chargée, on ne rend rien (silencieux).
   if (!loaded || !stats) return null;
 
   return (
     <Pressable
-      onPress={() => router.push('/cashback' as any)}
-      style={({ pressed }) => [s.cashbackTeaser, pressed && { opacity: 0.92 }]}
+      onPress={() => router.push('/loyalty' as any)}
+      style={({ pressed }) => [s.loyaltyTeaser, pressed && { opacity: 0.92 }]}
     >
-      <View style={s.cashbackTeaserIcon}>
-        <Ionicons name="gift" size={20} color="#fff" />
+      <View style={s.loyaltyTeaserIcon}>
+        <Ionicons name="trophy" size={20} color="#fff" />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={s.cashbackTeaserLabel}>Cashback gagné</Text>
-        <Text style={s.cashbackTeaserAmount}>{formatXOF(stats.total)}</Text>
-        {stats.rate && stats.planName && (
-          <Text style={s.cashbackTeaserSub}>
-            {stats.rate} sur tes paiements · plan {stats.planName}
+        <Text style={s.loyaltyTeaserLabel}>Fidélité</Text>
+        <Text style={s.loyaltyTeaserAmount}>{stats.balance.toLocaleString('fr-FR')} pts</Text>
+        {stats.levelLabel && (
+          <Text style={s.loyaltyTeaserSub}>
+            Niveau {stats.levelEmoji} {stats.levelLabel}
           </Text>
         )}
       </View>
-      <Ionicons name="chevron-forward" size={20} color={c.success[600]} />
+      <Ionicons name="chevron-forward" size={20} color={c.primary[600]} />
     </Pressable>
+  );
+}
+
+const SPEND_TYPE_LABEL: Record<string, string> = {
+  payment: 'Paiements',
+  withdraw: 'Retraits',
+  fee: 'Frais',
+  split: 'Split Bill',
+  transfer: 'Transferts',
+};
+
+/**
+ * Résumé "Ce mois-ci" : dépenses/revenus agrégés depuis `transactions`
+ * (RPC get_my_spending_summary, migration 0071) + barre de répartition par
+ * type de dépense. Rendu vide (silencieux) si le mois n'a aucune activité.
+ */
+function SpendingSummary({
+  c, userId, refreshNonce,
+}: { c: ColorPalette; userId?: string; refreshNonce: number }) {
+  const s = useMemo(() => makeStyles(c), [c]);
+  const [summary, setSummary] = useState<{
+    spent: number;
+    received: number;
+    byType: { type: string; amount: number }[];
+  } | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const { data, error } = await (supabase.rpc as any)('get_my_spending_summary', {});
+      if (error) {
+        setLoaded(true);
+        return;
+      }
+      const d = data as any;
+      setSummary({
+        spent: Number(d?.spent_xof ?? 0),
+        received: Number(d?.received_xof ?? 0),
+        byType: ((d?.by_type as any[]) ?? []).map((t) => ({ type: t.type, amount: Number(t.amount_xof) })),
+      });
+      setLoaded(true);
+    })();
+  }, [userId, refreshNonce]);
+
+  if (!loaded || !summary || (summary.spent === 0 && summary.received === 0)) return null;
+
+  const maxAmount = Math.max(1, ...summary.byType.map((t) => t.amount));
+
+  return (
+    <View style={s.spendingCard}>
+      <Text style={s.spendingTitle}>Ce mois-ci</Text>
+      <View style={s.spendingStatsRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.spendingStatLabel}>Dépenses</Text>
+          <Text style={[s.spendingStatValue, { color: c.danger }]}>{formatXOF(summary.spent)}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.spendingStatLabel}>Revenus</Text>
+          <Text style={[s.spendingStatValue, { color: c.success }]}>{formatXOF(summary.received)}</Text>
+        </View>
+      </View>
+      {summary.byType.length > 0 && (
+        <View style={s.spendingBreakdown}>
+          {summary.byType.map((t) => (
+            <View key={t.type} style={s.spendingBarRow}>
+              <Text style={s.spendingBarLabel} numberOfLines={1}>{SPEND_TYPE_LABEL[t.type] ?? t.type}</Text>
+              <View style={s.spendingBarTrack}>
+                <View style={[s.spendingBarFill, { width: `${Math.round((t.amount / maxAmount) * 100)}%`, backgroundColor: c.primary[500] }]} />
+              </View>
+              <Text style={s.spendingBarAmount}>{formatXOF(t.amount)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -451,8 +533,8 @@ function makeStyles(c: ColorPalette) {
     sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.md },
     sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: c.primary[500] },
     sectionTitle: { flex: 1, fontSize: typography.fontSize.lg, fontWeight: '700', color: c.dark },
-    // ──── Teaser Cashback ────
-    cashbackTeaser: {
+    // ──── Teaser Fidélité ────
+    loyaltyTeaser: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
@@ -460,34 +542,97 @@ function makeStyles(c: ColorPalette) {
       marginTop: spacing.lg,
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.md,
-      backgroundColor: c.success[50],
+      backgroundColor: c.primary[50],
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: c.success[100] ?? '#bbf7d0',
+      borderColor: c.primary[100],
     },
-    cashbackTeaserIcon: {
+    loyaltyTeaserIcon: {
       width: 40, height: 40, borderRadius: 20,
       alignItems: 'center', justifyContent: 'center',
-      backgroundColor: c.success[600],
+      backgroundColor: c.primary[600],
     },
-    cashbackTeaserLabel: {
+    loyaltyTeaserLabel: {
       fontSize: typography.fontSize.xs,
       fontWeight: '700',
-      color: c.success[700] ?? '#15803d',
+      color: c.primary[700],
       letterSpacing: 0.6,
       textTransform: 'uppercase',
     },
-    cashbackTeaserAmount: {
+    loyaltyTeaserAmount: {
       marginTop: 2,
       fontSize: typography.fontSize.lg,
       fontWeight: '800',
       color: c.dark,
       fontVariant: ['tabular-nums'],
     },
-    cashbackTeaserSub: {
+    loyaltyTeaserSub: {
       marginTop: 2,
       fontSize: typography.fontSize.xs,
       color: c.neutral[600],
+    },
+    // ──── Résumé "Ce mois-ci" ────
+    spendingCard: {
+      marginHorizontal: spacing.lg,
+      marginTop: spacing.lg,
+      backgroundColor: '#fff',
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.neutral[200],
+      padding: spacing.lg,
+    },
+    spendingTitle: {
+      fontSize: typography.fontSize.sm,
+      fontWeight: '800',
+      color: c.dark,
+    },
+    spendingStatsRow: {
+      flexDirection: 'row',
+      marginTop: spacing.md,
+      gap: spacing.md,
+    },
+    spendingStatLabel: {
+      fontSize: typography.fontSize.xs,
+      color: c.neutral[500],
+      fontWeight: '600',
+    },
+    spendingStatValue: {
+      marginTop: 2,
+      fontSize: typography.fontSize.lg,
+      fontWeight: '800',
+    },
+    spendingBreakdown: {
+      marginTop: spacing.lg,
+      paddingTop: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: c.neutral[100],
+      gap: spacing.sm,
+    },
+    spendingBarRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    spendingBarLabel: {
+      width: 84,
+      fontSize: typography.fontSize.xs,
+      color: c.neutral[600],
+    },
+    spendingBarTrack: {
+      flex: 1,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: c.neutral[100],
+      overflow: 'hidden',
+    },
+    spendingBarFill: { height: '100%', borderRadius: 4 },
+    spendingBarAmount: {
+      width: 72,
+      textAlign: 'right',
+      fontSize: typography.fontSize.xs,
+      fontWeight: '700',
+      color: c.dark,
+      fontVariant: ['tabular-nums'],
     },
     txList: { marginHorizontal: spacing.lg, backgroundColor: c.neutral[50], borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
     txItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: c.neutral[100] },

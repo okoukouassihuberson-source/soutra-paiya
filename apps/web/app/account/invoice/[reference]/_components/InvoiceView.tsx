@@ -23,7 +23,6 @@ interface Plan {
   display_name: string;
   price_monthly_xof: number;
   price_yearly_xof: number;
-  cashback_bps: number;
 }
 
 interface Profile {
@@ -101,14 +100,14 @@ export function InvoiceView({
         <section className="invoice-parties">
           <div>
             <p className="party-label">Émetteur</p>
-            <p className="party-name">Soutra-Explore</p>
+            <p className="party-name">Soutra-Playce</p>
             <p className="party-line">Abidjan, Côte d&apos;Ivoire</p>
             <p className="party-line">support@soutra-paiya.com</p>
             <p className="party-line">+225 07 08 81 74 09</p>
           </div>
           <div>
             <p className="party-label">Facturé à</p>
-            <p className="party-name">{profile?.full_name || 'Utilisateur Soutra-Explore'}</p>
+            <p className="party-name">{profile?.full_name || 'Utilisateur Soutra-Playce'}</p>
             {profile?.phone && <p className="party-line">📞 {profile.phone}</p>}
             {profile?.email && <p className="party-line">✉ {profile.email}</p>}
             {profile?.city && <p className="party-line">{profile.city}</p>}
@@ -152,11 +151,6 @@ export function InvoiceView({
                   {isRenewal && (
                     <span className="renewal-badge">Renouvellement automatique</span>
                   )}
-                  {plan?.cashback_bps != null && (
-                    <p className="line-sub">
-                      Cashback inclus : {(plan.cashback_bps / 100).toFixed(plan.cashback_bps % 100 === 0 ? 0 : 1)} % sur tes paiements marchand
-                    </p>
-                  )}
                 </td>
                 <td className="td-right">{periodLabel}</td>
                 <td className="td-right mono">{formatXOF(tx.amount_xof)}</td>
@@ -191,7 +185,7 @@ export function InvoiceView({
             <strong>support@soutra-paiya.com</strong>.
           </p>
           <p className="small mt2 brand-mention">
-            Soutra-Explore — Le wallet fintech de la Côte d&apos;Ivoire
+            Soutra-Playce — Le wallet fintech de la Côte d&apos;Ivoire
           </p>
         </footer>
       </article>

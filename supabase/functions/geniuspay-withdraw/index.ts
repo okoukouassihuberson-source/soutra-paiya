@@ -20,6 +20,16 @@ import {
 } from "../_shared/supabase.ts";
 import { initiatePayout } from "../_shared/geniuspay.ts";
 
+// Commission de retrait : 1 % fixe, retenue sur le montant transféré au
+// prestataire mobile money (le wallet est débité du montant brut demandé).
+// Miroir de packages/shared/src/fees.ts (WITHDRAWAL_FEE_BPS) — dupliqué ici
+// car les Edge Functions Deno ne résolvent pas les packages du workspace pnpm.
+const WITHDRAWAL_FEE_BPS = 100;
+function computeWithdrawalFee(amountXof: number) {
+  const feeXof = Math.round((amountXof * WITHDRAWAL_FEE_BPS) / 10000);
+  return { feeXof, netXof: amountXof - feeXof };
+}
+
 const MIN_XOF = 200; // Contrainte GeniusPay
 const MAX_XOF = 2_000_000;
 
@@ -86,6 +96,12 @@ Deno.serve(async (req) => {
     const reference = `sp-wd-${crypto.randomUUID()}`;
     const nowIso = () => new Date().toISOString();
 
+    // Commission Soutra 1% : le wallet est débité du montant brut demandé
+    // (amountXof), mais seul le montant net (amountXof - feeXof) part
+    // réellement vers le mobile money. La commission reste sur le compte
+    // marchand GeniusPay de Soutra.
+    const { feeXof, netXof } = computeWithdrawalFee(amountXof);
+
     // 1. Transaction « pending » créée d'abord — sert d'ancre au
     //    remboursement idempotent (geniuspay_settle_payout) en cas d'échec.
     const { data: tx, error: txErr } = await svc
@@ -94,10 +110,11 @@ Deno.serve(async (req) => {
         user_id: user.id,
         type: "withdraw",
         amount_xof: amountXof,
+        fee_xof: feeXof,
         status: "pending",
         provider: "geniuspay",
         provider_ref: reference,
-        description: `Retrait ${provider.toUpperCase()}`,
+        description: `Retrait ${provider.toUpperCase()} — commission 1 %`,
         metadata: { provider, phone },
       })
       .select("id")
@@ -130,7 +147,7 @@ Deno.serve(async (req) => {
     try {
       const payout = await initiatePayout({
         recipient: {
-          name: profile.full_name || "Client Soutra-Explore",
+          name: profile.full_name || "Client Soutra-Playce",
           phone,
         },
         destination: {
@@ -138,7 +155,7 @@ Deno.serve(async (req) => {
           provider: PROVIDER_MAP[provider],
           account: phone,
         },
-        amount: amountXof,
+        amount: netXof,
         currency: "XOF",
         description: `Retrait wallet ${provider.toUpperCase()}`,
         metadata: {

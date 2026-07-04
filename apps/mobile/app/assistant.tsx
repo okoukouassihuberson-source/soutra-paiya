@@ -16,7 +16,7 @@ import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/Voic
  * Spec PO PR6 audit UX :
  *   "L'utilisateur peut parler à SIA. SIA peut répondre vocalement.
  *    Conversation bidirectionnelle. SIA doit pouvoir ouvrir Accueil,
- *    Explorer, Soutra-Pay, Cashback, Profil, Paramètres par commande
+ *    Explorer, Soutra-Pay, Fidélité, Profil, Paramètres par commande
  *    vocale. IA contextuelle, FR + français ivoirien."
  *
  * Pipeline :
@@ -29,7 +29,7 @@ import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/Voic
 const SUGGESTIONS = [
   'SIA, ouvre mon wallet',
   'SIA, montre les hôtels',
-  'SIA, affiche mon cashback',
+  'SIA, affiche ma fidélité',
   'Comment recharger mon wallet ?',
 ];
 

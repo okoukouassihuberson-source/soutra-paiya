@@ -1,5 +1,5 @@
 /**
- * Tests unitaires pour lib/qr.ts (build/parse QR de paiement Soutra-Explore).
+ * Tests unitaires pour lib/qr.ts (build/parse QR de paiement Soutra-Playce).
  *
  * Pas de framework Jest dans ce projet — ces tests sont exécutables avec
  * `npx tsx apps/mobile/lib/qr.test.ts` (ou ts-node). Ils couvrent les cas

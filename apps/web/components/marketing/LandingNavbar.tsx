@@ -79,7 +79,7 @@ export function LandingNavbar() {
             <BrandMark size="xs" />
             <span>
               <span className="text-white">Soutra</span>
-              <span className="text-primary-400">-Explore</span>
+              <span className="text-primary-400">-Playce</span>
             </span>
           </Link>
 
@@ -90,8 +90,8 @@ export function LandingNavbar() {
             <a href="#features" className="text-sm text-neutral-400 transition hover:text-white">
               Fonctionnalités
             </a>
-            <Link href="/cashback" className="text-sm text-neutral-400 transition hover:text-white">
-              Cashback
+            <Link href="/loyalty" className="text-sm text-neutral-400 transition hover:text-white">
+              Fidélité
             </Link>
             <Link
               href="/subscribe"
@@ -182,7 +182,7 @@ export function LandingNavbar() {
               {[
                 { href: '#how', label: 'Comment ça marche', accent: false },
                 { href: '#features', label: 'Fonctionnalités', accent: false },
-                { href: '/cashback', label: 'Cashback', accent: false },
+                { href: '/loyalty', label: 'Fidélité', accent: false },
                 { href: '/subscribe', label: 'Premium', accent: true },
                 { href: '/pro', label: 'Espace Pro', accent: false },
                 authed

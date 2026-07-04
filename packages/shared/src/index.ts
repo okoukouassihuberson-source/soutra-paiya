@@ -5,3 +5,5 @@ export * from './utils';
 export * from './venue-categories';
 export * from './pro-modules';
 export * from './revenue-report';
+export * from './loyalty-levels';
+export * from './fees';

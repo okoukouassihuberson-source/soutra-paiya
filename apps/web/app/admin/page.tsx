@@ -12,8 +12,9 @@ import { SubmissionsTab } from './_components/SubmissionsTab';
 import { MonetizationTab } from './_components/MonetizationTab';
 import { ModerationTab } from './_components/ModerationTab';
 import { SubscriptionsTab } from './_components/SubscriptionsTab';
-import { CashbackTab } from './_components/CashbackTab';
+import { LoyaltyTab } from './_components/LoyaltyTab';
 import { SubscribersTab } from './_components/SubscribersTab';
+import { WalletsTab } from './_components/WalletsTab';
 
 // Lazy-load Recharts : sort ~80 kB du bundle initial /admin et ne les charge
 // que si l'utilisateur affiche un onglet contenant des charts. Le static
@@ -34,7 +35,7 @@ const VenueCategoryBar      = dynamic(() => import('./_components/AdminCharts').
 const RevenueByProviderBar  = dynamic(() => import('./_components/AdminCharts').then(m => m.RevenueByProviderBar),  { ssr: false, loading: ChartLoader });
 const UsersByCityBar        = dynamic(() => import('./_components/AdminCharts').then(m => m.UsersByCityBar),        { ssr: false, loading: ChartLoader });
 
-type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'moderation' | 'subscriptions' | 'subscribers' | 'cashback' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
+type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'moderation' | 'subscriptions' | 'subscribers' | 'loyalty' | 'wallets' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Vue d\'ensemble', icon: <IcoGrid /> },
@@ -44,7 +45,8 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'moderation', label: 'Modération Pro', icon: <IcoShield /> },
   { id: 'subscriptions', label: 'Abonnements', icon: <IcoCurrency /> },
   { id: 'subscribers', label: 'Abonnés', icon: <IcoUsers /> },
-  { id: 'cashback', label: 'Cashback', icon: <IcoCurrency /> },
+  { id: 'loyalty', label: 'Fidélité', icon: <IcoCurrency /> },
+  { id: 'wallets', label: 'Wallets', icon: <IcoCurrency /> },
   { id: 'reports', label: 'Signalements', icon: <IcoAlert /> },
   { id: 'claims', label: 'Revendications', icon: <IcoAlert /> },
   { id: 'submissions', label: 'Contributions', icon: <IcoBuilding /> },
@@ -118,7 +120,7 @@ function AdminDashboard() {
   // bouton retour navigateur, deep-linking).
   const tabParam = searchParams?.get('tab');
   const tab: Tab = (
-    ['overview', 'analytics', 'users', 'venues', 'moderation', 'subscriptions', 'subscribers', 'cashback', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
+    ['overview', 'analytics', 'users', 'venues', 'moderation', 'subscriptions', 'subscribers', 'loyalty', 'wallets', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'overview';
   const setTab = useCallback((next: Tab) => {
     router.replace(`/admin?tab=${next}`, { scroll: false });
@@ -314,13 +316,23 @@ function AdminDashboard() {
     setActionLoading(null);
   }
 
-  async function logAudit(action: string, details: string) {
+  // Colonnes réelles de audit_events (migration 0001) : actor_id, action,
+  // resource_type, resource_id, metadata (jsonb), ip, created_at. La version
+  // précédente insérait sur user_id/details/ip_address — colonnes inexistantes,
+  // donc chaque appel échouait silencieusement depuis toujours (0 ligne écrite).
+  async function logAudit(
+    action: string,
+    details: string,
+    resourceType: string = 'admin',
+    resourceId: string | null = null,
+  ) {
     const { data: { user } } = await sb.auth.getUser();
     await (sb as any).from('audit_events').insert({
-      user_id: user?.id,
+      actor_id: user?.id,
       action,
-      details,
-      ip_address: '0.0.0.0',
+      resource_type: resourceType,
+      resource_id: resourceId,
+      metadata: { details },
     });
   }
 
@@ -511,7 +523,7 @@ function AdminDashboard() {
               {TABS.find((t) => t.id === tab)?.label || 'Admin'}
             </h1>
             <p className="mt-0.5 truncate text-xs text-neutral-500 sm:text-sm">
-              Centre de contrôle Soutra-Explore
+              Centre de contrôle Soutra-Playce
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -539,8 +551,11 @@ function AdminDashboard() {
           {/* ═══════════ ABONNEMENTS (analytics) ═══════════ */}
           {tab === 'subscriptions' && !isModeratorOnly && <SubscriptionsTab />}
 
-          {/* ═══════════ CASHBACK (analytics) ═══════════ */}
-          {tab === 'cashback' && !isModeratorOnly && <CashbackTab />}
+          {/* ═══════════ FIDÉLITÉ (analytics) ═══════════ */}
+          {tab === 'loyalty' && !isModeratorOnly && <LoyaltyTab />}
+
+          {/* ═══════════ WALLETS (recherche + ajustement manuel) ═══════════ */}
+          {tab === 'wallets' && !isModeratorOnly && <WalletsTab />}
 
           {/* ═══════════ SUBSCRIBERS (vue agrégée par user) ═══════════ */}
           {tab === 'subscribers' && !isModeratorOnly && <SubscribersTab />}

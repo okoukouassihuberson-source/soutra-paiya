@@ -16,7 +16,6 @@ interface Plan {
   display_name: string;
   price_monthly_xof: number;
   price_yearly_xof: number;
-  cashback_bps: number;
   accent_color: string;
 }
 
@@ -69,23 +68,16 @@ interface Transaction {
   completed_at: string | null;
 }
 
-interface CashbackStats {
+interface LoyaltyStats {
   ok: boolean;
   window_days: number;
-  total_all_time_xof: number;
-  period_xof: number;
+  points_balance: number;
+  points_lifetime: number;
+  level: { code: string; label: string; min_points: number; color: string; emoji: string };
+  next_level: { code: string; label: string; min_points: number; points_remaining: number } | null;
+  period_points: number;
   period_count: number;
-  avg_per_tx_xof: number;
-  current_plan: {
-    code: PlanCode;
-    display_name: string;
-    cashback_bps: number;
-  };
-  latest: {
-    amount_xof: number;
-    created_at: string;
-    source_amount_xof: string | null;
-  } | null;
+  rank: number | null;
 }
 
 const PLAN_STYLES: Record<PlanCode, { ribbon: string; text: string; accent: string }> = {
@@ -121,14 +113,14 @@ export function AccountView({
   subscriptionHistory,
   transactionHistory,
   plans,
-  cashbackStats,
+  loyaltyStats,
 }: {
   profile: Profile | null;
   currentSubscription: CurrentSub | null;
   subscriptionHistory: Subscription[];
   transactionHistory: Transaction[];
   plans: Plan[];
-  cashbackStats: CashbackStats | null;
+  loyaltyStats: LoyaltyStats | null;
 }) {
   const router = useRouter();
   const sb = supabaseBrowser();
@@ -271,17 +263,11 @@ export function AccountView({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className={`text-xs font-bold uppercase tracking-wider ${PLAN_STYLES[currentPlan.code].accent}`}>
-                      Plan {currentPlan.code === 'soutra_premium' ? 'Prestige' : currentPlan.cashback_bps >= 200 ? 'Premium' : 'Standard'}
+                      Plan {currentPlan.code === 'soutra_premium' ? 'Prestige' : currentPlan.code === 'free' ? 'Découverte' : 'Premium'}
                     </p>
                     <h3 className={`mt-1 font-display text-3xl font-black tracking-tight ${PLAN_STYLES[currentPlan.code].text}`}>
                       {currentPlan.display_name}
                     </h3>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-xs ${PLAN_STYLES[currentPlan.code].accent}`}>Cashback</p>
-                    <p className={`font-display text-2xl font-black ${PLAN_STYLES[currentPlan.code].text}`}>
-                      {(currentPlan.cashback_bps / 100).toFixed(currentPlan.cashback_bps % 100 === 0 ? 0 : 1)} %
-                    </p>
                   </div>
                 </div>
               </div>
@@ -385,7 +371,7 @@ export function AccountView({
                 <div className="py-6 text-center">
                   <p className="text-sm text-neutral-600 dark:text-neutral-400">
                     Tu utilises actuellement le <strong>plan Free</strong>. Découvre les avantages Premium :
-                    cashback jusqu&apos;à 5 %, accès VVIP, concierge dédié.
+                    accès VVIP, concierge dédié.
                   </p>
                   <Link
                     href="/subscribe"
@@ -399,83 +385,64 @@ export function AccountView({
           </div>
         </section>
 
-        {/* ═══════════ CASHBACK GAGNÉ ═══════════ */}
-        {cashbackStats?.ok && (
+        {/* ═══════════ FIDÉLITÉ ═══════════ */}
+        {loyaltyStats?.ok && (
           <section className="mb-12">
             <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-500">
-              Cashback gagné
+              Fidélité
             </h2>
-            <div className="overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-white to-emerald-500/5 dark:from-emerald-500/15 dark:via-neutral-900/80 dark:to-emerald-500/5">
-              <div className="grid grid-cols-1 gap-px bg-emerald-500/10 sm:grid-cols-3">
-                {/* Total all-time */}
+            <div className="overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 dark:from-amber-500/15 dark:via-neutral-900/80 dark:to-amber-500/5">
+              <div className="grid grid-cols-1 gap-px bg-amber-500/10 sm:grid-cols-3">
+                {/* Solde de points */}
                 <div className="bg-white p-6 dark:bg-neutral-900">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                    Total accumulé
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                    Solde de points
                   </p>
                   <p className="mt-2 font-display text-3xl font-black tracking-tight text-neutral-900 dark:text-white">
-                    {formatXOF(cashbackStats.total_all_time_xof)}
+                    {loyaltyStats.points_balance.toLocaleString('fr-FR')} pts
                   </p>
                   <p className="mt-1 text-xs text-neutral-500">
-                    Crédité dans ton wallet
+                    {loyaltyStats.points_lifetime.toLocaleString('fr-FR')} pts gagnés au total
                   </p>
                 </div>
 
                 {/* Sur 30j */}
                 <div className="bg-white p-6 dark:bg-neutral-900">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-                    {cashbackStats.window_days} derniers jours
+                    {loyaltyStats.window_days} derniers jours
                   </p>
                   <p className="mt-2 font-display text-3xl font-black tracking-tight text-neutral-900 dark:text-white">
-                    {formatXOF(cashbackStats.period_xof)}
+                    {loyaltyStats.period_points.toLocaleString('fr-FR')} pts
                   </p>
                   <p className="mt-1 text-xs text-neutral-500">
-                    {cashbackStats.period_count} transaction{cashbackStats.period_count > 1 ? 's' : ''}
-                    {cashbackStats.period_count > 0 && (
-                      <> · {formatXOF(cashbackStats.avg_per_tx_xof)} en moyenne</>
-                    )}
+                    {loyaltyStats.period_count} gain{loyaltyStats.period_count > 1 ? 's' : ''}
                   </p>
                 </div>
 
-                {/* Plan actif + taux */}
+                {/* Niveau */}
                 <div className="bg-white p-6 dark:bg-neutral-900">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-                    Ton taux
+                    Ton niveau
                   </p>
-                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
-                    {(cashbackStats.current_plan.cashback_bps / 100).toFixed(
-                      cashbackStats.current_plan.cashback_bps % 100 === 0 ? 0 : 1,
-                    )} %
+                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-amber-600 dark:text-amber-400">
+                    {loyaltyStats.level.emoji} {loyaltyStats.level.label}
                   </p>
                   <p className="mt-1 text-xs text-neutral-500">
-                    Plan {cashbackStats.current_plan.display_name}
-                    {cashbackStats.current_plan.code === 'free' && (
-                      <>
-                        {' · '}
-                        <Link href="/subscribe" className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
-                          monter à 5 % →
-                        </Link>
-                      </>
+                    {loyaltyStats.next_level ? (
+                      <>{loyaltyStats.next_level.points_remaining.toLocaleString('fr-FR')} pts avant {loyaltyStats.next_level.label}</>
+                    ) : (
+                      <>Niveau maximum atteint 🎉</>
                     )}
                   </p>
                 </div>
               </div>
 
-              {/* Footer : dernière transaction cashback */}
-              {cashbackStats.latest && (
-                <div className="flex flex-wrap items-center gap-3 border-t border-emerald-500/10 bg-white/40 px-6 py-3 text-xs text-neutral-600 dark:bg-neutral-950/40 dark:text-neutral-400">
-                  <span>💰</span>
-                  <span>
-                    Dernier cashback :{' '}
-                    <strong className="text-emerald-700 dark:text-emerald-400">
-                      {formatXOF(cashbackStats.latest.amount_xof)}
-                    </strong>
-                    {cashbackStats.latest.source_amount_xof && (
-                      <> sur une dépense de {formatXOF(Number(cashbackStats.latest.source_amount_xof))}</>
-                    )}
-                    , {formatRelativeTime(cashbackStats.latest.created_at)}
-                  </span>
-                </div>
-              )}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-amber-500/10 bg-white/40 px-6 py-3 text-xs text-neutral-600 dark:bg-neutral-950/40 dark:text-neutral-400">
+                <span>🏆 Échange tes points contre des récompenses partenaires.</span>
+                <Link href="/loyalty" className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
+                  Voir le programme →
+                </Link>
+              </div>
             </div>
           </section>
         )}
@@ -500,7 +467,7 @@ export function AccountView({
                     <li key={tx.id} className="flex flex-wrap items-center gap-3 px-5 py-4 sm:px-6">
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold">
-                          {planName || tx.description || 'Abonnement Soutra-Explore'}
+                          {planName || tx.description || 'Abonnement Soutra-Playce'}
                           {billingPeriod && (
                             <span className="ml-2 text-xs font-normal text-neutral-500">
                               ({billingPeriod === 'monthly' ? 'Mensuel' : 'Annuel'})
@@ -822,17 +789,6 @@ function formatDateTime(iso: string): string {
   });
 }
 
-function formatRelativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.round(diff / 60000);
-  if (min < 1) return "à l'instant";
-  if (min < 60) return `il y a ${min} min`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const d = Math.round(h / 24);
-  if (d < 7) return `il y a ${d} j`;
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-}
 
 function daysUntil(iso: string): string {
   const diffMs = new Date(iso).getTime() - Date.now();

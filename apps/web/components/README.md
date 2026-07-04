@@ -1,4 +1,4 @@
-# Design system Soutra-Explore (web)
+# Design system Soutra-Playce (web)
 
 Composants UI réutilisables + AppShell responsive pour les espaces authentifiés (Pro, Admin).
 

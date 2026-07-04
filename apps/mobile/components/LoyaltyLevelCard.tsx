@@ -1,79 +1,48 @@
 import { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
+import { typography, radius, spacing, LOYALTY_LEVELS, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 
 /**
- * CashbackLevelCard — gamification Bronze → Diamond.
+ * LoyaltyLevelCard — gamification Bronze → Diamant du programme de fidélité.
  *
- * Spec PO :
- *   "Refondre complètement l'expérience Cashback avec gamification :
- *    Bronze, Silver, Gold, Platinum, Diamond. Barre progression animée
- *    avec niveau suivant + montant restant pour débloquer le prochain
- *    palier."
- *
- * Niveau calculé client-side depuis le total cashback all-time. Pas de
- * migration DB : on a déjà la donnée. Les seuils peuvent être ajustés
- * dans LEVELS sans toucher au backend.
- *
- * Les couleurs des badges respectent l'imaginaire collectif :
- *   Bronze   #B87333 (cuivre)
- *   Silver   #C0C0C0 (argent)
- *   Gold     #D4AF37 (or)
- *   Platinum #6E8898 (gris-bleu acier)
- *   Diamond  #5BCFFA (cyan brillant)
+ * Remplace CashbackLevelCard (déprécié avec le cashback). Même visuel, mais
+ * les seuils sont en points (100 FCFA = 1 point, cf. LOYALTY_LEVELS) au lieu
+ * d'un montant XOF, et la source de vérité est le cumul lifetime renvoyé par
+ * get_my_loyalty_stats plutôt qu'un calcul purement client-side.
  */
 
-export type CashbackLevel = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
-
-interface LevelDef {
-  key: CashbackLevel;
-  label: string;
-  emoji: string;
-  /** Seuil minimum cumulé pour atteindre ce niveau (XOF). */
-  threshold: number;
-  /** Couleur du badge + barre. */
-  color: string;
-}
-
-const LEVELS: LevelDef[] = [
-  { key: 'bronze',   label: 'Bronze',   emoji: '🥉', threshold: 0,       color: '#B87333' },
-  { key: 'silver',   label: 'Silver',   emoji: '🥈', threshold: 5_000,   color: '#9CA3AF' },
-  { key: 'gold',     label: 'Gold',     emoji: '🥇', threshold: 25_000,  color: '#D4AF37' },
-  { key: 'platinum', label: 'Platinum', emoji: '💎', threshold: 100_000, color: '#6E8898' },
-  { key: 'diamond',  label: 'Diamond',  emoji: '✨', threshold: 500_000, color: '#5BCFFA' },
-];
-
-function getLevel(totalXof: number): { current: LevelDef; next: LevelDef | null } {
-  let current = LEVELS[0];
-  for (const lvl of LEVELS) {
-    if (totalXof >= lvl.threshold) current = lvl;
-  }
-  const idx = LEVELS.findIndex((l) => l.key === current.key);
-  const next = idx < LEVELS.length - 1 ? LEVELS[idx + 1] : null;
-  return { current, next };
+function fmtPoints(n: number): string {
+  return `${Math.round(n).toLocaleString('fr-FR')} pts`;
 }
 
 interface Props {
-  totalXof: number;
+  pointsLifetime: number;
   loading?: boolean;
 }
 
-export function CashbackLevelCard({ totalXof, loading = false }: Props) {
+export function LoyaltyLevelCard({ pointsLifetime, loading = false }: Props) {
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
 
-  const { current, next } = useMemo(() => getLevel(totalXof), [totalXof]);
+  const { current, next } = useMemo(() => {
+    let cur = LOYALTY_LEVELS[0];
+    for (const lvl of LOYALTY_LEVELS) {
+      if (pointsLifetime >= lvl.minPoints) cur = lvl;
+    }
+    const idx = LOYALTY_LEVELS.findIndex((l) => l.code === cur.code);
+    const nxt = idx < LOYALTY_LEVELS.length - 1 ? LOYALTY_LEVELS[idx + 1] : null;
+    return { current: cur, next: nxt };
+  }, [pointsLifetime]);
 
-  // Barre de progression : fraction entre seuil courant et seuil suivant.
   const progress = useMemo(() => {
-    if (!next) return 1; // niveau max atteint
-    const span = next.threshold - current.threshold;
-    const done = Math.max(0, totalXof - current.threshold);
+    if (!next) return 1;
+    const span = next.minPoints - current.minPoints;
+    const done = Math.max(0, pointsLifetime - current.minPoints);
     return Math.min(1, span > 0 ? done / span : 1);
-  }, [totalXof, current, next]);
+  }, [pointsLifetime, current, next]);
 
-  const remaining = next ? Math.max(0, next.threshold - totalXof) : 0;
+  const remaining = next ? Math.max(0, next.minPoints - pointsLifetime) : 0;
 
   if (loading) {
     return (
@@ -100,7 +69,6 @@ export function CashbackLevelCard({ totalXof, loading = false }: Props) {
         )}
       </View>
 
-      {/* Barre de progression */}
       <View style={s.barTrack}>
         <View
           style={[
@@ -114,10 +82,10 @@ export function CashbackLevelCard({ totalXof, loading = false }: Props) {
       </View>
 
       <View style={s.barFooter}>
-        <Text style={s.barFooterCurrent}>{formatXOF(totalXof)}</Text>
+        <Text style={s.barFooterCurrent}>{fmtPoints(pointsLifetime)}</Text>
         {next && (
           <Text style={s.barFooterRemaining}>
-            {formatXOF(remaining)} pour passer {next.label}
+            {fmtPoints(remaining)} pour passer {next.label}
           </Text>
         )}
         {!next && (
@@ -125,13 +93,12 @@ export function CashbackLevelCard({ totalXof, loading = false }: Props) {
         )}
       </View>
 
-      {/* Tous les niveaux avec checkmarks */}
       <View style={s.levels}>
-        {LEVELS.map((lvl) => {
-          const reached = totalXof >= lvl.threshold;
-          const isCurrent = lvl.key === current.key;
+        {LOYALTY_LEVELS.map((lvl) => {
+          const reached = pointsLifetime >= lvl.minPoints;
+          const isCurrent = lvl.code === current.code;
           return (
-            <View key={lvl.key} style={s.lvlCell}>
+            <View key={lvl.code} style={s.lvlCell}>
               <View
                 style={[
                   s.lvlDot,

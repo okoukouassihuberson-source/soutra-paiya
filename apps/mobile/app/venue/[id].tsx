@@ -337,7 +337,7 @@ export default function VenueDetail() {
               onPress={() => {
                 if (!venue.whatsapp) return;
                 logVenueEvent(venue.id, 'click_whatsapp');
-                openWhatsApp(venue.whatsapp, `Bonjour, je vous contacte au sujet de ${venue.name} via Soutra-Explore.`);
+                openWhatsApp(venue.whatsapp, `Bonjour, je vous contacte au sujet de ${venue.name} via Soutra-Playce.`);
               }}
               disabled={!venue.whatsapp}
             >
