@@ -175,7 +175,7 @@ export function TicketView({
           </div>
           <div className="holder-info">
             <p className="holder-label">Au nom de</p>
-            <p className="holder-name">{profile?.full_name || 'Client Soutra-Explore'}</p>
+            <p className="holder-name">{profile?.full_name || 'Client Soutra-Playce'}</p>
             {profile?.phone && <p className="holder-line">📞 {profile.phone}</p>}
             <div className="ref-block">
               <p className="ref-label">Référence interne</p>
@@ -206,7 +206,7 @@ export function TicketView({
         {/* FOOTER */}
         <footer className="ticket-footer">
           <p>
-            Réservé via <strong>Soutra-Explore</strong> · Wallet fintech Côte d&apos;Ivoire
+            Réservé via <strong>Soutra-Playce</strong> · Wallet fintech Côte d&apos;Ivoire
           </p>
           <p className="small">
             Question ? Contacte <strong>support@soutra-paiya.com</strong>

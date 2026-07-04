@@ -8,7 +8,7 @@ import { formatXOF, buildRevenueReportHtml, type RevenueReportVenue } from '@sou
 // Pro Revenue Dashboard — bloc à intégrer dans l'onglet Finances de /pro.
 //
 // Côté gérant : il voit ses revenus bruts (montant des flux), la commission
-// retenue par Soutra-Explore, son revenu net, les frais qu'on lui facture +
+// retenue par Soutra-Playce, son revenu net, les frais qu'on lui facture +
 // la timeline jour par jour et le détail des derniers events.
 // ============================================================================
 
@@ -62,7 +62,7 @@ const KIND_META: Record<string, { label: string; emoji: string; tone: string }> 
   ticket_commission:            { label: 'Commission billetterie',  emoji: '🎟️', tone: 'text-fuchsia-600' },
   marketplace_commission:       { label: 'Commission marketplace',  emoji: '🛍️', tone: 'text-rose-600' },
   affiliation_commission:       { label: 'Commission affiliation',  emoji: '🤝', tone: 'text-cyan-600' },
-  user_cashback:                { label: 'Cashback utilisateur',    emoji: '🎁', tone: 'text-green-600' },
+  user_cashback:                { label: 'Ristourne utilisateur (historique)', emoji: '🎁', tone: 'text-green-600' },
   loyalty_bonus:                { label: 'Bonus fidélité',          emoji: '⭐', tone: 'text-yellow-600' },
   featured_listing:             { label: 'Mise en avant',           emoji: '⬆️', tone: 'text-indigo-600' },
   advertising:                  { label: 'Publicité',               emoji: '📣', tone: 'text-indigo-600' },
@@ -133,6 +133,33 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
     }
   };
 
+  /**
+   * Export CSV du détail des events de la période courante (même données déjà
+   * chargées en mémoire, aucun nouvel appel réseau) — utile pour import
+   * comptable/Excel, à côté du rapport PDF ci-dessus.
+   */
+  const handleExportCsv = () => {
+    if (events.length === 0) return;
+    const periodLabel = PERIODS.find((p) => p.id === period)?.label ?? '30 jours';
+    const headers = ['date', 'type', 'libelle', 'montant_xof'];
+    const rows = events.map((e) => [
+      new Date(e.ts).toLocaleString('fr-FR'),
+      e.kind,
+      KIND_META[e.kind]?.label ?? e.kind,
+      String(e.amount_xof),
+    ]);
+    const csv = [headers, ...rows]
+      .map((line) => line.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `revenus-${venue?.name ?? 'etablissement'}-${periodLabel}.csv`.replace(/\s+/g, '_');
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const load = useCallback(async () => {
     if (!venueId) return;
     setLoading(true);
@@ -175,7 +202,7 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
     <div className="space-y-6">
       {/* Period filter + export PDF */}
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Revenus Soutra-Explore</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Revenus Soutra-Playce</p>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {PERIODS.map((p) => (
             <button
@@ -197,6 +224,14 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
             className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
           >
             {printing ? '⏳' : '📄'} Télécharger PDF
+          </button>
+          <button
+            onClick={handleExportCsv}
+            disabled={loading || events.length === 0}
+            title="Exporte le détail des mouvements en CSV (compatible Excel)"
+            className="rounded-full border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-50"
+          >
+            📊 Export CSV
           </button>
         </div>
       </div>

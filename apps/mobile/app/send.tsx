@@ -14,6 +14,13 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 const MIN_XOF = 100;
 const PHONE_RE = /^\+225[0-9]{10}$/;
 
+interface Beneficiary {
+  phone: string;
+  display_name: string;
+  use_count: number;
+  last_used_at: string;
+}
+
 export default function Send() {
   const router = useRouter();
   const { user } = useAuth();
@@ -27,19 +34,22 @@ export default function Send() {
   const [submitting, setSubmitting] = useState(false);
   const [hasPin, setHasPin] = useState(false);
   const [pinVisible, setPinVisible] = useState(false);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (!user?.id) { setLoading(false); return; }
       try {
-        const [walletRes, pin] = await Promise.all([
+        const [walletRes, pin, beneficiariesRes] = await Promise.all([
           supabase.from('wallets').select('balance_xof').eq('user_id', user.id).maybeSingle(),
           hasPaymentPin(),
+          (supabase.rpc as any)('list_my_beneficiaries', { p_limit: 10 }),
         ]);
         if (mounted) {
           setBalance((walletRes.data as any)?.balance_xof ?? 0);
           setHasPin(pin);
+          setBeneficiaries((beneficiariesRes.data as Beneficiary[]) ?? []);
         }
       } catch (err) {
         console.error('[send] load:', err);
@@ -82,7 +92,7 @@ export default function Send() {
     const recipient = await lookupRecipient(phone);
     setSubmitting(false);
     if (!recipient) {
-      Alert.alert('Destinataire introuvable', 'Aucun compte Soutra-Explore n\'est associé à ce numéro.');
+      Alert.alert('Destinataire introuvable', 'Aucun compte Soutra-Playce n\'est associé à ce numéro.');
       return;
     }
     Alert.alert('Confirmer le transfert', `Envoyer ${formatXOF(amountNum)} à ${recipient.name} ?`, [
@@ -110,6 +120,30 @@ export default function Send() {
             <Text style={s.balanceLabel}>Solde disponible</Text>
             <Text style={s.balanceValue}>{formatXOF(balance)}</Text>
           </View>
+
+          {/* Contacts récents */}
+          {beneficiaries.length > 0 && (
+            <>
+              <View style={s.sectionTitleRow}>
+                <View style={s.sectionAccent} />
+                <Text style={s.sectionTitle}>Contacts récents</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.contactsRow}>
+                {beneficiaries.map((b) => (
+                  <Pressable
+                    key={b.phone}
+                    style={({ pressed }) => [s.contactChip, pressed && { opacity: 0.8 }]}
+                    onPress={() => setPhone(b.phone)}
+                  >
+                    <View style={s.contactAvatar}>
+                      <Text style={s.contactAvatarText}>{b.display_name.trim().charAt(0).toUpperCase() || '?'}</Text>
+                    </View>
+                    <Text style={s.contactName} numberOfLines={1}>{b.display_name.split(' ')[0]}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </>
+          )}
 
           {/* Recipient */}
           <View style={s.sectionTitleRow}>
@@ -239,6 +273,14 @@ const s = StyleSheet.create({
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg, marginBottom: spacing.sm },
   sectionAccent: { width: 4, height: 16, borderRadius: 2, backgroundColor: colors.primary[500] },
   sectionTitle: { flex: 1, fontSize: typography.fontSize.sm, fontWeight: '700', color: colors.dark },
+  contactsRow: { gap: spacing.md, paddingBottom: spacing.xs },
+  contactChip: { alignItems: 'center', width: 64, gap: 6 },
+  contactAvatar: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: colors.primary[100], alignItems: 'center', justifyContent: 'center',
+  },
+  contactAvatarText: { fontSize: typography.fontSize.base, fontWeight: '800', color: colors.primary[700] },
+  contactName: { fontSize: typography.fontSize.xs, color: colors.dark, fontWeight: '600', textAlign: 'center' },
   fieldCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.neutral[200],

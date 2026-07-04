@@ -19,7 +19,7 @@ export async function createPaymentRequest(params: {
 }): Promise<{ payerName: string }> {
   const payer = await lookupRecipient(params.payerPhone);
   if (!payer) {
-    throw new Error('Aucun compte Soutra-Explore avec ce numéro');
+    throw new Error('Aucun compte Soutra-Playce avec ce numéro');
   }
   if (payer.id === params.requesterId) {
     throw new Error("Tu ne peux pas te demander de l'argent à toi-même");

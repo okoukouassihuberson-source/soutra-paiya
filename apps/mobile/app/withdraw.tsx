@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, Text, Pressable, TextInput, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { colors, typography, radius, spacing, formatXOF, computeWithdrawalFee } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { requestWithdrawal, type WithdrawParams } from '@/lib/geniuspay';
@@ -58,6 +58,7 @@ export default function Withdraw() {
   const amountValid = amountNum >= MIN_XOF && amountNum <= balance;
   const phoneValid = PHONE_RE.test(phone);
   const canSubmit = kycVerified && amountValid && phoneValid && !!provider && !submitting;
+  const fee = useMemo(() => computeWithdrawalFee(amountNum), [amountNum]);
 
   const handleWithdraw = async () => {
     if (!provider || !amountValid || !phoneValid) return;
@@ -65,7 +66,7 @@ export default function Withdraw() {
       setSubmitting(true);
       const result = await requestWithdrawal({ amountXof: amountNum, provider, phone });
       const msg = result.status === 'success'
-        ? `${formatXOF(amountNum)} ont été envoyés vers ton compte ${provider.toUpperCase()}.`
+        ? `${formatXOF(fee.netXof)} ont été envoyés vers ton compte ${provider.toUpperCase()} (commission 1 % : ${formatXOF(fee.feeXof)}).`
         : `Ton retrait de ${formatXOF(amountNum)} est en cours de traitement.`;
       Alert.alert('Retrait enregistré', msg, [{ text: 'OK', onPress: () => router.back() }]);
     } catch (err: any) {
@@ -135,6 +136,16 @@ export default function Withdraw() {
               {amountNum > balance ? `Solde insuffisant (${formatXOF(balance)}).` : `Minimum ${formatXOF(MIN_XOF)}.`}
             </Text>
           )}
+          {amountValid && (
+            <View style={s.feeBox}>
+              <Text style={s.feeBoxText}>
+                Commission 1 % : <Text style={s.feeBoxAmount}>{formatXOF(fee.feeXof)}</Text>
+              </Text>
+              <Text style={s.feeBoxText}>
+                Tu recevras <Text style={s.feeBoxAmount}>{formatXOF(fee.netXof)}</Text>
+              </Text>
+            </View>
+          )}
 
           {/* Provider */}
           <View style={s.sectionTitleRow}>
@@ -192,9 +203,10 @@ export default function Withdraw() {
               <Ionicons name="time-outline" size={18} color={colors.primary[500]} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.infoTitle}>Traitement Paystack</Text>
+              <Text style={s.infoTitle}>Traitement instantané</Text>
               <Text style={s.infoText}>
                 Ton solde est débité immédiatement. En cas d'échec, il est automatiquement recrédité.
+                Les retraits sont soumis à une commission fixe de 1 %.
               </Text>
             </View>
           </View>
@@ -255,6 +267,18 @@ const s = StyleSheet.create({
   fieldCardError: { borderColor: colors.danger },
   amountInput: { flex: 1, fontSize: 28, fontWeight: '700', color: colors.dark, padding: 0 },
   amountCurrency: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.neutral[500] },
+  feeBox: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.neutral[50],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: 2,
+  },
+  feeBoxText: { fontSize: typography.fontSize.xs, color: colors.neutral[600] },
+  feeBoxAmount: { fontWeight: '800', color: colors.dark },
   phoneInput: { flex: 1, fontSize: typography.fontSize.base, color: colors.dark, padding: 0, paddingVertical: 4 },
   errorHint: { marginTop: spacing.xs, fontSize: typography.fontSize.xs, color: colors.danger, fontWeight: '600' },
   providerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

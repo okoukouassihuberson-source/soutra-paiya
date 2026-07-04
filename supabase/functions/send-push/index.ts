@@ -10,6 +10,7 @@
 //   - messages              -> « X t'a envoyé un message »
 //   - payment_requests      -> « X te demande Y FCFA »
 //   - transactions          -> « Tu as reçu Y FCFA de X » (transferts P2P)
+//   - loyalty_transactions  -> « +X points fidélité 🎉 » (gain/bonus mission)
 //   - profile_likes         -> « C'est un match avec X ! » (si like mutuel)
 //   - post_comments         -> « X a commenté ton post »
 //   - reservations (UPDATE) -> « Ta réservation chez X est confirmée »
@@ -102,32 +103,30 @@ async function buildNotifications(
       return out;
     }
 
-    // 2) Cashback automatique (migration 0051) → "+X FCFA cashback ✨"
-    //    Le trigger SQL tg_transactions_apply_cashback insère une nouvelle
-    //    tx type='cashback' status='success' juste après chaque paiement
-    //    marchand confirmé. On notifie le bénéficiaire avec le plan source.
-    if (r.type === "cashback" && r.status === "success" && r.user_id) {
-      const planCode = typeof r.metadata?.plan_code === "string"
-        ? (r.metadata!.plan_code as string)
-        : null;
-      const planName = await getPlanDisplayName(svc, planCode ?? undefined);
-      const bps = typeof r.metadata?.cashback_bps === "number"
-        ? (r.metadata!.cashback_bps as number)
-        : null;
-      const rate = bps != null
-        ? `${(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)} %`
-        : null;
+    return out;
+  }
+
+  // Points fidélité gagnés (migration 0068) → "+X points fidélité 🎉"
+  // Le trigger SQL trg_transactions_apply_loyalty insère une nouvelle ligne
+  // loyalty_transactions(kind='earn'|'bonus') juste après chaque paiement
+  // marchand confirmé (ou mission accomplie). Nécessite un Database Webhook
+  // Supabase sur loyalty_transactions (INSERT) → send-push, à configurer côté
+  // dashboard (pas géré par les migrations, cf. supabase/config.toml).
+  if (table === "loyalty_transactions") {
+    const r = record as {
+      user_id?: string;
+      kind?: string;
+      points?: number;
+      description?: string | null;
+    };
+    if ((r.kind === "earn" || r.kind === "bonus") && r.user_id && (r.points ?? 0) > 0) {
       out.push({
         user_id: r.user_id,
-        title: `+${fmtXof(r.amount_xof || 0)} cashback ✨`,
-        body: rate
-          ? `Plan ${planName} (${rate}) crédité sur ton wallet.`
-          : `Crédit sur ton wallet — merci pour ta fidélité Soutra-Explore.`,
-        data: { route: "/cashback", kind: "cashback_credit" },
+        title: `+${r.points} points fidélité 🎉`,
+        body: r.description || "Crédité sur ton compte fidélité Soutra-Playce.",
+        data: { route: "/loyalty", kind: "loyalty_credit" },
       });
-      return out;
     }
-
     return out;
   }
 
@@ -313,7 +312,7 @@ async function buildNotifications(
       out.push({
         user_id: r.user_id,
         title: "Ton abonnement expire demain ⏰",
-        body: `${planName} se termine le ${endDate}. Renouvelle pour conserver ton cashback.`,
+        body: `${planName} se termine le ${endDate}. Renouvelle pour conserver tes avantages.`,
         data: { route: "/subscribe", kind: "expiring_1d" },
       });
     }
@@ -511,7 +510,7 @@ function renderSubscribeSuccessEmail(p: {
           <h1 style="margin:0 0 8px;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#10b981;">✓ Paiement confirmé</h1>
           <h2 style="margin:0 0 16px;font-size:24px;font-weight:800;color:#fff;">Bienvenue dans ${p.planName} 🎉</h2>
           <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#E5E7EB;">
-            Ton abonnement <strong style="color:#fff;">${p.planName}</strong> est activé. Tu peux profiter de tous tes avantages dès maintenant — cashback, accès VVIP, concierge IA et plus.
+            Ton abonnement <strong style="color:#fff;">${p.planName}</strong> est activé. Tu peux profiter de tous tes avantages dès maintenant — accès VVIP, concierge IA et plus.
           </p>
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0E1116;border-radius:12px;padding:16px 20px;margin:0 0 24px;font-size:14px;">
             <tr><td style="padding:8px 0;color:#9CA3AF;">Plan</td><td style="padding:8px 0;text-align:right;color:#fff;font-weight:700;">${p.planName}</td></tr>
@@ -530,7 +529,7 @@ function renderSubscribeSuccessEmail(p: {
             Une question ? Réponds à cet email ou contacte <strong>support@soutra-paiya.com</strong>.
           </p>
           <p style="margin:8px 0 0;font-size:11px;color:#6B7280;text-align:center;">
-            Cet email confirme un paiement effectué sur ton compte Soutra-Explore.
+            Cet email confirme un paiement effectué sur ton compte Soutra-Playce.
           </p>
         </td></tr>
       </table>
@@ -555,7 +554,7 @@ async function sendResendEmail(
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { ok: false, error: "RESEND_API_KEY_MISSING" };
   const from = Deno.env.get("RESEND_FROM")
-    || "Soutra-Explore <noreply@soutra-paiya.com>";
+    || "Soutra-Playce <noreply@soutra-paiya.com>";
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",

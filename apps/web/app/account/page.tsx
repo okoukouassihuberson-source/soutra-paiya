@@ -4,8 +4,8 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { AccountView } from './_components/AccountView';
 
 export const metadata: Metadata = {
-  title: 'Mon compte — Soutra-Explore',
-  description: 'Gère ton abonnement Soutra-Explore : plan actuel, échéances, historique de paiement, résiliation.',
+  title: 'Mon compte — Soutra-Playce',
+  description: 'Gère ton abonnement Soutra-Playce : plan actuel, échéances, historique de paiement, résiliation.',
 };
 
 /**
@@ -34,7 +34,7 @@ export default async function AccountPage() {
     { data: subData },
     { data: subHistory },
     { data: txHistory },
-    { data: cashbackStats },
+    { data: loyaltyStats },
   ] = await Promise.all([
     (sb as any)
       .from('profiles')
@@ -56,16 +56,16 @@ export default async function AccountPage() {
       .eq('provider', 'paystack')
       .order('created_at', { ascending: false })
       .limit(30),
-    // RPC de la migration 0051. Si non appliquée → retourne null et l'UI
+    // RPC de la migration 0068. Si non appliquée → retourne null et l'UI
     // affiche un fallback. Pas de crash.
-    (sb as any).rpc('get_my_cashback_stats', { p_window_days: 30 }),
+    (sb as any).rpc('get_my_loyalty_stats', { p_window_days: 30 }),
   ]);
 
   // Récupère le catalogue des plans pour afficher display_name dans
   // l'historique (sinon on n'a que le code).
   const { data: plans } = await (sb as any)
     .from('subscription_plans')
-    .select('code, display_name, price_monthly_xof, price_yearly_xof, cashback_bps, accent_color')
+    .select('code, display_name, price_monthly_xof, price_yearly_xof, accent_color')
     .order('display_order', { ascending: true });
 
   // Filtre les transactions liées aux subscriptions (metadata.purpose).
@@ -80,7 +80,7 @@ export default async function AccountPage() {
       subscriptionHistory={subHistory ?? []}
       transactionHistory={subscriptionTxs}
       plans={plans ?? []}
-      cashbackStats={cashbackStats ?? null}
+      loyaltyStats={loyaltyStats ?? null}
     />
   );
 }

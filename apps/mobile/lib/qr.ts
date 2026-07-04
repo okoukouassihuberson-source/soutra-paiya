@@ -1,5 +1,5 @@
 // ============================================================================
-// QR de paiement Soutra-Explore — encodage / décodage.
+// QR de paiement Soutra-Playce — encodage / décodage.
 // Module pur (aucune dépendance React Native). Un QR encode l'identité du
 // destinataire, et éventuellement un montant.
 // ============================================================================
@@ -22,7 +22,7 @@ export function buildPaymentQr(data: PaymentQr): string {
   });
 }
 
-// Analyse un QR scanné. Renvoie null si ce n'est pas un QR Soutra-Explore valide.
+// Analyse un QR scanné. Renvoie null si ce n'est pas un QR Soutra-Playce valide.
 export function parsePaymentQr(raw: string): PaymentQr | null {
   let obj: any;
   try {

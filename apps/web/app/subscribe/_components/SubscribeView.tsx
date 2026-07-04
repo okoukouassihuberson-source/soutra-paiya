@@ -12,7 +12,7 @@ import { LandingNavbar } from '@/components/marketing/LandingNavbar';
 
 type AccentColor =
   | 'neutral'      // Free
-  | 'orange'       // Standard (couleurs Soutra-Explore)
+  | 'orange'       // Standard (couleurs Soutra-Playce)
   | 'blue-purple'  // Pro
   | 'purple-gold'  // Premium
   | 'black-gold';  // Soutra Premium
@@ -23,7 +23,6 @@ interface Plan {
   tagline: string | null;
   price_monthly_xof: number;
   price_yearly_xof: number;
-  cashback_bps: number;
   display_order: number;
   is_recommended: boolean;
   is_prestige: boolean;
@@ -63,16 +62,6 @@ interface CompareRow {
   values: Record<Plan['code'], CompareCell>;
 }
 const COMPARE_ROWS: CompareRow[] = [
-  {
-    feature: 'Cashback',
-    values: {
-      free: '1 %',
-      standard: '1 %',
-      pro: '2 %',
-      premium: '3 %',
-      soutra_premium: '5 %',
-    },
-  },
   {
     feature: 'Notifications prioritaires',
     values: { free: false, standard: true, pro: true, premium: true, soutra_premium: true },
@@ -235,7 +224,7 @@ export function SubscribeView({
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white">
       {/* Navbar site (fixed top). Sur bg light la nav dark reste lisible et
-          garde la cohérence avec home + /cashback qui l'utilisent aussi. */}
+          garde la cohérence avec home + /loyalty qui l'utilisent aussi. */}
       <LandingNavbar />
 
       {/* Glow background — premium fintech */}
@@ -287,16 +276,16 @@ export function SubscribeView({
         <section className="mx-auto max-w-3xl text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-500/30 bg-primary-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
             <span className="h-1.5 w-1.5 animate-glow-pulse rounded-full bg-primary-500" />
-            Premium Soutra-Explore
+            Premium Soutra-Playce
           </div>
           <h1 className="font-display text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             Choisissez votre expérience{' '}
             <span className="bg-gradient-to-r from-primary-500 via-purple-500 to-amber-500 bg-clip-text text-transparent">
-              Soutra-Explore
+              Soutra-Playce
             </span>
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 sm:text-lg">
-            Profitez de cashback, d&apos;avantages exclusifs et d&apos;une expérience personnalisée adaptée à votre style de vie.
+            Profitez d&apos;avantages exclusifs et d&apos;une expérience personnalisée adaptée à votre style de vie.
           </p>
 
           {/* Billing toggle */}
@@ -321,9 +310,25 @@ export function SubscribeView({
           </div>
         </section>
 
-        {/* ═══════════ CASHBACK SIMULATOR ═══════════ */}
+        {/* ═══════════ TEASER FIDÉLITÉ ═══════════ */}
         <section className="mt-20 sm:mt-28">
-          <CashbackSimulator plans={sortedPlans} billing={billing} />
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-amber-500/30 bg-amber-500/5 p-8 text-center sm:text-left">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Programme de fidélité</p>
+              <h2 className="mt-2 font-display text-2xl font-black tracking-tight sm:text-3xl">
+                Gagne des points sur chaque paiement
+              </h2>
+              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                100 FCFA dépensés = 1 point, quel que soit ton plan. Échange-les contre des récompenses.
+              </p>
+            </div>
+            <Link
+              href="/loyalty"
+              className="shrink-0 rounded-full bg-gradient-to-r from-amber-500 to-primary-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition hover:opacity-90"
+            >
+              Découvrir la fidélité
+            </Link>
+          </div>
         </section>
 
         {/* ═══════════ COMPARISON TABLE ═══════════ */}
@@ -425,7 +430,6 @@ function PlanCard({
 }) {
   const price = billing === 'monthly' ? plan.price_monthly_xof : plan.price_yearly_xof;
   const monthlyEq = billing === 'yearly' ? Math.round(price / 12) : price;
-  const cashbackPct = (plan.cashback_bps / 100).toFixed(plan.cashback_bps % 100 === 0 ? 0 : 1);
 
   const style = getCardStyle(plan.accent_color);
 
@@ -459,12 +463,6 @@ function PlanCard({
       {plan.tagline && (
         <p className={`text-sm ${style.tagline}`}>{plan.tagline}</p>
       )}
-
-      {/* Cashback badge */}
-      <div className={`mt-4 inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${style.cashbackBadge}`}>
-        <span>💰</span>
-        Cashback {cashbackPct} %
-      </div>
 
       {/* Prix */}
       <div className="mt-6 flex items-baseline gap-1">
@@ -545,133 +543,6 @@ function PlanIcon({ code, className }: { code: Plan['code']; className?: string 
     ),
   };
   return <span className={className}>{path[code]}</span>;
-}
-
-function CashbackSimulator({ plans, billing }: { plans: Plan[]; billing: BillingPeriod }) {
-  const [monthly, setMonthly] = useState<number>(50000);
-  const sb = supabaseBrowser();
-  const sidRef = useRef<string>('');
-  if (typeof window !== 'undefined' && !sidRef.current) {
-    sidRef.current = getSessionId();
-  }
-
-  // Tracking dépenses simulées (avec debounce simple via useEffect)
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      (sb.rpc as any)('track_subscription_event', {
-        p_kind: 'plan_view',
-        p_plan_code: null,
-        p_metadata: { simulator_amount_xof: monthly },
-        p_session_id: sidRef.current,
-      });
-    }, 1500);
-    return () => window.clearTimeout(t);
-  }, [monthly, sb]);
-
-  return (
-    <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white/80 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/80">
-      <div className="border-b border-neutral-200 bg-gradient-to-br from-primary-500/10 via-transparent to-purple-500/10 p-6 dark:border-neutral-800 sm:p-8">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">Simulateur</p>
-            <h2 className="mt-2 font-display text-2xl font-black tracking-tight sm:text-3xl">
-              Estime tes économies
-            </h2>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              Selon tes dépenses mensuelles avec Soutra-Explore.
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">Période</p>
-            <p className="mt-0.5 text-sm font-bold capitalize">{billing === 'monthly' ? 'Mensuelle' : 'Annuelle'}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6 sm:p-8">
-        <label className="block">
-          <span className="block text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-            Combien dépenses-tu chaque mois ?
-          </span>
-          <div className="mt-3 flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-sm focus-within:border-primary-500 dark:border-neutral-700 dark:bg-neutral-950">
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={100000000}
-              step={1000}
-              value={monthly}
-              onChange={(e) => {
-                const n = Number(e.target.value);
-                if (Number.isFinite(n) && n >= 0) setMonthly(n);
-              }}
-              className="w-full bg-transparent font-mono text-2xl font-bold text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-white sm:text-3xl"
-              placeholder="50 000"
-              aria-label="Montant dépensé en FCFA chaque mois"
-            />
-            <span className="shrink-0 text-sm font-semibold text-neutral-500 dark:text-neutral-400">FCFA / mois</span>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {[20000, 50000, 100000, 250000, 500000].map((preset) => (
-              <button
-                key={preset}
-                onClick={() => setMonthly(preset)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                  monthly === preset
-                    ? 'border-primary-500 bg-primary-500/10 text-primary-600 dark:text-primary-400'
-                    : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400'
-                }`}
-              >
-                {formatXOF(preset)}
-              </button>
-            ))}
-          </div>
-        </label>
-
-        {/* Résultats par plan */}
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {plans.map((p) => {
-            const cashbackMonthly = Math.round((monthly * p.cashback_bps) / 10000);
-            const cashbackYearly = cashbackMonthly * 12;
-            const planCost = billing === 'monthly' ? p.price_monthly_xof : p.price_yearly_xof;
-            const planCostMonthly = billing === 'yearly' ? Math.round(planCost / 12) : planCost;
-            const netMonthly = cashbackMonthly - planCostMonthly;
-            const netPositive = netMonthly >= 0;
-            const tone = getCardStyle(p.accent_color);
-
-            return (
-              <div
-                key={p.code}
-                className={`rounded-2xl border p-4 transition ${tone.simulatorBorder} ${p.is_recommended ? 'ring-2 ring-blue-500/40' : ''}`}
-              >
-                <p className={`text-[11px] font-bold uppercase tracking-wider ${tone.simulatorAccent}`}>
-                  {p.display_name}
-                </p>
-                <p className="mt-3 font-display text-xl font-black tracking-tight text-neutral-900 dark:text-white">
-                  {formatXOF(cashbackMonthly)}
-                </p>
-                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">cashback / mois</p>
-                <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    Soit <strong className="text-neutral-900 dark:text-white">{formatXOF(cashbackYearly)}</strong> / an
-                  </p>
-                  {planCostMonthly > 0 && (
-                    <p className={`mt-1 text-xs font-semibold ${netPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                      Net {netPositive ? '+' : ''}{formatXOF(netMonthly)} / mois
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <p className="mt-6 text-xs text-neutral-500 dark:text-neutral-500">
-          ⓘ Estimation basée sur le taux de cashback de chaque plan, appliqué au montant indiqué. Les frais Mobile Money et plafonds Soutra-Explore ne sont pas inclus.
-        </p>
-      </div>
-    </div>
-  );
 }
 
 function ComparisonTable({ plans }: { plans: Plan[] }) {
@@ -923,15 +794,12 @@ interface CardStyle {
   tagline: string;
   iconBg: string;
   iconColor: string;
-  cashbackBadge: string;
   price: string;
   priceUnit: string;
   checkBg: string;
   checkIcon: string;
   featureText: string;
   cta: string;
-  simulatorBorder: string;
-  simulatorAccent: string;
 }
 
 function getCardStyle(accent: AccentColor): CardStyle {
@@ -943,15 +811,12 @@ function getCardStyle(accent: AccentColor): CardStyle {
         tagline: 'text-neutral-500 dark:text-neutral-500',
         iconBg: 'bg-neutral-100 dark:bg-neutral-800',
         iconColor: 'text-neutral-700 dark:text-neutral-300',
-        cashbackBadge: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
         price: 'text-neutral-900 dark:text-white',
         priceUnit: 'text-neutral-500 dark:text-neutral-500',
         checkBg: 'bg-neutral-200 dark:bg-neutral-700',
         checkIcon: 'text-neutral-700 dark:text-neutral-300',
         featureText: 'text-neutral-700 dark:text-neutral-300',
         cta: 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200',
-        simulatorBorder: 'border-neutral-200 dark:border-neutral-800',
-        simulatorAccent: 'text-neutral-600 dark:text-neutral-400',
       };
     case 'orange':
       return {
@@ -960,15 +825,12 @@ function getCardStyle(accent: AccentColor): CardStyle {
         tagline: 'text-primary-600 dark:text-primary-400',
         iconBg: 'bg-primary-500/15',
         iconColor: 'text-primary-600 dark:text-primary-400',
-        cashbackBadge: 'bg-primary-500/15 text-primary-700 dark:text-primary-300',
         price: 'text-neutral-900 dark:text-white',
         priceUnit: 'text-neutral-500 dark:text-neutral-500',
         checkBg: 'bg-primary-500/15',
         checkIcon: 'text-primary-600 dark:text-primary-400',
         featureText: 'text-neutral-700 dark:text-neutral-200',
         cta: 'bg-gradient-to-r from-primary-500 to-amber-500 text-white shadow-lg shadow-primary-500/30 hover:opacity-90',
-        simulatorBorder: 'border-primary-500/30 dark:border-primary-500/30',
-        simulatorAccent: 'text-primary-600 dark:text-primary-400',
       };
     case 'blue-purple':
       return {
@@ -977,15 +839,12 @@ function getCardStyle(accent: AccentColor): CardStyle {
         tagline: 'text-blue-600 dark:text-blue-400',
         iconBg: 'bg-gradient-to-br from-blue-500 to-purple-600 text-white',
         iconColor: 'text-white',
-        cashbackBadge: 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-700 dark:text-blue-300',
         price: 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent',
         priceUnit: 'text-neutral-500 dark:text-neutral-500',
         checkBg: 'bg-gradient-to-br from-blue-500 to-purple-600 text-white',
         checkIcon: 'text-white',
         featureText: 'text-neutral-800 dark:text-neutral-100',
         cta: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/30 hover:opacity-90',
-        simulatorBorder: 'border-blue-500/30 bg-blue-500/5 dark:border-blue-500/30',
-        simulatorAccent: 'text-blue-600 dark:text-blue-400',
       };
     case 'purple-gold':
       return {
@@ -994,15 +853,12 @@ function getCardStyle(accent: AccentColor): CardStyle {
         tagline: 'text-purple-600 dark:text-purple-400',
         iconBg: 'bg-gradient-to-br from-purple-500 to-amber-500 text-white',
         iconColor: 'text-white',
-        cashbackBadge: 'bg-gradient-to-r from-purple-500/20 to-amber-500/20 text-purple-700 dark:text-purple-300',
         price: 'bg-gradient-to-r from-purple-600 to-amber-500 bg-clip-text text-transparent',
         priceUnit: 'text-neutral-500 dark:text-neutral-500',
         checkBg: 'bg-gradient-to-br from-purple-500 to-amber-500 text-white',
         checkIcon: 'text-white',
         featureText: 'text-neutral-800 dark:text-neutral-100',
         cta: 'bg-gradient-to-r from-purple-500 to-amber-500 text-white shadow-xl shadow-purple-500/30 hover:opacity-90',
-        simulatorBorder: 'border-purple-500/30 dark:border-purple-500/30',
-        simulatorAccent: 'text-purple-600 dark:text-purple-400',
       };
     case 'black-gold':
       return {
@@ -1011,15 +867,12 @@ function getCardStyle(accent: AccentColor): CardStyle {
         tagline: 'text-amber-400/80',
         iconBg: 'bg-gradient-to-br from-amber-400 to-amber-600',
         iconColor: 'text-neutral-900',
-        cashbackBadge: 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/40',
         price: 'bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text text-transparent',
         priceUnit: 'text-neutral-400',
         checkBg: 'bg-gradient-to-br from-amber-400 to-amber-600 text-neutral-900',
         checkIcon: 'text-neutral-900',
         featureText: 'text-neutral-200',
         cta: 'bg-gradient-to-r from-amber-400 to-amber-600 text-neutral-900 shadow-xl shadow-amber-500/30 hover:opacity-90',
-        simulatorBorder: 'border-amber-500/40 bg-amber-500/5 dark:border-amber-500/40',
-        simulatorAccent: 'text-amber-600 dark:text-amber-400',
       };
   }
 }

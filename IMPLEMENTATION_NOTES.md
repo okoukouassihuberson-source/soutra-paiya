@@ -1,4 +1,4 @@
-# Soutra-Explore Implementation Progress
+# Soutra-Playce Implementation Progress
 
 ## v0.1.2 — Reservation Flow Complete
 

@@ -66,7 +66,7 @@ export const PRO_KIND_META: Record<string, { label: string; emoji: string; color
   ticket_commission:            { label: 'Commission billetterie',  emoji: '🎟️', color: '#EC4899' },
   marketplace_commission:       { label: 'Commission marketplace',  emoji: '🛍️', color: '#F43F5E' },
   affiliation_commission:       { label: 'Commission affiliation',  emoji: '🤝', color: '#06B6D4' },
-  user_cashback:                { label: 'Cashback utilisateur',    emoji: '🎁', color: '#22C55E' },
+  user_cashback:                { label: 'Ristourne utilisateur (historique)', emoji: '🎁', color: '#22C55E' },
   loyalty_bonus:                { label: 'Bonus fidélité',          emoji: '⭐', color: '#EAB308' },
   featured_listing:             { label: 'Mise en avant',           emoji: '⬆️', color: '#6366F1' },
   advertising:                  { label: 'Publicité',               emoji: '📣', color: '#6366F1' },

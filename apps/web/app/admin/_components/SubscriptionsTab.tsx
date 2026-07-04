@@ -20,7 +20,6 @@ interface PlanMetrics {
   code: PlanCode;
   display_name: string;
   price_monthly_xof: number;
-  cashback_bps: number;
   is_recommended: boolean;
   is_prestige: boolean;
   display_order: number;
@@ -333,7 +332,6 @@ export function SubscriptionsTab() {
                 <th className="px-6 py-3">Plan</th>
                 <th className="px-6 py-3">Abonnés</th>
                 <th className="px-6 py-3">MRR</th>
-                <th className="px-6 py-3">Cashback</th>
                 <th className="px-6 py-3">Clics ({stats.window_days}j)</th>
                 <th className="px-6 py-3">Souscriptions ({stats.window_days}j)</th>
                 <th className="px-6 py-3">Conv. clic→abo</th>
@@ -363,7 +361,6 @@ export function SubscriptionsTab() {
                     </td>
                     <td className="px-6 py-3 font-mono font-medium">{p.active_subs}</td>
                     <td className="px-6 py-3 font-mono">{formatXOF(p.mrr_xof)}</td>
-                    <td className="px-6 py-3 text-emerald-400">{(p.cashback_bps / 100).toFixed(p.cashback_bps % 100 === 0 ? 0 : 1)}%</td>
                     <td className="px-6 py-3 text-neutral-300">{p.clicks_30d}</td>
                     <td className="px-6 py-3 text-emerald-400">{p.successes_30d}</td>
                     <td className="px-6 py-3 font-mono text-xs">{conv}%</td>

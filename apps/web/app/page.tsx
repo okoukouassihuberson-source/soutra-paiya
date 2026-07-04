@@ -413,7 +413,7 @@ export default function HomePage() {
               </span>
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base text-neutral-300 sm:text-lg">
-              Cashback jusqu&apos;à <strong className="text-white">5 %</strong>, accès VVIP, concierge dédié.
+              Programme de fidélité inclus, accès VVIP, concierge dédié.
               Trois formules pour transformer chaque sortie en récompense.
             </p>
           </div>
@@ -433,9 +433,6 @@ export default function HomePage() {
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="font-display text-3xl font-black tracking-tight">2 000</span>
                 <span className="text-sm text-neutral-500">FCFA / mois</span>
-              </div>
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary-500/15 px-2.5 py-1 text-xs font-bold text-primary-300">
-                💰 Cashback 1 %
               </div>
               <ul className="mt-5 space-y-2 text-sm text-neutral-300">
                 <li className="flex items-start gap-2"><Check />Notifications prioritaires</li>
@@ -460,9 +457,6 @@ export default function HomePage() {
                 <span className="bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text font-display text-3xl font-black tracking-tight text-transparent">5 000</span>
                 <span className="text-sm text-neutral-400">FCFA / mois</span>
               </div>
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-2.5 py-1 text-xs font-bold text-blue-300">
-                💰 Cashback 2 %
-              </div>
               <ul className="mt-5 space-y-2 text-sm text-neutral-200">
                 <li className="flex items-start gap-2"><Check tone="blue" />Sans publicité</li>
                 <li className="flex items-start gap-2"><Check tone="blue" />Concierge IA Sia illimité</li>
@@ -484,13 +478,10 @@ export default function HomePage() {
               <h3 className="mt-4 bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text font-display text-xl font-black tracking-tight text-transparent">
                 Soutra Premium
               </h3>
-              <p className="mt-1 text-sm text-amber-400/80">L&apos;élite Soutra-Explore</p>
+              <p className="mt-1 text-sm text-amber-400/80">L&apos;élite Soutra-Playce</p>
               <div className="mt-5 flex items-baseline gap-1">
                 <span className="bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text font-display text-3xl font-black tracking-tight text-transparent">30 000</span>
                 <span className="text-sm text-neutral-400">FCFA / mois</span>
-              </div>
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-300 ring-1 ring-amber-500/40">
-                💰 Cashback 5 %
               </div>
               <ul className="mt-5 space-y-2 text-sm text-neutral-200">
                 <li className="flex items-start gap-2"><Check tone="gold" />Accès VVIP + Réservations prioritaires</li>
@@ -718,8 +709,8 @@ export default function HomePage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/cashback" className="transition hover:text-white">
-                    Cashback jusqu&apos;à 5 %
+                  <Link href="/loyalty" className="transition hover:text-white">
+                    Programme de fidélité
                   </Link>
                 </li>
                 <li>
@@ -778,7 +769,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-neutral-800 pt-8 text-sm md:flex-row">
-            <span>© {new Date().getFullYear()} Soutra-Explore. Tous droits réservés.</span>
+            <span>© {new Date().getFullYear()} Soutra-Playce. Tous droits réservés.</span>
             <div className="flex gap-6">
               <a href="#" className="transition hover:text-white">
                 Instagram

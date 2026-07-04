@@ -4,8 +4,8 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { InvoiceView } from './_components/InvoiceView';
 
 export const metadata: Metadata = {
-  title: 'Facture — Soutra-Explore',
-  description: 'Facture de souscription Soutra-Explore',
+  title: 'Facture — Soutra-Playce',
+  description: 'Facture de souscription Soutra-Playce',
   robots: { index: false, follow: false }, // factures pas indexables
 };
 
@@ -51,7 +51,7 @@ export default async function InvoicePage({
     planCode
       ? (sb as any)
           .from('subscription_plans')
-          .select('code, display_name, price_monthly_xof, price_yearly_xof, cashback_bps')
+          .select('code, display_name, price_monthly_xof, price_yearly_xof')
           .eq('code', planCode)
           .maybeSingle()
       : Promise.resolve({ data: null }),

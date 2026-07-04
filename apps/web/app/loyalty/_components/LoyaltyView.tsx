@@ -8,45 +8,35 @@ import { LandingNavbar } from '@/components/marketing/LandingNavbar';
  *  TYPES                                              *
  * ─────────────────────────────────────────────────── */
 
-type PlanCode = 'free' | 'standard' | 'pro' | 'premium' | 'soutra_premium';
-
-interface Plan {
-  code: PlanCode;
-  display_name: string;
-  tagline: string | null;
-  price_monthly_xof: number;
-  cashback_bps: number;
-  display_order: number;
-  is_recommended: boolean;
-  is_prestige: boolean;
+interface Level {
+  code: string;
+  label: string;
+  min_points: number;
+  color: string;
+  emoji: string;
+  benefits: string[];
 }
 
-const PLAN_COLORS: Record<PlanCode, { from: string; to: string; text: string }> = {
-  free:           { from: 'from-neutral-300',  to: 'to-neutral-200',  text: 'text-neutral-700' },
-  standard:       { from: 'from-primary-500',  to: 'to-amber-500',    text: 'text-primary-600' },
-  pro:            { from: 'from-blue-500',     to: 'to-purple-600',   text: 'text-blue-500' },
-  premium:        { from: 'from-purple-500',   to: 'to-amber-500',    text: 'text-purple-500' },
-  soutra_premium: { from: 'from-neutral-900',  to: 'to-amber-500',    text: 'text-amber-500' },
-};
+interface Reward {
+  code: string;
+  label: string;
+  description: string | null;
+  points_cost: number;
+}
 
 /* ─────────────────────────────────────────────────── *
  *  MAIN VIEW                                          *
  * ─────────────────────────────────────────────────── */
 
-export function CashbackView({ plans }: { plans: Plan[] }) {
+export function LoyaltyView({ levels, rewards }: { levels: Level[]; rewards: Reward[] }) {
   const [monthlySpend, setMonthlySpend] = useState(50000);
 
-  const sortedPlans = useMemo(
-    () => [...plans].sort((a, b) => a.display_order - b.display_order),
-    [plans],
+  const sortedLevels = useMemo(
+    () => [...levels].sort((a, b) => a.min_points - b.min_points),
+    [levels],
   );
 
-  // Pour les highlights de la hero — taux mini/maxi automatiquement déduits
-  const maxCashbackBps = useMemo(
-    () => Math.max(...sortedPlans.map((p) => p.cashback_bps), 100),
-    [sortedPlans],
-  );
-  const maxCashbackPct = (maxCashbackBps / 100).toFixed(0);
+  const topLevel = sortedLevels[sortedLevels.length - 1];
 
   return (
     <main className="overflow-x-hidden bg-dark text-white">
@@ -56,39 +46,36 @@ export function CashbackView({ plans }: { plans: Plan[] }) {
       {/*  HERO                                                  */}
       {/* ═══════════════════════════════════════════════════════ */}
       <section className="relative min-h-[80dvh] pb-16 pt-24 sm:pt-28 lg:pb-24 lg:pt-36">
-        {/* Gradient orbs animés (premium look) */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-1/4 left-1/2 h-[700px] w-[1100px] -translate-x-1/2 animate-float rounded-full bg-gradient-to-br from-emerald-500/20 via-primary-500/15 to-amber-500/15 blur-[140px]" />
-          <div className="absolute -bottom-20 right-0 h-[400px] w-[400px] rounded-full bg-emerald-500/10 blur-[120px]" />
+          <div className="absolute -top-1/4 left-1/2 h-[700px] w-[1100px] -translate-x-1/2 animate-float rounded-full bg-gradient-to-br from-amber-500/20 via-primary-500/15 to-sky-500/15 blur-[140px]" />
+          <div className="absolute -bottom-20 right-0 h-[400px] w-[400px] rounded-full bg-amber-500/10 blur-[120px]" />
         </div>
 
         <div className="relative mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-emerald-400">
-            <span className="h-1.5 w-1.5 animate-glow-pulse rounded-full bg-emerald-500" />
-            Récompense automatique
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-400">
+            <span className="h-1.5 w-1.5 animate-glow-pulse rounded-full bg-amber-500" />
+            Programme de fidélité
           </div>
 
           <h1 className="mt-5 font-display text-4xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
-            Récupère{' '}
-            <span className="bg-gradient-to-r from-emerald-400 via-primary-400 to-amber-400 bg-clip-text text-transparent">
-              jusqu&apos;à {maxCashbackPct}%
+            Gagne des points{' '}
+            <span className="bg-gradient-to-r from-amber-400 via-primary-400 to-sky-400 bg-clip-text text-transparent">
+              sur chaque paiement
             </span>
-            <br />
-            sur chaque paiement
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base text-neutral-300 sm:text-lg lg:text-xl">
-            Le cashback Soutra-Explore est <strong className="text-white">automatique</strong>,
-            crédité directement sur ton wallet Soutra-Pay à chaque paiement marchand.
-            Aucune démarche, aucun seuil minimum.
+            <strong className="text-white">100 FCFA dépensés = 1 point.</strong> Progresse de Bronze
+            à Diamant et échange tes points contre des récompenses partenaires. Automatique,
+            sans démarche.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/subscribe"
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 via-primary-500 to-amber-500 px-8 py-4 font-display text-base font-bold text-white shadow-2xl shadow-emerald-500/30 transition hover:scale-[1.02] sm:text-lg"
+              href="/login"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-primary-500 to-sky-500 px-8 py-4 font-display text-base font-bold text-white shadow-2xl shadow-amber-500/30 transition hover:scale-[1.02] sm:text-lg"
             >
-              Choisir mon plan
+              Créer mon compte
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
@@ -102,15 +89,14 @@ export function CashbackView({ plans }: { plans: Plan[] }) {
             </a>
           </div>
 
-          {/* Mini "stats" hero */}
           <div className="mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-4 sm:gap-8">
             {[
               { value: 'Auto', label: 'Crédité instantanément' },
               { value: '0', label: 'Démarche' },
-              { value: maxCashbackPct + '%', label: 'Cashback maxi' },
+              { value: `${sortedLevels.length || 5}`, label: 'Niveaux à débloquer' },
             ].map((stat, i) => (
               <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl sm:p-6">
-                <p className="bg-gradient-to-r from-emerald-400 to-amber-400 bg-clip-text font-display text-2xl font-black tracking-tight text-transparent sm:text-3xl">
+                <p className="bg-gradient-to-r from-amber-400 to-sky-400 bg-clip-text font-display text-2xl font-black tracking-tight text-transparent sm:text-3xl">
                   {stat.value}
                 </p>
                 <p className="mt-1 text-[11px] uppercase tracking-wider text-neutral-400 sm:text-xs">
@@ -128,7 +114,7 @@ export function CashbackView({ plans }: { plans: Plan[] }) {
       <section className="border-t border-white/5 bg-neutral-950 py-16 sm:py-20 lg:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
               En 3 étapes
             </span>
             <h2 className="mt-3 font-display text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
@@ -141,48 +127,22 @@ export function CashbackView({ plans }: { plans: Plan[] }) {
               {
                 step: 1,
                 title: 'Tu paies un marchand',
-                body: 'Restaurant, événement, réservation — chaque paiement marchand sur Soutra-Pay déclenche le cashback.',
-                icon: (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <line x1="2" y1="10" x2="22" y2="10" />
-                  </svg>
-                ),
+                body: 'Restaurant, événement, réservation — chaque paiement marchand sur Soutra-Pay fait progresser ta fidélité.',
               },
               {
                 step: 2,
-                title: 'Soutra calcule ton cashback',
-                body: 'Selon ton plan actif : 1 % en Free, 2 % en Pro, jusqu\'à 5 % en Soutra Premium. Aucun plafond.',
-                icon: (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="4" y="2" width="16" height="20" rx="2" />
-                    <line x1="8" y1="6" x2="16" y2="6" />
-                    <line x1="8" y1="10" x2="16" y2="10" />
-                    <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" />
-                  </svg>
-                ),
+                title: 'Tu gagnes des points',
+                body: '100 FCFA dépensés = 1 point, quel que soit ton plan. Aucun plafond, aucune démarche.',
               },
               {
                 step: 3,
-                title: 'Crédité sur ton wallet',
-                body: 'Instantané, sans validation manuelle. Tu peux réutiliser tes FCFA cashback comme du solde normal.',
-                icon: (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 12 20 22 4 22 4 12" />
-                    <rect x="2" y="7" width="20" height="5" />
-                    <line x1="12" y1="22" x2="12" y2="7" />
-                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-                  </svg>
-                ),
+                title: 'Tu échanges tes points',
+                body: 'Contre des récompenses du catalogue, dès que tu as assez de points. Ton niveau (Bronze → Diamant) ne baisse jamais.',
               },
             ].map((s) => (
-              <div key={s.step} className="relative rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition hover:border-emerald-500/40 hover:bg-white/[0.05] sm:p-8">
-                <div className="absolute -top-4 right-6 rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-neutral-950 shadow-lg shadow-emerald-500/40">
+              <div key={s.step} className="relative rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition hover:border-amber-500/40 hover:bg-white/[0.05] sm:p-8">
+                <div className="absolute -top-4 right-6 rounded-full bg-amber-500 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-neutral-950 shadow-lg shadow-amber-500/40">
                   Étape {s.step}
-                </div>
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400">
-                  {s.icon}
                 </div>
                 <h3 className="mt-4 font-display text-xl font-black tracking-tight text-white">
                   {s.title}
@@ -200,98 +160,101 @@ export function CashbackView({ plans }: { plans: Plan[] }) {
       {/*  CALCULATEUR INTERACTIF                                */}
       {/* ═══════════════════════════════════════════════════════ */}
       <section id="calculateur" className="border-t border-white/5 bg-dark py-16 sm:py-20 lg:py-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
               Simulateur
             </span>
             <h2 className="mt-3 font-display text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-              Combien tu vas gagner ?
+              Combien de points tu vas gagner ?
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base text-neutral-400">
-              Indique tes dépenses marchand mensuelles. On calcule ton cashback annuel pour chaque plan, en temps réel.
+              Indique tes dépenses marchand mensuelles. On calcule tes points gagnés en temps réel.
             </p>
           </div>
 
-          <Calculator
-            plans={sortedPlans}
-            value={monthlySpend}
-            onChange={setMonthlySpend}
-          />
+          <Calculator value={monthlySpend} onChange={setMonthlySpend} topLevel={topLevel} />
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/*  TAUX PAR PLAN (cards visuelles)                       */}
+      {/*  NIVEAUX (cards visuelles)                             */}
       {/* ═══════════════════════════════════════════════════════ */}
       <section className="border-t border-white/5 bg-neutral-950 py-16 sm:py-20 lg:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
-              Comparatif
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
+              Progression
             </span>
             <h2 className="mt-3 font-display text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-              Plus tu montes, plus tu gagnes
+              Plus tu dépenses, plus tu montes
             </h2>
           </div>
 
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {sortedPlans.map((p) => {
-              const colors = PLAN_COLORS[p.code];
-              const pct = (p.cashback_bps / 100).toFixed(p.cashback_bps % 100 === 0 ? 0 : 1);
-              return (
-                <div
-                  key={p.code}
-                  className={`relative overflow-hidden rounded-3xl border p-6 ${
-                    p.is_prestige
-                      ? 'border-amber-500/40 bg-gradient-to-br from-neutral-900 to-black shadow-2xl shadow-amber-500/10'
-                      : p.is_recommended
-                      ? 'border-blue-500/40 bg-gradient-to-br from-blue-500/10 to-purple-500/10 lg:scale-105'
-                      : 'border-white/10 bg-white/[0.03]'
-                  }`}
-                >
-                  {p.is_recommended && (
-                    <div className="absolute -right-8 top-3 rotate-45 bg-blue-500 px-8 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
-                      Reco
-                    </div>
-                  )}
-                  {p.is_prestige && (
-                    <div className="absolute -right-8 top-3 rotate-45 bg-amber-500 px-8 py-0.5 text-[10px] font-black uppercase tracking-wider text-neutral-950">
-                      Élite
-                    </div>
-                  )}
-                  <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                    {p.display_name}
+            {sortedLevels.map((lvl) => (
+              <div
+                key={lvl.code}
+                className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-6"
+                style={{ borderColor: `${lvl.color}40` }}
+              >
+                <p className="text-4xl">{lvl.emoji}</p>
+                <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                  {lvl.label}
+                </p>
+                <p className="mt-1 font-display text-2xl font-black tracking-tight text-white">
+                  {lvl.min_points.toLocaleString('fr-FR')} pts
+                </p>
+                {lvl.benefits?.[0] && (
+                  <p className="mt-3 text-[11px] leading-relaxed text-neutral-400">
+                    {lvl.benefits[0]}
                   </p>
-                  <p className={`mt-3 bg-gradient-to-r ${colors.from} ${colors.to} bg-clip-text font-display text-5xl font-black tracking-tight text-transparent`}>
-                    {pct}%
-                  </p>
-                  <p className="mt-1 text-[11px] text-neutral-500">de cashback</p>
-                  <p className="mt-4 text-xs text-neutral-400">
-                    {p.price_monthly_xof === 0
-                      ? <span className="font-semibold text-white">Gratuit</span>
-                      : (
-                        <>
-                          <span className="font-semibold text-white">{p.price_monthly_xof.toLocaleString('fr-FR')} FCFA</span>
-                          {' '}/ mois
-                        </>
-                      )
-                    }
-                  </p>
-                </div>
-              );
-            })}
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
+      {/*  CATALOGUE DE RÉCOMPENSES                              */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {rewards.length > 0 && (
+        <section className="border-t border-white/5 bg-dark py-16 sm:py-20 lg:py-28">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
+                Catalogue
+              </span>
+              <h2 className="mt-3 font-display text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
+                Des récompenses à débloquer
+              </h2>
+            </div>
+
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {rewards.map((r) => (
+                <div key={r.code} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                  <p className="font-display text-lg font-black text-white">{r.label}</p>
+                  {r.description && (
+                    <p className="mt-2 text-sm text-neutral-400">{r.description}</p>
+                  )}
+                  <p className="mt-4 text-sm font-bold text-amber-400">
+                    {r.points_cost.toLocaleString('fr-FR')} pts
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════ */}
       {/*  FAQ                                                   */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 bg-dark py-16 sm:py-20 lg:py-28">
+      <section className="border-t border-white/5 bg-neutral-950 py-16 sm:py-20 lg:py-28">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
               Questions fréquentes
             </span>
             <h2 className="mt-3 font-display text-3xl font-black tracking-tight sm:text-4xl">
@@ -308,20 +271,20 @@ export function CashbackView({ plans }: { plans: Plan[] }) {
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  CTA FINAL                                             */}
       {/* ═══════════════════════════════════════════════════════ */}
-      <section className="border-t border-white/5 bg-gradient-to-br from-emerald-500/10 via-dark to-amber-500/10 py-16 sm:py-20 lg:py-28">
+      <section className="border-t border-white/5 bg-gradient-to-br from-amber-500/10 via-dark to-sky-500/10 py-16 sm:py-20 lg:py-28">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <h2 className="font-display text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
             Prêt à gagner sur chaque sortie ?
           </h2>
           <p className="mt-4 text-base text-neutral-300 sm:text-lg">
-            Active ton cashback en moins de 2 minutes. Paiement sécurisé par Paystack.
+            Crée ton compte en moins de 2 minutes et commence à cumuler des points dès ton premier paiement.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/subscribe"
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 via-primary-500 to-amber-500 px-8 py-4 font-display text-base font-bold text-white shadow-2xl shadow-emerald-500/30 transition hover:scale-[1.02] sm:text-lg"
+              href="/login"
+              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 via-primary-500 to-sky-500 px-8 py-4 font-display text-base font-bold text-white shadow-2xl shadow-amber-500/30 transition hover:scale-[1.02] sm:text-lg"
             >
-              Choisir mon plan
+              Créer mon compte
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
@@ -331,7 +294,7 @@ export function CashbackView({ plans }: { plans: Plan[] }) {
               href="/account"
               className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-6 py-3.5 text-sm font-semibold text-neutral-200 backdrop-blur-xl transition hover:border-white/40 hover:bg-white/10"
             >
-              Voir mon cashback
+              Voir ma fidélité
             </Link>
           </div>
         </div>
@@ -345,18 +308,23 @@ export function CashbackView({ plans }: { plans: Plan[] }) {
  * ─────────────────────────────────────────────────── */
 
 function Calculator({
-  plans, value, onChange,
+  value, onChange, topLevel,
 }: {
-  plans: Plan[];
   value: number;
   onChange: (v: number) => void;
+  topLevel: Level | undefined;
 }) {
   const PRESETS = [10000, 25000, 50000, 100000, 250000];
 
+  const monthlyPoints = Math.floor(value / 100);
+  const yearlyPoints = monthlyPoints * 12;
+  const monthsToTopLevel = topLevel && monthlyPoints > 0
+    ? Math.ceil(topLevel.min_points / monthlyPoints)
+    : null;
+
   return (
     <div className="mt-12 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl">
-      {/* Header avec input */}
-      <div className="border-b border-white/10 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 p-6 sm:p-10">
+      <div className="border-b border-white/10 bg-gradient-to-br from-amber-500/5 via-transparent to-sky-500/5 p-6 sm:p-10">
         <label className="block">
           <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
             Tes dépenses marchand mensuelles
@@ -388,7 +356,7 @@ function Calculator({
                 onClick={() => onChange(p)}
                 className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                   value === p
-                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300'
+                    ? 'border-amber-500 bg-amber-500/15 text-amber-300'
                     : 'border-white/10 bg-white/5 text-neutral-400 hover:border-white/20 hover:text-white'
                 }`}
               >
@@ -399,54 +367,30 @@ function Calculator({
         </label>
       </div>
 
-      {/* Résultats par plan */}
-      <div className="grid gap-3 p-6 sm:gap-4 sm:p-8 md:grid-cols-2 lg:grid-cols-5">
-        {plans.map((p) => {
-          const cashbackMonthly = Math.round((value * p.cashback_bps) / 10000);
-          const cashbackYearly = cashbackMonthly * 12;
-          const netYearly = cashbackYearly - p.price_monthly_xof * 12;
-          const colors = PLAN_COLORS[p.code];
-
-          return (
-            <div
-              key={p.code}
-              className={`rounded-2xl border p-4 transition ${
-                p.is_prestige
-                  ? 'border-amber-500/30 bg-gradient-to-br from-neutral-900 to-black'
-                  : p.is_recommended
-                  ? 'border-blue-500/30 bg-blue-500/5 ring-1 ring-blue-500/20'
-                  : 'border-white/10 bg-white/[0.03]'
-              }`}
-            >
-              <p className={`text-[11px] font-bold uppercase tracking-wider ${colors.text}`}>
-                {p.display_name}
-              </p>
-              <p className="mt-3 font-display text-2xl font-black tracking-tight text-white sm:text-3xl">
-                {cashbackMonthly.toLocaleString('fr-FR')}
-              </p>
-              <p className="text-[11px] text-neutral-500">FCFA / mois</p>
-              <div className="mt-3 border-t border-white/10 pt-3">
-                <p className="text-xs text-neutral-400">
-                  Soit <strong className="text-white">{cashbackYearly.toLocaleString('fr-FR')} FCFA</strong> / an
-                </p>
-                {p.price_monthly_xof > 0 && (
-                  <p className={`mt-1 text-[11px] font-semibold ${
-                    netYearly >= 0
-                      ? 'text-emerald-400'
-                      : 'text-amber-400'
-                  }`}>
-                    Net : {netYearly >= 0 ? '+' : ''}{netYearly.toLocaleString('fr-FR')} FCFA / an
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid gap-4 p-6 sm:p-8 md:grid-cols-3">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">Par mois</p>
+          <p className="mt-2 font-display text-3xl font-black text-white">{monthlyPoints.toLocaleString('fr-FR')} pts</p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">Par an</p>
+          <p className="mt-2 font-display text-3xl font-black text-white">{yearlyPoints.toLocaleString('fr-FR')} pts</p>
+        </div>
+        {topLevel && (
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
+              {topLevel.emoji} Niveau {topLevel.label}
+            </p>
+            <p className="mt-2 font-display text-lg font-black text-white">
+              {monthsToTopLevel ? `~${monthsToTopLevel} mois` : '—'}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-white/10 bg-dark/40 px-6 py-4 text-center">
         <p className="text-xs text-neutral-500">
-          ⓘ Estimation basée sur le taux cashback de chaque plan, appliqué au montant indiqué.
+          ⓘ Estimation basée sur 100 FCFA dépensés = 1 point, appliqué au montant indiqué.
         </p>
       </div>
     </div>
@@ -459,28 +403,24 @@ function Calculator({
 
 const FAQ = [
   {
-    q: 'Sur quels paiements ai-je droit au cashback ?',
-    a: 'Sur tous les paiements marchand (restaurants, événements, réservations) effectués via Soutra-Pay. Les rechargements wallet, les transferts entre amis et les retraits ne sont pas concernés. Les paiements d\'abonnement Premium eux-mêmes n\'ouvrent pas droit au cashback (sinon ça serait une boucle absurde).',
+    q: 'Sur quels paiements je gagne des points ?',
+    a: 'Sur tous les paiements marchand (restaurants, événements, réservations) effectués via Soutra-Pay. Les rechargements wallet, les transferts entre amis et les retraits ne sont pas concernés. Les paiements d\'abonnement eux-mêmes n\'ouvrent pas droit à des points.',
   },
   {
-    q: 'Quand le cashback est-il crédité ?',
-    a: 'Instantanément, dès que le paiement marchand est confirmé. Le crédit apparaît sous forme d\'une transaction "Cashback +X FCFA" dans ton historique wallet, avec une push notification si tu as l\'app mobile.',
+    q: 'Quand les points sont-ils crédités ?',
+    a: 'Instantanément, dès que le paiement marchand est confirmé. Le crédit apparaît dans ton historique fidélité, avec une notification si tu as l\'app mobile.',
+  },
+  {
+    q: 'Mon niveau peut-il redescendre ?',
+    a: 'Non. Ton niveau est basé sur le cumul de points gagnés depuis ton inscription, qui ne baisse jamais — même si tu dépenses des points contre des récompenses.',
+  },
+  {
+    q: 'Comment échanger mes points ?',
+    a: 'Depuis l\'app ou ton compte, va dans "Fidélité" puis choisis une récompense du catalogue. Le point est débité de ton solde dépensable et la récompense est réservée.',
   },
   {
     q: 'Y a-t-il un plafond ou un montant minimum ?',
-    a: 'Aucun plafond — plus tu dépenses, plus tu gagnes. Le seul minimum est technique : si ton cashback calculé est inférieur à 1 FCFA, il n\'est pas crédité (pas de poussière). Concrètement, dès que tu paies plus de 100 FCFA, tu gagnes.',
-  },
-  {
-    q: 'Comment changer de plan pour gagner plus ?',
-    a: 'Va sur /subscribe, choisis ton nouveau plan, paie par carte ou Mobile Money. Le nouveau taux s\'applique immédiatement à tous tes paiements futurs. Tu peux annuler à tout moment depuis /account, sans frais.',
-  },
-  {
-    q: 'Mon cashback est-il du vrai argent ?',
-    a: 'Oui, 100 %. C\'est du solde FCFA réel ajouté à ton wallet Soutra-Pay. Tu peux le réutiliser pour payer un marchand, transférer à un ami, ou retirer en Mobile Money.',
-  },
-  {
-    q: 'Quel est le taux maximum ?',
-    a: '5 % avec le plan Soutra Premium (élite). C\'est un des taux les plus élevés du marché ivoirien, sans restriction de catégorie ni plafond.',
+    a: 'Aucun plafond — plus tu dépenses, plus tu gagnes. Le seul minimum est technique : en dessous de 100 FCFA, aucun point n\'est crédité (pas de poussière).',
   },
 ];
 

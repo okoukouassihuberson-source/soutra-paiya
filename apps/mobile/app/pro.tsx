@@ -179,7 +179,7 @@ export default function ProDashboard() {
           <Ionicons name="storefront-outline" size={48} color={c.neutral[300]} />
           <Text style={s.emptyTitle}>Aucun établissement</Text>
           <Text style={s.emptySub}>
-            Tu n'es propriétaire d'aucun lieu sur Soutra-Explore.
+            Tu n'es propriétaire d'aucun lieu sur Soutra-Playce.
             {'\n'}Revendique ton établissement depuis sa fiche.
           </Text>
           <Pressable onPress={() => router.push('/(tabs)/explore')} style={[s.primaryBtn, { marginTop: spacing.lg }]}>
@@ -453,7 +453,7 @@ export default function ProDashboard() {
                 <Text style={{ fontSize: typography.fontSize.xs, color: '#92400E', lineHeight: 17, marginTop: spacing.xs }}>
                   Les revenus apparaîtront ici dès que tu auras de nouvelles réservations honorées,
                   billets vendus ou paiements reçus. Si l'historique est ancien, demande à l'équipe
-                  Soutra-Explore de lancer le backfill admin.
+                  Soutra-Playce de lancer le backfill admin.
                 </Text>
               </View>
             )}

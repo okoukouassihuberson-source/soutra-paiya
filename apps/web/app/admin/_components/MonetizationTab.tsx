@@ -80,7 +80,7 @@ const FIELD_LABELS: Record<string, string> = {
   commission_ticket_pct: 'Commission billetterie',
   commission_marketplace_pct: 'Commission marketplace',
   commission_affiliation_pct: 'Commission affiliation',
-  cashback_user_pct: 'Cashback utilisateur',
+  cashback_user_pct: 'Ristourne utilisateur (legacy)',
   loyalty_bonus_pct: 'Bonus fidélité',
   featured_listing_xof: 'Frais mise en avant',
   advertising_xof: 'Frais publicitaires',
@@ -1008,7 +1008,7 @@ function CampaignsSection() {
             <Field label="Override frais de service %">
               <input type="number" step="0.01" className="inp" value={draft.override_service_fee_pct ?? ''} onChange={(e) => setDraft({ ...draft, override_service_fee_pct: e.target.value === '' ? null : Number(e.target.value) })} />
             </Field>
-            <Field label="Override cashback user %">
+            <Field label="Override ristourne utilisateur %">
               <input type="number" step="0.01" className="inp" value={draft.override_cashback_user_pct ?? ''} onChange={(e) => setDraft({ ...draft, override_cashback_user_pct: e.target.value === '' ? null : Number(e.target.value) })} />
             </Field>
             <Field label="Override bonus fidélité %">

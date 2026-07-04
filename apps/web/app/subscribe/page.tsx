@@ -3,9 +3,9 @@ import { SubscribeView } from './_components/SubscribeView';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Abonnements Premium — Soutra-Explore',
+  title: 'Abonnements Premium — Soutra-Playce',
   description:
-    'Choisissez votre expérience Soutra-Explore. Cashback jusqu\'à 5%, accès VVIP, concierge dédié. Profitez d\'avantages exclusifs adaptés à votre style de vie.',
+    'Choisissez votre expérience Soutra-Playce. Accès VVIP, concierge dédié. Profitez d\'avantages exclusifs adaptés à votre style de vie.',
 };
 
 /**

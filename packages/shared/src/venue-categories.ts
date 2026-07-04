@@ -1,5 +1,5 @@
 // ============================================================================
-// Catalogue des catégories de lieux Soutra-Explore.
+// Catalogue des catégories de lieux Soutra-Playce.
 //
 // Source unique pour mobile + web. Chaque catégorie a :
 //   - value : enum SQL (migrations 0001 / 0013 / 0033)

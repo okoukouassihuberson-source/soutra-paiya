@@ -102,7 +102,7 @@ function buildTicketHtml(payload: TicketPdfPayload, qrSvg: string): string {
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <title>Ticket Soutra-Explore — ${escapeHtml(kindLabel)}</title>
+    <title>Ticket Soutra-Playce — ${escapeHtml(kindLabel)}</title>
     <style>
       @page { size: A4; margin: 20mm; }
       * { box-sizing: border-box; }
@@ -229,7 +229,7 @@ function buildTicketHtml(payload: TicketPdfPayload, qrSvg: string): string {
   <body>
     <div class="card">
       <div class="header">
-        <div class="brand">Soutra<span class="accent">-Explore</span></div>
+        <div class="brand">Soutra<span class="accent">-Playce</span></div>
         <span class="kind-pill">${escapeHtml(kindLabel)}</span>
       </div>
 
@@ -259,7 +259,7 @@ function buildTicketHtml(payload: TicketPdfPayload, qrSvg: string): string {
       </table>
 
       <div class="footer">
-        Ticket émis par Soutra-Explore · ID ${escapeHtml(payload.id.slice(0, 8))}<br />
+        Ticket émis par Soutra-Playce · ID ${escapeHtml(payload.id.slice(0, 8))}<br />
         En cas de problème : support@soutra-paiya.com
       </div>
     </div>
@@ -293,7 +293,7 @@ export async function exportTicketPdf(payload: TicketPdfPayload): Promise<string
     if (canShare) {
       await Sharing.shareAsync(uri, {
         mimeType: 'application/pdf',
-        dialogTitle: 'Ticket Soutra-Explore',
+        dialogTitle: 'Ticket Soutra-Playce',
         UTI: 'com.adobe.pdf',
       });
     } else {

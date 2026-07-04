@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
       .eq("id", user.id)
       .maybeSingle();
     const recipientName = (profile as { full_name?: string } | null)
-      ?.full_name || "Gérant Soutra-Explore";
+      ?.full_name || "Gérant Soutra-Playce";
 
     // ── 3. Crée le destinataire + initie le transfert Paystack ──
     try {
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
         amount: toSubunit(amountXof),
         recipient: recipient.data.recipient_code,
         reference,
-        reason: "Retrait revenus Soutra-Explore",
+        reason: "Retrait revenus Soutra-Playce",
         currency: "XOF",
       });
 

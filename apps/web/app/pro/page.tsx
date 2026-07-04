@@ -981,7 +981,7 @@ function ProDashboard() {
                 <button onClick={createVenue} disabled={creating} className="btn-primary w-full disabled:opacity-50">
                   {creating ? 'Création...' : 'Créer mon établissement'}
                 </button>
-                <p className="text-center text-xs text-neutral-400">Ton établissement sera vérifié par l&apos;équipe Soutra-Explore avant d&apos;apparaître dans l&apos;application.</p>
+                <p className="text-center text-xs text-neutral-400">Ton établissement sera vérifié par l&apos;équipe Soutra-Playce avant d&apos;apparaître dans l&apos;application.</p>
               </div>
             </div>
           )}
@@ -1331,7 +1331,7 @@ function ProDashboard() {
               {tab === 'finances' && (
                 <>
                   {/* ═══════════ DASHBOARD REVENUS SOUTRA-PLAYCE (PR 0043) ═══════════ */}
-                  {/* Affiche brut / commission Soutra-Explore / net / frais facturés
+                  {/* Affiche brut / commission Soutra-Playce / net / frais facturés
                       avec timeline + ventilation par source + détail des events.
                       Le bouton "📄 Télécharger PDF" génère un rapport autonome. */}
                   <div className="mb-8">
