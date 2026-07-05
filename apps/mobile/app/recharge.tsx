@@ -103,7 +103,7 @@ export default function Recharge() {
             <View style={{ flex: 1 }}>
               <Text style={s.infoTitle}>Paiement 100 % sécurisé</Text>
               <Text style={s.infoText}>
-                Via Paystack — carte bancaire et mobile money (Orange Money, MTN MoMo, Wave).
+                Via GeniusPay — carte bancaire et mobile money (Orange Money, MTN MoMo, Wave).
               </Text>
             </View>
           </View>

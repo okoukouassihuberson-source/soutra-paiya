@@ -13,7 +13,7 @@ import { PaymentLogo, type PaymentMethodName } from './PaymentLogo';
  *
  * Variants :
  *   - 'pre-pay' : panneau "Moyens disponibles" avant le bouton "Payer
- *     maintenant" Paystack (effet confiance sur /orders et /hotel-bookings)
+ *     maintenant" GeniusPay (effet confiance sur /orders et /hotel-bookings)
  *   - 'venue-card' : badge compact "Moyens acceptés" sur la fiche venue
  */
 
