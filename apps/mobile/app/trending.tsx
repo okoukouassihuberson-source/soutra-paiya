@@ -144,7 +144,7 @@ export default function Trending() {
             onFilterChange={setPromoFilter}
           />
         ) : (
-          <EventsList data={events ?? []} c={c} onPress={(venueId) => venueId && router.push({ pathname: '/venue/[id]', params: { id: venueId } })} />
+          <EventsList data={events ?? []} c={c} onPress={(eventId) => router.push({ pathname: '/event/[id]', params: { id: eventId } })} />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -340,7 +340,7 @@ function PromosList({
 // ============================================================================
 // Tab 3 — Events
 // ============================================================================
-function EventsList({ data, c, onPress }: { data: CurrentEvent[]; c: ColorPalette; onPress: (venueId: string | null) => void }) {
+function EventsList({ data, c, onPress }: { data: CurrentEvent[]; c: ColorPalette; onPress: (eventId: string) => void }) {
   const s = useMemo(() => makeStyles(c), [c]);
   if (data.length === 0) {
     return <EmptyState c={c} title="Aucun événement en cours" hint="Les soirées, concerts et grands événements apparaîtront ici quand ils démarrent." />;
@@ -350,7 +350,7 @@ function EventsList({ data, c, onPress }: { data: CurrentEvent[]; c: ColorPalett
       {data.map((e) => (
         <Pressable
           key={e.event_id}
-          onPress={() => onPress(e.venue_id)}
+          onPress={() => onPress(e.event_id)}
           style={({ pressed }) => [s.eventCard, pressed && { opacity: 0.9 }]}
         >
           <View style={s.eventHero}>

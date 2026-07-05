@@ -18,7 +18,7 @@ import { exportTicketPdf } from '@/lib/ticket-pdf';
 // les reservations/bookings, created_at pour les orders).
 // ============================================================================
 
-type TicketKind = 'reservation' | 'order' | 'booking';
+type TicketKind = 'reservation' | 'order' | 'booking' | 'event';
 
 // Vue normalisée d'un billet : ce que la card affiche + une backref
 // vers l'objet source pour le modal détail spécifique.
@@ -89,6 +89,24 @@ interface RawBooking {
   venue_district: string | null;
 }
 
+interface RawEventTicket {
+  id: string;
+  event_id: string;
+  tier_name: string;
+  price_xof: number;
+  status: string;
+  qr_code: string;
+  created_at: string;
+  event: {
+    id: string;
+    title: string;
+    cover_url: string | null;
+    starts_at: string;
+    city: string | null;
+    venue: { name: string | null } | null;
+  } | null;
+}
+
 function mapReservationToTicket(r: RawReservation): Ticket {
   return {
     id: r.id,
@@ -135,6 +153,22 @@ function mapBookingToTicket(b: RawBooking): Ticket {
   };
 }
 
+function mapEventTicketToTicket(t: RawEventTicket): Ticket {
+  return {
+    id: t.id,
+    kind: 'event',
+    title: t.event?.title ?? 'Événement',
+    date: new Date(t.event?.starts_at ?? t.created_at),
+    status: t.status,
+    amount: t.price_xof,
+    coverUrl: t.event?.cover_url ?? null,
+    location: t.event?.venue?.name ?? t.event?.city ?? null,
+    nightsOrCountOrSize: 1,
+    raw: t,
+    qrCode: t.qr_code,
+  };
+}
+
 // ============================================================================
 // Composant principal
 // ============================================================================
@@ -158,7 +192,7 @@ export default function Tickets() {
     try {
       // Charge les 3 sources en parallèle. Un échec sur l'une ne bloque
       // pas l'affichage des autres — chaque promesse est isolée.
-      const [resRes, orderRes, bookRes] = await Promise.all([
+      const [resRes, orderRes, bookRes, eventTicketRes] = await Promise.all([
         supabase
           .from('reservations')
           .select(`
@@ -170,6 +204,15 @@ export default function Tickets() {
           .limit(50),
         (supabase.rpc as any)('list_my_orders', { p_limit: 50 }),
         (supabase.rpc as any)('list_my_room_bookings', { p_limit: 50 }),
+        supabase
+          .from('tickets')
+          .select(`
+            id, event_id, tier_name, price_xof, status, qr_code, created_at,
+            event:events(id, title, cover_url, starts_at, city, venue:venues(name))
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50),
       ]);
 
       const collected: Ticket[] = [];
@@ -195,6 +238,14 @@ export default function Tickets() {
       } else {
         for (const b of (bookRes.data ?? []) as RawBooking[]) {
           collected.push(mapBookingToTicket(b));
+        }
+      }
+
+      if (eventTicketRes.error) {
+        console.error('[tickets] event tickets:', eventTicketRes.error);
+      } else {
+        for (const t of (eventTicketRes.data ?? []) as unknown as RawEventTicket[]) {
+          collected.push(mapEventTicketToTicket(t));
         }
       }
 
@@ -260,8 +311,8 @@ export default function Tickets() {
           </View>
           <Text style={s.emptyTitle}>Pas encore de billet</Text>
           <Text style={s.emptyText}>
-            Réserve une table, commande dans une boutique ou une nuit d&apos;hôtel —
-            tes billets apparaîtront tous ici.
+            Réserve une table, commande dans une boutique, une nuit d&apos;hôtel
+            ou un billet d&apos;événement — tes billets apparaîtront tous ici.
           </Text>
           <Pressable
             style={({ pressed }) => [s.cta, pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}
@@ -351,6 +402,20 @@ function openDetail(t: Ticket, c: ColorPalette) {
     return;
   }
 
+  if (t.kind === 'event') {
+    const e = t.raw as RawEventTicket;
+    Alert.alert(
+      t.title,
+      `Tarif : ${e.tier_name}\n` +
+      `Statut : ${status.label}\n` +
+      `Date : ${dateStr}\n` +
+      `Prix : ${formatXOF(t.amount)}\n` +
+      `QR : ${e.qr_code.slice(0, 8)}…`,
+      [pdfButton, closeButton],
+    );
+    return;
+  }
+
   // booking
   const b = t.raw as RawBooking;
   Alert.alert(
@@ -394,6 +459,12 @@ function downloadTicketPdf(t: Ticket, c: ColorPalette) {
       { label: 'Articles', value: String(o.items_count) },
       { label: 'Livraison', value: o.delivery_method === 'delivery' ? 'À domicile' : 'À retirer' },
     );
+  } else if (t.kind === 'event') {
+    const e = t.raw as RawEventTicket;
+    code = e.qr_code;
+    detailsLines.push(
+      { label: 'Tarif', value: e.tier_name },
+    );
   } else {
     const b = t.raw as RawBooking;
     code = b.booking_number;
@@ -427,6 +498,7 @@ function isTicketUpcoming(t: Ticket, nowMs: number): boolean {
   if (!alive) return false;
   if (t.kind === 'reservation') return t.date.getTime() >= nowMs;
   if (t.kind === 'booking') return t.date.getTime() >= nowMs;
+  if (t.kind === 'event') return t.date.getTime() >= nowMs;
   // orders : "à venir" = pas encore livrée (pending/confirmed/preparing/ready)
   return ['pending', 'confirmed', 'preparing', 'ready'].includes(t.status);
 }
@@ -466,6 +538,15 @@ function statusMeta(kind: TicketKind, status: string, c: ColorPalette): { color:
       case 'refunded': return { color: c.neutral[500], label: 'Remboursée', icon: 'arrow-undo' };
     }
   }
+  // Event tickets
+  if (kind === 'event') {
+    switch (status) {
+      case 'valid': return { color: c.success, label: 'Valide', icon: 'checkmark-circle' };
+      case 'scanned': return { color: c.primary[600], label: 'Scanné', icon: 'qr-code' };
+      case 'refunded': return { color: c.neutral[500], label: 'Remboursé', icon: 'arrow-undo' };
+      case 'transferred': return { color: '#6366f1', label: 'Transféré', icon: 'swap-horizontal' };
+    }
+  }
   return { color: c.neutral[500], label: status, icon: 'help-circle' };
 }
 
@@ -474,6 +555,7 @@ function kindMeta(kind: TicketKind): { label: string; icon: keyof typeof Ionicon
     case 'reservation': return { label: 'Réservation', icon: 'restaurant', color: '#f97316' };
     case 'order':       return { label: 'Commande',    icon: 'bag',        color: '#7c3aed' };
     case 'booking':     return { label: 'Hôtel',       icon: 'bed',        color: '#0891b2' };
+    case 'event':       return { label: 'Événement',   icon: 'calendar',   color: '#dc2626' };
   }
 }
 
@@ -517,6 +599,8 @@ function TicketCard({
     secondaryLine = `${ticket.nightsOrCountOrSize} personne${ticket.nightsOrCountOrSize > 1 ? 's' : ''}`;
   } else if (ticket.kind === 'order') {
     secondaryLine = `${ticket.nightsOrCountOrSize} article${ticket.nightsOrCountOrSize > 1 ? 's' : ''}`;
+  } else if (ticket.kind === 'event') {
+    secondaryLine = '1 billet';
   } else {
     secondaryLine = `${ticket.nightsOrCountOrSize} nuit${ticket.nightsOrCountOrSize > 1 ? 's' : ''}`;
   }

@@ -275,6 +275,15 @@ export default function Explore() {
               >
                 <Ionicons name="flame" size={20} color={palette.primary[500]} />
               </Pressable>
+              {/* Découverte d'événements (Phase 4 refonte UX fiche établissement). */}
+              <Pressable
+                hitSlop={10}
+                onPress={() => router.push('/events')}
+                style={s.bellBtn}
+                accessibilityLabel="Événements"
+              >
+                <Ionicons name="calendar-outline" size={20} color={palette.primary[500]} />
+              </Pressable>
               <Pressable
                 hitSlop={10}
                 onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
