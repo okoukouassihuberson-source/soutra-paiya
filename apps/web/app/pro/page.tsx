@@ -1863,7 +1863,7 @@ function ProDashboard() {
                     </div>
                     <div className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6">
                       <h3 className="font-display text-lg font-bold text-dark">Tarif & réseaux sociaux</h3>
-                      <ProInput label="Prix moyen par personne (FCFA)" type="number" value={vx.price} onChange={(v) => setVx((p) => ({ ...p, price: v }))} placeholder="5000" />
+                      <ProInput label="Prix de référence (FCFA)" type="number" value={vx.price} onChange={(v) => setVx((p) => ({ ...p, price: v }))} placeholder="5000" />
                       <ProInput label="Instagram" value={vx.socials.instagram} onChange={(v) => setVx((p) => ({ ...p, socials: { ...p.socials, instagram: v } }))} placeholder="@monetablissement" />
                       <ProInput label="Facebook" value={vx.socials.facebook} onChange={(v) => setVx((p) => ({ ...p, socials: { ...p.socials, facebook: v } }))} placeholder="facebook.com/monetablissement" />
                       <ProInput label="TikTok" value={vx.socials.tiktok} onChange={(v) => setVx((p) => ({ ...p, socials: { ...p.socials, tiktok: v } }))} placeholder="@monetablissement" />

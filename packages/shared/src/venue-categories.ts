@@ -11,6 +11,7 @@
 // ============================================================================
 
 import type { VenueCategory } from './types/database';
+import { formatXOF } from './utils';
 
 export type VenueCategoryGroup =
   | 'restauration'
@@ -215,4 +216,36 @@ export function isHotelCategory(value: string | null | undefined): boolean {
 /** Vérifie si une catégorie expose la réservation de table. */
 export function isTableReservationCategory(value: string | null | undefined): boolean {
   return businessTypeOf(value) === 'reservation_table';
+}
+
+export interface VenuePriceInput {
+  avg_price_xof?: number | null;
+  category?: string | null;
+}
+
+/**
+ * Libellé de prix affiché, adapté au type métier de la catégorie — plus de
+ * suffixe "/pers" générique sur toutes les catégories. `null` si aucun prix
+ * n'est pertinent à afficher pour ce type métier.
+ */
+export function formatVenuePriceLabel(venue: VenuePriceInput): { label: string | null } {
+  const bt = businessTypeOf(venue.category);
+  const price = venue.avg_price_xof ?? 0;
+
+  switch (bt) {
+    case 'reservation_table':
+    case 'product_catalog':
+      return price > 0 ? { label: `À partir de ${formatXOF(price)}` } : { label: null };
+    case 'hotel_rooms':
+      return price > 0 ? { label: `Dès ${formatXOF(price)} / nuit` } : { label: null };
+    case 'event_tickets':
+      return { label: null };
+    case 'venue_visit':
+      return price > 0 ? { label: `À partir de ${formatXOF(price)}` } : { label: 'Entrée gratuite' };
+    case 'time_slot':
+    case 'service_quote':
+    case 'vtc_ride':
+    default:
+      return { label: null };
+  }
 }

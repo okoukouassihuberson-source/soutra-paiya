@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, type LayoutChangeEvent } from 'react-native';
+import { useState, useEffect, useMemo } from 'react';
+import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Share, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { typography, radius, spacing, formatVenuePriceLabel, type ColorPalette } from '@soutra/shared';
+import { useColors } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { openDirections, dialPhone, openWhatsApp } from '@/lib/maps';
@@ -26,6 +27,7 @@ const HOTEL_CATEGORIES = new Set(['hotel', 'villa', 'resort', 'auberge', 'reside
 
 interface Venue {
   id: string;
+  slug: string;
   name: string;
   category: string; // enum venue_category — utilisé pour le switch CTA boutique/réservation
   description: string;
@@ -53,6 +55,8 @@ export default function VenueDetail() {
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -205,6 +209,20 @@ export default function VenueDetail() {
     }
   };
 
+  const shareVenue = async () => {
+    if (!venue) return;
+    try {
+      const url = `https://soutra-playce.com/v/${venue.slug}`;
+      await Share.share({
+        message: `Découvre ${venue.name} sur Soutra-Playce : ${url}`,
+        url,
+        title: venue.name,
+      });
+    } catch (err) {
+      console.warn('[venue] share error:', err);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={s.safe}>
@@ -227,6 +245,7 @@ export default function VenueDetail() {
   // que la galerie reste entièrement visible quand on scroll en bas.
   // Fallback à 120px tant que onLayout n'a pas encore mesuré le CTA.
   const scrollPaddingBottom = (ctaHeight || 120) + spacing.md;
+  const priceLabel = formatVenuePriceLabel({ avg_price_xof: venue.avg_price_xof, category: venue.category }).label;
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
@@ -243,6 +262,9 @@ export default function VenueDetail() {
               accessibilityLabel="Signaler un problème"
             >
               <Ionicons name="flag-outline" size={22} color={colors.neutral[600]} />
+            </Pressable>
+            <Pressable hitSlop={10} onPress={shareVenue} accessibilityLabel="Partager ce lieu">
+              <Ionicons name="share-outline" size={22} color={colors.neutral[600]} />
             </Pressable>
             <Pressable hitSlop={10} onPress={toggleFavorite} disabled={favBusy}>
               <Ionicons
@@ -269,7 +291,7 @@ export default function VenueDetail() {
                 <Text style={s.ratingCount}>({venue.rating_count} avis)</Text>
               </View>
             </View>
-            <Text style={s.price}>{formatXOF(venue.avg_price_xof ?? 0)}/pers</Text>
+            {priceLabel && <Text style={s.price}>{priceLabel}</Text>}
           </View>
 
           {/* Description */}
@@ -507,7 +529,8 @@ export default function VenueDetail() {
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.light },
   headerBar: {
     flexDirection: 'row',
@@ -611,4 +634,5 @@ const s = StyleSheet.create({
   ctaText: { fontSize: typography.fontSize.base, fontWeight: '700', color: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { fontSize: typography.fontSize.base, color: colors.neutral[600] },
-});
+  });
+}
