@@ -507,18 +507,31 @@ export default function VenueDetail() {
             <Text style={s.ctaText}>🛏️  Réserver une chambre</Text>
           </Pressable>
         ) : (
-          <Pressable
-            style={({ pressed }) => [s.ctaButton, pressed && { opacity: 0.85 }]}
-            onPress={() => {
-              logVenueEvent(venue.id, 'reservation_start');
-              router.push({
-                pathname: '/reservation/[venueId]',
-                params: { venueId: venue.id },
-              });
-            }}
-          >
-            <Text style={s.ctaText}>Réserver une table</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Pressable
+              style={({ pressed }) => [s.ctaButtonSecondary, pressed && { opacity: 0.85 }]}
+              onPress={() => {
+                router.push({
+                  pathname: '/menu/[venueId]',
+                  params: { venueId: venue.id },
+                });
+              }}
+            >
+              <Text style={s.ctaTextSecondary}>📋  Menu</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [s.ctaButton, { flex: 1 }, pressed && { opacity: 0.85 }]}
+              onPress={() => {
+                logVenueEvent(venue.id, 'reservation_start');
+                router.push({
+                  pathname: '/reservation/[venueId]',
+                  params: { venueId: venue.id },
+                });
+              }}
+            >
+              <Text style={s.ctaText}>Réserver une table</Text>
+            </Pressable>
+          </View>
         )}
       </View>
 
@@ -645,6 +658,12 @@ function makeStyles(colors: ColorPalette) {
   cta: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.lg, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: colors.neutral[200] },
   ctaButton: { backgroundColor: colors.primary[500], borderRadius: radius.lg, paddingVertical: spacing.lg, alignItems: 'center' },
   ctaText: { fontSize: typography.fontSize.base, fontWeight: '700', color: '#fff' },
+  ctaButtonSecondary: {
+    backgroundColor: colors.light, borderRadius: radius.lg, paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: colors.primary[500],
+  },
+  ctaTextSecondary: { fontSize: typography.fontSize.base, fontWeight: '700', color: colors.primary[600] },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { fontSize: typography.fontSize.base, color: colors.neutral[600] },
   });
