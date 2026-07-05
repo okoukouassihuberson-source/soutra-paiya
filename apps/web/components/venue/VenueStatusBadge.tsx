@@ -45,8 +45,12 @@ function formatTimeFR(s: string | undefined | null): string {
   return min === 0 ? `${h}h` : `${h}h${String(min).padStart(2, '0')}`;
 }
 
+/** Seuil en minutes pour considérer qu'un établissement "ferme bientôt". */
+const CLOSING_SOON_THRESHOLD_MIN = 30;
+
 interface OpenStatus {
   isOpen: boolean;
+  isClosingSoon: boolean;
   hint: string;
   detailLine: string;
 }
@@ -55,13 +59,14 @@ function computeStatus(
   hours: Record<string, [string, string] | undefined> | null | undefined,
   now: Date,
 ): OpenStatus {
-  if (!hours) return { isOpen: false, hint: 'Horaires non renseignés', detailLine: '' };
+  if (!hours) return { isOpen: false, isClosingSoon: false, hint: 'Horaires non renseignés', detailLine: '' };
 
   const todayKey = DAY_FROM_JS[now.getDay()];
   const todayRange = hours[todayKey];
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
   let isOpen = false;
+  let isClosingSoon = false;
   let hint = 'Fermé aujourd\'hui';
 
   if (todayRange) {
@@ -69,13 +74,21 @@ function computeStatus(
     const close = parseTimeToMinutes(todayRange[1]);
     if (open != null && close != null) {
       const overnight = close <= open;
+      let minutesUntilClose: number | null = null;
       if (!overnight) {
         isOpen = nowMin >= open && nowMin < close;
+        if (isOpen) minutesUntilClose = close - nowMin;
       } else {
         isOpen = nowMin >= open || nowMin < close;
+        if (isOpen) {
+          minutesUntilClose = nowMin >= open
+            ? (1440 - nowMin) + close // segment soirée : fermeture le lendemain
+            : close - nowMin; // segment petit matin : fermeture aujourd'hui
+        }
       }
+      isClosingSoon = minutesUntilClose != null && minutesUntilClose <= CLOSING_SOON_THRESHOLD_MIN;
       hint = isOpen
-        ? `Ferme à ${formatTimeFR(todayRange[1])}`
+        ? (isClosingSoon ? `Ferme bientôt (${formatTimeFR(todayRange[1])})` : `Ferme à ${formatTimeFR(todayRange[1])}`)
         : nowMin < open
         ? `Ouvre à ${formatTimeFR(todayRange[0])}`
         : `Fermé · Ouvre demain à ${formatTimeFR(todayRange[0])}`;
@@ -93,7 +106,9 @@ function computeStatus(
       const yc = parseTimeToMinutes(yRange[1]);
       if (yo != null && yc != null && yc <= yo && nowMin < yc) {
         isOpen = true;
-        hint = `Ferme à ${formatTimeFR(yRange[1])}`;
+        const minutesUntilClose = yc - nowMin;
+        isClosingSoon = minutesUntilClose <= CLOSING_SOON_THRESHOLD_MIN;
+        hint = isClosingSoon ? `Ferme bientôt (${formatTimeFR(yRange[1])})` : `Ferme à ${formatTimeFR(yRange[1])}`;
       }
     }
   }
@@ -102,7 +117,7 @@ function computeStatus(
     ? `Aujourd'hui · ${formatTimeFR(todayRange[0])} – ${formatTimeFR(todayRange[1])}`
     : `${DAY_LABELS_SHORT[todayKey]} · fermé`;
 
-  return { isOpen, hint, detailLine };
+  return { isOpen, isClosingSoon, hint, detailLine };
 }
 
 export function VenueStatusBadge({
@@ -129,9 +144,9 @@ export function VenueStatusBadge({
 
   const status = computeStatus(hours, now);
 
-  const dotColor = status.isOpen ? 'bg-emerald-500' : 'bg-red-500';
-  const dotRing  = status.isOpen ? 'ring-emerald-500/30' : 'ring-red-500/30';
-  const textColor = status.isOpen ? 'text-emerald-700' : 'text-neutral-600';
+  const dotColor = status.isClosingSoon ? 'bg-amber-500' : status.isOpen ? 'bg-emerald-500' : 'bg-red-500';
+  const dotRing  = status.isClosingSoon ? 'ring-amber-500/30' : status.isOpen ? 'ring-emerald-500/30' : 'ring-red-500/30';
+  const textColor = status.isClosingSoon ? 'text-amber-700' : status.isOpen ? 'text-emerald-700' : 'text-neutral-600';
 
   if (compact) {
     return (
@@ -143,14 +158,14 @@ export function VenueStatusBadge({
   }
 
   return (
-    <div className={`rounded-2xl border ${status.isOpen ? 'border-emerald-200 bg-emerald-50' : 'border-neutral-200 bg-neutral-50'} p-4 ${className}`}>
+    <div className={`rounded-2xl border ${status.isClosingSoon ? 'border-amber-200 bg-amber-50' : status.isOpen ? 'border-emerald-200 bg-emerald-50' : 'border-neutral-200 bg-neutral-50'} p-4 ${className}`}>
       <div className="flex items-center gap-2">
         <span className={`h-2.5 w-2.5 rounded-full ring-2 ${dotColor} ${dotRing}`} />
-        <span className={`font-display text-base font-bold ${status.isOpen ? 'text-emerald-700' : 'text-neutral-700'}`}>
+        <span className={`font-display text-base font-bold ${status.isClosingSoon ? 'text-amber-700' : status.isOpen ? 'text-emerald-700' : 'text-neutral-700'}`}>
           {status.isOpen ? 'Ouvert maintenant' : 'Fermé'}
         </span>
       </div>
-      <p className={`mt-0.5 text-sm ${status.isOpen ? 'text-emerald-700' : 'text-neutral-600'}`}>
+      <p className={`mt-0.5 text-sm ${status.isClosingSoon ? 'text-amber-700' : status.isOpen ? 'text-emerald-700' : 'text-neutral-600'}`}>
         {status.hint}
       </p>
       {status.detailLine && (

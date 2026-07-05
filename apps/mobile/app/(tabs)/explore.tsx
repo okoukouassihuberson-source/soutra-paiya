@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
+import { typography, radius, spacing, formatVenuePriceLabel, type ColorPalette } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { MapboxMap, type MapVenue, ABIDJAN } from '@/components/MapboxMap';
 import { QuickVenueSheet, type QuickVenue } from '@/components/QuickVenueSheet';
@@ -275,6 +275,15 @@ export default function Explore() {
               >
                 <Ionicons name="flame" size={20} color={palette.primary[500]} />
               </Pressable>
+              {/* Découverte d'événements (Phase 4 refonte UX fiche établissement). */}
+              <Pressable
+                hitSlop={10}
+                onPress={() => router.push('/events')}
+                style={s.bellBtn}
+                accessibilityLabel="Événements"
+              >
+                <Ionicons name="calendar-outline" size={20} color={palette.primary[500]} />
+              </Pressable>
               <Pressable
                 hitSlop={10}
                 onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
@@ -479,7 +488,10 @@ export default function Explore() {
                         {labelForCategory(v.category)} · {v.district ?? v.city ?? 'Abidjan'}
                       </Text>
                       <View style={s.cardMetaRow}>
-                        <Text style={s.cardPrice}>{formatXOF(v.avg_price_xof ?? 0)}<Text style={s.cardPriceUnit}>/pers</Text></Text>
+                        {(() => {
+                          const priceLabel = formatVenuePriceLabel({ avg_price_xof: v.avg_price_xof, category: v.category }).label;
+                          return priceLabel ? <Text style={s.cardPrice}>{priceLabel}</Text> : null;
+                        })()}
                         {typeof v.distance_km === 'number' && (
                           <View style={s.metaChip}>
                             <Ionicons name="location" size={11} color={palette.neutral[600]} />

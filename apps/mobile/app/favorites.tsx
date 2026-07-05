@@ -5,7 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { colors, typography, radius, spacing, formatVenuePriceLabel } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 
@@ -15,6 +15,7 @@ interface FavVenue {
   cover_url: string | null;
   city: string | null;
   avg_price_xof: number | null;
+  category: string | null;
   rating_avg: number | null;
 }
 
@@ -30,7 +31,7 @@ export default function Favorites() {
     if (!user?.id) { setLoading(false); return; }
     const { data } = await sb
       .from('favorites')
-      .select('venue_id, created_at, venues(id, name, cover_url, city, avg_price_xof, rating_avg)')
+      .select('venue_id, created_at, venues(id, name, cover_url, city, avg_price_xof, category, rating_avg)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     const list: FavVenue[] = [];
@@ -97,7 +98,10 @@ export default function Favorites() {
                 <Text style={s.venueMeta} numberOfLines={1}>
                   {v.city ?? 'Abidjan'} · ★ {v.rating_avg ?? 0}
                 </Text>
-                <Text style={s.venuePrice}>{formatXOF(v.avg_price_xof ?? 0)}/pers</Text>
+                {(() => {
+                  const priceLabel = formatVenuePriceLabel({ avg_price_xof: v.avg_price_xof, category: v.category }).label;
+                  return priceLabel ? <Text style={s.venuePrice}>{priceLabel}</Text> : null;
+                })()}
               </View>
               <Pressable hitSlop={8} onPress={() => remove(v.id)} style={s.heartBtn}>
                 <Ionicons name="heart" size={22} color={colors.danger} />

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { VenueGallery } from '@/components/venue/VenueGallery';
 import { VenueStatusBadge } from '@/components/venue/VenueStatusBadge';
+import { CategorizedPhotos } from '@/components/venue/CategorizedPhotos';
 import { BUSINESS_TYPE_LABELS, type VenueBusinessType } from '@soutra/shared';
 
 interface Venue {
@@ -79,6 +80,9 @@ export function VenueView({
           videos={venue.video_urls}
           alt={venue.name}
         />
+
+        {/* ═══ PHOTOS PAR CATÉGORIE (Phase 5 refonte UX) ═══ */}
+        <CategorizedPhotos venueId={venue.id} />
 
         {/* ═══ INFOS ═══ */}
         <div className="mt-6 grid gap-6 lg:mt-10 lg:grid-cols-3 lg:gap-10">

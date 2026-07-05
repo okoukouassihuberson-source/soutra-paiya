@@ -439,7 +439,7 @@ export default function ReservationForm() {
           {/* Price Summary */}
           <View style={s.summary}>
             <SummaryRow
-              label="Prix moyen/pers"
+              label="Prix moyen"
               value={formatXOF(venue.avg_price_xof ?? 0)}
             />
             <SummaryRow

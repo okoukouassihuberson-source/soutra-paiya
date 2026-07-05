@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { View, Text, Pressable, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
+import { typography, radius, spacing, formatVenuePriceLabel, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { openDirections } from '@/lib/maps';
 
@@ -111,12 +111,15 @@ export function QuickVenueSheet({ venue, onClose, onOpen }: Props) {
                   <Text style={s.metaText}>{distanceLabel}</Text>
                 </View>
               )}
-              {venue.avg_price_xof != null && venue.avg_price_xof > 0 && (
-                <View style={s.metaCell}>
-                  <Ionicons name="cash-outline" size={12} color={c.neutral[500]} />
-                  <Text style={s.metaText}>{formatXOF(venue.avg_price_xof)}/pers</Text>
-                </View>
-              )}
+              {(() => {
+                const priceLabel = formatVenuePriceLabel({ avg_price_xof: venue.avg_price_xof, category: venue.category }).label;
+                return priceLabel ? (
+                  <View style={s.metaCell}>
+                    <Ionicons name="cash-outline" size={12} color={c.neutral[500]} />
+                    <Text style={s.metaText}>{priceLabel}</Text>
+                  </View>
+                ) : null;
+              })()}
             </View>
             {venue.category && (
               <Text style={s.category}>{venue.category.replace(/_/g, ' ')}</Text>

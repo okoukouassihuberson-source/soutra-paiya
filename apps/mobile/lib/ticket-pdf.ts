@@ -21,7 +21,7 @@ import { formatXOF } from '@soutra/shared';
 
 const TICKET_QR_TYPE = 'soutraticket';
 
-export type TicketKind = 'reservation' | 'order' | 'booking';
+export type TicketKind = 'reservation' | 'order' | 'booking' | 'event';
 
 export interface TicketPdfPayload {
   kind: TicketKind;
@@ -72,12 +72,14 @@ const KIND_LABEL: Record<TicketKind, string> = {
   reservation: 'Réservation',
   order: 'Commande',
   booking: 'Séjour hôtel',
+  event: 'Billet événement',
 };
 
 const KIND_ACCENT: Record<TicketKind, string> = {
   reservation: '#f97316',
   order: '#7c3aed',
   booking: '#0891b2',
+  event: '#dc2626',
 };
 
 /**

@@ -49,12 +49,17 @@ export function formatTimeFR(s: string | undefined | null): string {
   return min === 0 ? `${h}h` : `${h}h${String(min).padStart(2, '0')}`;
 }
 
+/** Seuil en minutes pour considérer qu'un établissement "ferme bientôt". */
+export const CLOSING_SOON_THRESHOLD_MIN = 30;
+
 export interface OpenStatus {
   isOpen: boolean;
   todayOpen: string | null;
   todayClose: string | null;
   todayKey: DayKey;
-  /** Phrase courte type "Ouvre à 17h" / "Ferme à 04h" / "Fermé aujourd'hui". */
+  /** true si isOpen et fermeture dans moins de CLOSING_SOON_THRESHOLD_MIN. */
+  isClosingSoon: boolean;
+  /** Phrase courte type "Ouvre à 17h" / "Ferme à 04h" / "Ferme bientôt (23h30)" / "Fermé aujourd'hui". */
   hint: string;
 }
 
@@ -76,6 +81,7 @@ export function computeOpenStatus(
   const todayClose = todayRange?.[1] ?? null;
 
   let isOpen = false;
+  let isClosingSoon = false;
   let hint = 'Fermé aujourd\'hui';
 
   if (todayOpen && todayClose) {
@@ -83,14 +89,24 @@ export function computeOpenStatus(
     const c = parseTimeToMinutes(todayClose);
     if (o != null && c != null) {
       const overnight = c <= o;
+      let minutesUntilClose: number | null = null;
       if (!overnight) {
         isOpen = nowMin >= o && nowMin < c;
+        if (isOpen) minutesUntilClose = c - nowMin;
       } else {
         // Cas overnight (ex. 17h-04h) : ouvert si `now >= open` aujourd'hui
         // OU `now < close` (encore dans la fenêtre nocturne).
         isOpen = nowMin >= o || nowMin < c;
+        if (isOpen) {
+          minutesUntilClose = nowMin >= o
+            ? (1440 - nowMin) + c // segment soirée : fermeture le lendemain
+            : c - nowMin; // segment petit matin : fermeture aujourd'hui
+        }
       }
-      hint = isOpen ? `Ferme à ${formatTimeFR(todayClose)}` : `Ouvre à ${formatTimeFR(todayOpen)}`;
+      isClosingSoon = minutesUntilClose != null && minutesUntilClose <= CLOSING_SOON_THRESHOLD_MIN;
+      hint = isOpen
+        ? (isClosingSoon ? `Ferme bientôt (${formatTimeFR(todayClose)})` : `Ferme à ${formatTimeFR(todayClose)}`)
+        : `Ouvre à ${formatTimeFR(todayOpen)}`;
     }
   }
 
@@ -106,10 +122,12 @@ export function computeOpenStatus(
       if (yo != null && yc != null && yc <= yo && nowMin < yc) {
         // overnight d'hier qui couvre encore l'heure courante
         isOpen = true;
-        hint = `Ferme à ${formatTimeFR(yRange[1])}`;
+        const minutesUntilClose = yc - nowMin;
+        isClosingSoon = minutesUntilClose <= CLOSING_SOON_THRESHOLD_MIN;
+        hint = isClosingSoon ? `Ferme bientôt (${formatTimeFR(yRange[1])})` : `Ferme à ${formatTimeFR(yRange[1])}`;
       }
     }
   }
 
-  return { isOpen, todayOpen, todayClose, todayKey, hint };
+  return { isOpen, todayOpen, todayClose, todayKey, isClosingSoon, hint };
 }

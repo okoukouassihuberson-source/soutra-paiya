@@ -19,8 +19,12 @@ import { initializePayment } from "../_shared/geniuspay.ts";
 
 const MIN_XOF = 200; // Minimum imposé par GeniusPay.
 const MAX_XOF = 2_000_000;
+// GeniusPay rejette un success_url/error_url qui n'est pas en https (testé en
+// sandbox : 502 "Le fournisseur de paiement a refusé la demande" avec un
+// deep link soutrapaiya:// direct). On repasse donc par la page web
+// intermédiaire, qui elle-même deep-link vers l'app ensuite.
 const CALLBACK_URL = Deno.env.get("GENIUSPAY_CALLBACK_URL") ??
-  "https://soutra-paiya.vercel.app/geniuspay/callback";
+  "https://soutra-playce.com/geniuspay/callback";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

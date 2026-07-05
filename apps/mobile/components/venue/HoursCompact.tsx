@@ -39,7 +39,7 @@ export function HoursCompact({ hours }: Props) {
     ? `Aujourd'hui · ${formatTimeFR(status.todayOpen)} – ${formatTimeFR(status.todayClose)}`
     : `${todayLabel} · fermé`;
 
-  const statusBg = status.isOpen ? '#16A34A' : '#DC2626';
+  const statusBg = status.isClosingSoon ? '#F59E0B' : status.isOpen ? '#16A34A' : '#DC2626';
   const statusLabel = status.isOpen ? 'Ouvert' : 'Fermé';
 
   return (

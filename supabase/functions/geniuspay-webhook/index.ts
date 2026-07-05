@@ -83,7 +83,16 @@ Deno.serve(async (req) => {
         .eq("provider_ref", reference)
         .eq("status", "pending");
       if (error) console.error("[gp-webhook] mark failed:", error);
-      else console.log(`[gp-webhook] ${type} ${reference} -> failed`);
+      else {
+        console.log(`[gp-webhook] ${type} ${reference} -> failed`);
+        // Libère la capacité de billet réservée à l'initiation, le cas
+        // échéant — no-op pour tout achat qui n'est pas un ticket_purchase
+        // (le RPC vérifie metadata->>'purpose' lui-même).
+        const { error: relErr } = await svc.rpc("geniuspay_release_ticket_hold", {
+          p_reference: reference,
+        });
+        if (relErr) console.error("[gp-webhook] release_ticket_hold:", relErr);
+      }
     } else if (
       (type === "payout.completed" || type === "payout.failed") && reference
     ) {

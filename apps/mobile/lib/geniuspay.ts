@@ -56,6 +56,51 @@ export async function payWithGeniuspay(
 }
 
 // ============================================================================
+// Pattern B — fonctions Edge dédiées (geniuspay-pay-order, -pay-booking,
+// -pay-ticket), chacune avec sa propre RPC de prix faisant autorité côté
+// serveur. Contrairement à payWithGeniuspay ci-dessus (purpose dispatché
+// dans une seule fonction geniuspay-initialize), ce pattern cible une
+// fonction Edge distincte par type d'achat — plus récent, utilisé par
+// orders/room_bookings. Helper générique + wrapper typé pour les billets.
+// ============================================================================
+
+async function payViaDedicatedFunction(
+  functionName: string,
+  body: Record<string, unknown>,
+): Promise<PaymentResult> {
+  const init = await invokeEdge<{
+    checkout_url: string;
+    reference: string;
+    amount_xof?: number;
+  }>(functionName, body);
+
+  if (!init?.checkout_url || !init?.reference) {
+    throw new Error('Réponse invalide du serveur de paiement');
+  }
+
+  await WebBrowser.openAuthSessionAsync(init.checkout_url, RETURN_URL);
+
+  const result = await invokeEdge<{
+    status: PaymentStatus;
+    amount_xof?: number;
+  }>('geniuspay-verify', { reference: init.reference });
+
+  return { status: result?.status ?? 'pending', amountXof: result?.amount_xof ?? init.amount_xof };
+}
+
+// Achat d'un billet d'événement — un seul billet par appel (v1).
+export async function payForTicket(params: {
+  eventId: string;
+  tierName: string;
+}): Promise<PaymentResult> {
+  return payViaDedicatedFunction('geniuspay-pay-ticket', {
+    event_id: params.eventId,
+    tier_name: params.tierName,
+    quantity: 1,
+  });
+}
+
+// ============================================================================
 // Retrait wallet — mobile money via GeniusPay.
 // Migré depuis paystack-withdraw en PR #4.
 // ============================================================================
