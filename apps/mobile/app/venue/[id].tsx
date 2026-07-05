@@ -3,7 +3,7 @@ import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Alert
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { typography, radius, spacing, formatVenuePriceLabel, type ColorPalette } from '@soutra/shared';
+import { typography, radius, spacing, formatVenuePriceLabel, distanceMeters, formatDistance, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
@@ -15,9 +15,12 @@ import { ClaimSheet } from '@/components/venue/ClaimSheet';
 import { PaymentMethodsStrip } from '@/components/PaymentMethodsStrip';
 import { ReviewsSection } from '@/components/venue/ReviewsSection';
 import { CategorizedPhotos } from '@/components/venue/CategorizedPhotos';
+import { SimilarVenues } from '@/components/venue/SimilarVenues';
 import { logVenueEvent } from '@/lib/venue-analytics';
 import { getVenueClaimStatus, CLAIM_STATUS_META, type ClaimStatus } from '@/lib/venue-claims';
 import * as WebBrowser from 'expo-web-browser';
+import * as Location from 'expo-location';
+import Animated, { useSharedValue, useAnimatedStyle, withSequence, withSpring } from 'react-native-reanimated';
 
 // Catégories qui utilisent le module Boutique (catalogue produits) au lieu de
 // la réservation de table. Doit rester en miroir de SHOP_COMPATIBLE_CATEGORIES
@@ -68,6 +71,15 @@ export default function VenueDetail() {
   // Coordonnées GPS lues depuis la RPC get_venue_location (migration 0019)
   // — la colonne PostGIS `location` ne se lit pas proprement via supabase-js.
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Position utilisateur best-effort (Phase 6 refonte UX) — pour afficher la
+  // distance et alimenter les établissements similaires. Ne demande jamais
+  // la permission (ne vérifie que si déjà accordée ailleurs dans l'app) :
+  // dégradation silencieuse si refusée, aucun blocage de la fiche.
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Micro-animation "punch" du bouton favori (Phase 6 refonte UX) — même
+  // primitive Reanimated que Lightbox.tsx (useSharedValue/withSpring).
+  const favScale = useSharedValue(1);
+  const favAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: favScale.value }] }));
   // Hauteur mesurée du CTA flottant : sert à calculer le paddingBottom du
   // ScrollView pour qu'aucun contenu (notamment la galerie) ne soit chevauché
   // par le bouton « Réserver une table ».
@@ -86,6 +98,19 @@ export default function VenueDetail() {
     // Fire-and-forget : ne casse pas le rendu si la RPC échoue.
     if (id) logVenueEvent(id, 'view');
   }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (active) setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      } catch { /* best-effort, dégradation silencieuse */ }
+    })();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (!id || !user?.id) {
@@ -191,6 +216,7 @@ export default function VenueDetail() {
     }
     const sb = supabase as any;
     const next = !isFavorite;
+    favScale.value = withSequence(withSpring(1.35, { damping: 5 }), withSpring(1, { damping: 5 }));
     setFavBusy(true);
     setIsFavorite(next);
     try {
@@ -250,6 +276,9 @@ export default function VenueDetail() {
   // Fallback à 120px tant que onLayout n'a pas encore mesuré le CTA.
   const scrollPaddingBottom = (ctaHeight || 120) + spacing.md;
   const priceLabel = formatVenuePriceLabel({ avg_price_xof: venue.avg_price_xof, category: venue.category }).label;
+  const distanceLabel = coords && userCoords
+    ? formatDistance(distanceMeters(userCoords, coords))
+    : null;
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
@@ -271,11 +300,13 @@ export default function VenueDetail() {
               <Ionicons name="share-outline" size={22} color={colors.neutral[600]} />
             </Pressable>
             <Pressable hitSlop={10} onPress={toggleFavorite} disabled={favBusy}>
-              <Ionicons
-                name={isFavorite ? 'heart' : 'heart-outline'}
-                size={24}
-                color={isFavorite ? colors.danger : colors.dark}
-              />
+              <Animated.View style={favAnimatedStyle}>
+                <Ionicons
+                  name={isFavorite ? 'heart' : 'heart-outline'}
+                  size={24}
+                  color={isFavorite ? colors.danger : colors.dark}
+                />
+              </Animated.View>
             </Pressable>
           </View>
         </View>
@@ -415,6 +446,12 @@ export default function VenueDetail() {
 
           {/* Info Cards — l'adresse est cliquable et lance l'itinéraire */}
           <View style={s.infoGrid}>
+            {distanceLabel && (
+              <View style={s.infoCard}>
+                <Ionicons name="navigate-outline" size={20} color={colors.primary[500]} />
+                <Text style={s.infoText}>{distanceLabel}</Text>
+              </View>
+            )}
             {venue.address && (
               <Pressable
                 style={({ pressed }) => [s.infoCard, pressed && coords && { opacity: 0.7 }]}
@@ -468,6 +505,9 @@ export default function VenueDetail() {
           <View onLayout={(e) => setReviewsY(e.nativeEvent.layout.y)}>
             <ReviewsSection venueId={venue.id} venueName={venue.name} />
           </View>
+
+          {/* ════════ ÉTABLISSEMENTS SIMILAIRES (Phase 6 refonte UX) ════════ */}
+          <SimilarVenues venueId={venue.id} category={venue.category} coords={coords} />
         </View>
       </ScrollView>
 
