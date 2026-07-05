@@ -218,6 +218,43 @@ export function isTableReservationCategory(value: string | null | undefined): bo
   return businessTypeOf(value) === 'reservation_table';
 }
 
+/**
+ * Suggestions de catégories de photos par activité (Phase 5 refonte UX —
+ * section 3 du master prompt). Clé sur la VenueCategory précise (pas
+ * seulement businessType) car boutique/pharmacie/supermarché partagent le
+ * même businessType product_catalog mais ont des listes différentes.
+ * Reste une liste de suggestions, pas un enum strict — le Pro peut toujours
+ * taper une catégorie personnalisée (même esprit que menu_items.category).
+ */
+const RESTAURATION_PHOTO_CATEGORIES = ['Menu', 'Plats', 'Boissons', 'Terrasse', 'Salle'];
+const HEBERGEMENT_PHOTO_CATEGORIES = ['Chambres', 'Salle de bain', 'Piscine', 'Restaurant', 'Réception', 'Vue', 'Parking'];
+
+export const PHOTO_CATEGORY_SUGGESTIONS: Partial<Record<VenueCategory, string[]>> = {
+  restaurant: RESTAURATION_PHOTO_CATEGORIES,
+  maquis: RESTAURATION_PHOTO_CATEGORIES,
+  cafe: RESTAURATION_PHOTO_CATEGORIES,
+  bar: RESTAURATION_PHOTO_CATEGORIES,
+  lounge: RESTAURATION_PHOTO_CATEGORIES,
+  fast_food: RESTAURATION_PHOTO_CATEGORIES,
+  patisserie: RESTAURATION_PHOTO_CATEGORIES,
+  hotel: HEBERGEMENT_PHOTO_CATEGORIES,
+  residence_meublee: HEBERGEMENT_PHOTO_CATEGORIES,
+  villa: HEBERGEMENT_PHOTO_CATEGORIES,
+  resort: HEBERGEMENT_PHOTO_CATEGORIES,
+  auberge: HEBERGEMENT_PHOTO_CATEGORIES,
+  boutique: ['Produits', 'Vitrine', 'Intérieur'],
+  mall: ['Produits', 'Vitrine', 'Intérieur'],
+  pharmacie: ['Façade', 'Produits'],
+  supermarche: ['Rayons', 'Promotions'],
+};
+
+export const DEFAULT_PHOTO_CATEGORIES = ['Extérieur', 'Intérieur', 'Ambiance'];
+
+/** Suggestions de catégories de photos pour une VenueCategory donnée (repli générique sinon). */
+export function photoCategorySuggestions(category: string | null | undefined): string[] {
+  return (category && PHOTO_CATEGORY_SUGGESTIONS[category as VenueCategory]) || DEFAULT_PHOTO_CATEGORIES;
+}
+
 export interface VenuePriceInput {
   avg_price_xof?: number | null;
   category?: string | null;

@@ -14,6 +14,7 @@ import { ReportSheet } from '@/components/venue/ReportSheet';
 import { ClaimSheet } from '@/components/venue/ClaimSheet';
 import { PaymentMethodsStrip } from '@/components/PaymentMethodsStrip';
 import { ReviewsSection } from '@/components/venue/ReviewsSection';
+import { CategorizedPhotos } from '@/components/venue/CategorizedPhotos';
 import { logVenueEvent } from '@/lib/venue-analytics';
 import { getVenueClaimStatus, CLAIM_STATUS_META, type ClaimStatus } from '@/lib/venue-claims';
 import * as WebBrowser from 'expo-web-browser';
@@ -459,6 +460,9 @@ export default function VenueDetail() {
               </View>
             </>
           )}
+
+          {/* ════════ PHOTOS PAR CATÉGORIE (Phase 5 refonte UX) ════════ */}
+          <CategorizedPhotos venueId={venue.id} />
 
           {/* ════════ AVIS ════════ */}
           <View onLayout={(e) => setReviewsY(e.nativeEvent.layout.y)}>

@@ -10,6 +10,7 @@ import {
   formatXOF, slugify, categoriesByGroup,
   isShopCategory, isHotelCategory,
   businessTypeOf, modulesForBusinessType,
+  photoCategorySuggestions,
   type ProModule,
 } from '@soutra/shared';
 import { VenueAnalytics } from './_components/VenueAnalytics';
@@ -264,6 +265,24 @@ function ProDashboard() {
   // State local pour le champ "URL visite 360°" — synchronisé lors du save.
   const [tour360Input, setTour360Input] = useState('');
   const [uploading, setUploading] = useState<string | null>(null);
+
+  // Phase 5 refonte UX — photos catégorisées (Menu, Chambres, Vitrine...),
+  // en complément de la galerie plate ci-dessus (venues.gallery_urls,
+  // inchangée). Table dédiée venue_photos (migration 0078).
+  const [categorizedPhotos, setCategorizedPhotos] = useState<{ id: string; url: string; category: string }[]>([]);
+  const [newPhotoCategory, setNewPhotoCategory] = useState('');
+  useEffect(() => {
+    if (!selectedVenueId) { setCategorizedPhotos([]); return; }
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('venue_photos')
+        .select('id, url, category')
+        .eq('venue_id', selectedVenueId)
+        .order('category', { ascending: true })
+        .order('position', { ascending: true });
+      setCategorizedPhotos((data as { id: string; url: string; category: string }[]) ?? []);
+    })();
+  }, [selectedVenueId]);
 
   // Localisation GPS — lat/lng lus depuis la RPC get_venue_location au changement
   // de venue. `null` tant que le venue n'a pas de point PostGIS.
@@ -830,6 +849,58 @@ function ProDashboard() {
     if (error) { flash(error.message, 'error'); return; }
     setMedia((m) => ({ ...m, videos: next }));
     flash('Vidéo retirée');
+  }
+
+  // Phase 5 refonte UX — upload d'une photo catégorisée (venue_photos, en
+  // complément de la galerie plate). Réutilise les mêmes règles de
+  // validation et le même bucket que uploadMedia, mais insère dans une
+  // table dédiée au lieu de patcher venues.gallery_urls.
+  async function uploadCategorizedPhoto(file: File, category: string) {
+    if (!selectedVenueId) {
+      flash('Aucun établissement sélectionné — crée-le d\'abord, puis recharge la page.', 'error');
+      return;
+    }
+    if (!category.trim()) {
+      flash('Choisis ou saisis une catégorie pour cette photo.', 'error');
+      return;
+    }
+    const okMime = /^image\/(jpe?g|png|webp|gif)$/i.test(file.type);
+    if (!okMime) { flash('Format non supporté (JPG, PNG, WebP, GIF uniquement)', 'error'); return; }
+    if (file.size > 8 * 1024 * 1024) { flash('Image trop lourde (8 Mo max)', 'error'); return; }
+
+    setUploading('category-photo');
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const path = `${selectedVenueId}/photo-${Date.now()}.${ext || 'jpg'}`;
+
+    const { error: upErr } = await supabase.storage
+      .from('venue-media')
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (upErr) {
+      flash(upErr.message || 'Upload échoué', 'error');
+      setUploading(null);
+      return;
+    }
+
+    const url = supabase.storage.from('venue-media').getPublicUrl(path).data.publicUrl;
+    const { data: inserted, error: insErr } = await (supabase as any)
+      .from('venue_photos')
+      .insert({ venue_id: selectedVenueId, url, category: category.trim() })
+      .select('id, url, category')
+      .single();
+    setUploading(null);
+    if (insErr || !inserted) {
+      flash(insErr?.message || 'Impossible d\'enregistrer la photo', 'error');
+      return;
+    }
+    setCategorizedPhotos((prev) => [...prev, inserted]);
+    flash('Photo ajoutée');
+  }
+
+  async function removeCategorizedPhoto(id: string) {
+    const { error } = await (supabase as any).from('venue_photos').delete().eq('id', id);
+    if (error) { flash(error.message, 'error'); return; }
+    setCategorizedPhotos((prev) => prev.filter((p) => p.id !== id));
+    flash('Photo retirée');
   }
 
   // PR Video — sauvegarde l'URL visite 360° (Matterport, Kuula…)
@@ -1679,6 +1750,68 @@ function ProDashboard() {
                             ouvrir la visite
                           </a>
                         </p>
+                      )}
+                    </div>
+
+                    {/* Phase 5 refonte UX — photos par catégorie (en plus de la
+                        galerie plate ci-dessus, jamais retouchée) */}
+                    <div className="mt-6 border-t border-neutral-100 pt-6">
+                      <label className="mb-2 block text-xs font-medium text-neutral-500">
+                        Photos par catégorie <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500">Menu, Chambres, Vitrine…</span>
+                      </label>
+                      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <select
+                          value={newPhotoCategory}
+                          onChange={(e) => setNewPhotoCategory(e.target.value)}
+                          className="rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none"
+                        >
+                          <option value="">Choisir une catégorie…</option>
+                          {photoCategorySuggestions(selectedVenue?.category).map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          value={newPhotoCategory}
+                          onChange={(e) => setNewPhotoCategory(e.target.value)}
+                          placeholder="…ou tape une catégorie personnalisée"
+                          className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none"
+                        />
+                        <label className={`cursor-pointer rounded-xl px-4 py-2.5 text-sm font-medium text-white transition ${newPhotoCategory.trim() ? 'bg-primary-500 hover:bg-primary-600' : 'bg-neutral-300'}`}>
+                          {uploading === 'category-photo' ? 'Envoi…' : '+ Ajouter'}
+                          <input
+                            type="file" accept="image/*" className="hidden"
+                            disabled={!newPhotoCategory.trim() || !!uploading}
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCategorizedPhoto(f, newPhotoCategory); e.target.value = ''; }}
+                          />
+                        </label>
+                      </div>
+                      {categorizedPhotos.length === 0 ? (
+                        <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400">
+                          Aucune photo catégorisée — ajoute des visuels par type (menu, chambres, vitrine…)
+                        </p>
+                      ) : (
+                        Object.entries(
+                          categorizedPhotos.reduce<Record<string, typeof categorizedPhotos>>((acc, p) => {
+                            (acc[p.category] ??= []).push(p);
+                            return acc;
+                          }, {}),
+                        ).map(([category, photos]) => (
+                          <div key={category} className="mb-4">
+                            <p className="mb-2 text-xs font-semibold text-neutral-600">{category} ({photos.length})</p>
+                            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                              {photos.map((p) => (
+                                <div key={p.id} className="group relative aspect-square overflow-hidden rounded-xl border border-neutral-200">
+                                  <Image src={p.url} alt="" fill sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 16vw" className="object-cover" />
+                                  <button onClick={() => removeCategorizedPhoto(p.id)} title="Retirer"
+                                    className="absolute right-1 top-1 rounded-lg bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100">
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))
                       )}
                     </div>
                   </div>
