@@ -37,6 +37,21 @@ export function slugify(input: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
+// Date relative courte ("à l'instant", "3h", "5j", "12/06/2026" au-delà d'un mois)
+export function formatRelativeDate(iso: string): string {
+  const d = new Date(iso);
+  const diffMs = Date.now() - d.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "à l'instant";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} min`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH} h`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 30) return `${diffD} j`;
+  return d.toLocaleDateString('fr-FR');
+}
+
 // Calcule la commission plateforme
 export function platformFee(amount: number, kind: 'p2p' | 'reservation' | 'ticket'): number {
   switch (kind) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Share, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -13,6 +13,7 @@ import { HoursCompact } from '@/components/venue/HoursCompact';
 import { ReportSheet } from '@/components/venue/ReportSheet';
 import { ClaimSheet } from '@/components/venue/ClaimSheet';
 import { PaymentMethodsStrip } from '@/components/PaymentMethodsStrip';
+import { ReviewsSection } from '@/components/venue/ReviewsSection';
 import { logVenueEvent } from '@/lib/venue-analytics';
 import { getVenueClaimStatus, CLAIM_STATUS_META, type ClaimStatus } from '@/lib/venue-claims';
 import * as WebBrowser from 'expo-web-browser';
@@ -57,6 +58,8 @@ export default function VenueDetail() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const s = useMemo(() => makeStyles(colors), [colors]);
+  const scrollRef = useRef<ScrollView>(null);
+  const [reviewsY, setReviewsY] = useState(0);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -249,7 +252,7 @@ export default function VenueDetail() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: scrollPaddingBottom }}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: scrollPaddingBottom }}>
         {/* Header with back button + favorite + signaler */}
         <View style={s.headerBar}>
           <Pressable hitSlop={10} onPress={() => router.back()}>
@@ -286,10 +289,15 @@ export default function VenueDetail() {
           <View style={s.titleBar}>
             <View style={{ flex: 1 }}>
               <Text style={s.title}>{venue.name}</Text>
-              <View style={s.ratingRow}>
+              <Pressable
+                style={s.ratingRow}
+                onPress={() => scrollRef.current?.scrollTo({ y: reviewsY, animated: true })}
+                hitSlop={6}
+              >
                 <Text style={s.rating}>★ {venue.rating_avg}</Text>
                 <Text style={s.ratingCount}>({venue.rating_count} avis)</Text>
-              </View>
+                <Ionicons name="chevron-forward" size={14} color={colors.neutral[400]} />
+              </Pressable>
             </View>
             {priceLabel && <Text style={s.price}>{priceLabel}</Text>}
           </View>
@@ -451,6 +459,11 @@ export default function VenueDetail() {
               </View>
             </>
           )}
+
+          {/* ════════ AVIS ════════ */}
+          <View onLayout={(e) => setReviewsY(e.nativeEvent.layout.y)}>
+            <ReviewsSection venueId={venue.id} venueName={venue.name} />
+          </View>
         </View>
       </ScrollView>
 
