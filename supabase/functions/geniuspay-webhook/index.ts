@@ -9,10 +9,13 @@
 //   - payment.failed    → marque la transaction failed
 //   - payment.cancelled → idem failed
 //   - payment.expired   → idem failed
-//   - payout.completed  → dispatch selon préfixe de la référence :
+//   - payout.completed / cashout.completed → dispatch selon préfixe de la
+//                          référence (les deux noms sont acceptés : la doc
+//                          GeniusPay et le nommage réel divergent selon la
+//                          source, non vérifiable de façon certaine) :
 //                          • sp-wd- → geniuspay_settle_payout (user withdraw)
 //                          • sp-vp- → settle_venue_payout (venue payout)
-//   - payout.failed     → dispatch identique avec outcome = 'failed'
+//   - payout.failed / cashout.failed → dispatch identique, outcome = 'failed'
 //                          (refund automatique du wallet / de la balance venue)
 // ============================================================================
 import { jsonResponse, serviceClient } from "../_shared/supabase.ts";
@@ -94,11 +97,17 @@ Deno.serve(async (req) => {
         if (relErr) console.error("[gp-webhook] release_ticket_hold:", relErr);
       }
     } else if (
-      (type === "payout.completed" || type === "payout.failed") && reference
+      (type === "payout.completed" || type === "payout.failed" ||
+        type === "cashout.completed" || type === "cashout.failed") && reference
     ) {
       // Dispatch par préfixe de référence (aligné sur ce que
       // geniuspay-withdraw et geniuspay-venue-payout génèrent).
-      const outcome = type === "payout.completed" ? "success" : "failed";
+      // Accepte payout.* ET cashout.* : la doc GeniusPay et le nommage réel
+      // observé divergent selon la source, on gère les deux défensivement
+      // plutôt que de deviner (aucun coût si un seul des deux est réel).
+      const outcome = (type === "payout.completed" || type === "cashout.completed")
+        ? "success"
+        : "failed";
       if (reference.startsWith("sp-vp-")) {
         const { data: result, error } = await svc.rpc("settle_venue_payout", {
           p_reference: reference,

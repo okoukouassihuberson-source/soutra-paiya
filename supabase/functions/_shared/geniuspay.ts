@@ -326,6 +326,14 @@ export type GeniusPayWebhookEvent =
   | "payout.created"
   | "payout.completed"
   | "payout.failed"
+  // La doc GeniusPay (pay.genius.ci/docs/api) utilise "cashout.*" plutôt que
+  // "payout.*" pour ces mêmes événements — source non vérifiable avec
+  // certitude (l'API de gestion webhook documentée ne répond pas en JSON en
+  // pratique). Les deux noms sont acceptés côté handler (geniuspay-webhook).
+  | "cashout.requested"
+  | "cashout.approved"
+  | "cashout.completed"
+  | "cashout.failed"
   | "subscription.payment_succeeded"
   | "subscription.payment_failed"
   | "subscription.past_due"
