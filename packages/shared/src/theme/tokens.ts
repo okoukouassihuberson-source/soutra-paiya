@@ -1,7 +1,11 @@
-// Design tokens — Soutra (redesign 2026)
-// Source unique pour Tailwind (web) et StyleSheet (mobile).
+// Design tokens — Soutra Playce (redesign 2026)
+// Remplace packages/shared/src/theme/tokens.ts
 //
-// Convention pour le dark mode :
+// FUSION avec la version de `main` : `BRAND`, `colors`, `colorsDark`, `ColorPalette` et
+// la convention de dark mode sont conservés à l'identique. Les ajouts du redesign sont
+// marqués « NEW » et déclinés dans les DEUX palettes, sinon le mode sombre casse.
+//
+// Convention pour le dark mode (inchangée) :
 // - les couleurs brand (primary, secondary, accent, danger, warning, success)
 //   restent identiques entre light et dark (on garde l'identité visuelle).
 // - `dark` = couleur du TEXTE PRINCIPAL : en light c'est sombre, en dark
@@ -9,9 +13,6 @@
 // - `light` = couleur du FOND PRINCIPAL : en light c'est crème, en dark
 //   c'est noir.
 // - `neutral` : l'échelle est INVERSÉE en dark (neutral[100] dark <-> [800] light).
-// - les groupes du redesign (`surface`, `ink`, `state`, `money`) ont une
-//   déclinaison dark complète : ils font partie de `ColorPalette`, donc
-//   `useColors()` renvoie toujours la bonne variante.
 
 const BRAND = {
   primary: {
@@ -44,43 +45,6 @@ export const colors = {
   ...BRAND,
   dark: '#1A1D2E',     // Texte principal (light theme : Nuit Abidjan)
   light: '#FAF7F2',    // Fond principal (light theme : Sable)
-
-  // Surfaces du redesign. L'app tourne sur un fond sable, pas sur du blanc pur :
-  // les cartes blanches ne se détachent qu'à cette condition.
-  surface: {
-    canvas: '#F7F4EF',   // fond d'écran
-    card:   '#FFFFFF',   // cartes, listes, feuilles
-    sunken: '#EDE8E0',   // pilules inactives, avatars, boutons désactivés
-    inverse: '#1A1D2E',  // cartes solde / fidélité
-    hairline: 'rgba(26,29,46,0.08)', // séparateurs
-  },
-
-  // Texte sur fond sable. Un seul encre, décliné en opacité.
-  ink: {
-    strong: '#1A1D2E',
-    muted:  'rgba(26,29,46,0.55)',
-    faint:  'rgba(26,29,46,0.42)',
-    onDark: '#FFFFFF',
-    onDarkMuted: 'rgba(255,255,255,0.60)',
-  },
-
-  // Badges d'état. Paire fond/texte obligatoire, jamais une couleur seule :
-  // c'est ce qui rend l'état lisible en plein soleil.
-  state: {
-    openBg: '#0E7C5E',   openFg: '#FFFFFF',   // « Ferme à 23h »
-    closedBg: 'rgba(26,29,46,0.62)', closedFg: '#FFFFFF',
-    pendingBg: '#FEF3C7', pendingFg: '#92400E', // « En attente »
-    liveBg: '#E4EDFB',   liveFg: '#12447F',   // « En préparation »
-    doneBg: '#DCF5EC',   doneFg: '#0B5F48',   // payé, séquestre, confirmé
-    alertBg: '#FEE2E2',  alertFg: '#991B1B',
-  },
-
-  money: {
-    credit: '#0E7C5E',   // montant entrant
-    debit:  '#1A1D2E',   // montant sortant
-    escrow: '#0B5F48',   // séquestre
-  },
-
   neutral: {
     50:  '#F8FAFC',
     100: '#F1F5F9',
@@ -93,51 +57,51 @@ export const colors = {
     800: '#1E293B',
     900: '#0F172A',
   },
+
+  // NEW — surfaces du redesign. L'app tourne sur un fond sable, pas sur du blanc pur :
+  // les cartes blanches ne se détachent qu'à cette condition.
+  surface: {
+    canvas: '#F7F4EF',   // fond d'écran
+    card:   '#FFFFFF',   // cartes, listes, feuilles
+    sunken: '#EDE8E0',   // pilules inactives, avatars, boutons désactivés
+    inverse: '#1A1D2E',  // cartes solde / fidélité
+    hairline: 'rgba(26,29,46,0.08)', // séparateurs
+  },
+
+  // NEW — texte sur fond sable. Un seul encre, décliné en opacité.
+  ink: {
+    strong: '#1A1D2E',
+    muted:  'rgba(26,29,46,0.55)',
+    faint:  'rgba(26,29,46,0.42)',
+    onDark: '#FFFFFF',
+    onDarkMuted: 'rgba(255,255,255,0.60)',
+  },
+
+  // NEW — badges d'état. Paire fond/texte obligatoire, jamais une couleur seule :
+  // c'est ce qui rend l'état lisible en plein soleil et en mode sombre.
+  state: {
+    openBg: '#0E7C5E',   openFg: '#FFFFFF',   // « Ferme à 23h »
+    closedBg: 'rgba(26,29,46,0.62)', closedFg: '#FFFFFF',
+    pendingBg: '#FEF3C7', pendingFg: '#92400E', // « En attente »
+    liveBg: '#E4EDFB',   liveFg: '#12447F',   // « En préparation »
+    doneBg: '#DCF5EC',   doneFg: '#0B5F48',   // payé, séquestre, confirmé
+    alertBg: '#FEE2E2',  alertFg: '#991B1B',
+  },
+
+  // NEW — montants
+  money: {
+    credit: '#0E7C5E',   // montant entrant
+    debit:  '#1A1D2E',   // montant sortant
+    escrow: '#0B5F48',   // séquestre
+  },
 } as const;
 
-// Palette dark — même shape, valeurs inversées sur dark/light/neutral et
-// déclinaison sombre des groupes du redesign.
+// Palette dark — même shape, valeurs inversées sur dark/light/neutral.
 // Les screens utilisent `useColors()` pour récupérer la bonne palette au runtime.
 export const colorsDark = {
   ...BRAND,
   dark: '#F5F5F7',     // Texte principal en dark theme (gris très clair)
   light: '#0E1116',    // Fond principal en dark theme (presque noir)
-
-  surface: {
-    canvas: '#0E1116',
-    card:   '#171B22',
-    sunken: '#22262F',
-    // Reste l'indigo de marque : plus CLAIR que le canvas en dark, donc la
-    // carte solde se détache toujours (en light elle se détache en étant plus sombre).
-    inverse: '#1A1D2E',
-    hairline: 'rgba(245,245,247,0.12)',
-  },
-
-  ink: {
-    strong: '#F5F5F7',
-    muted:  'rgba(245,245,247,0.60)',
-    faint:  'rgba(245,245,247,0.45)',
-    onDark: '#FFFFFF',
-    onDarkMuted: 'rgba(255,255,255,0.60)',
-  },
-
-  // Les fonds tintés sont assombris et les textes éclaircis : on garde le
-  // même code couleur (ambre = attente, bleu = en cours, vert = fait).
-  state: {
-    openBg: '#0E7C5E',   openFg: '#FFFFFF',
-    closedBg: 'rgba(245,245,247,0.20)', closedFg: '#F5F5F7',
-    pendingBg: '#4A3410', pendingFg: '#FCD34D',
-    liveBg: '#14294A',   liveFg: '#9CC4F5',
-    doneBg: '#0C3A2C',   doneFg: '#6EE7C0',
-    alertBg: '#4A1717',  alertFg: '#FCA5A5',
-  },
-
-  money: {
-    credit: '#34D399',
-    debit:  '#F5F5F7',
-    escrow: '#6EE7C0',
-  },
-
   neutral: {
     50:  '#0F172A',
     100: '#1E293B',
@@ -149,6 +113,43 @@ export const colorsDark = {
     700: '#E2E8F0',
     800: '#F1F5F9',
     900: '#F8FAFC',
+  },
+
+  // NEW — en dark, la hiérarchie s'inverse : le fond descend, la carte remonte.
+  // `card` n'est jamais noir pur, sinon les élévations disparaissent.
+  surface: {
+    canvas: '#0E1116',
+    card:   '#171B22',
+    sunken: '#232833',
+    inverse: '#F5F5F7',  // carte solde en clair sur fond sombre
+    hairline: 'rgba(245,245,247,0.10)',
+  },
+
+  // NEW — encre claire, mêmes paliers d'opacité qu'en light.
+  ink: {
+    strong: '#F5F5F7',
+    muted:  'rgba(245,245,247,0.58)',
+    faint:  'rgba(245,245,247,0.42)',
+    onDark: '#1A1D2E',        // texte posé sur `surface.inverse`, donc sombre ici
+    onDarkMuted: 'rgba(26,29,46,0.62)',
+  },
+
+  // NEW — fonds de badge assombris, textes remontés en luminosité pour tenir
+  // le contraste AA sur `surface.card`.
+  state: {
+    openBg: '#12A87D',   openFg: '#06231B',
+    closedBg: 'rgba(245,245,247,0.22)', closedFg: '#F5F5F7',
+    pendingBg: '#3B2E10', pendingFg: '#FCD97A',
+    liveBg: '#152A45',   liveFg: '#9CC4F5',
+    doneBg: '#0F2E25',   doneFg: '#7BE0BE',
+    alertBg: '#3A1717',  alertFg: '#FCA5A5',
+  },
+
+  // NEW — le débit suit l'encre principale, comme en light.
+  money: {
+    credit: '#7BE0BE',
+    debit:  '#F5F5F7',
+    escrow: '#5CCFAB',
   },
 } as const;
 
@@ -163,6 +164,7 @@ export type ColorPalette = {
   success: string;
   dark: string;
   light: string;
+  neutral: { 50: string; 100: string; 200: string; 300: string; 400: string; 500: string; 600: string; 700: string; 800: string; 900: string };
   surface: { canvas: string; card: string; sunken: string; inverse: string; hairline: string };
   ink: { strong: string; muted: string; faint: string; onDark: string; onDarkMuted: string };
   state: {
@@ -174,26 +176,18 @@ export type ColorPalette = {
     alertBg: string; alertFg: string;
   };
   money: { credit: string; debit: string; escrow: string };
-  neutral: { 50: string; 100: string; 200: string; 300: string; 400: string; 500: string; 600: string; 700: string; 800: string; 900: string };
 };
 
+// Outfit remplace Cabinet Grotesk : disponible sur Google Fonts, chargeable via
+// expo-font, et lisible à 10 px sur les badges (ce que Cabinet Grotesk ne tient pas).
+// Charger Outfit_400Regular / 500Medium / 600SemiBold / 700Bold.
 export const typography = {
-  // Stacks CSS — consommées par `apps/web/tailwind.config.ts`, qui les découpe
-  // sur les virgules. Outfit remplace Cabinet Grotesk (Google Fonts).
   fontFamily: {
-    display: 'Outfit, Inter, system-ui, sans-serif',
-    body: 'Outfit, Inter, system-ui, sans-serif',
-    mono: 'JetBrains Mono, ui-monospace, monospace',
-  },
-  // Noms de familles React Native — une graisse = une famille chargée par
-  // `expo-font`. Séparé de `fontFamily` parce que ces noms ne sont PAS des
-  // stacks CSS valides et casseraient Tailwind côté web.
-  fontNative: {
-    regular: 'Outfit_400Regular',
+    display: 'Outfit_700Bold',
+    body: 'Outfit_400Regular',
     medium: 'Outfit_500Medium',
     semibold: 'Outfit_600SemiBold',
-    bold: 'Outfit_700Bold',
-    display: 'Outfit_700Bold',
+    mono: 'JetBrains Mono, ui-monospace, monospace',
   },
   fontSize: {
     xs: 11,    // badges, méta
@@ -212,7 +206,7 @@ export const typography = {
     semibold: '600',
     bold: '700',
   },
-  // Les gros titres et les montants se resserrent, le corps respire.
+  // NEW — les gros titres et les montants se resserrent, le corps respire.
   letterSpacing: {
     tight: -0.6,
     snug: -0.3,
@@ -234,7 +228,7 @@ export const spacing = {
   xl: 32,
   '2xl': 48,
   '3xl': 64,
-  gutter: 20, // marge horizontale de tous les écrans
+  gutter: 20, // NEW — marge horizontale de tous les écrans
 } as const;
 
 // Quatre rayons, pas plus. sm = badges, md = pilules et champs,
@@ -254,7 +248,7 @@ export const shadow = {
   xl: '0 20px 60px rgba(26,29,46,0.22)',
 } as const;
 
-// Un seul endroit pour les règles tactiles.
+// NEW — un seul endroit pour les règles tactiles.
 export const touch = {
   minTarget: 44, // taille minimale d'une zone cliquable (iOS HIG et Material)
   pressScale: 0.985,

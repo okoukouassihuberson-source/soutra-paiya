@@ -286,7 +286,7 @@ export default function Explore() {
               </Pressable>
               <Pressable
                 hitSlop={10}
-                onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
+                onPress={() => router.push('/notifications')}
                 style={s.bellBtn}
               >
                 <Ionicons name="notifications-outline" size={22} color={palette.dark} />

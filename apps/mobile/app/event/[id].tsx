@@ -114,7 +114,7 @@ export default function EventDetailScreen() {
           </View>
           <Text style={s.confirmTitle}>Billet acheté 🎉</Text>
           <Text style={s.confirmText}>Ton billet pour {event.title} est disponible dans tes billets.</Text>
-          <Pressable style={s.ctaButton} onPress={() => router.push('/(tabs)/tickets')}>
+          <Pressable style={s.ctaButton} onPress={() => router.push('/(tabs)/activity')}>
             <Text style={s.ctaText}>Voir mes billets</Text>
           </Pressable>
         </View>

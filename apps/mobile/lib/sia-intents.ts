@@ -41,9 +41,9 @@ const ROUTES: { keywords: string[]; pathname: string; label: string }[] = [
   },
   // Tickets / réservations
   {
-    keywords: ['tickets', 'mes tickets', 'mes reservations', 'mes réservations', 'mes billets'],
-    pathname: '/(tabs)/tickets',
-    label: 'Mes tickets',
+    keywords: ['tickets', 'mes tickets', 'mes reservations', 'mes réservations', 'mes billets', 'activites', 'activités', 'mes activités'],
+    pathname: '/(tabs)/activity',
+    label: 'Activités',
   },
   // Profile
   {
