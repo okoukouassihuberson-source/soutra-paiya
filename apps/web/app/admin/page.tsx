@@ -66,6 +66,18 @@ const ROLE_META: Record<string, { label: string; color: string }> = {
   admin: { label: 'Admin', color: 'bg-red-900/50 text-red-400' },
 };
 
+const BAN_STATUS: Record<string, { label: string; color: string }> = {
+  normal: { label: 'Normal', color: 'bg-emerald-900/50 text-emerald-400' },
+  banned: { label: 'Banni', color: 'bg-red-900/50 text-red-400' },
+  suspended: { label: 'Suspendu', color: 'bg-amber-900/50 text-amber-400' },
+};
+
+function banStatusOf(u: { is_banned?: boolean; is_suspended?: boolean }): keyof typeof BAN_STATUS {
+  if (u.is_banned) return 'banned';
+  if (u.is_suspended) return 'suspended';
+  return 'normal';
+}
+
 const KYC_META: Record<string, { label: string; color: string }> = {
   none: { label: 'Non vérifié', color: 'bg-neutral-700 text-neutral-400' },
   pending: { label: 'En attente', color: 'bg-amber-900/50 text-amber-400' },
@@ -135,6 +147,8 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [banTarget, setBanTarget] = useState<any | null>(null);
+  const [suspendTarget, setSuspendTarget] = useState<any | null>(null);
 
   const [kpis, setKpis] = useState({
     users: 0, venues: 0, reservations: 0, transactions: 0,
@@ -194,7 +208,7 @@ function AdminDashboard() {
       (sb as any).from('transactions').select('*', { count: 'exact', head: true }),
       (sb as any).from('transactions').select('id, user_id, type, amount_xof, fee_xof, status, provider, created_at').order('created_at', { ascending: false }).limit(500),
       (sb as any).from('reservations').select('id, user_id, venue_id, date_time, party_size, deposit_xof, status, created_at').order('created_at', { ascending: false }).limit(500),
-      (sb as any).from('profiles').select('id, phone, full_name, role, kyc_status, city, created_at').order('created_at', { ascending: false }).limit(500),
+      (sb as any).from('profiles').select('id, phone, full_name, role, kyc_status, city, is_super_admin, is_banned, is_suspended, ban_reason, suspension_reason, suspended_until, created_at').order('created_at', { ascending: false }).limit(500),
       (sb as any).from('venues').select('id, name, category, city, status, rating_avg, rating_count, owner_id, created_at, trust_score, quality_score, activity_score, popularity_score, scores_updated_at').order('created_at', { ascending: false }).limit(500),
       (sb as any).from('audit_events').select('*').order('created_at', { ascending: false }).limit(200),
     ]);
@@ -282,6 +296,22 @@ function AdminDashboard() {
     const { error } = await (sb as any).from('profiles').update(updates).eq('id', id);
     if (error) flash(error.message, false);
     else { flash('Profil mis à jour'); await loadAll(); }
+    setActionLoading(null);
+  }
+
+  async function unbanUser(id: string) {
+    setActionLoading(id);
+    const { error } = await (sb.rpc as any)('admin_unban_user', { p_user_id: id });
+    if (error) flash(error.message, false);
+    else { flash('Utilisateur réactivé'); await loadAll(); }
+    setActionLoading(null);
+  }
+
+  async function unsuspendUser(id: string) {
+    setActionLoading(id);
+    const { error } = await (sb.rpc as any)('admin_unsuspend_user', { p_user_id: id });
+    if (error) flash(error.message, false);
+    else { flash('Suspension levée'); await loadAll(); }
     setActionLoading(null);
   }
 
@@ -667,25 +697,47 @@ function AdminDashboard() {
 
           {/* ═══════════ USERS ═══════════ */}
           {tab === 'users' && (
-            <AdminTable searchPlaceholder="Rechercher par nom ou téléphone..." search={search} onSearch={setSearch} filterValue={filter1} onFilter={setFilter1}
-              filterOptions={[{ value: 'all', label: 'Tous les rôles' }, { value: 'user', label: 'Utilisateur' }, { value: 'venue_owner', label: 'Propriétaire' }, { value: 'admin', label: 'Admin' }]}
-              headers={['Utilisateur', 'Téléphone', 'Rôle', 'KYC', 'Ville', 'Inscription', 'Actions']}
-              rows={filterList(users, 'full_name', 'role').map((u) => ({
-                key: u.id,
-                cells: [
-                  <span key="n" className="font-medium">{u.full_name || '—'}</span>,
-                  <span key="p" className="font-mono text-xs text-neutral-400">{u.phone || '—'}</span>,
-                  <Badge key="r" meta={ROLE_META[u.role]} />,
-                  <Badge key="k" meta={KYC_META[u.kyc_status]} />,
-                  <span key="c" className="text-neutral-400">{u.city || '—'}</span>,
-                  <span key="d" className="text-xs text-neutral-500">{fmtDate(u.created_at)}</span>,
-                  <ActionGroup key="a" loading={actionLoading === u.id} actions={[
-                    u.kyc_status !== 'verified' && { label: 'Vérifier KYC', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => updateProfile(u.id, { kyc_status: 'verified' }) },
-                    u.role !== 'admin' && { label: '→ Admin', cls: 'text-amber-400 hover:bg-amber-900/30', fn: () => updateProfile(u.id, { role: 'admin' }) },
-                    u.role !== 'user' && u.role !== 'admin' && { label: '→ User', cls: 'text-neutral-400 hover:bg-neutral-800', fn: () => updateProfile(u.id, { role: 'user' }) },
-                  ]} />,
-                ],
-              }))} total={filterList(users, 'full_name', 'role').length} />
+            <>
+              <AdminTable searchPlaceholder="Rechercher par nom ou téléphone..." search={search} onSearch={setSearch} filterValue={filter1} onFilter={setFilter1}
+                filterOptions={[{ value: 'all', label: 'Tous les rôles' }, { value: 'user', label: 'Utilisateur' }, { value: 'venue_owner', label: 'Propriétaire' }, { value: 'admin', label: 'Admin' }]}
+                headers={['Utilisateur', 'Téléphone', 'Rôle', 'KYC', 'Ville', 'Compte', 'Inscription', 'Actions']}
+                rows={filterList(users, 'full_name', 'role').map((u) => ({
+                  key: u.id,
+                  cells: [
+                    <span key="n" className="font-medium">
+                      {u.full_name || '—'}
+                      {u.is_super_admin && <span className="ml-2 rounded-full bg-gradient-to-r from-red-500/20 to-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-400 ring-1 ring-amber-500/30">Super admin</span>}
+                    </span>,
+                    <span key="p" className="font-mono text-xs text-neutral-400">{u.phone || '—'}</span>,
+                    <Badge key="r" meta={ROLE_META[u.role]} />,
+                    <Badge key="k" meta={KYC_META[u.kyc_status]} />,
+                    <span key="c" className="text-neutral-400">{u.city || '—'}</span>,
+                    <div key="ban">
+                      <Badge meta={BAN_STATUS[banStatusOf(u)]} />
+                      {u.is_suspended && u.suspended_until && (
+                        <p className="mt-1 text-[10px] text-neutral-500">jusqu'au {fmtDate(u.suspended_until)}</p>
+                      )}
+                    </div>,
+                    <span key="d" className="text-xs text-neutral-500">{fmtDate(u.created_at)}</span>,
+                    <ActionGroup key="a" loading={actionLoading === u.id} actions={[
+                      u.kyc_status !== 'verified' && { label: 'Vérifier KYC', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => updateProfile(u.id, { kyc_status: 'verified' }) },
+                      u.role !== 'admin' && { label: '→ Admin', cls: 'text-amber-400 hover:bg-amber-900/30', fn: () => updateProfile(u.id, { role: 'admin' }) },
+                      u.role !== 'user' && u.role !== 'admin' && { label: '→ User', cls: 'text-neutral-400 hover:bg-neutral-800', fn: () => updateProfile(u.id, { role: 'user' }) },
+                      !u.is_super_admin && !u.is_banned && { label: 'Bannir', cls: 'text-red-400 hover:bg-red-900/30', fn: () => setBanTarget(u) },
+                      !u.is_super_admin && !u.is_suspended && !u.is_banned && { label: 'Suspendre', cls: 'text-amber-400 hover:bg-amber-900/30', fn: () => setSuspendTarget(u) },
+                      u.is_banned && { label: 'Réactiver', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => unbanUser(u.id) },
+                      u.is_suspended && { label: 'Lever suspension', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => unsuspendUser(u.id) },
+                    ]} />,
+                  ],
+                }))} total={filterList(users, 'full_name', 'role').length} />
+
+              {banTarget && (
+                <BanModal user={banTarget} onClose={() => setBanTarget(null)} onDone={() => { setBanTarget(null); loadAll(); }} />
+              )}
+              {suspendTarget && (
+                <SuspendModal user={suspendTarget} onClose={() => setSuspendTarget(null)} onDone={() => { setSuspendTarget(null); loadAll(); }} />
+              )}
+            </>
           )}
 
           {/* ═══════════ VENUES ═══════════ */}
@@ -1211,6 +1263,94 @@ function ActionGroup({ loading, actions }: { loading: boolean; actions: (false |
   if (loading) return <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-700 border-t-primary-500" />;
   if (valid.length === 0) return <span className="text-neutral-700">—</span>;
   return <div className="flex gap-1">{valid.map((a) => <button key={a.label} onClick={a.fn} className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${a.cls}`}>{a.label}</button>)}</div>;
+}
+
+/**
+ * Modales Bannir / Suspendre — même pattern que AdjustModal (WalletsTab) :
+ * raison obligatoire, appel RPC SECURITY DEFINER (migration 0079), tracé
+ * dans audit_events côté serveur plutôt qu'un UPDATE direct depuis le client.
+ */
+function BanModal({ user, onClose, onDone }: { user: any; onClose: () => void; onDone: () => void }) {
+  const sb = supabaseBrowser();
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canSubmit = reason.trim().length >= 3 && !submitting;
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setError(null);
+    const { error } = await (sb.rpc as any)('admin_ban_user', { p_user_id: user.id, p_reason: reason.trim() });
+    setSubmitting(false);
+    if (error) { setError(error.message || 'Bannissement impossible'); return; }
+    onDone();
+  };
+
+  return (
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4" onClick={() => !submitting && onClose()}>
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+        <h3 className="font-display text-lg font-bold text-red-400">Bannir cet utilisateur</h3>
+        <p className="mt-1 text-sm text-neutral-400">{user.full_name || user.phone} — bannissement définitif.</p>
+
+        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          Raison (obligatoire, tracée dans le journal d'audit)
+        </label>
+        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="ex: fraude confirmée" className="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white" />
+
+        {error && <p className="mt-3 text-xs font-semibold text-red-400">{error}</p>}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button onClick={onClose} disabled={submitting} className="rounded-full border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-800 disabled:opacity-50">Annuler</button>
+          <button onClick={submit} disabled={!canSubmit} className="rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-40">{submitting ? 'Bannissement…' : 'Confirmer le bannissement'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SuspendModal({ user, onClose, onDone }: { user: any; onClose: () => void; onDone: () => void }) {
+  const sb = supabaseBrowser();
+  const [reason, setReason] = useState('');
+  const [days, setDays] = useState('7');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const daysNum = Number(days);
+  const canSubmit = reason.trim().length >= 3 && Number.isInteger(daysNum) && daysNum >= 1 && daysNum <= 365 && !submitting;
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setError(null);
+    const { error } = await (sb.rpc as any)('admin_suspend_user', { p_user_id: user.id, p_reason: reason.trim(), p_days: daysNum });
+    setSubmitting(false);
+    if (error) { setError(error.message || 'Suspension impossible'); return; }
+    onDone();
+  };
+
+  return (
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4" onClick={() => !submitting && onClose()}>
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
+        <h3 className="font-display text-lg font-bold text-amber-400">Suspendre cet utilisateur</h3>
+        <p className="mt-1 text-sm text-neutral-400">{user.full_name || user.phone} — suspension temporaire.</p>
+
+        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-neutral-500">Durée (jours)</label>
+        <input type="number" value={days} onChange={(e) => setDays(e.target.value)} min={1} max={365} className="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white" />
+
+        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          Raison (obligatoire, tracée dans le journal d'audit)
+        </label>
+        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="ex: comportement abusif signalé" className="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white" />
+
+        {error && <p className="mt-3 text-xs font-semibold text-red-400">{error}</p>}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button onClick={onClose} disabled={submitting} className="rounded-full border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-800 disabled:opacity-50">Annuler</button>
+          <button onClick={submit} disabled={!canSubmit} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-40">{submitting ? 'Suspension…' : 'Confirmer la suspension'}</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
