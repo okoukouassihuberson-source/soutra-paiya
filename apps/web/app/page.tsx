@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { LandingNavbar } from '@/components/marketing/LandingNavbar';
 import { PaymentLogo } from '@/components/marketing/PaymentLogo';
+import { EstablishmentLink } from '@/components/marketing/EstablishmentLink';
 
 export default function HomePage() {
   return (
@@ -51,12 +52,11 @@ export default function HomePage() {
                 Télécharger l&apos;app
                 <ArrowIcon className="transition-transform duration-300 group-hover:translate-x-1" />
               </a>
-              <Link
-                href="/pro"
+              <EstablishmentLink
                 className="inline-flex items-center justify-center rounded-full border border-neutral-700 px-6 py-3.5 text-sm font-medium text-neutral-300 transition-all duration-300 hover:border-neutral-500 hover:bg-white/[0.03] hover:text-white sm:px-8 sm:py-4 sm:text-base"
               >
                 Espace établissement
-              </Link>
+              </EstablishmentLink>
             </div>
 
             {/* Social proof — grille égale 3 cols sur mobile pour lisibilité */}
@@ -589,13 +589,12 @@ export default function HomePage() {
                 0 % de commission les 3 premiers mois
               </div>
               <div className="mt-8">
-                <Link
-                  href="/pro"
+                <EstablishmentLink
                   className="group inline-flex items-center gap-2 rounded-full bg-secondary-500 px-8 py-4 font-semibold text-white shadow-lg shadow-secondary-500/25 transition-all duration-300 hover:bg-secondary-600 hover:shadow-secondary-500/40"
                 >
                   Ouvrir mon dashboard
                   <ArrowIcon className="transition-transform duration-300 group-hover:translate-x-1" />
-                </Link>
+                </EstablishmentLink>
               </div>
             </div>
 
@@ -727,9 +726,9 @@ export default function HomePage() {
               </h4>
               <ul className="space-y-3 text-sm">
                 <li>
-                  <Link href="/pro" className="transition hover:text-white">
+                  <EstablishmentLink className="transition hover:text-white">
                     Espace Pro
-                  </Link>
+                  </EstablishmentLink>
                 </li>
                 <li>
                   <a href="#" className="transition hover:text-white">
