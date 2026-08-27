@@ -24,6 +24,10 @@ export function LandingNavbar() {
   // l'état initial est `null` (= inconnu), on rend rien tant qu'on n'a pas
   // de réponse pour éviter le flash.
   const [authed, setAuthed] = useState<boolean | null>(null);
+  // Cible du lien « Espace Pro » : /admin pour un admin déjà connecté (sinon
+  // il se retrouve renvoyé sur le dashboard Pro au lieu de l'admin quand il
+  // revient sur la vitrine sans s'être déconnecté), /pro sinon.
+  const [proHref, setProHref] = useState('/pro');
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
@@ -35,11 +39,24 @@ export function LandingNavbar() {
   useEffect(() => {
     let cancelled = false;
     const sb = supabaseBrowser();
+
+    async function resolveProHref(userId?: string) {
+      if (!userId) { if (!cancelled) setProHref('/pro'); return; }
+      const { data: profile } = await (sb as any)
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+      if (!cancelled) setProHref(profile?.role === 'admin' ? '/admin' : '/pro');
+    }
+
     sb.auth.getSession().then(({ data }) => {
       if (!cancelled) setAuthed(!!data.session);
+      resolveProHref(data.session?.user?.id);
     });
     const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
       setAuthed(!!session);
+      resolveProHref(session?.user?.id);
     });
     return () => {
       cancelled = true;
@@ -102,7 +119,7 @@ export function LandingNavbar() {
                 Nouveau
               </span>
             </Link>
-            <Link href="/pro" className="text-sm text-neutral-400 transition hover:text-white">
+            <Link href={proHref} className="text-sm text-neutral-400 transition hover:text-white">
               Espace Pro
             </Link>
           </div>
@@ -184,7 +201,7 @@ export function LandingNavbar() {
                 { href: '#features', label: 'Fonctionnalités', accent: false },
                 { href: '/loyalty', label: 'Fidélité', accent: false },
                 { href: '/subscribe', label: 'Premium', accent: true },
-                { href: '/pro', label: 'Espace Pro', accent: false },
+                { href: proHref, label: 'Espace Pro', accent: false },
                 authed
                   ? { href: '/account', label: 'Mon compte', accent: false }
                   : { href: '/login', label: 'Se connecter', accent: false },
