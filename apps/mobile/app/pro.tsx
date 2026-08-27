@@ -179,11 +179,15 @@ export default function ProDashboard() {
           <Ionicons name="storefront-outline" size={48} color={c.neutral[300]} />
           <Text style={s.emptyTitle}>Aucun établissement</Text>
           <Text style={s.emptySub}>
-            Tu n'es propriétaire d'aucun lieu sur Soutra-Playce.
-            {'\n'}Revendique ton établissement depuis sa fiche.
+            Crée ton établissement — il sera actif immédiatement sur
+            Soutra-Playce. Ou revendique un lieu qui t'appartient déjà
+            depuis sa fiche.
           </Text>
-          <Pressable onPress={() => router.push('/(tabs)/explore')} style={[s.primaryBtn, { marginTop: spacing.lg }]}>
-            <Text style={s.primaryBtnText}>Explorer les lieux</Text>
+          <Pressable onPress={() => router.push('/pro-create' as any)} style={[s.primaryBtn, { marginTop: spacing.lg }]}>
+            <Text style={s.primaryBtnText}>Créer mon établissement</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push('/(tabs)/explore')} style={{ marginTop: spacing.md }}>
+            <Text style={s.linkText}>Ou explorer les lieux pour en revendiquer un</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -198,17 +202,26 @@ export default function ProDashboard() {
           <Ionicons name="chevron-back" size={26} color={c.dark} />
         </Pressable>
         <Text style={s.headerTitle}>Espace gérant</Text>
-        <Pressable
-          onPress={handleExportPdf}
-          disabled={exporting || !summary}
-          hitSlop={10}
-          accessibilityLabel="Exporter en PDF"
-          style={{ opacity: summary && !exporting ? 1 : 0.3 }}
-        >
-          {exporting
-            ? <ActivityIndicator size="small" color={c.primary[500]} />
-            : <Ionicons name="document-text-outline" size={24} color={c.primary[500]} />}
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <Pressable
+            onPress={() => router.push(`/pro-manage?venueId=${selectedVenueId}` as any)}
+            hitSlop={10}
+            accessibilityLabel="Gérer les informations de l'établissement"
+          >
+            <Ionicons name="create-outline" size={24} color={c.primary[500]} />
+          </Pressable>
+          <Pressable
+            onPress={handleExportPdf}
+            disabled={exporting || !summary}
+            hitSlop={10}
+            accessibilityLabel="Exporter en PDF"
+            style={{ opacity: summary && !exporting ? 1 : 0.3 }}
+          >
+            {exporting
+              ? <ActivityIndicator size="small" color={c.primary[500]} />
+              : <Ionicons name="document-text-outline" size={24} color={c.primary[500]} />}
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
@@ -555,6 +568,7 @@ function makeStyles(c: ColorPalette) {
       borderRadius: radius.full,
     },
     primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: typography.fontSize.base },
+    linkText: { color: c.primary[600], fontWeight: '600', fontSize: typography.fontSize.sm, textAlign: 'center' },
 
     // Venue selector
     venueChip: {
