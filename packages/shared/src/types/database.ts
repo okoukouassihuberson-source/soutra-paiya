@@ -21,6 +21,14 @@ export interface Database {
           pin_hash: string | null;
           referral_code: string | null;
           referred_by: string | null;
+          is_super_admin: boolean;             // migration 0081
+          is_banned: boolean;                  // migration 0081
+          is_suspended: boolean;                // migration 0081
+          banned_at: string | null;             // migration 0081
+          suspended_at: string | null;          // migration 0081
+          ban_reason: string | null;            // migration 0081
+          suspension_reason: string | null;     // migration 0081
+          suspended_until: string | null;       // migration 0081
           created_at: string;
           updated_at: string;
         };
