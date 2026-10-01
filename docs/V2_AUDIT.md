@@ -32,8 +32,8 @@
 | SEO (sitemap, robots, JSON-LD, OG) | **PARTIEL → COMPLÉTÉ** | `sitemap.xml`, `robots.txt`, JSON-LD `TouristTrip/TouristDestination`, métadonnées. |
 | Marketplace d'activités | **ABSENT** | phase 2. |
 | Multilingue FR/EN | **ABSENT** | phase 3 (i18n sur les nouvelles pages). |
-| Billet QR des voyages | **PARTIEL** | jeton `qr_token` + RPC `scan_trip_ticket` prêts ; écran billet/scan à brancher. |
-| Paiement des voyages (acompte/solde/reçu) | **PARTIEL** | réservation + montants prêts ; Edge Function `*-pay-trip` à créer sur le modèle `geniuspay-pay-booking`. |
+| Billet QR des voyages | **AJOUTÉ (phase 2)** | `/mes-voyages/[id]` (QR généré localement) + `/scan-voyage` (caméra ou saisie). Mobile : à faire. |
+| Paiement des voyages (acompte/solde/reçu) | **AJOUTÉ (phase 2, GeniusPay)** | Edge Function `geniuspay-pay-trip`, `trip_payments` (reçus). Paystack non étendu (comme les billets 0077). |
 
 ## 3. Livré dans cette phase (1)
 1. **Migration `0082_tourism_foundation.sql`** (100 % additive, aucune table existante modifiée) : `destinations`, `trips`, `trip_itineraries`, `trip_packages`, `trip_bookings`, rôle `guide`. RLS : lecture publique des voyages publiés ; l'organisateur gère ses voyages en brouillon (la publication, les compteurs de places et la commission sont verrouillés par trigger → modération admin) ; `trip_bookings` sans écriture directe, uniquement via RPC (`create_trip_booking` avec verrou de ligne anti-surbooking et prix calculé côté serveur, `cancel_trip_booking`, `scan_trip_ticket`).
@@ -41,11 +41,18 @@
 3. **Web** : accueil touristique (hero + recherche + 12 catégories + destinations + voyages à la une), `/explorer`, `/destinations`, `/destinations/[slug]` (« Explorer une destination » : voyages, hébergements, restaurants, bars, plages, sites, activités, événements, galerie, carte), `/voyages/nationaux`, `/voyages/internationaux`, `/voyages/[slug]` (programme, inclusions, formules, réservation), navigation principale + barre mobile, `sitemap.xml`, `robots.txt`.
 4. **Données de démo** : `supabase/seed-dev-tourism.sql` (hors migrations, dev uniquement).
 
+## 3 bis. Livré en phase 2 (paiement + billet QR)
+1. **Migration `0083_trip_payments.sql`** (additive) : `trip_payments` (reçus), `get_trip_booking_payment_info` (montant acompte/solde/total calculé côté serveur), `geniuspay_settle_trip_booking` (idempotent, plafonné au total), branche `trip_booking` dans `geniuspay_settle_charge` (version 0077 conservée), expiration des impayés après 24 h (libère les places), annulation client refusée si de l'argent a été encaissé (`REFUND_REQUIRED`), scan QR enrichi (voyageur, solde dû), helpers RLS anti-récursion.
+2. **Correctif de sécurité sur 0082** (dans 0083) : le garde `tg_trips_guard` était inopérant (`security definer`) ; un organisateur pouvait publier son voyage ou fixer ses compteurs/commission.
+3. **Edge Function `geniuspay-pay-trip`**, branchement du callback web `sp-trp-`.
+4. **Web** : `/mes-voyages`, `/mes-voyages/[id]` (billet QR, paiements, reçus, acompte/solde, annulation), `/scan-voyage`.
+5. **Tests** : 0082+0083 exécutées sur PostgreSQL 16 (schéma Supabase simulé) : surbooking, falsification des compteurs, RLS, acompte → solde → payé, idempotence, double scan, expiration, annulation. Le webhook/GeniusPay réel n'a pas été testé (pas d'accès aux clés).
+
 ## 4. Feuille de route
-- **Phase 2** : filtres avancés + carte (Leaflet) sur `/explorer` ; activités (table `activities` + réservation) ; `*-pay-trip` (acompte/solde/reçu) + billet QR + scan organisateur ; écran « Mon espace » (réservations de voyages) ; admin CRUD destinations/voyages + modération + stats ; espace organisateur (création de voyages).
+- **Reste de la phase 2 (non fait)** : filtres avancés + carte (Leaflet) sur `/explorer` ; activités (table `activities` + réservation) ; écran mobile des voyages ; admin CRUD destinations/voyages + modération + stats ; espace organisateur (création de voyages).
 - **Phase 3** : i18n FR/EN ; notifications voyages (rappel, solde à payer) + email ; promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions
-- Appliquer la migration : `supabase db push` (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.
+- Déployer : `supabase db push` puis `supabase functions deploy geniuspay-pay-trip`. Appliquer 0082 puis 0083 (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.
 - Ne jamais exécuter `seed-dev-tourism.sql` en production.
 - Variables d'environnement : aucune nouvelle. `NEXT_PUBLIC_SITE_URL` recommandée pour sitemap/OG.

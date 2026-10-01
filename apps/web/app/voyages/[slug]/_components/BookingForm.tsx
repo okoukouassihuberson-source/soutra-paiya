@@ -22,6 +22,7 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [bookingId, setBookingId] = useState<string | null>(null);
 
   const unit = packages.find((p) => p.id === pkg)?.price_xof ?? basePrice;
 
@@ -40,7 +41,8 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
       setMsg({ ok: false, text: code ? ERRORS[code] : 'Réservation impossible, réessayez.' });
       return;
     }
-    setMsg({ ok: true, text: `Réservation ${data.reference} enregistrée (${formatXOF(data.total_xof)}). Le paiement et votre billet QR seront disponibles dans Mon espace.` });
+    setMsg({ ok: true, text: `Réservation ${data.reference} enregistrée (${formatXOF(data.total_xof)}). Payez dans les 24 h pour garantir vos places.` });
+    setBookingId(data.id);
   }
 
   if (seatsLeft === 0) return <p className="rounded-xl bg-neutral-100 p-4 text-center font-semibold">Voyage complet</p>;
@@ -77,6 +79,7 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
       {msg && (msg.text === 'login'
         ? <p className="text-sm text-danger">Connectez-vous pour réserver : <Link className="underline" href="/login">Se connecter</Link></p>
         : <p role="status" className={`text-sm ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</p>)}
+      {bookingId && <Link href={`/mes-voyages/${bookingId}`} className="block rounded-xl bg-emerald-600 py-3 text-center font-semibold text-white">Payer et obtenir mon billet →</Link>}
     </form>
   );
 }

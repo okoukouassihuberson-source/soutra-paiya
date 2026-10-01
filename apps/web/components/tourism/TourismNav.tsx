@@ -26,7 +26,7 @@ export function TourismNav() {
             ))}
           </nav>
           <div className="flex items-center gap-3 text-sm">
-            <Link href="/account" className="hidden font-medium text-neutral-600 hover:text-primary-600 sm:inline">Favoris</Link>
+            <Link href="/mes-voyages" className="hidden font-medium text-neutral-600 hover:text-primary-600 sm:inline">Mes voyages</Link>
             <Link href="/login" className="rounded-full bg-primary-500 px-4 py-2 font-semibold text-white hover:bg-primary-600">Mon compte</Link>
           </div>
         </div>

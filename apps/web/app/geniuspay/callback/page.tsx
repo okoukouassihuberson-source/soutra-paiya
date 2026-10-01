@@ -79,6 +79,28 @@ function CallbackInner() {
       return;
     }
 
+    // Cas 1 bis : paiement de voyage groupé (sp-trp-…) → verify + retour sur
+    // la réservation (/mes-voyages/[id]). Même logique que les abonnements.
+    if (reference && reference.startsWith('sp-trp-')) {
+      const bookingId = searchParams?.get('booking');
+      const back = (outcome: string) =>
+        router.replace(bookingId ? `/mes-voyages/${encodeURIComponent(bookingId)}?status=${outcome}` : '/mes-voyages');
+      setStage('verifying');
+      (async () => {
+        try {
+          if (forcedFailed) { back('failed'); return; }
+          const { data, error } = await (sb.functions as any).invoke('geniuspay-verify', { body: { reference } });
+          if (error) { console.error('[gp-callback] verify trip:', error); back('failed'); return; }
+          const status = (data as { status?: string } | null)?.status;
+          back(status === 'success' ? 'success' : status === 'pending' ? 'pending' : 'failed');
+        } catch (err) {
+          console.error('[gp-callback] verify trip fatal:', err);
+          back('failed');
+        }
+      })();
+      return;
+    }
+
     // Cas 2 : flows mobile → deep-link (voir doc en tête de fichier).
     const target = `soutrapaiya://geniuspay${window.location.search}`;
     setDeepLink(target);
