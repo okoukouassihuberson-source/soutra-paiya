@@ -1,81 +1,18 @@
 import Link from 'next/link';
 import { LandingNavbar } from '@/components/marketing/LandingNavbar';
 import { PaymentLogo } from '@/components/marketing/PaymentLogo';
+import { HomeTourism } from '@/components/tourism/HomeTourism';
 import { EstablishmentLink } from '@/components/marketing/EstablishmentLink';
+
+export const revalidate = 120;
 
 export default function HomePage() {
   return (
     <main className="overflow-x-hidden">
       <LandingNavbar />
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/*  HERO                                                  */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <section className="relative min-h-[100dvh] bg-dark pb-16 pt-24 sm:pb-20 sm:pt-28 lg:pb-32 lg:pt-36">
-        {/* Gradient orbs */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-[40%] left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-primary-500/20 blur-[120px] sm:h-[800px] sm:w-[800px]" />
-          <div className="absolute bottom-0 right-0 h-[300px] w-[300px] rounded-full bg-secondary-500/10 blur-[100px] sm:h-[400px] sm:w-[400px]" />
-          <div className="absolute left-0 top-1/3 h-[200px] w-[200px] rounded-full bg-accent-500/10 blur-[80px] sm:h-[300px] sm:w-[300px]" />
-        </div>
-
-        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 sm:gap-12 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
-          {/* ── Left: Copy ── */}
-          <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/10 px-3 py-1 text-xs backdrop-blur-sm sm:px-4 sm:py-1.5 sm:text-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-400" />
-              </span>
-              <span className="text-primary-300">Disponible à Abidjan</span>
-            </div>
-
-            <h1 className="mt-6 font-display text-[2.5rem] font-bold leading-[1.08] tracking-tight text-white sm:mt-8 sm:text-5xl md:text-6xl lg:text-7xl">
-              Sors. Réserve.
-              <br />
-              <span className="bg-gradient-to-r from-primary-400 via-warning to-primary-500 bg-clip-text text-transparent">
-                Paie. C&apos;est tout.
-              </span>
-            </h1>
-
-            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-neutral-400 sm:mt-6 sm:text-lg lg:mx-0">
-              Trouve les meilleurs maquis et restos d&apos;Abidjan. Réserve ta table
-              en 10 secondes. Paie avec Orange Money, Wave ou MTN.{' '}
-              <span className="text-neutral-300">C&apos;est garanti.</span>
-            </p>
-
-            <div className="mt-8 flex flex-col items-stretch gap-3 sm:mt-10 sm:flex-row sm:gap-4 sm:items-center lg:justify-start">
-              <a
-                href="#download"
-                className="group inline-flex items-center justify-center gap-2.5 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-3.5 text-sm font-semibold text-white shadow-2xl shadow-primary-500/25 transition-all duration-300 hover:shadow-[0_20px_60px_-15px_rgba(255,107,26,0.5)] sm:px-8 sm:py-4 sm:text-base"
-              >
-                Télécharger l&apos;app
-                <ArrowIcon className="transition-transform duration-300 group-hover:translate-x-1" />
-              </a>
-              <EstablishmentLink
-                className="inline-flex items-center justify-center rounded-full border border-neutral-700 px-6 py-3.5 text-sm font-medium text-neutral-300 transition-all duration-300 hover:border-neutral-500 hover:bg-white/[0.03] hover:text-white sm:px-8 sm:py-4 sm:text-base"
-              >
-                Espace établissement
-              </EstablishmentLink>
-            </div>
-
-            {/* Social proof — grille égale 3 cols sur mobile pour lisibilité */}
-            <div className="mt-10 grid grid-cols-3 gap-4 sm:mt-14 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-8 lg:justify-start">
-              <HeroStat value="200+" label="Établissements" />
-              <div className="hidden h-10 w-px bg-neutral-800 sm:block" />
-              <HeroStat value="15K+" label="Utilisateurs" />
-              <div className="hidden h-10 w-px bg-neutral-800 sm:block" />
-              <HeroStat value="★ 4.7" label="Sur les stores" />
-            </div>
-          </div>
-
-          {/* ── Right: Phone ── (sous le copy sur mobile/tablet via grid 1-col) */}
-          <div className="relative mx-auto w-full max-w-xs sm:max-w-sm lg:mx-0 lg:ml-auto lg:max-w-none">
-            <div className="absolute -inset-12 animate-glow-pulse rounded-full bg-gradient-to-br from-primary-500/20 to-warning/10 blur-[80px]" />
-            <PhoneMockup />
-          </div>
-        </div>
-      </section>
+      {/* V2 : portail touristique (hero recherche, catégories, destinations, voyages) */}
+      <HomeTourism />
 
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  TRUST — PAIEMENT SÉCURISÉ                              */}

@@ -101,6 +101,18 @@ export function LandingNavbar() {
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
+            <Link href="/explorer" className="text-sm text-neutral-400 transition hover:text-white">
+              Explorer
+            </Link>
+            <Link href="/destinations" className="text-sm text-neutral-400 transition hover:text-white">
+              Destinations
+            </Link>
+            <Link href="/voyages/nationaux" className="text-sm text-neutral-400 transition hover:text-white">
+              Voyages 🇨🇮
+            </Link>
+            <Link href="/voyages/internationaux" className="text-sm text-neutral-400 transition hover:text-white">
+              Voyages 🌍
+            </Link>
             <a href="#how" className="text-sm text-neutral-400 transition hover:text-white">
               Comment ça marche
             </a>

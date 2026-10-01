@@ -7,3 +7,4 @@ export * from './pro-modules';
 export * from './revenue-report';
 export * from './loyalty-levels';
 export * from './fees';
+export * from './tourism';
