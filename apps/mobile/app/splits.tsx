@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n';
 
 interface SplitRow {
   id: string;
@@ -24,6 +25,7 @@ interface SplitRow {
 }
 
 export default function Splits() {
+  const { t, intl } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id;
@@ -69,7 +71,7 @@ export default function Splits() {
         <Pressable hitSlop={10} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </Pressable>
-        <Text style={s.headerTitle}>Partages d'addition</Text>
+        <Text style={s.headerTitle}>{t('splitView.listTitle')}</Text>
         <Pressable hitSlop={10} onPress={() => router.push('/split-create')}>
           <Ionicons name="add-circle" size={28} color={colors.primary[500]} />
         </Pressable>
@@ -92,14 +94,14 @@ export default function Splits() {
         >
           <Pressable style={s.newBtn} onPress={() => router.push('/split-create')}>
             <Ionicons name="add" size={20} color="#fff" />
-            <Text style={s.newBtnText}>Nouveau partage</Text>
+            <Text style={s.newBtnText}>{t('splitView.newSplit')}</Text>
           </Pressable>
 
           {splits.length === 0 ? (
             <View style={s.empty}>
-              <Text style={s.emptyText}>Aucun partage pour le moment.</Text>
+              <Text style={s.emptyText}>{t('splitView.none')}</Text>
               <Text style={s.emptyHint}>
-                Partage une addition entre amis — chacun reçoit une demande.
+                {t('splitView.noneBody')}
               </Text>
             </View>
           ) : (
@@ -113,10 +115,10 @@ export default function Splits() {
                   onPress={() => router.push({ pathname: '/split', params: { id: sp.id } })}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={s.cardTitle}>{sp.title || 'Partage d\'addition'}</Text>
+                    <Text style={s.cardTitle}>{sp.title || t('splitView.defaultTitle')}</Text>
                     <Text style={s.cardSub}>
-                      {paid}/{reqs.length} payé ·{' '}
-                      {new Date(sp.created_at).toLocaleDateString('fr-FR')}
+                      {t('splitView.paidShort', { paid, total: reqs.length })} ·{' '}
+                      {new Date(sp.created_at).toLocaleDateString(intl)}
                     </Text>
                   </View>
                   <Text style={s.cardAmount}>{formatXOF(sp.total_xof)}</Text>

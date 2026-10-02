@@ -16,6 +16,7 @@ import { typography, radius, spacing, formatXOF, type ColorPalette } from '@sout
 import { supabase } from '@/lib/supabase';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useI18n } from '@/lib/i18n';
 
 interface MenuItem {
   id: string;
@@ -34,6 +35,7 @@ interface VenueLite {
 }
 
 export default function MenuScreen() {
+  const { t } = useI18n();
   const { venueId } = useLocalSearchParams<{ venueId: string }>();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -90,15 +92,15 @@ export default function MenuScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Menu" subtitle={venue?.name} />
+      <ScreenHeader title={t('menuScreen.title')} subtitle={venue?.name} />
 
       {loading ? (
         <ActivityIndicator size="large" color={c.primary[500]} style={s.center} />
       ) : items.length === 0 ? (
         <View style={s.center}>
           <Ionicons name="restaurant-outline" size={40} color={c.neutral[300]} />
-          <Text style={s.emptyTitle}>Menu pas encore publié</Text>
-          <Text style={s.emptyText}>Ce restaurant n'a pas encore ajouté son menu.</Text>
+          <Text style={s.emptyTitle}>{t('menuScreen.empty')}</Text>
+          <Text style={s.emptyText}>{t('menuScreen.emptyBody')}</Text>
         </View>
       ) : (
         <ScrollView
@@ -126,7 +128,7 @@ export default function MenuScreen() {
                       <Text style={s.itemPrice}>{formatXOF(item.price_xof)}</Text>
                       {!item.available && (
                         <View style={s.unavailableBadge}>
-                          <Text style={s.unavailableText}>Indisponible</Text>
+                          <Text style={s.unavailableText}>{t('menuScreen.unavailable')}</Text>
                         </View>
                       )}
                     </View>

@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * /shop/[venueId] — catalogue produits mobile.
@@ -43,6 +44,7 @@ interface VenueLite {
 }
 
 export default function ShopScreen() {
+  const { t } = useI18n();
   const { venueId } = useLocalSearchParams<{ venueId: string }>();
   const router = useRouter();
   const { user } = useAuth();
@@ -105,7 +107,7 @@ export default function ShopScreen() {
   if (loading && !venue) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader title="Catalogue" />
+        <ScreenHeader title={t('shopScreen.title')} />
         <View style={s.center}>
           <ActivityIndicator color={c.primary[500]} />
         </View>
@@ -124,9 +126,9 @@ export default function ShopScreen() {
         {products.length === 0 ? (
           <View style={s.empty}>
             <Ionicons name="bag-outline" size={56} color={c.neutral[400]} />
-            <Text style={s.emptyTitle}>Catalogue vide</Text>
+            <Text style={s.emptyTitle}>{t('shopScreen.empty')}</Text>
             <Text style={s.emptyBody}>
-              Le marchand n&apos;a pas encore publié de produits. Reviens plus tard !
+              {t('shopScreen.emptyBody')}
             </Text>
           </View>
         ) : (
@@ -145,7 +147,7 @@ export default function ShopScreen() {
           onPress={() => router.push('/cart' as any)}
         >
           <Ionicons name="cart" size={20} color="#fff" />
-          <Text style={s.cartBtnLabel}>Voir le panier</Text>
+          <Text style={s.cartBtnLabel}>{t('shopScreen.cart')}</Text>
           <View style={s.cartBtnBadge}>
             <Text style={s.cartBtnBadgeText}>{cartCount}</Text>
           </View>
@@ -169,6 +171,7 @@ export default function ShopScreen() {
 function ProductCard({
   c, product, onPress,
 }: { c: ColorPalette; product: Product; onPress: () => void }) {
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const isOutOfStock = product.status === 'out_of_stock'
     || (product.stock_quantity != null && product.stock_quantity === 0);
@@ -189,7 +192,7 @@ function ProductCard({
         )}
         {isOutOfStock && (
           <View style={s.cardOverlay}>
-            <Text style={s.cardOverlayText}>Épuisé</Text>
+            <Text style={s.cardOverlayText}>{t('shopScreen.soldOut')}</Text>
           </View>
         )}
         {!isOutOfStock && lowStock && (
@@ -218,6 +221,7 @@ function ProductDetailModal({
   onClose: () => void;
   onAdded: (qtyAdded: number) => void;
 }) {
+  const { t } = useI18n();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
   const [qty, setQty] = useState(1);
@@ -247,7 +251,7 @@ function ProductDetailModal({
     });
     setAdding(false);
     if (error) {
-      Alert.alert('Erreur', error.message || 'Impossible d\'ajouter au panier');
+      Alert.alert(t('shopScreen.error'), error.message || t('shopScreen.addFail'));
       return;
     }
     onAdded(qty);
@@ -306,7 +310,7 @@ function ProductDetailModal({
             {/* Quantité */}
             {!isOutOfStock && (
               <View style={s.qtyBlock}>
-                <Text style={s.variantLabel}>Quantité</Text>
+                <Text style={s.variantLabel}>{t('shopScreen.qty')}</Text>
                 <View style={s.qtyRow}>
                   <Pressable
                     onPress={() => setQty((q) => Math.max(1, q - 1))}
@@ -334,7 +338,7 @@ function ProductDetailModal({
             <View style={s.modalActions}>
               {isOutOfStock ? (
                 <View style={[s.addBtn, s.addBtnDisabled]}>
-                  <Text style={s.addBtnText}>Épuisé</Text>
+                  <Text style={s.addBtnText}>{t('shopScreen.soldOut')}</Text>
                 </View>
               ) : (
                 <Pressable
@@ -344,12 +348,12 @@ function ProductDetailModal({
                 >
                   <Ionicons name="cart" size={18} color="#fff" />
                   <Text style={s.addBtnText}>
-                    {adding ? 'Ajout…' : `Ajouter au panier · ${formatXOF(product.price_xof * qty)}`}
+                    {adding ? t('shopScreen.adding') : t('shopScreen.add', { amount: formatXOF(product.price_xof * qty) })}
                   </Text>
                 </Pressable>
               )}
               <Pressable onPress={onClose} style={s.cancelBtn}>
-                <Text style={s.cancelBtnText}>Fermer</Text>
+                <Text style={s.cancelBtnText}>{t('shopScreen.close')}</Text>
               </Pressable>
             </View>
           </ScrollView>

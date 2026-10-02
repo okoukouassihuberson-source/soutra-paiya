@@ -407,4 +407,13 @@ export const en: Dict = {
   },
   eventsList: { title: 'Events', subtitle: 'Concerts, parties, upcoming outings', empty: 'No published events', emptyBody: 'Check back soon to discover the next outings.', free: 'Free entry', from: 'From {amount}', soldOut: 'SOLD OUT', tbc: 'Venue to be confirmed' },
   globalSearch: { title: 'Search', placeholder: 'Contact, transaction, place…', hint: 'Type at least 2 characters to search your contacts, transactions and places.', none: 'No results for “{query}”.', contacts: 'Contacts', transactions: 'Transactions', venues: 'Places' },
+  chatRoom: { loadFail: 'Could not load.', sendFail: 'Could not send.', error: 'Error', empty: 'No messages yet. Start the conversation 👋', placeholder: 'Write a message…' },
+  favs: { title: 'My favourites', empty: 'No favourites', emptyBody: 'Add places with the heart from their page.', delFail: 'Could not delete.', error: 'Error' },
+  menuScreen: { title: 'Menu', empty: 'Menu not published yet', emptyBody: 'This restaurant has not added its menu yet.', unavailable: 'Unavailable' },
+  shopScreen: { title: 'Catalogue', empty: 'Empty catalogue', emptyBody: 'The merchant has not published any products yet. Come back later!', cart: 'View cart', soldOut: 'Sold out', qty: 'Quantity', adding: 'Adding…', add: 'Add to cart · {amount}', close: 'Close', addFail: 'Could not add to cart', error: 'Error' },
+  splitView: {
+    paid: 'Paid', pending: 'Pending', declined: 'Declined', cancelled: 'Cancelled', title: 'Split', notFound: 'Split not found.', tracking: 'Split tracking', defaultTitle: 'Bill split', paidOf: '{paid}/{total} have paid', collected: '{amount} collected', participants: 'Participants', participant: 'Participant',
+    listTitle: 'Bill splits', newSplit: 'New split', none: 'No splits yet.', noneBody: 'Split a bill with friends — everyone gets a request.', paidShort: '{paid}/{total} paid',
+    soon: 'Split Bill', soonSub: 'Split the bill between friends', soonTitle: 'Coming soon', soonBody: 'Splitting the bill between friends arrives in the next update. Meanwhile, you can use “Request” to ask each person for their share manually.', openRequest: 'Open Request',
+  },
 };

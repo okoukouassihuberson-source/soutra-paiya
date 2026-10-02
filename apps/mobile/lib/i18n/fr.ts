@@ -409,6 +409,15 @@ export const fr = {
   },
   eventsList: { title: 'Événements', subtitle: 'Concerts, soirées, sorties à venir', empty: 'Aucun événement publié', emptyBody: 'Reviens bientôt pour découvrir les prochaines sorties.', free: 'Entrée libre', from: 'À partir de {amount}', soldOut: 'COMPLET', tbc: 'Lieu à confirmer' },
   globalSearch: { title: 'Recherche', placeholder: 'Contact, transaction, lieu…', hint: 'Tape au moins 2 caractères pour chercher parmi tes contacts, tes transactions et les lieux.', none: 'Aucun résultat pour « {query} ».', contacts: 'Contacts', transactions: 'Transactions', venues: 'Lieux' },
+  chatRoom: { loadFail: 'Chargement impossible.', sendFail: 'Envoi échoué.', error: 'Erreur', empty: 'Aucun message pour l’instant. Lance la conversation 👋', placeholder: 'Écris un message…' },
+  favs: { title: 'Mes favoris', empty: 'Aucun favori', emptyBody: 'Ajoute des lieux avec le cœur depuis leur fiche.', delFail: 'Suppression impossible.', error: 'Erreur' },
+  menuScreen: { title: 'Menu', empty: 'Menu pas encore publié', emptyBody: 'Ce restaurant n’a pas encore ajouté son menu.', unavailable: 'Indisponible' },
+  shopScreen: { title: 'Catalogue', empty: 'Catalogue vide', emptyBody: 'Le marchand n’a pas encore publié de produits. Reviens plus tard !', cart: 'Voir le panier', soldOut: 'Épuisé', qty: 'Quantité', adding: 'Ajout…', add: 'Ajouter au panier · {amount}', close: 'Fermer', addFail: 'Impossible d’ajouter au panier', error: 'Erreur' },
+  splitView: {
+    paid: 'Payé', pending: 'En attente', declined: 'Refusé', cancelled: 'Annulé', title: 'Partage', notFound: 'Partage introuvable.', tracking: 'Suivi du partage', defaultTitle: 'Partage d’addition', paidOf: '{paid}/{total} ont payé', collected: '{amount} collecté', participants: 'Participants', participant: 'Participant',
+    listTitle: 'Partages d’addition', newSplit: 'Nouveau partage', none: 'Aucun partage pour le moment.', noneBody: 'Partage une addition entre amis — chacun reçoit une demande.', paidShort: '{paid}/{total} payé',
+    soon: 'Split Note', soonSub: 'Découpe la note entre amis', soonTitle: 'Bientôt disponible', soonBody: 'La découpe d’addition entre amis arrive dans la prochaine mise à jour. En attendant, tu peux utiliser « Demander » pour réclamer ta part à chacun manuellement.', openRequest: 'Ouvrir Demander',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

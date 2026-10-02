@@ -7,8 +7,10 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { listMessages, sendMessage, markChatRead, type ChatMessage } from '@/lib/chat';
+import { useI18n } from '@/lib/i18n';
 
 export default function ChatScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
@@ -43,7 +45,7 @@ export default function ChatScreen() {
       // Marque comme lu après chargement.
       await markChatRead(id);
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Chargement impossible.');
+      Alert.alert(t('chatRoom.error'), err?.message ?? t('chatRoom.loadFail'));
     } finally {
       setLoading(false);
     }
@@ -84,7 +86,7 @@ export default function ChatScreen() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     } catch (err: any) {
       setBody(text);  // restore on error
-      Alert.alert('Erreur', err?.message ?? 'Envoi échoué.');
+      Alert.alert(t('chatRoom.error'), err?.message ?? t('chatRoom.sendFail'));
     } finally {
       setSending(false);
     }
@@ -117,7 +119,7 @@ export default function ChatScreen() {
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
           >
             {messages.length === 0 && (
-              <Text style={s.emptyText}>Aucun message pour l'instant. Lance la conversation 👋</Text>
+              <Text style={s.emptyText}>{t('chatRoom.empty')}</Text>
             )}
             {messages.map((m) => {
               const mine = m.sender_id === user?.id;
@@ -137,7 +139,7 @@ export default function ChatScreen() {
           <TextInput
             value={body}
             onChangeText={setBody}
-            placeholder="Écris un message…"
+            placeholder={t('chatRoom.placeholder')}
             placeholderTextColor={colors.neutral[400]}
             style={s.input}
             multiline
