@@ -9,21 +9,17 @@
  */
 
 import { supabase } from './supabase';
+import { tr, type TKey } from './i18n';
 
 export type PromoValidation =
   | { ok: true; promo_id: string; code: string; discount_pct: number }
   | { ok: false; reason: 'CODE_VIDE' | 'CODE_INTROUVABLE' | 'CODE_DESACTIVE' | 'CODE_EXPIRE' | 'CODE_EPUISE' | string };
 
-const REASON_LABEL: Record<string, string> = {
-  CODE_VIDE: 'Tape un code',
-  CODE_INTROUVABLE: 'Code inconnu pour cet établissement',
-  CODE_DESACTIVE: 'Code désactivé',
-  CODE_EXPIRE: 'Code expiré',
-  CODE_EPUISE: 'Code épuisé (limite atteinte)',
-};
+const REASONS = ['CODE_VIDE', 'CODE_INTROUVABLE', 'CODE_DESACTIVE', 'CODE_EXPIRE', 'CODE_EPUISE'];
 
+/** Message localisé pour un motif de refus de code promo (réservation de table). */
 export function reasonLabel(reason: string): string {
-  return REASON_LABEL[reason] ?? `Code invalide (${reason})`;
+  return REASONS.includes(reason) ? tr(`resa.reason.${reason}` as TKey) : tr('resa.reason.unknown', { reason });
 }
 
 export async function validatePromoCode(venueId: string, code: string): Promise<PromoValidation> {

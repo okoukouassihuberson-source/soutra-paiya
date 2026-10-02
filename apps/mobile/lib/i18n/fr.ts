@@ -201,6 +201,27 @@ export const fr = {
     error: 'Erreur', title: 'Signaler cet avis', reason: 'Motif', details: 'Détails (optionnel)', detailsPh: 'Précise le problème pour aider l’équipe…',
   },
   similar: { title: 'Établissements similaires' },
+  orders: {
+    title: 'Mes commandes', count_one: '{n} commande', count_other: '{n} commandes', emptyTitle: 'Aucune commande pour l’instant', emptyBody: 'Explore les boutiques et passe ta première commande.', explore: 'Explorer',
+    status: { pending: 'En attente', confirmed: 'Confirmée', preparing: 'En préparation', ready: 'Prête', delivered: 'Livrée', cancelled: 'Annulée', refunded: 'Remboursée' },
+    error: 'Erreur', payStartFail: 'Impossible de démarrer le paiement', invalidResponse: 'Réponse GeniusPay invalide', unexpected: 'Erreur inattendue',
+    stepPlaced: 'Commande passée', stepPaid: 'Paiement confirmé', stepPreparing: 'En préparation', stepReady: 'Prête', stepDelivered: 'Livrée', stepCancelled: 'Annulée',
+    items: 'Articles', subtotal: 'Sous-total', delivery: 'Livraison', total: 'Total', byDelivery: '🚚 Livraison', pickup: '🏪 Retrait', contact: 'Contact', followUp: 'Suivi',
+    paying: 'Démarrage du paiement…', payNow: 'Payer maintenant · {amount}', close: 'Fermer',
+  },
+  resa: {
+    reason: { CODE_VIDE: 'Tape un code', CODE_INTROUVABLE: 'Code inconnu pour cet établissement', CODE_DESACTIVE: 'Code désactivé', CODE_EXPIRE: 'Code expiré', CODE_EPUISE: 'Code épuisé (limite atteinte)', unknown: 'Code invalide ({reason})' },
+    error: 'Erreur', loadFail: 'Impossible de charger le lieu : {msg}', validation: 'Validation', validationBody: 'Veuillez remplir correctement tous les champs', notFoundAlert: 'Lieu introuvable.',
+    sessionTitle: 'Session expirée', sessionBody: 'Veuillez vous reconnecter.', createTitle: 'Erreur réservation', createFail: 'Création impossible', pendingTitle: 'Paiement en cours',
+    pendingBody: 'Ton acompte est en cours de validation. Ta réservation est enregistrée.', unpaidTitle: 'Acompte non payé',
+    unpaidBody: 'Ta réservation est enregistrée mais l’acompte n’a pas été réglé. Touche « Continuer vers le paiement » pour réessayer.', createError: 'Impossible de créer la réservation',
+    notFound: 'Lieu non trouvé', back: 'Retour', dateTime: '{date} à {time}', confirmed: 'Réservation confirmée !', confirmedSub: 'Votre réservation est en attente d’approbation du restaurant.',
+    verifyCode: 'Code de vérification', restaurant: 'Restaurant', dateAndTime: 'Date et heure', party: 'Nombre de personnes', depositDue: 'Dépôt à payer',
+    wait48: 'Le restaurant a 48 heures pour confirmer votre réservation. Vous recevrez une notification.', backHome: 'Retour à l’accueil', newTitle: 'Nouvelle réservation',
+    date: 'Date', time: 'Heure', notes: 'Notes spéciales (optionnel)', notesPh: 'Ex: Événement privé, pas d’ail, etc.', promo: 'Code promo (optionnel)', promoHint: '-{pct}% sur l’acompte',
+    apply: 'Appliquer', avgPrice: 'Prix moyen', estTotal: 'Total estimé', deposit20: 'Acompte (20%)', promoLine: 'Promo {code} (-{pct}%)', toPay: 'À payer', continuePay: 'Continuer vers le paiement',
+    promoFail: 'Validation impossible',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { payWithGeniuspay } from '@/lib/geniuspay';
 import { validatePromoCode, applyDiscount, reasonLabel } from '@/lib/promo';
+import { useI18n } from '@/lib/i18n';
 
 interface Venue {
   id: string;
@@ -20,6 +21,7 @@ interface Venue {
 const DEPOSIT_PERCENTAGE = 0.2; // 20% deposit
 
 export default function ReservationForm() {
+  const { t, intl } = useI18n();
   const { venueId } = useLocalSearchParams<{ venueId: string }>();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -65,7 +67,7 @@ export default function ReservationForm() {
 
       if (error) {
         console.error('[reservation] load venue error:', error);
-        Alert.alert('Erreur', `Impossible de charger le lieu : ${error.message}`);
+        Alert.alert(t('resa.error'), t('resa.loadFail', { msg: error.message }));
         setVenue(null);
       } else {
         setVenue(data as Venue | null);
@@ -116,7 +118,7 @@ export default function ReservationForm() {
       }
     } catch (err: any) {
       setApplied(null);
-      setPromoError(err?.message ?? 'Validation impossible');
+      setPromoError(err?.message ?? t('resa.promoFail'));
     } finally {
       setPromoChecking(false);
     }
@@ -139,7 +141,7 @@ export default function ReservationForm() {
       reservationFormSchema.parse(formData);
       return true;
     } catch (error) {
-      Alert.alert('Validation', 'Veuillez remplir correctement tous les champs');
+      Alert.alert(t('resa.validation'), t('resa.validationBody'));
       return false;
     }
   };
@@ -147,11 +149,11 @@ export default function ReservationForm() {
   const createReservation = async () => {
     if (!validateForm()) return;
     if (!venue) {
-      Alert.alert('Erreur', 'Lieu introuvable.');
+      Alert.alert(t('resa.error'), t('resa.notFoundAlert'));
       return;
     }
     if (!user?.id) {
-      Alert.alert('Session expirée', 'Veuillez vous reconnecter.');
+      Alert.alert(t('resa.sessionTitle'), t('resa.sessionBody'));
       router.replace('/(auth)/login');
       return;
     }
@@ -192,7 +194,7 @@ export default function ReservationForm() {
 
         if (resError || !created) {
           console.error('[reservation] insert error:', resError);
-          Alert.alert('Erreur réservation', resError?.message ?? 'Création impossible');
+          Alert.alert(t('resa.createTitle'), resError?.message ?? t('resa.createFail'));
           return;
         }
         resaId = created.id as string;
@@ -216,20 +218,19 @@ export default function ReservationForm() {
         setStep('confirmation');
       } else if (result.status === 'pending') {
         Alert.alert(
-          'Paiement en cours',
-          'Ton acompte est en cours de validation. Ta réservation est enregistrée.',
+          t('resa.pendingTitle'),
+          t('resa.pendingBody'),
           [{ text: 'OK', onPress: () => setStep('confirmation') }],
         );
       } else {
         Alert.alert(
-          'Acompte non payé',
-          "Ta réservation est enregistrée mais l'acompte n'a pas été réglé. " +
-            'Touche « Continuer vers le paiement » pour réessayer.',
+          t('resa.unpaidTitle'),
+          t('resa.unpaidBody'),
         );
       }
     } catch (err: any) {
       console.error('[reservation] unexpected:', err);
-      Alert.alert('Erreur', err?.message ?? 'Impossible de créer la réservation');
+      Alert.alert(t('resa.error'), err?.message ?? t('resa.createError'));
     } finally {
       setSubmitting(false);
     }
@@ -247,9 +248,9 @@ export default function ReservationForm() {
     return (
       <SafeAreaView style={s.safe}>
         <View style={s.center}>
-          <Text style={s.errorText}>Lieu non trouvé</Text>
+          <Text style={s.errorText}>{t('resa.notFound')}</Text>
           <Pressable style={[s.button, { marginTop: spacing.lg }]} onPress={() => router.back()}>
-            <Text style={s.buttonText}>Retour</Text>
+            <Text style={s.buttonText}>{t('resa.back')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -257,7 +258,7 @@ export default function ReservationForm() {
   }
 
   const deposit = calculateDeposit();
-  const dateTimeStr = `${selectedDate.toLocaleDateString()} à ${selectedTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+  const dateTimeStr = t('resa.dateTime', { date: selectedDate.toLocaleDateString(intl), time: selectedTime.toLocaleTimeString(intl, { hour: '2-digit', minute: '2-digit' }) });
 
   if (step === 'confirmation' && qrCode) {
     return (
@@ -265,28 +266,28 @@ export default function ReservationForm() {
         <ScrollView contentContainerStyle={s.scrollContent}>
           <View style={s.confirmationBox}>
             <Ionicons name="checkmark-circle" size={64} color={colors.success ?? colors.primary[500]} style={s.icon} />
-            <Text style={s.confirmTitle}>Réservation confirmée!</Text>
-            <Text style={s.confirmSubtitle}>Votre réservation est en attente d'approbation du restaurant.</Text>
+            <Text style={s.confirmTitle}>{t('resa.confirmed')}</Text>
+            <Text style={s.confirmSubtitle}>{t('resa.confirmedSub')}</Text>
 
             {/* QR Code */}
             <View style={s.qrContainer}>
               <QRCode value={qrCode} size={200} />
-              <Text style={s.qrLabel}>Code de vérification</Text>
+              <Text style={s.qrLabel}>{t('resa.verifyCode')}</Text>
             </View>
 
             {/* Reservation Details */}
             <View style={s.detailsBox}>
-              <DetailRow label="Restaurant" value={venue.name} />
-              <DetailRow label="Date et heure" value={dateTimeStr} />
-              <DetailRow label="Nombre de personnes" value={partySize} />
-              <DetailRow label="Dépôt à payer" value={formatXOF(deposit)} />
+              <DetailRow label={t('resa.restaurant')} value={venue.name} />
+              <DetailRow label={t('resa.dateAndTime')} value={dateTimeStr} />
+              <DetailRow label={t('resa.party')} value={partySize} />
+              <DetailRow label={t('resa.depositDue')} value={formatXOF(deposit)} />
             </View>
 
             {/* Info Box */}
             <View style={s.infoBox}>
               <Ionicons name="information-circle" size={20} color={colors.primary[500]} />
               <Text style={s.infoText}>
-                Le restaurant a 48 heures pour confirmer votre réservation. Vous recevrez une notification.
+                {t('resa.wait48')}
               </Text>
             </View>
 
@@ -294,7 +295,7 @@ export default function ReservationForm() {
               style={({ pressed }) => [s.button, pressed && { opacity: 0.85 }]}
               onPress={() => router.push('/(tabs)/explore')}
             >
-              <Text style={s.buttonText}>Retour à l'accueil</Text>
+              <Text style={s.buttonText}>{t('resa.backHome')}</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -310,7 +311,7 @@ export default function ReservationForm() {
           <Pressable hitSlop={10} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={colors.dark} />
           </Pressable>
-          <Text style={s.headerTitle}>Nouvelle réservation</Text>
+          <Text style={s.headerTitle}>{t('resa.newTitle')}</Text>
           <View style={{ width: 28 }} />
         </View>
 
@@ -321,7 +322,7 @@ export default function ReservationForm() {
         <View style={s.form}>
           {/* Date Picker */}
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Date</Text>
+            <Text style={s.label}>{t('resa.date')}</Text>
             <Pressable
               style={s.input}
               onPress={() => setShowDatePicker(true)}
@@ -341,7 +342,7 @@ export default function ReservationForm() {
 
           {/* Time Picker */}
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Heure</Text>
+            <Text style={s.label}>{t('resa.time')}</Text>
             <Pressable
               style={s.input}
               onPress={() => setShowTimePicker(true)}
@@ -362,7 +363,7 @@ export default function ReservationForm() {
 
           {/* Party Size */}
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Nombre de personnes</Text>
+            <Text style={s.label}>{t('resa.party')}</Text>
             <View style={s.partySizeRow}>
               {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
                 <Pressable
@@ -388,10 +389,10 @@ export default function ReservationForm() {
 
           {/* Notes */}
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Notes spéciales (optionnel)</Text>
+            <Text style={s.label}>{t('resa.notes')}</Text>
             <TextInput
               style={s.textarea}
-              placeholder="Ex: Événement privé, pas d'ail, etc."
+              placeholder={t('resa.notesPh')}
               placeholderTextColor={colors.neutral[400]}
               value={notes}
               onChangeText={setNotes}
@@ -402,13 +403,13 @@ export default function ReservationForm() {
 
           {/* Code promo */}
           <View style={s.fieldGroup}>
-            <Text style={s.label}>Code promo (optionnel)</Text>
+            <Text style={s.label}>{t('resa.promo')}</Text>
             {applied ? (
               <View style={s.promoApplied}>
                 <Ionicons name="pricetag" size={18} color={colors.success ?? colors.primary[500]} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.promoAppliedCode}>{applied.code}</Text>
-                  <Text style={s.promoAppliedHint}>-{applied.discount_pct}% sur l'acompte</Text>
+                  <Text style={s.promoAppliedHint}>{t('resa.promoHint', { pct: applied.discount_pct })}</Text>
                 </View>
                 <Pressable onPress={clearPromo} hitSlop={10}>
                   <Ionicons name="close-circle" size={22} color={colors.neutral[500]} />
@@ -429,7 +430,7 @@ export default function ReservationForm() {
                   onPress={checkPromo}
                   disabled={!promoInput.trim() || promoChecking}
                 >
-                  {promoChecking ? <ActivityIndicator color="#fff" /> : <Text style={s.promoBtnText}>Appliquer</Text>}
+                  {promoChecking ? <ActivityIndicator color="#fff" /> : <Text style={s.promoBtnText}>{t('resa.apply')}</Text>}
                 </Pressable>
               </View>
             )}
@@ -439,28 +440,28 @@ export default function ReservationForm() {
           {/* Price Summary */}
           <View style={s.summary}>
             <SummaryRow
-              label="Prix moyen"
+              label={t('resa.avgPrice')}
               value={formatXOF(venue.avg_price_xof ?? 0)}
             />
             <SummaryRow
-              label="Nombre de personnes"
+              label={t('resa.party')}
               value={partySize}
             />
             <SummaryRow
-              label="Total estimé"
+              label={t('resa.estTotal')}
               value={formatXOF((venue.avg_price_xof ?? 0) * parseInt(partySize))}
             />
             <View style={s.summaryDivider} />
-            <SummaryRow label="Acompte (20%)" value={formatXOF(calculateBaseDeposit())} />
+            <SummaryRow label={t('resa.deposit20')} value={formatXOF(calculateBaseDeposit())} />
             {applied && (
               <SummaryRow
-                label={`Promo ${applied.code} (-${applied.discount_pct}%)`}
+                label={t('resa.promoLine', { code: applied.code, pct: applied.discount_pct })}
                 value={`- ${formatXOF(calculateBaseDeposit() - deposit)}`}
               />
             )}
             <View style={s.summaryDivider} />
             <SummaryRow
-              label="À payer"
+              label={t('resa.toPay')}
               value={formatXOF(deposit)}
               bold
             />
@@ -475,7 +476,7 @@ export default function ReservationForm() {
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={s.buttonText}>Continuer vers le paiement</Text>
+              <Text style={s.buttonText}>{t('resa.continuePay')}</Text>
             )}
           </Pressable>
         </View>
