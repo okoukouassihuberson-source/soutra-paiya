@@ -15,6 +15,7 @@ Légende : ✅ vérifié automatiquement en local · ⬜ non vérifiable ici, à
 | Tests i18n (parité FR/EN, routage, pluriels, middleware anti-falsification) | ✅ 10 / 10 |
 | `tsc` web et mobile | ✅ 0 erreur |
 | `next build` | ✅ compilé |
+| **Navigateur réel (Chromium, 390 px) contre faux Supabase** — `scripts/e2e-smoke/` : fiche voyage, offres, aperçu et total remisé (offre auto, code valide/inconnu, formule), réservation, erreur de limitation de codes, `/en` traduit, assistant (réponse, fiche cliquable, limite), pas de défilement horizontal, aucune erreur console | ✅ 25 / 25 |
 | Application web démarrée (`next start`) contre un faux Supabase : accueil, `/en`, explorer, voyages, activités, destinations, promotions FR/EN, sitemap (alternates `hreflang`), robots, 404 sur fiche inconnue, redirection vers `/login` pour `/assistant` et `/notifications`, en-tête `x-locale` falsifié sans effet | ✅ |
 
 ## 2. Résultats par scénario de `RECETTE_V2.md`
@@ -30,7 +31,7 @@ Légende : ✅ vérifié automatiquement en local · ⬜ non vérifiable ici, à
 
 ### B. Promotions
 - ✅ Offre automatique, code valide (casse ignorée), erreurs (inconnu, hors périmètre, épuisé, déjà utilisé), plafond de réduction, plancher de 200 FCFA, libération à l'annulation, **10 essais ratés → limitation** sans réservation créée.
-- ⬜ Parcours dans l'interface (champ code, prix avant/après).
+- ✅ Parcours dans l'interface web (Chromium, faux serveur) : champ code, offre automatique, prix avant/après, formule, message de limitation. ⬜ Même parcours contre le vrai serveur ; ⬜ mobile.
 
 ### C. Organisateur
 - ✅ Voyage publié : prix et commission verrouillés (`TRIP_LOCKED`) ; voyage d'un autre invisible ; contraintes de forme des offres (% > 90, couple ≠ 2, flash sans fin…) ; scan : refusé pour un organisateur étranger (sans révéler l'existence du billet), accepté une fois, refusé la seconde (`ALREADY_USED`).
@@ -50,6 +51,7 @@ Légende : ✅ vérifié automatiquement en local · ⬜ non vérifiable ici, à
 
 ### G. Assistant voyage
 - ✅ Tout ce qui se teste avec un faux moteur (voir § 1).
+- ✅ Interface de l'assistant (Chromium, faux serveur) : réponse, fiche cliquable, message de limite.
 - ⬜ Qualité des réponses avec le vrai modèle, exactitude des prix cités, refus hors sujet, **résistance à une consigne cachée dans un résumé de voyage**, coût réel.
 
 ### H. Mobile
