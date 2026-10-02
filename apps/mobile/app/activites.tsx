@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { spacing, formatDuration, activityCategoryLabel, ACTIVITY_CATEGORIES, type ColorPalette } from '@soutra/shared';
+import { spacing, ACTIVITY_CATEGORIES, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { FilterBar, TourismCard } from '@/components/tourism/TourismUi';
 import { listActivities, type ActivityCard } from '@/lib/tourism';
@@ -12,6 +13,7 @@ import { listActivities, type ActivityCard } from '@/lib/tourism';
 export default function ActivitiesScreen() {
   const router = useRouter();
   const c = useColors();
+  const { t, tdyn, fmtDuration, field } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [items, setItems] = useState<ActivityCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,16 +34,16 @@ export default function ActivitiesScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Activités" subtitle="Excursions, balades, ateliers et sorties" />
+      <ScreenHeader title={t('acts.title')} subtitle={t('acts.subtitle')} />
       <FilterBar q={q} onQ={setQ} maxPrice={maxPrice} onMaxPrice={setMaxPrice} category={category} onCategory={setCategory}
-                 categories={ACTIVITY_CATEGORIES.map((k) => ({ key: k.key, label: `${k.emoji} ${k.label}` }))} />
+                 categories={ACTIVITY_CATEGORIES.map((k) => ({ key: k.key, label: `${k.emoji} ${tdyn('cat', k.key, k.label)}` }))} />
       {loading ? <View style={s.center}><ActivityIndicator color={c.primary[500]} /></View> : (
         <ScrollView contentContainerStyle={{ paddingVertical: spacing.md, paddingBottom: spacing['2xl'] }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}>
-          {error && <Text style={s.empty}>Impossible de charger les activités. Tirez pour réessayer.</Text>}
-          {!error && items.length === 0 && <Text style={s.empty}>Aucune activité ne correspond à votre recherche.</Text>}
+          {error && <Text style={s.empty}>{t('acts.error')}</Text>}
+          {!error && items.length === 0 && <Text style={s.empty}>{t('acts.empty')}</Text>}
           {items.map((a) => (
-            <TourismCard key={a.id} title={a.title} cover={a.cover_url} subtitle={[activityCategoryLabel(a.category), a.city].filter(Boolean).join(' · ')}
-              meta={`${formatDuration(a.duration_minutes)}${a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}`}
+            <TourismCard key={a.id} title={field(a as any, 'title') ?? a.title} cover={a.cover_url} subtitle={[tdyn('cat', a.category, t('cat.fallback')), a.city].filter(Boolean).join(' · ')}
+              meta={`${fmtDuration(a.duration_minutes)}${a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}`}
               price={a.price_xof} onPress={() => router.push({ pathname: '/activite/[slug]', params: { slug: a.slug } })} />
           ))}
         </ScrollView>

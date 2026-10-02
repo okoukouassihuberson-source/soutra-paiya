@@ -12,6 +12,7 @@ import { TabHeader } from '@/components/TabHeader';
 import { VenueCardSkeleton } from '@/components/Skeleton';
 import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/VoiceSearchSheet';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 
 // Aligné sur la vue `venues_public` (migration 0020). `lat`/`lng` proviennent
 // du point PostGIS `venues.location` projeté en colonnes simples.
@@ -58,6 +59,7 @@ const CHIPS: { label: string; category: string | null; icon: keyof typeof Ionico
 
 export default function Explore() {
   const router = useRouter();
+  const { t } = useI18n();
   const palette = useColors();
   const s = useMemo(() => makeStyles(palette), [palette]);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -298,11 +300,11 @@ export default function Explore() {
         {/* V2 tourisme : accès rapide voyages, activités, promotions et mes réservations. */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
           {([
-            { label: 'Voyages', icon: 'bus-outline', href: '/voyages' },
-            { label: 'Activités', icon: 'compass-outline', href: '/activites' },
-            { label: 'Destinations', icon: 'earth-outline', href: '/destinations' },
-            { label: 'Promotions', icon: 'pricetag-outline', href: '/promotions' },
-            { label: 'Mes voyages', icon: 'ticket-outline', href: '/tourism-bookings' },
+            { label: t('home.trips'), icon: 'bus-outline', href: '/voyages' },
+            { label: t('home.activities'), icon: 'compass-outline', href: '/activites' },
+            { label: t('home.destinations'), icon: 'earth-outline', href: '/destinations' },
+            { label: t('home.promotions'), icon: 'pricetag-outline', href: '/promotions' },
+            { label: t('home.myTrips'), icon: 'ticket-outline', href: '/tourism-bookings' },
           ] as const).map((x) => (
             <Pressable key={x.href} onPress={() => router.push(x.href)} accessibilityRole="button" accessibilityLabel={x.label}
                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99, backgroundColor: palette.primary[500] }}>

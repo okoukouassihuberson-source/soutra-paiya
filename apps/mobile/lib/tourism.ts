@@ -5,6 +5,7 @@
 // ============================================================================
 import type { Activity, ActivitySlot, Destination, Trip, TripItineraryDay, TripPackage, TripScope } from '@soutra/shared';
 import { supabase } from './supabase';
+import { tr, type TKey } from './i18n';
 
 const db = supabase as any;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -12,8 +13,8 @@ const today = () => new Date().toISOString().slice(0, 10);
 export const QR_TRIP_PREFIX = 'soutra:trip:';
 export const QR_ACTIVITY_PREFIX = 'soutra:act:';
 
-export type TripCard = Pick<Trip, 'id' | 'slug' | 'title' | 'scope' | 'city' | 'country' | 'cover_url' | 'starts_on' | 'ends_on' | 'duration_days' | 'base_price_xof' | 'seats_total' | 'seats_booked' | 'highlight'>;
-const TRIP_CARD = 'id, slug, title, scope, city, country, cover_url, starts_on, ends_on, duration_days, base_price_xof, seats_total, seats_booked, highlight';
+export type TripCard = Pick<Trip, 'id' | 'slug' | 'title' | 'scope' | 'city' | 'country' | 'cover_url' | 'starts_on' | 'ends_on' | 'duration_days' | 'base_price_xof' | 'seats_total' | 'seats_booked' | 'highlight' | 'i18n'>;
+const TRIP_CARD = 'id, slug, title, scope, city, country, cover_url, starts_on, ends_on, duration_days, base_price_xof, seats_total, seats_booked, highlight, i18n';
 
 /** Terme sûr pour ilike / or() PostgREST : ni jokers ni séparateurs. */
 const safeTerm = (v: string) => v.replace(/[%_,()\\*"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
@@ -43,6 +44,7 @@ export async function getTrip(slug: string): Promise<{ trip: Trip; days: TripIti
 export interface ActivityCard {
   id: string; slug: string; title: string; category: string; city: string | null; cover_url: string | null;
   price_xof: number; duration_minutes: number; rating_avg: number; rating_count: number; next_slot_at: string | null;
+  i18n?: Record<string, Record<string, string>> | null;
 }
 
 export interface ActivityFilters { q?: string; category?: string | null; maxPrice?: number | null }
@@ -84,12 +86,10 @@ export interface Offer {
   id: string; kind: string; code: string | null; title: string; description: string | null;
   discount_type: 'percent' | 'fixed'; discount_value: number; max_discount_xof: number | null;
   min_participants: number; max_participants: number | null; min_days_before: number | null; max_days_before: number | null;
-  valid_until: string | null; target_kind?: 'trip' | 'activity' | null; target_slug?: string | null; target_title?: string | null;
+  valid_until: string | null; i18n?: Record<string, Record<string, string>> | null; target_i18n?: Record<string, Record<string, string>> | null; target_kind?: 'trip' | 'activity' | null; target_slug?: string | null; target_title?: string | null;
 }
-export const OFFER_KIND_LABEL: Record<string, string> = {
-  discount: 'Promotion', flash: 'Vente flash', early_booking: 'Réservation anticipée', group: 'Offre groupe',
-  birthday: 'Anniversaire', couple: 'Offre couple', family: 'Offre famille', corporate: 'Entreprise',
-};
+const OFFER_KINDS = ['discount', 'flash', 'early_booking', 'group', 'birthday', 'couple', 'family', 'corporate'];
+export const offerKindLabel = (kind: string) => tr((OFFER_KINDS.includes(kind) ? `offer.kind.${kind}` : 'offer.kind.other') as TKey);
 export async function listPublicOffers(limit = 40): Promise<Offer[]> {
   const { data, error } = await db.rpc('list_public_offers', { p_limit: limit });
   if (error) throw error;
@@ -100,19 +100,14 @@ export async function listOffersForTarget(kind: 'trip' | 'activity', target: str
   return (data ?? []) as Offer[];
 }
 export const offerValueLabel = (o: Pick<Offer, 'discount_type' | 'discount_value'>) =>
-  o.discount_type === 'percent' ? `−${o.discount_value} %` : `−${new Intl.NumberFormat('fr-FR').format(o.discount_value)} FCFA`;
+  o.discount_type === 'percent' ? tr('offer.percentOff', { n: o.discount_value }) : tr('offer.fixedOff', { n: new Intl.NumberFormat('fr-FR').format(o.discount_value) });
 
-export const PROMO_ERRORS: Record<string, string> = {
-  PROMO_NOT_FOUND: 'Ce code promo n’existe pas.', PROMO_NOT_APPLICABLE: 'Ce code ne s’applique pas à cette réservation.',
-  PROMO_INACTIVE: 'Cette offre n’est plus active.', PROMO_NOT_STARTED: 'Cette offre n’a pas encore commencé.',
-  PROMO_EXPIRED: 'Cette offre est terminée.', PROMO_PARTICIPANTS: 'Le nombre de participants ne correspond pas à l’offre.',
-  PROMO_TOO_LATE: 'Trop tard pour cette offre.', PROMO_TOO_EARLY: 'Trop tôt pour cette offre : réservez plus près du départ.',
-  PROMO_RATE_LIMITED: 'Trop d’essais de codes. Réessayez dans une heure.', PROMO_EXHAUSTED: 'Cette offre n’est plus disponible.', PROMO_ALREADY_USED: 'Vous avez déjà utilisé ce code.',
-  NOT_AUTHENTICATED: 'Connectez-vous pour utiliser un code promo.',
-};
+const PROMO_CODES = ['PROMO_NOT_FOUND', 'PROMO_NOT_APPLICABLE', 'PROMO_INACTIVE', 'PROMO_NOT_STARTED', 'PROMO_EXPIRED', 'PROMO_PARTICIPANTS', 'PROMO_TOO_LATE', 'PROMO_TOO_EARLY', 'PROMO_RATE_LIMITED', 'PROMO_EXHAUSTED', 'PROMO_ALREADY_USED', 'NOT_AUTHENTICATED'];
+/** Message localisé d'un code d'erreur promo (`PROMO_*`), ou le message générique. */
+export const promoMessage = (code: string) => tr((PROMO_CODES.includes(code) ? `promo.err.${code}` : 'promo.err.generic') as TKey);
 export const promoError = (message?: string | null) => {
   const k = String(message ?? '').match(/PROMO_[A-Z_]+/)?.[0];
-  return k ? PROMO_ERRORS[k] ?? 'Code promo invalide.' : null;
+  return k ? promoMessage(k) : null;
 };
 
 export interface PricePreview {
@@ -128,19 +123,13 @@ export async function previewPrice(kind: 'trip' | 'activity', target: string, pa
 }
 
 // --- Réservations ---------------------------------------------------------
-const BOOKING_ERRORS: Record<string, string> = {
-  NOT_AUTHENTICATED: 'Connectez-vous pour réserver.', NOT_ENOUGH_SEATS: 'Il n’y a plus assez de places.',
-  TRIP_NOT_AVAILABLE: 'Ce voyage n’est plus ouvert à la réservation.', TRIP_ALREADY_STARTED: 'Ce voyage a déjà commencé.',
-  PACKAGE_NOT_FOUND: 'Formule indisponible.', INVALID_PARTICIPANTS: 'Nombre de participants invalide.',
-  SLOT_CLOSED: 'Ce créneau n’est plus réservable.', GROUP_TOO_LARGE: 'Groupe trop grand pour une réservation.',
-  ACTIVITY_NOT_AVAILABLE: 'Cette activité n’est plus disponible.',
-};
+const BOOKING_CODES = ['NOT_AUTHENTICATED', 'NOT_ENOUGH_SEATS', 'TRIP_NOT_AVAILABLE', 'TRIP_ALREADY_STARTED', 'PACKAGE_NOT_FOUND', 'INVALID_PARTICIPANTS', 'SLOT_CLOSED', 'GROUP_TOO_LARGE', 'ACTIVITY_NOT_AVAILABLE'];
 export function bookingError(message?: string | null): string {
   const m = String(message ?? '');
   const promo = promoError(m);
   if (promo) return promo;
-  const k = Object.keys(BOOKING_ERRORS).find((x) => m.includes(x));
-  return k ? BOOKING_ERRORS[k] : 'Réservation impossible, réessayez.';
+  const k = BOOKING_CODES.find((x) => m.includes(x));
+  return tr((k ? `book.err.${k}` : 'book.err.generic') as TKey);
 }
 
 export interface BookingResult { id: string; reference: string; total_xof: number; discount_xof?: number }
@@ -164,26 +153,26 @@ export async function createActivityBooking(p: { slotId: string; participants: n
 export interface MyBooking {
   kind: 'trip' | 'activity'; id: string; reference: string; title: string; slug: string | null; cover_url: string | null;
   when: string | null; participants: number; total_xof: number; discount_xof: number; paid_xof: number;
-  status: string; qr_token: string | null; expires_at: string | null; deposit_pct: number; reviewed?: boolean;
+  status: string; qr_token: string | null; expires_at: string | null; deposit_pct: number; reviewed?: boolean; i18n?: Record<string, Record<string, string>> | null;
 }
 export async function listMyBookings(userId: string): Promise<MyBooking[]> {
   const [t, a, r] = await Promise.all([
     db.from('trip_bookings')
-      .select('id, reference, participants, total_xof, discount_xof, paid_xof, status, qr_token, expires_at, created_at, trips(slug, title, cover_url, starts_on, deposit_pct)')
+      .select('id, reference, participants, total_xof, discount_xof, paid_xof, status, qr_token, expires_at, created_at, trips(slug, title, cover_url, starts_on, deposit_pct, i18n)')
       .eq('user_id', userId).order('created_at', { ascending: false }).limit(60),
     db.from('activity_bookings')
-      .select('id, reference, participants, total_xof, discount_xof, paid_xof, status, qr_token, expires_at, created_at, activities(slug, title, cover_url), activity_slots(starts_at)')
+      .select('id, reference, participants, total_xof, discount_xof, paid_xof, status, qr_token, expires_at, created_at, activities(slug, title, cover_url, i18n), activity_slots(starts_at)')
       .eq('user_id', userId).order('created_at', { ascending: false }).limit(60),
     db.from('activity_reviews').select('booking_id').eq('user_id', userId).limit(200),
   ]);
   const reviewed = new Set<string>((r.data ?? []).map((x: any) => x.booking_id));
   const trips: MyBooking[] = (t.data ?? []).map((b: any) => ({
-    kind: 'trip', id: b.id, reference: b.reference, title: b.trips?.title ?? 'Voyage', slug: b.trips?.slug ?? null, cover_url: b.trips?.cover_url ?? null,
+    kind: 'trip', id: b.id, reference: b.reference, title: b.trips?.title ?? tr('my.kindTrip'), i18n: b.trips?.i18n ?? null, slug: b.trips?.slug ?? null, cover_url: b.trips?.cover_url ?? null,
     when: b.trips?.starts_on ?? null, participants: b.participants, total_xof: b.total_xof, discount_xof: b.discount_xof ?? 0, paid_xof: b.paid_xof,
     status: b.status, qr_token: b.qr_token, expires_at: b.expires_at, deposit_pct: b.trips?.deposit_pct ?? 100, created: b.created_at,
   }));
   const acts: MyBooking[] = (a.data ?? []).map((b: any) => ({
-    kind: 'activity', id: b.id, reference: b.reference, title: b.activities?.title ?? 'Activité', slug: b.activities?.slug ?? null, cover_url: b.activities?.cover_url ?? null,
+    kind: 'activity', id: b.id, reference: b.reference, title: b.activities?.title ?? tr('my.kindActivity'), i18n: b.activities?.i18n ?? null, slug: b.activities?.slug ?? null, cover_url: b.activities?.cover_url ?? null,
     when: b.activity_slots?.starts_at ?? null, participants: b.participants, total_xof: b.total_xof, discount_xof: b.discount_xof ?? 0, paid_xof: b.paid_xof,
     status: b.status, qr_token: b.qr_token, expires_at: b.expires_at, deposit_pct: 100, created: b.created_at, reviewed: reviewed.has(b.id),
   }));
@@ -192,20 +181,22 @@ export async function listMyBookings(userId: string): Promise<MyBooking[]> {
 
 export async function cancelBooking(kind: 'trip' | 'activity', id: string): Promise<void> {
   const { error } = await db.rpc(kind === 'trip' ? 'cancel_trip_booking' : 'cancel_activity_booking', { p_booking_id: id });
-  if (error) throw new Error(String(error.message).includes('REFUND_REQUIRED')
-    ? 'Réservation déjà payée : contactez le support pour un remboursement.' : 'Annulation impossible.');
+  if (error) throw new Error(tr(String(error.message).includes('REFUND_REQUIRED') ? 'book.cancelRefund' : 'book.cancelFail'));
 }
 
-export const BOOKING_STATUS: Record<string, { label: string; color: string }> = {
-  pending: { label: 'À payer', color: '#f59e0b' }, paid: { label: 'Payée', color: '#059669' }, confirmed: { label: 'Confirmée', color: '#059669' },
-  used: { label: 'Utilisée', color: '#6366f1' }, completed: { label: 'Terminée', color: '#6366f1' },
-  cancelled: { label: 'Annulée', color: '#737373' }, expired: { label: 'Expirée', color: '#737373' }, refunded: { label: 'Remboursée', color: '#a855f7' },
+const STATUS_COLOR: Record<string, string> = {
+  pending: '#f59e0b', paid: '#059669', confirmed: '#059669', used: '#6366f1', completed: '#6366f1', cancelled: '#737373', expired: '#737373', refunded: '#a855f7',
 };
+/** Libellé localisé + couleur d'un statut de réservation. */
+export function bookingStatus(status: string): { label: string; color: string } {
+  const known = status in STATUS_COLOR;
+  return { label: known ? tr(`book.status.${status}` as TKey) : status, color: STATUS_COLOR[status] ?? '#737373' };
+}
 
 export async function submitActivityReview(bookingId: string, rating: number, comment: string): Promise<void> {
   const { error } = await db.rpc('submit_activity_review', { p_booking_id: bookingId, p_rating: rating, p_comment: comment.trim() || null });
   if (error) {
     const m = String(error.message);
-    throw new Error(m.includes('ALREADY_REVIEWED') ? 'Vous avez déjà donné votre avis.' : m.includes('NOT_ELIGIBLE') ? 'Vous pourrez donner votre avis après l’activité.' : 'Envoi impossible, réessayez.');
+    throw new Error(tr(m.includes('ALREADY_REVIEWED') ? 'book.reviewAlready' : m.includes('NOT_ELIGIBLE') ? 'book.reviewNotEligible' : 'book.reviewFail'));
   }
 }

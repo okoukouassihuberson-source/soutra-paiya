@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { radius, spacing, typography, formatXOF, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { payForActivity, payForTrip, type TripPayKind } from '@/lib/geniuspay';
 
 /**
@@ -12,6 +13,7 @@ export function BookingPay({ kind, bookingId, total, paid, depositPct, onDone }:
   kind: 'trip' | 'activity'; bookingId: string; total: number; paid: number; depositPct: number; onDone: () => void;
 }) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -19,12 +21,12 @@ export function BookingPay({ kind, bookingId, total, paid, depositPct, onDone }:
     setBusy(k);
     try {
       const r = kind === 'trip' ? await payForTrip(bookingId, k) : await payForActivity(bookingId);
-      if (r.status === 'success') Alert.alert('Paiement confirmé', 'Merci ! Votre billet est disponible dans « Mes voyages et activités ».');
-      else if (r.status === 'failed') Alert.alert('Paiement échoué', 'Aucun montant n’a été débité. Vous pouvez réessayer.');
-      else Alert.alert('Paiement en cours', 'Nous attendons la confirmation de l’opérateur. Votre billet apparaîtra dès qu’elle arrive.');
+      if (r.status === 'success') Alert.alert(t('pay.okTitle'), t('pay.okBody'));
+      else if (r.status === 'failed') Alert.alert(t('pay.failTitle'), t('pay.failBody'));
+      else Alert.alert(t('pay.pendingTitle'), t('pay.pendingBody'));
       onDone();
     } catch (e: any) {
-      Alert.alert('Paiement impossible', e?.message ? String(e.message) : 'Réessayez dans un instant.');
+      Alert.alert(t('pay.errTitle'), e?.message ? String(e.message) : t('pay.errBody'));
     } finally { setBusy(null); }
   }
 
@@ -39,11 +41,11 @@ export function BookingPay({ kind, bookingId, total, paid, depositPct, onDone }:
     <View style={s.wrap}>
       {paid === 0 ? (
         <>
-          <Btn k="full" primary label={`Payer ${formatXOF(total)}`} />
-          {kind === 'trip' && depositPct < 100 && <Btn k="deposit" label={`Acompte ${depositPct} % · ${formatXOF(deposit)}`} />}
+          <Btn k="full" primary label={t('pay.full', { amount: formatXOF(total) })} />
+          {kind === 'trip' && depositPct < 100 && <Btn k="deposit" label={t('pay.deposit', { pct: depositPct, amount: formatXOF(deposit) })} />}
         </>
-      ) : <Btn k="balance" primary label={`Payer le solde ${formatXOF(due)}`} />}
-      <Text style={s.note}>Paiement sécurisé GeniusPay (Orange Money, MTN MoMo, Wave, carte).</Text>
+      ) : <Btn k="balance" primary label={t('pay.balance', { amount: formatXOF(due) })} />}
+      <Text style={s.note}>{t('pay.secure')}</Text>
     </View>
   );
 }

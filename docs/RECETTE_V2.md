@@ -78,6 +78,7 @@ Cocher chaque ligne ; noter tout écart avec la capture d'écran ou le message d
 
 ### H. Mobile (build de développement)
 - [ ] Raccourcis en haut d'Explorer ; listes voyages / activités / destinations / promotions ; fiche voyage et activité ; code promo ; paiement GeniusPay dans le navigateur intégré puis retour dans l'app ; billet QR dans « Mes voyages » ; annulation.
+- [ ] Langue mobile : Paramètres → Langue → English ; les écrans voyages / activités / promotions / réservations / onglets passent en anglais, le contenu traduit (`i18n`) s'affiche, les écrans historiques restent en français (attendu) ; revenir en français ; fermer et rouvrir l'app (choix mémorisé) ; un téléphone réglé en anglais **sans** choix explicite reste en français.
 - [ ] Filtres mobiles : recherche « bassam », budget « ≤ 50 000 », catégorie d'activité ; la liste se met à jour sans perdre le focus du champ ; saisie de `%` ou `,` sans erreur.
 - [ ] Avis : sur une activité payée dont le créneau est passé (forcer `starts_at` dans le passé), publier une note depuis « Mes voyages et activités » ; l'avis apparaît sur la fiche ; un second avis est refusé.
 - [ ] Le QR du mobile est accepté par `/scan-voyage` (même préfixe `soutra:trip:` / `soutra:act:`).

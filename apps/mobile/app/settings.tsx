@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n, useSetLocale, LOCALES } from '@/lib/i18n';
 import {
   hasPaymentPin,
   isBiometricAvailable,
@@ -24,6 +25,8 @@ import {
 export default function Settings() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { t, locale } = useI18n();
+  const setLocale = useSetLocale();
 
   const [fullName, setFullName] = useState('');
   const [hasPin, setHasPin] = useState(false);
@@ -89,6 +92,19 @@ export default function Settings() {
             <Text style={s.profileName}>{fullName || 'Mon compte'}</Text>
             <Text style={s.profilePhone}>{phone}</Text>
           </View>
+        </View>
+
+        <Text style={s.section}>{t('lang.title')}</Text>
+        <View style={s.group}>
+          {LOCALES.map((l, i) => (
+            <Pressable key={l} style={({ pressed }) => [s.row, i < LOCALES.length - 1 && s.rowBorder, pressed && { opacity: 0.6 }]}
+                       onPress={() => setLocale(l)} accessibilityRole="radio" accessibilityState={{ selected: locale === l }}>
+              <Ionicons name="language-outline" size={22} color={colors.neutral[600]} />
+              <Text style={[s.rowLabel, { flex: 1 }]}>{t(l === 'fr' ? 'lang.fr' : 'lang.en')}</Text>
+              {locale === l && <Ionicons name="checkmark" size={20} color={colors.primary[500]} />}
+            </Pressable>
+          ))}
+          {locale === 'en' && <Text style={[s.rowHint, { padding: spacing.md }]}>{t('lang.hint')}</Text>}
         </View>
 
         <Text style={s.section}>Compte</Text>

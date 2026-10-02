@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { radius, spacing, typography, seatsLeft, formatTripDates, formatXOF, type Trip, type TripItineraryDay, type TripPackage, type ColorPalette } from '@soutra/shared';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { OfferCardMobile, PriceBox, PromoBox, Stepper, usePricePreview } from '@/components/tourism/TourismUi';
 import { BookingPay } from '@/components/tourism/BookingPay';
@@ -16,6 +17,7 @@ export default function TripScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const c = useColors();
+  const { t, tn, intl, field, list } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [data, setData] = useState<{ trip: Trip; days: TripItineraryDay[]; packages: TripPackage[] } | null | undefined>(undefined);
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -44,69 +46,69 @@ export default function TripScreen() {
     if (!user) { router.push('/(auth)/login'); return; }
     setBusy(true);
     try { setBooking(await createTripBooking({ tripId: trip.id, participants: n, packageId: pkg, phone, code })); }
-    catch (e: any) { Alert.alert('Réservation impossible', e?.message ?? 'Réessayez.'); }
+    catch (e: any) { Alert.alert(t('detail.bookFail'), e?.message ?? t('detail.retry')); }
     finally { setBusy(false); }
   }, [trip, user, router, n, pkg, phone, code]);
 
-  if (data === undefined) return <SafeAreaView style={s.safe}><ScreenHeader title="Voyage" /><View style={s.center}><ActivityIndicator color={c.primary[500]} /></View></SafeAreaView>;
-  if (!data || !trip) return <SafeAreaView style={s.safe}><ScreenHeader title="Voyage" /><Text style={s.empty}>Ce voyage n’est plus disponible.</Text></SafeAreaView>;
+  if (data === undefined) return <SafeAreaView style={s.safe}><ScreenHeader title={t('detail.tripTitle')} /><View style={s.center}><ActivityIndicator color={c.primary[500]} /></View></SafeAreaView>;
+  if (!data || !trip) return <SafeAreaView style={s.safe}><ScreenHeader title={t('detail.tripTitle')} /><Text style={s.empty}>{t('detail.tripGone')}</Text></SafeAreaView>;
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title={trip.title} subtitle={formatTripDates(trip.starts_on, trip.ends_on)} />
+      <ScreenHeader title={field(trip as any, 'title') ?? trip.title} subtitle={formatTripDates(trip.starts_on, trip.ends_on, intl)} />
       <ScrollView contentContainerStyle={{ paddingBottom: spacing['2xl'] }} keyboardShouldPersistTaps="handled">
         {trip.cover_url ? <Image source={{ uri: trip.cover_url }} style={s.cover} /> : null}
         <View style={s.section}>
-          <Text style={s.kicker}>{[trip.city, trip.scope === 'national' ? 'Côte d’Ivoire' : trip.country].filter(Boolean).join(' · ')} · {trip.duration_days} jour{trip.duration_days > 1 ? 's' : ''}</Text>
-          {trip.summary ? <Text style={s.body}>{trip.summary}</Text> : null}
-          {trip.description ? <Text style={s.body}>{trip.description}</Text> : null}
-          <Text style={s.meta}>{left === 0 ? 'Complet' : `${left} place${left > 1 ? 's' : ''} restante${left > 1 ? 's' : ''}`}</Text>
-          {trip.departure_point ? <Text style={s.meta}>Départ : {trip.departure_point}{trip.departure_time ? ` à ${trip.departure_time.slice(0, 5)}` : ''}</Text> : null}
+          <Text style={s.kicker}>{[trip.city, trip.scope === 'national' ? t('trips.country') : trip.country].filter(Boolean).join(' · ')} · {tn('detail.daysCount', trip.duration_days)}</Text>
+          {field(trip as any, 'summary') ? <Text style={s.body}>{field(trip as any, 'summary')}</Text> : null}
+          {field(trip as any, 'description') ? <Text style={s.body}>{field(trip as any, 'description')}</Text> : null}
+          <Text style={s.meta}>{left === 0 ? t('detail.full') : tn('detail.seatsLeft', left)}</Text>
+          {trip.departure_point ? <Text style={s.meta}>{trip.departure_time ? t('detail.departureAt', { place: trip.departure_point, time: trip.departure_time.slice(0, 5) }) : t('detail.departure', { place: trip.departure_point })}</Text> : null}
         </View>
 
-        {offers.length > 0 && (<><Text style={s.h2}>🏷️ Offres disponibles</Text>{offers.map((o) => <OfferCardMobile key={o.id} offer={o} />)}</>)}
+        {offers.length > 0 && (<><Text style={s.h2}>{t('detail.offers')}</Text>{offers.map((o) => <OfferCardMobile key={o.id} offer={o} />)}</>)}
 
-        {trip.inclusions.length > 0 && <View style={s.section}><Text style={s.h3}>Inclus</Text>{trip.inclusions.map((x) => <Text key={x} style={s.body}>✓ {x}</Text>)}</View>}
-        {trip.exclusions.length > 0 && <View style={s.section}><Text style={s.h3}>Non inclus</Text>{trip.exclusions.map((x) => <Text key={x} style={s.body}>✗ {x}</Text>)}</View>}
+        {list(trip as any, 'inclusions').length > 0 && <View style={s.section}><Text style={s.h3}>{t('detail.included')}</Text>{list(trip as any, 'inclusions').map((x) => <Text key={x} style={s.body}>✓ {x}</Text>)}</View>}
+        {list(trip as any, 'exclusions').length > 0 && <View style={s.section}><Text style={s.h3}>{t('detail.excluded')}</Text>{list(trip as any, 'exclusions').map((x) => <Text key={x} style={s.body}>✗ {x}</Text>)}</View>}
         {data.days.length > 0 && (
           <View style={s.section}>
-            <Text style={s.h3}>Programme</Text>
+            <Text style={s.h3}>{t('detail.program')}</Text>
             {data.days.map((d) => (
-              <View key={d.id} style={s.day}><Text style={s.dayNum}>Jour {d.day_number}</Text><Text style={s.h4}>{d.title}</Text>{d.description ? <Text style={s.body}>{d.description}</Text> : null}</View>
+              <View key={d.id} style={s.day}><Text style={s.dayNum}>{t('detail.day', { n: d.day_number })}</Text><Text style={s.h4}>{field(d as any, 'title') ?? d.title}</Text>{field(d as any, 'description') ? <Text style={s.body}>{field(d as any, 'description')}</Text> : null}</View>
             ))}
           </View>
         )}
 
         {left > 0 && !booking && (
           <View style={[s.section, s.form]}>
-            <Text style={s.h3}>Réserver</Text>
+            <Text style={s.h3}>{t('detail.book')}</Text>
             {data.packages.map((p) => (
               <Pressable key={p.id} onPress={() => setPkg(p.id)} accessibilityRole="radio" accessibilityState={{ selected: pkg === p.id }} style={[s.pkg, pkg === p.id && s.pkgOn]}>
-                <View style={{ flex: 1 }}><Text style={s.h4}>{p.name}</Text><Text style={s.meta}>{p.includes.join(' + ')}</Text></View>
+                <View style={{ flex: 1 }}><Text style={s.h4}>{field(p as any, 'name') ?? p.name}</Text><Text style={s.meta}>{list(p as any, 'includes').join(' + ')}</Text></View>
                 <Text style={s.h4}>{formatXOF(p.price_xof)}</Text>
               </Pressable>
             ))}
-            <Stepper label="Participants" value={n} min={1} max={Math.min(50, left)} onChange={setN} />
-            <View style={{ gap: 6 }}><Text style={s.label}>Téléphone (optionnel)</Text><TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={s.input} /></View>
+            <Stepper label={t('detail.participants')} value={n} min={1} max={Math.min(50, left)} onChange={setN} />
+            <View style={{ gap: 6 }}><Text style={s.label}>{t('detail.phone')}</Text><TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={s.input} /></View>
             <PromoBox applied={code} onApply={setCode} preview={preview} />
             <PriceBox preview={preview} fallback={unit * n} />
             <Pressable disabled={busy} onPress={reserve} accessibilityRole="button" style={[s.cta, busy && { opacity: 0.6 }]}>
-              {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.ctaText}>{user ? 'Réserver' : 'Se connecter pour réserver'}</Text>}
+              {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.ctaText}>{user ? t('detail.book') : t('detail.bookLogin')}</Text>}
             </Pressable>
           </View>
         )}
-        {left === 0 && !booking && <Text style={s.empty}>Voyage complet</Text>}
+        {left === 0 && !booking && <Text style={s.empty}>{t('trips.full')}</Text>}
 
         {booking && (
           <View style={[s.section, s.form]}>
-            <Text style={s.h3}>Réservation {booking.reference} enregistrée</Text>
-            <Text style={s.body}>Total : {formatXOF(booking.total_xof)}{booking.discount_xof ? ` (réduction de ${formatXOF(booking.discount_xof)} appliquée)` : ''}. Payez dans les 24 h pour garantir vos places.</Text>
+            <Text style={s.h3}>{t('detail.bookingSaved', { ref: booking.reference })}</Text>
+            <Text style={s.body}>{t('detail.total', { total: formatXOF(booking.total_xof) })}{booking.discount_xof ? t('detail.discountApplied', { amount: formatXOF(booking.discount_xof) }) : ''}{t('detail.payWithin24')}</Text>
             <BookingPay kind="trip" bookingId={booking.id} total={booking.total_xof} paid={0} depositPct={trip.deposit_pct} onDone={() => router.replace('/tourism-bookings')} />
-            <Pressable onPress={() => router.replace('/tourism-bookings')}><Text style={s.link}>Payer plus tard</Text></Pressable>
+            <Pressable onPress={() => router.replace('/tourism-bookings')}><Text style={s.link}>{t('detail.payLater')}</Text></Pressable>
           </View>
         )}
 
-        {trip.contact_whatsapp ? <Pressable onPress={() => Linking.openURL(`https://wa.me/${trip.contact_whatsapp!.replace(/\D/g, '')}`)}><Text style={s.link}>Contacter l’organisateur sur WhatsApp</Text></Pressable> : null}
+        {trip.contact_whatsapp ? <Pressable onPress={() => Linking.openURL(`https://wa.me/${trip.contact_whatsapp!.replace(/\D/g, '')}`)}><Text style={s.link}>{t('detail.whatsapp')}</Text></Pressable> : null}
       </ScrollView>
     </SafeAreaView>
   );

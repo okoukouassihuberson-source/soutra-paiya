@@ -3,13 +3,15 @@ import { View, Text, Pressable, TextInput, Image, ScrollView, StyleSheet } from 
 import { Ionicons } from '@expo/vector-icons';
 import { radius, spacing, typography, formatXOF, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
-import { OFFER_KIND_LABEL, offerValueLabel, previewPrice, type Offer, type PricePreview } from '@/lib/tourism';
+import { offerKindLabel, offerValueLabel, previewPrice, promoMessage, type Offer, type PricePreview } from '@/lib/tourism';
+import { useI18n } from '@/lib/i18n';
 
 /** Carte générique (voyage / activité / destination). */
 export function TourismCard({ title, subtitle, meta, price, cover, badge, onPress }: {
   title: string; subtitle?: string | null; meta?: string | null; price?: number | null; cover: string | null; badge?: string | null; onPress: () => void;
 }) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={title} style={({ pressed }) => [s.card, pressed && { opacity: 0.92 }]}>
@@ -19,7 +21,7 @@ export function TourismCard({ title, subtitle, meta, price, cover, badge, onPres
         {subtitle ? <Text style={s.kicker} numberOfLines={1}>{subtitle}</Text> : null}
         <Text style={s.title} numberOfLines={2}>{title}</Text>
         {meta ? <Text style={s.meta} numberOfLines={1}>{meta}</Text> : null}
-        {price != null ? <Text style={s.price}>dès {formatXOF(price)}</Text> : null}
+        {price != null ? <Text style={s.price}>{t('promo.from', { price: formatXOF(price) })}</Text> : null}
       </View>
     </Pressable>
   );
@@ -27,17 +29,21 @@ export function TourismCard({ title, subtitle, meta, price, cover, badge, onPres
 
 export function OfferCardMobile({ offer, onPress }: { offer: Offer; onPress?: () => void }) {
   const c = useColors();
+  const { t, field } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
+  const title = field(offer as any, 'title') ?? offer.title;
+  const description = field(offer as any, 'description') ?? offer.description;
+  const target = offer.target_title ? (field({ i18n: offer.target_i18n, title: offer.target_title }, 'title') ?? offer.target_title) : null;
   return (
     <Pressable onPress={onPress} disabled={!onPress} style={s.offer}>
       <View style={s.offerRow}>
-        <Text style={s.offerKind}>{OFFER_KIND_LABEL[offer.kind] ?? 'Offre'}</Text>
+        <Text style={s.offerKind}>{offerKindLabel(offer.kind)}</Text>
         <Text style={s.offerValue}>{offerValueLabel(offer)}</Text>
       </View>
-      <Text style={s.title}>{offer.title}</Text>
-      {offer.description ? <Text style={s.meta}>{offer.description}</Text> : null}
-      {offer.target_title ? <Text style={s.meta}>{offer.target_kind === 'activity' ? 'Activité' : 'Voyage'} : {offer.target_title}</Text> : null}
-      <Text style={s.offerCode}>{offer.code ? `Code : ${offer.code}` : 'Appliquée automatiquement'}</Text>
+      <Text style={s.title}>{title}</Text>
+      {description ? <Text style={s.meta}>{description}</Text> : null}
+      {target ? <Text style={s.meta}>{t(offer.target_kind === 'activity' ? 'offer.forActivity' : 'offer.forTrip', { title: target })}</Text> : null}
+      <Text style={s.offerCode}>{offer.code ? t('offer.code', { code: offer.code }) : t('offer.auto')}</Text>
     </Pressable>
   );
 }
@@ -60,34 +66,34 @@ export function usePricePreview(kind: 'trip' | 'activity', target: string | null
 
 export function PromoBox({ applied, onApply, preview }: { applied: string; onApply: (code: string) => void; preview: PricePreview | null }) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [draft, setDraft] = useState(applied);
   return (
     <View style={{ gap: 6 }}>
-      <Text style={s.label}>Code promo</Text>
+      <Text style={s.label}>{t('promo.label')}</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <TextInput value={draft} onChangeText={(v) => setDraft(v.toUpperCase())} placeholder="Ex. ABIDJAN10" autoCapitalize="characters" autoCorrect={false}
+        <TextInput value={draft} onChangeText={(v) => setDraft(v.toUpperCase())} placeholder={t('promo.placeholder')} autoCapitalize="characters" autoCorrect={false}
                    maxLength={40} style={s.input} placeholderTextColor={c.neutral[400]} />
-        <Pressable onPress={() => onApply(draft.trim())} style={s.applyBtn} accessibilityRole="button"><Text style={s.applyText}>Appliquer</Text></Pressable>
+        <Pressable onPress={() => onApply(draft.trim())} style={s.applyBtn} accessibilityRole="button"><Text style={s.applyText}>{t('promo.apply')}</Text></Pressable>
       </View>
       {applied && preview?.error ? <Text style={s.error}>{promoMessage(preview.error)}</Text> : null}
       {!preview?.error && preview?.offer && preview.discount_xof > 0
-        ? <Text style={s.success}>Offre « {preview.offer.title} » appliquée : −{formatXOF(preview.discount_xof)}</Text> : null}
+        ? <Text style={s.success}>{t('promo.applied', { title: preview.offer.title, amount: formatXOF(preview.discount_xof) })}</Text> : null}
     </View>
   );
 }
-import { PROMO_ERRORS } from '@/lib/tourism';
-const promoMessage = (e: string) => PROMO_ERRORS[e] ?? 'Code promo invalide.';
 
 export function PriceBox({ preview, fallback }: { preview: PricePreview | null; fallback: number }) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const d = preview && preview.discount_xof > 0;
   return (
     <View style={s.priceBox}>
-      {d ? <Row s={s} k="Prix avant réduction" v={formatXOF(preview!.gross_xof)} strike /> : null}
-      {d ? <Row s={s} k="Réduction" v={`−${formatXOF(preview!.discount_xof)}`} good /> : null}
-      <View style={s.totalRow}><Text style={s.totalLabel}>Total</Text><Text style={s.totalValue}>{formatXOF(preview ? preview.total_xof : fallback)}</Text></View>
+      {d ? <Row s={s} k={t('promo.gross')} v={formatXOF(preview!.gross_xof)} strike /> : null}
+      {d ? <Row s={s} k={t('promo.discount')} v={`−${formatXOF(preview!.discount_xof)}`} good /> : null}
+      <View style={s.totalRow}><Text style={s.totalLabel}>{t('promo.total')}</Text><Text style={s.totalValue}>{formatXOF(preview ? preview.total_xof : fallback)}</Text></View>
     </View>
   );
 }
@@ -97,21 +103,22 @@ function Row({ s, k, v, strike, good }: { s: ReturnType<typeof makeStyles>; k: s
 
 export function Stepper({ value, min, max, onChange, label }: { value: number; min: number; max: number; onChange: (n: number) => void; label: string }) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={s.stepperWrap}>
       <Text style={s.label}>{label}</Text>
       <View style={s.stepper}>
-        <Pressable onPress={() => onChange(Math.max(min, value - 1))} hitSlop={8} accessibilityLabel="Moins" style={s.stepBtn}><Ionicons name="remove" size={20} color={c.dark} /></Pressable>
+        <Pressable onPress={() => onChange(Math.max(min, value - 1))} hitSlop={8} accessibilityLabel={t('promo.less')} style={s.stepBtn}><Ionicons name="remove" size={20} color={c.dark} /></Pressable>
         <Text style={s.stepValue}>{value}</Text>
-        <Pressable onPress={() => onChange(Math.min(max, value + 1))} hitSlop={8} accessibilityLabel="Plus" style={s.stepBtn}><Ionicons name="add" size={20} color={c.dark} /></Pressable>
+        <Pressable onPress={() => onChange(Math.min(max, value + 1))} hitSlop={8} accessibilityLabel={t('promo.more')} style={s.stepBtn}><Ionicons name="add" size={20} color={c.dark} /></Pressable>
       </View>
     </View>
   );
 }
 
 const BUDGETS: { label: string; value: number | null }[] = [
-  { label: 'Tous budgets', value: null }, { label: '≤ 25 000', value: 25000 }, { label: '≤ 50 000', value: 50000 },
+  { label: '', value: null }, { label: '≤ 25 000', value: 25000 }, { label: '≤ 50 000', value: 50000 },
   { label: '≤ 100 000', value: 100000 }, { label: '≤ 250 000', value: 250000 }, { label: '≤ 500 000', value: 500000 },
 ];
 
@@ -121,25 +128,26 @@ export function FilterBar({ q, onQ, maxPrice, onMaxPrice, categories, category, 
   categories?: { key: string; label: string }[]; category?: string | null; onCategory?: (k: string | null) => void;
 }) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const chip = (on: boolean) => ({ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99, borderWidth: 1, borderColor: on ? c.primary[500] : c.neutral[300], backgroundColor: on ? c.primary[500] : c.light });
   const chipText = (on: boolean) => ({ fontSize: 12, fontWeight: '700' as const, color: on ? '#fff' : c.neutral[700] });
   return (
     <View style={{ gap: 8, paddingBottom: spacing.sm }}>
       <View style={{ paddingHorizontal: spacing.md }}>
-        <TextInput value={q} onChangeText={onQ} placeholder="Rechercher (ville, pays, thème…)" placeholderTextColor={c.neutral[400]} returnKeyType="search"
-                   autoCorrect={false} accessibilityLabel="Rechercher" style={s.input} />
+        <TextInput value={q} onChangeText={onQ} placeholder={t('filter.placeholder')} placeholderTextColor={c.neutral[400]} returnKeyType="search"
+                   autoCorrect={false} accessibilityLabel={t('filter.search')} style={s.input} />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: spacing.md }}>
         {BUDGETS.map((b) => (
-          <Pressable key={b.label} onPress={() => onMaxPrice(b.value)} accessibilityRole="button" accessibilityState={{ selected: maxPrice === b.value }} style={chip(maxPrice === b.value)}>
-            <Text style={chipText(maxPrice === b.value)}>{b.label}</Text>
+          <Pressable key={b.value ?? 'all'} onPress={() => onMaxPrice(b.value)} accessibilityRole="button" accessibilityState={{ selected: maxPrice === b.value }} style={chip(maxPrice === b.value)}>
+            <Text style={chipText(maxPrice === b.value)}>{b.value === null ? t('filter.allBudgets') : b.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
       {categories && onCategory ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: spacing.md }}>
-          <Pressable onPress={() => onCategory(null)} accessibilityRole="button" accessibilityState={{ selected: !category }} style={chip(!category)}><Text style={chipText(!category)}>Toutes</Text></Pressable>
+          <Pressable onPress={() => onCategory(null)} accessibilityRole="button" accessibilityState={{ selected: !category }} style={chip(!category)}><Text style={chipText(!category)}>{t('filter.all')}</Text></Pressable>
           {categories.map((k) => (
             <Pressable key={k.key} onPress={() => onCategory(k.key)} accessibilityRole="button" accessibilityState={{ selected: category === k.key }} style={chip(category === k.key)}>
               <Text style={chipText(category === k.key)}>{k.label}</Text>
