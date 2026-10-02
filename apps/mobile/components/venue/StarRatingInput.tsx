@@ -1,6 +1,7 @@
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 
 interface Props {
   value: number; // 0-5 (0 = aucune sélection)
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function StarRatingInput({ value, onChange, size = 32, disabled, readOnly, color }: Props) {
+  const { tn } = useI18n();
   const c = useColors();
   const starColor = color ?? c.warning;
 
@@ -35,7 +37,7 @@ export function StarRatingInput({ value, onChange, size = 32, disabled, readOnly
             hitSlop={6}
             disabled={disabled}
             onPress={() => onChange?.(i)}
-            accessibilityLabel={`${i} étoile${i > 1 ? 's' : ''}`}
+            accessibilityLabel={tn('ui.stars', i)}
           >
             {star}
           </Pressable>

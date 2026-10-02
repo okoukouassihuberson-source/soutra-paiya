@@ -7,8 +7,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { useAuth } from '@/lib/auth-context';
 import { createStory } from '@/lib/stories';
+import { useI18n } from '@/lib/i18n';
 
 export default function StoryCreate() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -24,7 +26,7 @@ export default function StoryCreate() {
   async function pickImage() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission requise', 'Autorise l\'accès à tes photos.');
+      Alert.alert(t('compose.permTitle'), t('compose.storyPermBody'));
       router.back();
       return;
     }
@@ -40,7 +42,7 @@ export default function StoryCreate() {
     }
     const asset = result.assets[0];
     if (asset.fileSize && asset.fileSize > 8 * 1024 * 1024) {
-      Alert.alert('Image trop lourde', 'Choisis une image de moins de 8 Mo.');
+      Alert.alert(t('compose.bigTitle'), t('compose.bigBody'));
       router.back();
       return;
     }
@@ -49,7 +51,7 @@ export default function StoryCreate() {
 
   async function publish() {
     if (!user?.id) {
-      Alert.alert('Connexion requise', 'Reconnecte-toi.');
+      Alert.alert(t('compose.loginTitle'), t('compose.loginBodyShort'));
       return;
     }
     if (!image) return;
@@ -58,7 +60,7 @@ export default function StoryCreate() {
       await createStory({ userId: user.id, image, caption });
       router.back();
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Publication échouée.');
+      Alert.alert(t('compose.error'), err?.message ?? t('compose.publishFail'));
     } finally {
       setPosting(false);
     }
@@ -78,9 +80,9 @@ export default function StoryCreate() {
         <Pressable onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="close" size={26} color="#fff" />
         </Pressable>
-        <Text style={s.title}>Nouvelle story</Text>
+        <Text style={s.title}>{t('compose.storyTitle')}</Text>
         <Pressable onPress={publish} disabled={posting} style={s.publishBtn}>
-          {posting ? <ActivityIndicator color="#fff" /> : <Text style={s.publishLabel}>Publier</Text>}
+          {posting ? <ActivityIndicator color="#fff" /> : <Text style={s.publishLabel}>{t('compose.publish')}</Text>}
         </Pressable>
       </View>
 
@@ -90,7 +92,7 @@ export default function StoryCreate() {
           <TextInput
             value={caption}
             onChangeText={(v) => v.length <= 140 && setCaption(v)}
-            placeholder="Ajoute une légende (facultative)"
+            placeholder={t('compose.captionPh')}
             placeholderTextColor="rgba(255,255,255,0.7)"
             style={s.captionInput}
             multiline
@@ -98,7 +100,7 @@ export default function StoryCreate() {
         </View>
       </View>
 
-      <Text style={s.hint}>Ta story sera visible pendant 24h.</Text>
+      <Text style={s.hint}>{t('compose.storyHint')}</Text>
     </SafeAreaView>
   );
 }

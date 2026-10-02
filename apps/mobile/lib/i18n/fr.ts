@@ -418,6 +418,18 @@ export const fr = {
     listTitle: 'Partages d’addition', newSplit: 'Nouveau partage', none: 'Aucun partage pour le moment.', noneBody: 'Partage une addition entre amis — chacun reçoit une demande.', paidShort: '{paid}/{total} payé',
     soon: 'Split Note', soonSub: 'Découpe la note entre amis', soonTitle: 'Bientôt disponible', soonBody: 'La découpe d’addition entre amis arrive dans la prochaine mise à jour. En attendant, tu peux utiliser « Demander » pour réclamer ta part à chacun manuellement.', openRequest: 'Ouvrir Demander',
   },
+  compose: {
+    error: 'Erreur', permTitle: 'Permission requise', permBody: 'Autorise l’accès à tes photos pour publier une image.', storyPermBody: 'Autorise l’accès à tes photos.', bigTitle: 'Image trop lourde', bigBody: 'Choisis une image de moins de 8 Mo.',
+    loginTitle: 'Connexion requise', loginBody: 'Reconnecte-toi pour publier.', loginBodyShort: 'Reconnecte-toi.', emptyTitle: 'Post vide', emptyBody: 'Ajoute un texte ou une image.', publishFail: 'Publication échouée.',
+    postTitle: 'Nouveau post', publish: 'Publier', whatsNew: 'Quoi de neuf ?', changePhoto: 'Changer la photo', addPhoto: 'Ajouter une photo', storyTitle: 'Nouvelle story', captionPh: 'Ajoute une légende (facultative)', storyHint: 'Ta story sera visible pendant 24h.',
+    storyLoadFail: 'Chargement impossible.', storyDelTitle: 'Supprimer cette story ?', storyDelBody: 'Cette action est définitive.', cancel: 'Annuler', delete: 'Supprimer', storyDelFail: 'Suppression impossible.',
+  },
+  pin: { savedTitle: 'Code PIN enregistré 🔒', savedBody: 'Ton PIN sécurise désormais tes envois et paiements.', saveFail: 'Enregistrement impossible', title: 'Code PIN de paiement', choose: 'Choisis un code à 4 chiffres', confirm: 'Confirme ton code', hint: 'Ce code te sera demandé pour valider tes envois d’argent.' },
+  ui: {
+    errGeneric: 'Une erreur est survenue. Réessaie ou redémarre l’application.', oops: 'Oups', retry: 'Réessayer', devDetail: 'DEV — détail technique', open: 'Ouvert', closed: 'Fermé', directions: 'Itinéraire', seeVenue: 'Voir la fiche',
+    paymentMethods: 'Moyens de paiement acceptés', encryption: 'Cryptage de bout en bout · paiement instantané', nextLevel: 'Prochain niveau :', maxLevel: 'Niveau maximum atteint 🎉', toLevel: '{pts} pour passer {level}', atTop: 'Tu es au sommet 👑', stars_one: '{n} étoile', stars_other: '{n} étoiles',
+    level: { bronze: 'Bronze', silver: 'Argent', gold: 'Or', platinum: 'Platine', diamond: 'Diamant' }, pts: '{n} pts',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

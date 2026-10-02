@@ -7,10 +7,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { useAuth } from '@/lib/auth-context';
 import { createPost } from '@/lib/social';
+import { useI18n } from '@/lib/i18n';
 
 const MAX_LEN = 1000;
 
 export default function PostCreate() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const [body, setBody] = useState('');
@@ -20,7 +22,7 @@ export default function PostCreate() {
   async function pickImage() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission requise', 'Autorise l\'accès à tes photos pour publier une image.');
+      Alert.alert(t('compose.permTitle'), t('compose.permBody'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -33,7 +35,7 @@ export default function PostCreate() {
     const asset = result.assets[0];
     // Garde-fou taille (8 Mo équivalent base64 ~ 11 Mo)
     if (asset.fileSize && asset.fileSize > 8 * 1024 * 1024) {
-      Alert.alert('Image trop lourde', 'Choisis une image de moins de 8 Mo.');
+      Alert.alert(t('compose.bigTitle'), t('compose.bigBody'));
       return;
     }
     setImage(asset);
@@ -41,11 +43,11 @@ export default function PostCreate() {
 
   async function publish() {
     if (!user?.id) {
-      Alert.alert('Connexion requise', 'Reconnecte-toi pour publier.');
+      Alert.alert(t('compose.loginTitle'), t('compose.loginBody'));
       return;
     }
     if (!body.trim() && !image) {
-      Alert.alert('Post vide', 'Ajoute un texte ou une image.');
+      Alert.alert(t('compose.emptyTitle'), t('compose.emptyBody'));
       return;
     }
     setPosting(true);
@@ -53,7 +55,7 @@ export default function PostCreate() {
       await createPost({ userId: user.id, body, image });
       router.back();
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Publication échouée.');
+      Alert.alert(t('compose.error'), err?.message ?? t('compose.publishFail'));
     } finally {
       setPosting(false);
     }
@@ -65,12 +67,12 @@ export default function PostCreate() {
         <Pressable onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="close" size={26} color={colors.dark} />
         </Pressable>
-        <Text style={s.title}>Nouveau post</Text>
+        <Text style={s.title}>{t('compose.postTitle')}</Text>
         <Pressable onPress={publish} disabled={posting} style={[s.publishBtn, (!body.trim() && !image) && s.publishBtnDisabled]}>
           {posting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={s.publishLabel}>Publier</Text>
+            <Text style={s.publishLabel}>{t('compose.publish')}</Text>
           )}
         </Pressable>
       </View>
@@ -80,7 +82,7 @@ export default function PostCreate() {
           <TextInput
             value={body}
             onChangeText={(v) => v.length <= MAX_LEN && setBody(v)}
-            placeholder="Quoi de neuf ?"
+            placeholder={t('compose.whatsNew')}
             placeholderTextColor={colors.neutral[400]}
             multiline
             style={s.input}
@@ -100,7 +102,7 @@ export default function PostCreate() {
           <View style={s.tools}>
             <Pressable onPress={pickImage} style={s.toolBtn}>
               <Ionicons name="image-outline" size={22} color={colors.primary[500]} />
-              <Text style={s.toolLabel}>{image ? 'Changer la photo' : 'Ajouter une photo'}</Text>
+              <Text style={s.toolLabel}>{image ? t('compose.changePhoto') : t('compose.addPhoto')}</Text>
             </Pressable>
           </View>
         </ScrollView>

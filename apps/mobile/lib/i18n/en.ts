@@ -416,4 +416,16 @@ export const en: Dict = {
     listTitle: 'Bill splits', newSplit: 'New split', none: 'No splits yet.', noneBody: 'Split a bill with friends — everyone gets a request.', paidShort: '{paid}/{total} paid',
     soon: 'Split Bill', soonSub: 'Split the bill between friends', soonTitle: 'Coming soon', soonBody: 'Splitting the bill between friends arrives in the next update. Meanwhile, you can use “Request” to ask each person for their share manually.', openRequest: 'Open Request',
   },
+  compose: {
+    error: 'Error', permTitle: 'Permission required', permBody: 'Allow access to your photos to post an image.', storyPermBody: 'Allow access to your photos.', bigTitle: 'Image too large', bigBody: 'Choose an image under 8 MB.',
+    loginTitle: 'Sign-in required', loginBody: 'Sign in again to post.', loginBodyShort: 'Sign in again.', emptyTitle: 'Empty post', emptyBody: 'Add some text or an image.', publishFail: 'Could not publish.',
+    postTitle: 'New post', publish: 'Post', whatsNew: 'What’s new?', changePhoto: 'Change photo', addPhoto: 'Add a photo', storyTitle: 'New story', captionPh: 'Add a caption (optional)', storyHint: 'Your story will be visible for 24h.',
+    storyLoadFail: 'Could not load.', storyDelTitle: 'Delete this story?', storyDelBody: 'This cannot be undone.', cancel: 'Cancel', delete: 'Delete', storyDelFail: 'Could not delete.',
+  },
+  pin: { savedTitle: 'PIN saved 🔒', savedBody: 'Your PIN now secures your transfers and payments.', saveFail: 'Could not save', title: 'Payment PIN', choose: 'Choose a 4-digit code', confirm: 'Confirm your code', hint: 'You will be asked for this code to confirm money transfers.' },
+  ui: {
+    errGeneric: 'Something went wrong. Try again or restart the app.', oops: 'Oops', retry: 'Retry', devDetail: 'DEV — technical details', open: 'Open', closed: 'Closed', directions: 'Directions', seeVenue: 'View details',
+    paymentMethods: 'Accepted payment methods', encryption: 'End-to-end encryption · instant payment', nextLevel: 'Next level:', maxLevel: 'Maximum level reached 🎉', toLevel: '{pts} to reach {level}', atTop: 'You are at the top 👑', stars_one: '{n} star', stars_other: '{n} stars',
+    level: { bronze: 'Bronze', silver: 'Silver', gold: 'Gold', platinum: 'Platinum', diamond: 'Diamond' }, pts: '{n} pts',
+  },
 };
