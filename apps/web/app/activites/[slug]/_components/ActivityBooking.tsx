@@ -47,6 +47,7 @@ export function ActivityBooking({ slots, basePrice, maxGroup, minAge }: {
     if (!s.session) { setMsg({ ok: false, text: 'login' }); setBusy(false); return; }
     const { data, error } = await sb.rpc('create_activity_booking', { p_slot_id: slotId, p_participants: n, p_phone: phone || null, p_notes: null, p_promo_code: code.trim() || null });
     setBusy(false);
+    if (!error && data?.error) { setMsg({ ok: false, text: t(`promo.err.${data.error}` as 'promo.err.generic') }); return; }   // échec de code : renvoyé en { error } (compteur anti-devinette)
     if (error) {
       const promo = String(error.message ?? '').match(/PROMO_[A-Z_]+/)?.[0];
       if (promo) { setMsg({ ok: false, text: t(`promo.err.${promo}` as 'promo.err.generic') }); return; }

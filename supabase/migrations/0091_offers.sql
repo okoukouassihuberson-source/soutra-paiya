@@ -247,13 +247,55 @@ end; $$;
 revoke execute on function public.pick_offer(text, uuid, uuid, integer, date, bigint, text, uuid, boolean) from public, anon, authenticated;
 revoke execute on function public.offer_ineligible_reason(public.tourism_offers, text, uuid, uuid, integer, date, uuid) from public, anon, authenticated;
 
+-- Anti-devinette de codes : les essais ratés (code inconnu / non applicable) sont comptés par
+-- utilisateur ; au-delà de 10 par heure, plus aucun code n'est examiné. Le compteur doit survivre à
+-- l'échec : les fonctions de réservation renvoient donc { error } au lieu de lever l'exception
+-- (une exception annulerait l'écriture du compteur).
+create table if not exists public.promo_attempts (
+  id         bigserial primary key,
+  user_id    uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_promo_attempts_user on public.promo_attempts (user_id, created_at desc);
+alter table public.promo_attempts enable row level security;   -- aucune politique : interne
+
+create or replace function public.pick_offer_guarded(
+  p_kind text, p_target uuid, p_organizer uuid, p_participants integer, p_start date,
+  p_gross bigint, p_code text, p_uid uuid, p_lock boolean default false
+)
+returns table (offer_id uuid, discount_xof bigint, title text, kind text, code text, error text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare v_code text := nullif(upper(trim(p_code)), '');
+begin
+  if v_code is not null and p_uid is not null
+     and (select count(*) from public.promo_attempts a where a.user_id = p_uid and a.created_at > now() - interval '1 hour') >= 10 then
+    return query select null::uuid, 0::bigint, null::text, null::text, null::text, 'PROMO_RATE_LIMITED'::text;
+    return;
+  end if;
+  begin
+    return query select r.offer_id, r.discount_xof, r.title, r.kind, r.code, null::text
+                   from public.pick_offer(p_kind, p_target, p_organizer, p_participants, p_start, p_gross, p_code, p_uid, p_lock) r;
+  exception when others then
+    if sqlerrm in ('PROMO_NOT_FOUND', 'PROMO_NOT_APPLICABLE') and p_uid is not null then
+      insert into public.promo_attempts (user_id) values (p_uid);
+      delete from public.promo_attempts a where a.user_id = p_uid and a.created_at < now() - interval '1 day';
+      return query select null::uuid, 0::bigint, null::text, null::text, null::text, sqlerrm::text;
+      return;
+    end if;
+    raise;
+  end;
+end; $$;
+revoke execute on function public.pick_offer_guarded(text, uuid, uuid, integer, date, bigint, text, uuid, boolean) from public, anon, authenticated;
+
 -- Aperçu du prix (même calcul que la réservation, sans rien écrire).
 create or replace function public.preview_booking_price(
   p_kind text, p_target uuid, p_participants integer, p_package uuid default null, p_code text default null
 )
 returns jsonb
 language plpgsql
-stable
 security definer
 set search_path = public
 as $$
@@ -283,7 +325,10 @@ begin
   v_gross := v_unit * p_participants;
 
   begin
-    select * into r from public.pick_offer(p_kind, p_target, v_org, p_participants, v_start, v_gross, p_code, v_uid, false);
+    select * into r from public.pick_offer_guarded(p_kind, p_target, v_org, p_participants, v_start, v_gross, p_code, v_uid, false);
+    if r.error is not null then
+      return jsonb_build_object('gross_xof', v_gross, 'discount_xof', 0, 'total_xof', v_gross, 'offer', null, 'error', r.error);
+    end if;
   exception when others then
     if sqlerrm like 'PROMO_%' or sqlerrm = 'NOT_AUTHENTICATED' then
       return jsonb_build_object('gross_xof', v_gross, 'discount_xof', 0, 'total_xof', v_gross, 'offer', null, 'error', sqlerrm);
@@ -367,8 +412,9 @@ begin
 
   v_gross := v_price * p_participants;
   -- Meilleure offre éligible (ou code saisi) ; verrouille les offres candidates (plafonds d'utilisation).
-  select * into v_offer from public.pick_offer('trip', p_trip_id, v_trip.organizer_id, p_participants,
-                                               v_trip.starts_on, v_gross, p_promo_code, v_uid, true);
+  select * into v_offer from public.pick_offer_guarded('trip', p_trip_id, v_trip.organizer_id, p_participants,
+                                                       v_trip.starts_on, v_gross, p_promo_code, v_uid, true);
+  if v_offer.error is not null then return jsonb_build_object('error', v_offer.error); end if;
   v_ref := 'TRP-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8));
 
   insert into public.trip_bookings
@@ -438,8 +484,9 @@ begin
   if s.capacity - s.booked < p_participants then raise exception 'NOT_ENOUGH_SEATS'; end if;
   v_price := coalesce(s.price_xof, a.price_xof);
   v_gross := v_price * p_participants;
-  select * into v_offer from public.pick_offer('activity', s.id, a.organizer_id, p_participants,
-                                               (s.starts_at at time zone 'UTC')::date, v_gross, p_promo_code, v_uid, true);
+  select * into v_offer from public.pick_offer_guarded('activity', s.id, a.organizer_id, p_participants,
+                                                       (s.starts_at at time zone 'UTC')::date, v_gross, p_promo_code, v_uid, true);
+  if v_offer.error is not null then return jsonb_build_object('error', v_offer.error); end if;
   v_ref := 'ACT-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8));
 
   insert into public.activity_bookings

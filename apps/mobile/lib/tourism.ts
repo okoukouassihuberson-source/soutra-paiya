@@ -88,7 +88,7 @@ export const PROMO_ERRORS: Record<string, string> = {
   PROMO_INACTIVE: 'Cette offre n’est plus active.', PROMO_NOT_STARTED: 'Cette offre n’a pas encore commencé.',
   PROMO_EXPIRED: 'Cette offre est terminée.', PROMO_PARTICIPANTS: 'Le nombre de participants ne correspond pas à l’offre.',
   PROMO_TOO_LATE: 'Trop tard pour cette offre.', PROMO_TOO_EARLY: 'Trop tôt pour cette offre : réservez plus près du départ.',
-  PROMO_EXHAUSTED: 'Cette offre n’est plus disponible.', PROMO_ALREADY_USED: 'Vous avez déjà utilisé ce code.',
+  PROMO_RATE_LIMITED: 'Trop d’essais de codes. Réessayez dans une heure.', PROMO_EXHAUSTED: 'Cette offre n’est plus disponible.', PROMO_ALREADY_USED: 'Vous avez déjà utilisé ce code.',
   NOT_AUTHENTICATED: 'Connectez-vous pour utiliser un code promo.',
 };
 export const promoError = (message?: string | null) => {
@@ -130,6 +130,7 @@ export async function createTripBooking(p: { tripId: string; participants: numbe
     p_trip_id: p.tripId, p_participants: p.participants, p_package_id: p.packageId, p_phone: p.phone || null, p_notes: null, p_promo_code: p.code.trim() || null,
   });
   if (error) throw new Error(bookingError(error.message));
+  if (data?.error) throw new Error(bookingError(String(data.error)));   // échec de code promo renvoyé en { error }
   return data as BookingResult;
 }
 export async function createActivityBooking(p: { slotId: string; participants: number; phone: string; code: string }): Promise<BookingResult> {
@@ -137,6 +138,7 @@ export async function createActivityBooking(p: { slotId: string; participants: n
     p_slot_id: p.slotId, p_participants: p.participants, p_phone: p.phone || null, p_notes: null, p_promo_code: p.code.trim() || null,
   });
   if (error) throw new Error(bookingError(error.message));
+  if (data?.error) throw new Error(bookingError(String(data.error)));   // échec de code promo renvoyé en { error }
   return data as BookingResult;
 }
 

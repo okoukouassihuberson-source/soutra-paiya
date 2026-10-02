@@ -98,7 +98,8 @@
 3. **Règles de sécurité** : un partenaire ne crée/modifie que ses offres et ne cible que ses propres voyages/activités ; les offres privées ne sont jamais listées ; les offres « anniversaire » et « entreprise » exigent un code (l'âge n'est pas vérifiable) ; code obligatoirement authentifié. Bug trouvé et corrigé en test : logique à trois valeurs qui laissait l'offre d'un partenaire s'appliquer aux voyages d'un autre.
 4. **Interface** : champ code promo + prix avant/après dans les deux formulaires de réservation, bloc « Offres disponibles » sur les fiches, page `/promotions` (+ sitemap, menu, bande « Offres du moment » à l'accueil), ligne de réduction dans « Mes voyages / Mes activités », onglet « Offres » côté organisateur et administration (vue d'ensemble : offres actives, utilisations, réductions accordées). FR/EN.
 5. **Tests** : 20 scénarios SQL sur PostgreSQL 16 (contraintes, offres automatiques, casse du code, codes d'erreur, plafonds, limites par client, libération à l'annulation, plancher 200 FCFA, RLS, listes publiques, vue admin) ; `tsc`, `next build` et tests i18n verts. **Non testé** : parcours navigateur de l'interface des offres.
-6. **Limites** : pas de limitation de débit contre l'essai de codes (authentification requise seulement) ; une seule offre par réservation ; textes des notifications de promotion non émis ; traductions anglaises non relues.
+6. **Anti-devinette de codes** (ajouté après coup, dans 0091) : les essais ratés (code inconnu ou non applicable) sont comptés par utilisateur (`promo_attempts`) ; au-delà de **10 par heure**, plus aucun code n'est examiné (`PROMO_RATE_LIMITED`), y compris un code valide, l'aperçu comptant comme la réservation. Pour que le compteur survive à l'échec, `create_trip_booking` / `create_activity_booking` renvoient `{ "error": "PROMO_…" }` (au lieu de lever l'exception) pour ces deux cas ; les autres erreurs de code (épuisé, expiré, déjà utilisé…) restent des exceptions. Web et mobile gèrent les deux formes. Testé : aucune place retenue ni réservation créée par un essai raté, sans code la réservation reste possible, un autre utilisateur n'est pas affecté.
+7. **Limites** : une seule offre par réservation ; textes des notifications de promotion non émis ; traductions anglaises non relues.
 
 ## 3 decies. Livré en phase 2 (commissions configurables)
 1. **Migration `0092_commissions.sql`** (additive) : taux par défaut plateforme (voyages / activités, **0 % tant que l'admin n'a rien réglé** : aucun changement à l'application), surcharge par partenaire, priorité **taux du voyage/activité > taux du partenaire > taux par défaut** (`effective_commission_pct`).
@@ -131,7 +132,7 @@
 
 ## 4. Feuille de route
 - **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; notifications aux organisateurs (soumission, nouvelle réservation).
-- **Reste** : recette sur appareil de l'application mobile ; écran destinations, avis et filtres sur mobile ; i18n mobile ; espace organisateur mobile ; relecture humaine des traductions anglaises ; limitation de débit des codes promo.
+- **Reste** : recette sur appareil de l'application mobile ; écran destinations, avis et filtres sur mobile ; i18n mobile ; espace organisateur mobile ; relecture humaine des traductions anglaises.
 
 ## 5. Déploiement / précautions
 - Déployer : `supabase db push` puis `supabase functions deploy geniuspay-pay-trip`. Appliquer 0082 puis 0083 (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.

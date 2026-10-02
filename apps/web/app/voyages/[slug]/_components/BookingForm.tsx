@@ -32,6 +32,7 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
       p_trip_id: tripId, p_participants: n, p_package_id: pkg || null, p_phone: phone || null, p_notes: null, p_promo_code: code.trim() || null,
     });
     setBusy(false);
+    if (!error && data?.error) { setMsg({ ok: false, text: t(`promo.err.${data.error}` as 'promo.err.generic') }); return; }   // échec de code : renvoyé en { error } (compteur anti-devinette)
     if (error) {
       const promo = String(error.message ?? '').match(/PROMO_[A-Z_]+/)?.[0];
       if (promo) { setMsg({ ok: false, text: t(`promo.err.${promo}` as 'promo.err.generic') }); return; }

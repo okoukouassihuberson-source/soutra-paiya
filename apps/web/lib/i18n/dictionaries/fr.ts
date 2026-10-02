@@ -605,6 +605,7 @@ export const fr = {
       "PROMO_TOO_LATE": "Trop tard pour cette offre (délai de réservation dépassé).",
       "PROMO_TOO_EARLY": "Trop tôt pour cette offre : réservez plus près du départ.",
       "PROMO_EXHAUSTED": "Cette offre n’est plus disponible.",
+      "PROMO_RATE_LIMITED": "Trop d’essais de codes. Réessayez dans une heure.",
       "PROMO_ALREADY_USED": "Vous avez déjà utilisé ce code.",
       "NOT_AUTHENTICATED": "Connectez-vous pour utiliser un code promo.",
       "generic": "Code promo invalide.",

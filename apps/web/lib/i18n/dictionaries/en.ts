@@ -603,6 +603,7 @@ export const en: Dict = {
       "PROMO_TOO_LATE": "Too late for this offer (booking deadline passed).",
       "PROMO_TOO_EARLY": "Too early for this offer: book closer to departure.",
       "PROMO_EXHAUSTED": "This offer is no longer available.",
+      "PROMO_RATE_LIMITED": "Too many code attempts. Try again in an hour.",
       "PROMO_ALREADY_USED": "You have already used this code.",
       "NOT_AUTHENTICATED": "Sign in to use a promo code.",
       "generic": "Invalid promo code.",
