@@ -222,6 +222,16 @@ export const fr = {
     apply: 'Appliquer', avgPrice: 'Prix moyen', estTotal: 'Total estimé', deposit20: 'Acompte (20%)', promoLine: 'Promo {code} (-{pct}%)', toPay: 'À payer', continuePay: 'Continuer vers le paiement',
     promoFail: 'Validation impossible',
   },
+  hotel: {
+    title: 'Hôtel', error: 'Erreur', loadFail: 'Impossible de charger les chambres', badDate: 'Date invalide', badDateBody: 'Le check-out doit être au moins 1 jour après le check-in.',
+    stats: '{nights} · {guests}', guests_one: '{n} invité', guests_other: '{n} invités', stay: 'Votre séjour', arrival: 'Arrivée', departure: 'Départ', guestsLabel: 'Invités', duration: 'Durée',
+    searching: 'Recherche des chambres disponibles…', emptyTitle: 'Aucune chambre disponible', emptyBody: 'Modifie les dates ou le nombre d’invités pour voir d’autres options.',
+    loginTitle: 'Connexion requise', loginRoom: 'Connecte-toi pour réserver une chambre.', taken: 'Chambre prise', takenBody: 'Cette chambre vient d’être réservée par quelqu’un d’autre. Choisis-en une autre.',
+    capacity: 'Capacité dépassée', capacityBody: 'Cette chambre ne peut pas accueillir autant d’invités.', badDates: 'Dates invalides', badDatesBody: 'Vérifie tes dates de check-in et check-out.',
+    loginBook: 'Connecte-toi pour réserver.', createFail: 'Impossible de créer la réservation', created: 'Réservation créée', createdBody: 'Ta réservation {ref} est en attente de paiement.',
+    total: 'Total', amenities: 'Équipements', contact: 'Contact (optionnel)', name: 'Nom', phone: 'Téléphone', notes: 'Notes (ex: arrivée tardive vers 23h)', creating: 'Création…',
+    book: 'Réserver · {amount}', payHint: 'Tu paieras ensuite depuis « Mes réservations ».', cancel: 'Annuler',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

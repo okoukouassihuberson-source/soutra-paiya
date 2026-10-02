@@ -220,4 +220,14 @@ export const en: Dict = {
     apply: 'Apply', avgPrice: 'Average price', estTotal: 'Estimated total', deposit20: 'Deposit (20%)', promoLine: 'Promo {code} (-{pct}%)', toPay: 'To pay', continuePay: 'Continue to payment',
     promoFail: 'Validation failed',
   },
+  hotel: {
+    title: 'Hotel', error: 'Error', loadFail: 'Unable to load rooms', badDate: 'Invalid date', badDateBody: 'Check-out must be at least 1 day after check-in.',
+    stats: '{nights} · {guests}', guests_one: '{n} guest', guests_other: '{n} guests', stay: 'Your stay', arrival: 'Arrival', departure: 'Departure', guestsLabel: 'Guests', duration: 'Duration',
+    searching: 'Searching for available rooms…', emptyTitle: 'No rooms available', emptyBody: 'Change the dates or the number of guests to see other options.',
+    loginTitle: 'Sign-in required', loginRoom: 'Sign in to book a room.', taken: 'Room taken', takenBody: 'This room has just been booked by someone else. Choose another one.',
+    capacity: 'Capacity exceeded', capacityBody: 'This room cannot accommodate that many guests.', badDates: 'Invalid dates', badDatesBody: 'Check your check-in and check-out dates.',
+    loginBook: 'Sign in to book.', createFail: 'Unable to create the booking', created: 'Booking created', createdBody: 'Your booking {ref} is awaiting payment.',
+    total: 'Total', amenities: 'Amenities', contact: 'Contact (optional)', name: 'Name', phone: 'Phone', notes: 'Notes (e.g. late arrival around 11 pm)', creating: 'Creating…',
+    book: 'Book · {amount}', payHint: 'You will then pay from “My bookings”.', cancel: 'Cancel',
+  },
 };

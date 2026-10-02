@@ -11,6 +11,7 @@ import { typography, radius, spacing, formatXOF, type ColorPalette } from '@sout
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 
 /**
@@ -60,11 +61,12 @@ function nightsBetween(a: Date, b: Date): number {
   const ms = b.getTime() - a.getTime();
   return Math.max(1, Math.round(ms / 86_400_000));
 }
-function formatDateFR(d: Date): string {
-  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' });
+function formatDateLoc(d: Date, intl: string): string {
+  return d.toLocaleDateString(intl, { weekday: 'short', day: '2-digit', month: 'short' });
 }
 
 export default function HotelScreen() {
+  const { t, tn, intl } = useI18n();
   const { venueId } = useLocalSearchParams<{ venueId: string }>();
   const router = useRouter();
   const { user } = useAuth();
@@ -115,7 +117,7 @@ export default function HotelScreen() {
       });
       if (error) {
         console.error('[hotel] list_available_rooms:', error);
-        Alert.alert('Erreur', error.message || 'Impossible de charger les chambres');
+        Alert.alert(t('hotel.error'), error.message || t('hotel.loadFail'));
         setRooms([]);
       } else {
         setRooms((data as AvailableRoom[]) ?? []);
@@ -146,7 +148,7 @@ export default function HotelScreen() {
     setShowCheckOutPicker(Platform.OS === 'ios');
     if (!d) return;
     if (d <= checkIn) {
-      Alert.alert('Date invalide', 'Le check-out doit être au moins 1 jour après le check-in.');
+      Alert.alert(t('hotel.badDate'), t('hotel.badDateBody'));
       return;
     }
     setCheckOut(d);
@@ -160,7 +162,7 @@ export default function HotelScreen() {
   if (loading && !venue) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader title="Hôtel" />
+        <ScreenHeader title={t('hotel.title')} />
         <View style={s.center}><ActivityIndicator color={c.primary[500]} /></View>
       </SafeAreaView>
     );
@@ -169,8 +171,8 @@ export default function HotelScreen() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader
-        title={venue?.name || 'Hôtel'}
-        subtitle={`${nights} nuit${nights > 1 ? 's' : ''} · ${guests} invité${guests > 1 ? 's' : ''}`}
+        title={venue?.name || t('hotel.title')}
+        subtitle={`${tn('hotelBk.nights', nights)} · ${tn('hotel.guests', guests)}`}
       />
 
       <ScrollView
@@ -179,15 +181,15 @@ export default function HotelScreen() {
       >
         {/* SEARCH PANEL */}
         <View style={s.panel}>
-          <Text style={s.panelTitle}>Votre séjour</Text>
+          <Text style={s.panelTitle}>{t('hotel.stay')}</Text>
 
           <View style={s.row}>
             <Pressable
               style={({ pressed }) => [s.dateBox, pressed && { opacity: 0.85 }]}
               onPress={() => setShowCheckInPicker(true)}
             >
-              <Text style={s.dateLabel}>Arrivée</Text>
-              <Text style={s.dateValue}>{formatDateFR(checkIn)}</Text>
+              <Text style={s.dateLabel}>{t('hotel.arrival')}</Text>
+              <Text style={s.dateValue}>{formatDateLoc(checkIn, intl)}</Text>
             </Pressable>
 
             <View style={s.arrowBox}>
@@ -198,14 +200,14 @@ export default function HotelScreen() {
               style={({ pressed }) => [s.dateBox, pressed && { opacity: 0.85 }]}
               onPress={() => setShowCheckOutPicker(true)}
             >
-              <Text style={s.dateLabel}>Départ</Text>
-              <Text style={s.dateValue}>{formatDateFR(checkOut)}</Text>
+              <Text style={s.dateLabel}>{t('hotel.departure')}</Text>
+              <Text style={s.dateValue}>{formatDateLoc(checkOut, intl)}</Text>
             </Pressable>
           </View>
 
           <View style={[s.row, { marginTop: spacing.md }]}>
             <View style={s.guestsBox}>
-              <Text style={s.dateLabel}>Invités</Text>
+              <Text style={s.dateLabel}>{t('hotel.guestsLabel')}</Text>
               <View style={s.guestsRow}>
                 <Pressable
                   onPress={() => setGuests((g) => Math.max(1, g - 1))}
@@ -226,8 +228,8 @@ export default function HotelScreen() {
             </View>
 
             <View style={s.summaryBox}>
-              <Text style={s.dateLabel}>Durée</Text>
-              <Text style={s.dateValue}>{nights} nuit{nights > 1 ? 's' : ''}</Text>
+              <Text style={s.dateLabel}>{t('hotel.duration')}</Text>
+              <Text style={s.dateValue}>{tn('hotelBk.nights', nights)}</Text>
             </View>
           </View>
         </View>
@@ -255,14 +257,14 @@ export default function HotelScreen() {
         {searching ? (
           <View style={s.center}>
             <ActivityIndicator color={c.primary[500]} />
-            <Text style={s.searchingText}>Recherche des chambres disponibles…</Text>
+            <Text style={s.searchingText}>{t('hotel.searching')}</Text>
           </View>
         ) : rooms.length === 0 ? (
           <View style={s.empty}>
             <Ionicons name="bed-outline" size={56} color={c.neutral[400]} />
-            <Text style={s.emptyTitle}>Aucune chambre disponible</Text>
+            <Text style={s.emptyTitle}>{t('hotel.emptyTitle')}</Text>
             <Text style={s.emptyBody}>
-              Modifie les dates ou le nombre d&apos;invités pour voir d&apos;autres options.
+              {t('hotel.emptyBody')}
             </Text>
           </View>
         ) : (
@@ -354,6 +356,7 @@ function RoomDetailModal({
   userId: string | null;
 }) {
   const c = useColors();
+  const { t, tn, intl } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [booking, setBooking] = useState(false);
   const [contactName, setContactName] = useState('');
@@ -372,7 +375,7 @@ function RoomDetailModal({
   const handleBook = useCallback(async () => {
     if (!room) return;
     if (!userId) {
-      Alert.alert('Connexion requise', 'Connecte-toi pour réserver une chambre.');
+      Alert.alert(t('hotel.loginTitle'), t('hotel.loginRoom'));
       return;
     }
     setBooking(true);
@@ -391,30 +394,30 @@ function RoomDetailModal({
         const msg = String(error.message || '');
         if (msg.includes('PERIOD_TAKEN')) {
           Alert.alert(
-            'Chambre prise',
-            'Cette chambre vient d\'être réservée par quelqu\'un d\'autre. Choisis-en une autre.',
+            t('hotel.taken'),
+            t('hotel.takenBody'),
           );
         } else if (msg.includes('CAPACITY_EXCEEDED')) {
-          Alert.alert('Capacité dépassée', 'Cette chambre ne peut pas accueillir autant d\'invités.');
+          Alert.alert(t('hotel.capacity'), t('hotel.capacityBody'));
         } else if (msg.includes('INVALID_PERIOD') || msg.includes('CHECK_IN_IN_PAST')) {
-          Alert.alert('Dates invalides', 'Vérifie tes dates de check-in et check-out.');
+          Alert.alert(t('hotel.badDates'), t('hotel.badDatesBody'));
         } else if (msg.includes('NOT_AUTHENTICATED')) {
-          Alert.alert('Connexion requise', 'Connecte-toi pour réserver.');
+          Alert.alert(t('hotel.loginTitle'), t('hotel.loginBook'));
         } else {
-          Alert.alert('Erreur', msg || 'Impossible de créer la réservation');
+          Alert.alert(t('hotel.error'), msg || t('hotel.createFail'));
         }
         return;
       }
       const result = data as { ok: boolean; booking_number?: string };
       Alert.alert(
-        'Réservation créée',
-        `Ta réservation ${result?.booking_number ?? ''} est en attente de paiement.`,
+        t('hotel.created'),
+        t('hotel.createdBody', { ref: result?.booking_number ?? '' }),
       );
       onBooked();
     } finally {
       setBooking(false);
     }
-  }, [room, userId, checkIn, checkOut, guests, contactName, contactPhone, notes, onBooked]);
+  }, [room, userId, checkIn, checkOut, guests, contactName, contactPhone, notes, onBooked, t]);
 
   if (!room) return null;
 
@@ -446,18 +449,18 @@ function RoomDetailModal({
 
             {/* Stay recap */}
             <View style={s.recap}>
-              <RecapRow c={c} label="Arrivée" value={formatDateFR(checkIn)} />
-              <RecapRow c={c} label="Départ" value={formatDateFR(checkOut)} />
-              <RecapRow c={c} label="Durée" value={`${nights} nuit${nights > 1 ? 's' : ''}`} />
-              <RecapRow c={c} label="Invités" value={`${guests}`} />
+              <RecapRow c={c} label={t('hotel.arrival')} value={formatDateLoc(checkIn, intl)} />
+              <RecapRow c={c} label={t('hotel.departure')} value={formatDateLoc(checkOut, intl)} />
+              <RecapRow c={c} label={t('hotel.duration')} value={tn('hotelBk.nights', nights)} />
+              <RecapRow c={c} label={t('hotel.guestsLabel')} value={`${guests}`} />
               <View style={s.recapDivider} />
-              <RecapRow c={c} label="Total" value={formatXOF(room.total_for_stay_xof)} bold />
+              <RecapRow c={c} label={t('hotel.total')} value={formatXOF(room.total_for_stay_xof)} bold />
             </View>
 
             {/* Amenities */}
             {room.amenities && room.amenities.length > 0 && (
               <>
-                <Text style={s.sectionLabel}>Équipements</Text>
+                <Text style={s.sectionLabel}>{t('hotel.amenities')}</Text>
                 <View style={s.amenities}>
                   {room.amenities.map((a, i) => (
                     <View key={i} style={s.amenityPill}>
@@ -469,11 +472,11 @@ function RoomDetailModal({
             )}
 
             {/* Contact form */}
-            <Text style={s.sectionLabel}>Contact (optionnel)</Text>
+            <Text style={s.sectionLabel}>{t('hotel.contact')}</Text>
             <TextInput
               value={contactName}
               onChangeText={setContactName}
-              placeholder="Nom"
+              placeholder={t('hotel.name')}
               placeholderTextColor={c.neutral[400]}
               style={s.input}
               maxLength={120}
@@ -481,7 +484,7 @@ function RoomDetailModal({
             <TextInput
               value={contactPhone}
               onChangeText={setContactPhone}
-              placeholder="Téléphone"
+              placeholder={t('hotel.phone')}
               placeholderTextColor={c.neutral[400]}
               style={s.input}
               keyboardType="phone-pad"
@@ -490,7 +493,7 @@ function RoomDetailModal({
             <TextInput
               value={notes}
               onChangeText={setNotes}
-              placeholder="Notes (ex: arrivée tardive vers 23h)"
+              placeholder={t('hotel.notes')}
               placeholderTextColor={c.neutral[400]}
               style={[s.input, s.textarea]}
               multiline
@@ -505,15 +508,15 @@ function RoomDetailModal({
             >
               <Ionicons name="bed" size={20} color="#fff" />
               <Text style={s.bookBtnText}>
-                {booking ? 'Création…' : `Réserver · ${formatXOF(room.total_for_stay_xof)}`}
+                {booking ? t('hotel.creating') : t('hotel.book', { amount: formatXOF(room.total_for_stay_xof) })}
               </Text>
             </Pressable>
             <Text style={s.bookHint}>
-              Tu paieras ensuite via Paystack depuis &laquo; Mes réservations &raquo;.
+              {t('hotel.payHint')}
             </Text>
 
             <Pressable onPress={onClose} style={s.cancelBtn}>
-              <Text style={s.cancelBtnText}>Annuler</Text>
+              <Text style={s.cancelBtnText}>{t('hotel.cancel')}</Text>
             </Pressable>
           </ScrollView>
         </View>
