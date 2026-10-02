@@ -108,8 +108,14 @@
 5. **Tests** : 8 scénarios SQL sur PostgreSQL 16 (0 % par défaut, historique figé après changement de taux, priorité des trois niveaux, bornes 0–100, droits admin / partenaire, RLS, rapport, audit, reprise). `tsc` vert. **Non testé** : l'interface dans un navigateur.
 6. **Limites** : commission calculée sur le montant encaissé (après réduction) ; pas de remboursement ni de reversement automatique au partenaire (les réservations annulées sont exclues des statistiques) ; textes en français uniquement (espaces admin / partenaire).
 
+## 3 undecies. Livré en phase 2 (téléversement d'images)
+1. **Migration `0093_tourism_media.sql`** : bucket public `tourism-media` (5 Mo, JPEG / PNG / WebP, limites appliquées par le bucket) ; écriture réservée aux rôles partenaires et **limitée à son propre dossier** `<id utilisateur>/…` (l'administration peut écrire partout) ; aucune politique de listing.
+2. **Interface** : composants `ImageField` (couverture) et `GalleryField` (galerie, plusieurs fichiers) dans les éditeurs de voyage, d'activité et de destination. L'image est redimensionnée côté navigateur (1600 px max, JPEG 85 %) avant l'envoi, pour les connexions mobiles. Les URL saisies à la main restent possibles (ex. Unsplash).
+3. **Tests** : politiques de stockage testées sur PostgreSQL 16 avec un schéma `storage` simulé (dossier propre accepté ; dossier d'autrui, autre bucket, racine, simple utilisateur et anonyme refusés) ; `tsc` et `next build` verts. **Non testé** : envoi réel vers Supabase Storage et redimensionnement dans un navigateur.
+4. **Limites** : pas de suppression des anciens fichiers quand une image est remplacée (fichiers orphelins) ; pas de modération du contenu des images ; la fiche établissement (`/pro`) garde son propre bucket `venue-media`.
+
 ## 4. Feuille de route
-- **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
+- **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; notifications aux organisateurs (soumission, nouvelle réservation).
 - **Phase 3** : assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { slugify, type DestinationKind } from '@soutra/shared';
+import { ImageField, GalleryField } from '@/components/tourism/ImageUpload';
 import { supabaseBrowser } from '@/lib/supabase';
 import { TranslationFields, collectI18n } from '@/components/tourism/TranslationFields';
 
@@ -80,12 +81,12 @@ export function DestinationsTab() {
             <label className={lbl}>Code pays (2 lettres)<input name="country_code" defaultValue="CI" maxLength={2} pattern="[A-Za-z]{2}" className={input} /></label>
             <label className={`${lbl} sm:col-span-2`}>Accroche<input name="tagline" maxLength={200} className={input} /></label>
             <label className={lbl}>Ville telle qu'écrite dans les établissements<input name="venue_city" placeholder="ex. Assinie" className={input} /></label>
-            <label className={lbl}>Photo principale (URL)<input name="cover_url" type="url" className={input} /></label>
+            <ImageField name="cover_url" label="Photo principale" />
             <label className={lbl}>Latitude<input name="latitude" type="number" step="any" min={-90} max={90} className={input} /></label>
             <label className={lbl}>Longitude<input name="longitude" type="number" step="any" min={-180} max={180} className={input} /></label>
             <label className={`${lbl} sm:col-span-2`}>Description<textarea name="description" rows={3} className={input} /></label>
             <label className={`${lbl} sm:col-span-2`}>Histoire<textarea name="history" rows={3} className={input} /></label>
-            <label className={`${lbl} sm:col-span-2`}>Galerie (une URL par ligne)<textarea name="gallery" rows={2} className={input} /></label>
+            <GalleryField name="gallery" label="Galerie (une URL par ligne)" className="sm:col-span-2" />
             <TranslationFields fields={TRANSLATABLE} />
             <label className="flex items-center gap-2 text-xs text-neutral-300"><input type="checkbox" name="is_featured" /> Mettre à la une (accueil)</label>
           </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { slugify, ACTIVITY_CATEGORIES } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
+import { ImageField, GalleryField } from './ImageUpload';
 import { TranslationFields, collectI18n } from './TranslationFields';
 
 const TRANSLATABLE = [
@@ -87,8 +88,8 @@ export function ActivityEditor({ activityId, onSaved, onCancel }: { activityId?:
         <label className={lbl}>Participants minimum (départ garanti)<input name="min_participants" type="number" min={1} defaultValue={a?.min_participants ?? 1} className={input} /></label>
         <label className={lbl}>Taille max. d'une réservation<input name="max_group_size" type="number" min={1} max={50} defaultValue={a?.max_group_size ?? 20} className={input} /></label>
         <label className={lbl}>Langues (virgule)<input name="languages" defaultValue={((a?.languages ?? []) as string[]).join(', ')} className={input} /></label>
-        <label className={`${lbl} sm:col-span-2`}>Image de couverture (URL) — requise pour soumettre<input name="cover_url" type="url" defaultValue={v('cover_url')} className={input} /></label>
-        <label className={`${lbl} sm:col-span-2`}>Galerie (une URL par ligne)<textarea name="gallery" rows={2} defaultValue={arr('gallery_urls')} className={input} /></label>
+        <ImageField name="cover_url" label="Image de couverture — requise pour soumettre" defaultValue={v('cover_url') as string} className="sm:col-span-2" />
+        <GalleryField name="gallery" label="Galerie (une URL par ligne)" defaultValue={a?.gallery_urls as string[]} className="sm:col-span-2" />
         <label className={`${lbl} sm:col-span-2`}>Description<textarea name="description" rows={3} defaultValue={v('description')} className={input} /></label>
         <label className={lbl}>Inclus<textarea name="includes" rows={2} defaultValue={arr('includes')} className={input} /></label>
         <label className={lbl}>Non inclus<textarea name="excludes" rows={2} defaultValue={arr('excludes')} className={input} /></label>

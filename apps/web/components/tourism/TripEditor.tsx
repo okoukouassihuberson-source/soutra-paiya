@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { slugify, CONTINENTS } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
+import { ImageField, GalleryField } from './ImageUpload';
 import { TranslationFields, collectI18n } from './TranslationFields';
 import { PREFIXED_LOCALES } from '@/lib/i18n/config';
 
@@ -151,7 +152,7 @@ export function TripEditor({ tripId, onSaved, onCancel }: { tripId?: string; onS
         <label className={`${lbl} sm:col-span-2`}>Titre *<input name="title" required maxLength={200} defaultValue={v('title')} className={input} /></label>
         <label className={`${lbl} sm:col-span-2`}>Résumé<input name="summary" maxLength={500} defaultValue={v('summary')} className={input} /></label>
         <label className={lbl}>Ville / destination<input name="city" defaultValue={v('city')} className={input} /></label>
-        <label className={lbl}>Image de couverture (URL) — requise pour soumettre<input name="cover_url" type="url" defaultValue={v('cover_url')} className={input} /></label>
+        <ImageField name="cover_url" label="Image de couverture — requise pour soumettre" defaultValue={v('cover_url') as string} className="sm:col-span-2" />
         {scope === 'international' && (<>
           <label className={lbl}>Pays *<input name="country" required defaultValue={v('country')} className={input} /></label>
           <label className={lbl}>Code pays (2 lettres) *<input name="country_code" required pattern="[A-Za-z]{2}" maxLength={2} defaultValue={v('country_code')} className={input} /></label>
