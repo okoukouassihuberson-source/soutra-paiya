@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
+import { useI18n } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -37,6 +38,7 @@ interface EventDetail {
 }
 
 export default function EventDetailScreen() {
+  const { t, tn, intl } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const c = useColors();
@@ -56,7 +58,7 @@ export default function EventDetailScreen() {
         if (error) throw error;
         setEvent(data as EventDetail);
       } catch (err: any) {
-        Alert.alert('Erreur', err?.message === 'EVENT_NOT_FOUND' ? 'Événement introuvable.' : "Impossible de charger l'événement.");
+        Alert.alert(t('event.error'), err?.message === 'EVENT_NOT_FOUND' ? t('event.notFoundAlert') : t('event.loadFail'));
       } finally {
         setLoading(false);
       }
@@ -72,15 +74,15 @@ export default function EventDetailScreen() {
         setStep('confirmation');
       } else if (result.status === 'pending') {
         Alert.alert(
-          'Paiement en cours',
-          'Ton billet est en cours de validation. Il apparaîtra dans tes billets une fois confirmé.',
+          t('event.pendingTitle'),
+          t('event.pendingBody'),
           [{ text: 'OK', onPress: () => setStep('confirmation') }],
         );
       } else {
-        Alert.alert('Paiement non abouti', "Le paiement n'a pas abouti, le billet n'a pas été acheté. Réessaie.");
+        Alert.alert(t('event.failTitle'), t('event.failBody'));
       }
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? "Impossible d'acheter ce billet.");
+      Alert.alert(t('event.error'), err?.message ?? t('event.buyFail'));
     } finally {
       setSubmitting(false);
     }
@@ -97,9 +99,9 @@ export default function EventDetailScreen() {
   if (!event) {
     return (
       <SafeAreaView style={s.safe}>
-        <ScreenHeader title="Événement" />
+        <ScreenHeader title={t('event.title')} />
         <View style={s.center}>
-          <Text style={s.errorText}>Événement introuvable</Text>
+          <Text style={s.errorText}>{t('event.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -112,10 +114,10 @@ export default function EventDetailScreen() {
           <View style={s.successIcon}>
             <Ionicons name="checkmark" size={32} color="#fff" />
           </View>
-          <Text style={s.confirmTitle}>Billet acheté 🎉</Text>
-          <Text style={s.confirmText}>Ton billet pour {event.title} est disponible dans tes billets.</Text>
+          <Text style={s.confirmTitle}>{t('event.bought')}</Text>
+          <Text style={s.confirmText}>{t('event.boughtBody', { title: event.title })}</Text>
           <Pressable style={s.ctaButton} onPress={() => router.push('/(tabs)/tickets')}>
-            <Text style={s.ctaText}>Voir mes billets</Text>
+            <Text style={s.ctaText}>{t('event.seeTickets')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -128,7 +130,7 @@ export default function EventDetailScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Événement" />
+      <ScreenHeader title={t('event.title')} />
       <ScrollView contentContainerStyle={{ paddingBottom: spacing['2xl'] }}>
         <View style={s.hero}>
           {event.cover_url ? (
@@ -143,33 +145,33 @@ export default function EventDetailScreen() {
 
           <View style={s.infoRow}>
             <Ionicons name="calendar-outline" size={18} color={c.primary[500]} />
-            <Text style={s.infoText}>{formatDateRange(event.starts_at, event.ends_at)}</Text>
+            <Text style={s.infoText}>{formatDateRange(event.starts_at, event.ends_at, intl)}</Text>
           </View>
           <View style={s.infoRow}>
             <Ionicons name="location-outline" size={18} color={c.primary[500]} />
             <Text style={s.infoText}>
-              {event.venue ? `${event.venue.name}${event.venue.address ? ` — ${event.venue.address}` : ''}` : (event.city ?? 'Lieu à confirmer')}
+              {event.venue ? `${event.venue.name}${event.venue.address ? ` — ${event.venue.address}` : ''}` : (event.city ?? t('event.tbc'))}
             </Text>
           </View>
           {event.organizer_name && (
             <View style={s.infoRow}>
               <Ionicons name="person-outline" size={18} color={c.primary[500]} />
-              <Text style={s.infoText}>Organisé par {event.organizer_name}</Text>
+              <Text style={s.infoText}>{t('event.by', { name: event.organizer_name })}</Text>
             </View>
           )}
 
           {event.description && (
             <>
-              <Text style={s.sectionTitle}>Programme</Text>
+              <Text style={s.sectionTitle}>{t('event.program')}</Text>
               <Text style={s.description}>{event.description}</Text>
             </>
           )}
 
-          <Text style={s.sectionTitle}>Billets</Text>
+          <Text style={s.sectionTitle}>{t('event.tickets')}</Text>
           {!hasTiers ? (
             <View style={s.freeBanner}>
               <Ionicons name="information-circle-outline" size={18} color={c.primary[600]} />
-              <Text style={s.freeBannerText}>Entrée libre — présente-toi directement sur place.</Text>
+              <Text style={s.freeBannerText}>{t('event.free')}</Text>
             </View>
           ) : (
             tiers.map((tier) => {
@@ -185,7 +187,7 @@ export default function EventDetailScreen() {
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={s.tierName}>{tier.name}</Text>
-                    <Text style={s.tierRemaining}>{soldOut ? 'Épuisé' : `${remaining} place${remaining > 1 ? 's' : ''} restante${remaining > 1 ? 's' : ''}`}</Text>
+                    <Text style={s.tierRemaining}>{soldOut ? t('event.soldOut') : tn('event.left', remaining)}</Text>
                   </View>
                   <Text style={s.tierPrice}>{formatXOF(tier.price_xof)}</Text>
                 </Pressable>
@@ -210,7 +212,7 @@ export default function EventDetailScreen() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={s.ctaText}>
-                {selected ? `Acheter — ${formatXOF(selected.price_xof)}` : 'Choisis un tarif'}
+                {selected ? t('event.buy', { amount: formatXOF(selected.price_xof) }) : t('event.choose')}
               </Text>
             )}
           </Pressable>
@@ -220,12 +222,12 @@ export default function EventDetailScreen() {
   );
 }
 
-function formatDateRange(startIso: string, endIso: string): string {
+function formatDateRange(startIso: string, endIso: string, intl: string): string {
   const start = new Date(startIso);
   const end = new Date(endIso);
-  const dateStr = start.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
-  const startTime = start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const endTime = end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = start.toLocaleDateString(intl, { weekday: 'long', day: '2-digit', month: 'long' });
+  const startTime = start.toLocaleTimeString(intl, { hour: '2-digit', minute: '2-digit' });
+  const endTime = end.toLocaleTimeString(intl, { hour: '2-digit', minute: '2-digit' });
   return `${dateStr} · ${startTime} - ${endTime}`;
 }
 

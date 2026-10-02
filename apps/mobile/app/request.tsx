@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth-context';
 import { lookupRecipient } from '@/lib/wallet';
 import { createPaymentRequest } from '@/lib/requests';
@@ -24,6 +25,7 @@ const MAX_XOF = 2_000_000;
 const PHONE_RE = /^\+225[0-9]{10}$/;
 
 export default function Request() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
 
@@ -48,12 +50,12 @@ export default function Request() {
         note: note.trim() || undefined,
       });
       Alert.alert(
-        'Demande envoyée',
-        `${payerName} a reçu ta demande de ${formatXOF(amountNum)}.`,
+        t('request.sentTitle'),
+        t('request.sentBody', { name: payerName, amount: formatXOF(amountNum) }),
         [{ text: 'OK', onPress: () => router.back() }],
       );
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Impossible d\'envoyer la demande.');
+      Alert.alert(t('request.error'), err?.message ?? t('request.sendFail'));
     } finally {
       setSubmitting(false);
     }
@@ -66,17 +68,17 @@ export default function Request() {
     setSubmitting(false);
     if (!payer) {
       Alert.alert(
-        'Destinataire introuvable',
-        "Aucun compte Soutra-Playce n'est associé à ce numéro.",
+        t('request.notFoundTitle'),
+        t('request.notFoundBody'),
       );
       return;
     }
     Alert.alert(
-      'Confirmer la demande',
-      `Demander ${formatXOF(amountNum)} à ${payer.name} ?`,
+      t('request.confirmTitle'),
+      t('request.confirmBody', { amount: formatXOF(amountNum), name: payer.name }),
       [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Demander', onPress: doCreate },
+        { text: t('request.cancel'), style: 'cancel' },
+        { text: t('request.ask'), onPress: doCreate },
       ],
     );
   };
@@ -91,7 +93,7 @@ export default function Request() {
           <Pressable hitSlop={10} onPress={() => router.back()} disabled={submitting}>
             <Ionicons name="chevron-back" size={28} color={colors.dark} />
           </Pressable>
-          <Text style={s.headerTitle}>Demander de l'argent</Text>
+          <Text style={s.headerTitle}>{t('request.title')}</Text>
           <View style={{ width: 28 }} />
         </View>
 
@@ -99,22 +101,22 @@ export default function Request() {
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={s.label}>Numéro de la personne</Text>
+          <Text style={s.label}>{t('request.who')}</Text>
           <TextInput
             style={s.input}
             value={phone}
             onChangeText={(t) => setPhone(t.replace(/[^0-9+]/g, ''))}
-            placeholder="+225XXXXXXXXXX"
+            placeholder={t('money.phonePh')}
             placeholderTextColor={colors.neutral[400]}
             keyboardType="phone-pad"
             maxLength={14}
             editable={!submitting}
           />
           {phone.length > 4 && !phoneValid && (
-            <Text style={s.errorHint}>Format attendu : +225 suivi de 10 chiffres.</Text>
+            <Text style={s.errorHint}>{t('money.phoneHint')}</Text>
           )}
 
-          <Text style={s.label}>Montant demandé</Text>
+          <Text style={s.label}>{t('request.amount')}</Text>
           <View style={s.amountRow}>
             <TextInput
               style={s.amountInput}
@@ -134,12 +136,12 @@ export default function Request() {
             </Text>
           )}
 
-          <Text style={s.label}>Motif (optionnel)</Text>
+          <Text style={s.label}>{t('request.reason')}</Text>
           <TextInput
             style={s.noteInput}
             value={note}
             onChangeText={setNote}
-            placeholder="Ex : ma part du resto"
+            placeholder={t('request.reasonPh')}
             placeholderTextColor={colors.neutral[400]}
             maxLength={140}
             editable={!submitting}
@@ -148,8 +150,7 @@ export default function Request() {
           <View style={s.infoBox}>
             <Ionicons name="notifications-outline" size={20} color={colors.primary[500]} />
             <Text style={s.infoText}>
-              La personne reçoit ta demande en temps réel et choisit de payer
-              ou de refuser. Rien n'est débité tant qu'elle n'a pas accepté.
+              {t('request.info')}
             </Text>
           </View>
         </ScrollView>
@@ -168,7 +169,7 @@ export default function Request() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={s.btnText}>
-                {amountValid ? `Demander ${formatXOF(amountNum)}` : 'Envoyer la demande'}
+                {amountValid ? t('request.askAmount', { amount: formatXOF(amountNum) }) : t('request.send')}
               </Text>
             )}
           </Pressable>

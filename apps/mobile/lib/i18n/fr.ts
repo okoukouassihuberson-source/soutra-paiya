@@ -301,6 +301,36 @@ export const fr = {
     labelPh: 'Ex : Resto de vendredi', total: 'Montant total de l’addition', equal: 'Égal', custom: 'Personnalisé', share: 'Part', shareOf: 'Part : {amount}', add: 'Ajouter une personne',
     requested: 'Demandé aux participants', yours: 'Ta part', send: 'Envoyer les demandes',
   },
+  login: {
+    errCredentials: 'Numéro ou mot de passe incorrect.', errExists: 'Ce numéro a déjà un compte — connecte-toi.', errPassword: 'Mot de passe invalide (8 caractères minimum).', errRate: 'Trop de tentatives. Réessaie dans quelques minutes.',
+    needName: 'Indique ton nom complet.', created: 'Compte créé. Désactive « Confirm phone » côté Supabase pour la connexion immédiate.', unexpected: 'Erreur inattendue.', welcomeLogin: 'Connecte-toi à ton compte',
+    welcomeRegister: 'Crée ton compte en 30 secondes', fullName: 'Nom complet', fullNamePh: 'Ex. Kouassi Yao', phone: 'Numéro de téléphone', password: 'Mot de passe', passwordPh: '8 caractères minimum',
+    signIn: 'Se connecter', signUp: 'Créer mon compte', toRegister: 'Pas encore de compte ? S’inscrire', toLogin: 'Déjà un compte ? Se connecter', terms: 'En continuant, tu acceptes nos CGU et notre politique de confidentialité.',
+  },
+  profileEdit: {
+    error: 'Erreur', uploadFail: 'Upload impossible.', deleteFail: 'Suppression impossible.', coverTitle: 'Photo de couverture', gallery: 'Galerie', camera: 'Caméra', removeCover: 'Retirer la couverture', cancel: 'Annuler',
+    photoTitle: 'Changer ma photo', removePhoto: 'Retirer la photo', nameReq: 'Nom requis', nameReqBody: 'Indique ton nom complet (2 caractères minimum).', saveFail: 'Enregistrement impossible.',
+    savedTitle: 'Profil mis à jour', savedBody: 'Tes informations ont été enregistrées.', title: 'Modifier le profil', addCover: 'Ajouter une photo de couverture', edit: 'Modifier', add: 'Ajouter',
+    changePhoto: 'Changer la photo', addPhoto: 'Ajouter une photo', name: 'Nom complet', namePh: 'Ton nom', city: 'Ville', cityPh: 'Abidjan', bio: 'Bio', bioPh: 'Quelques mots sur toi…', save: 'Enregistrer',
+  },
+  scan: {
+    fallback: 'Impossible d’ouvrir le scanner QR. Veuillez réessayer.', unrecTitle: 'QR non reconnu', unrecBody: 'Ce code n’est pas un QR de paiement Soutra-Playce.', error: 'Erreur', ok: 'OK', retry: 'Réessayer', cancel: 'Annuler', ownTitle: 'Ton propre QR', ownBody: 'Tu ne peux pas te payer toi-même.', unreadable: 'Impossible de traiter ce QR code. Réessaie.',
+    title: 'Payer par QR', subtitle: 'Scanner ou afficher ton code', scan: 'Scanner', myQr: 'Mon QR', permTitle: 'Accès à la caméra requis', permBody: 'Autorise la caméra pour scanner les QR codes de paiement.',
+    permFail: 'Impossible de demander la permission caméra. Ouvre les réglages système.', allow: 'Autoriser la caméra', hint: 'Vise un QR de paiement Soutra-Playce', noPhone: 'Aucun numéro associé à ton compte.',
+    qrUnavailable: 'QR indisponible', qrHint: 'Fais scanner ce code pour recevoir de l’argent.',
+  },
+  event: {
+    error: 'Erreur', notFoundAlert: 'Événement introuvable.', loadFail: 'Impossible de charger l’événement.', pendingTitle: 'Paiement en cours', pendingBody: 'Ton billet est en cours de validation. Il apparaîtra dans tes billets une fois confirmé.',
+    failTitle: 'Paiement non abouti', failBody: 'Le paiement n’a pas abouti, le billet n’a pas été acheté. Réessaie.', buyFail: 'Impossible d’acheter ce billet.', title: 'Événement', notFound: 'Événement introuvable',
+    bought: 'Billet acheté 🎉', boughtBody: 'Ton billet pour {title} est disponible dans tes billets.', seeTickets: 'Voir mes billets', tbc: 'Lieu à confirmer', by: 'Organisé par {name}', program: 'Programme',
+    tickets: 'Billets', free: 'Entrée libre — présente-toi directement sur place.', soldOut: 'Épuisé', left_one: '{n} place restante', left_other: '{n} places restantes', buy: 'Acheter — {amount}', choose: 'Choisis un tarif',
+  },
+  request: {
+    sentTitle: 'Demande envoyée', sentBody: '{name} a reçu ta demande de {amount}.', error: 'Erreur', sendFail: 'Impossible d’envoyer la demande.', notFoundTitle: 'Destinataire introuvable',
+    notFoundBody: 'Aucun compte Soutra-Playce n’est associé à ce numéro.', confirmTitle: 'Confirmer la demande', confirmBody: 'Demander {amount} à {name} ?', cancel: 'Annuler', ask: 'Demander',
+    title: 'Demander de l’argent', who: 'Numéro de la personne', amount: 'Montant demandé', reason: 'Motif (optionnel)', reasonPh: 'Ex : ma part du resto',
+    info: 'La personne reçoit ta demande en temps réel et choisit de payer ou de refuser. Rien n’est débité tant qu’elle n’a pas accepté.', askAmount: 'Demander {amount}', send: 'Envoyer la demande',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

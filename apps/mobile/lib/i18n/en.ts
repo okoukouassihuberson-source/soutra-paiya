@@ -299,4 +299,34 @@ export const en: Dict = {
     labelPh: 'e.g. Friday dinner', total: 'Total bill amount', equal: 'Equal', custom: 'Custom', share: 'Share', shareOf: 'Share: {amount}', add: 'Add a person',
     requested: 'Requested from participants', yours: 'Your share', send: 'Send requests',
   },
+  login: {
+    errCredentials: 'Incorrect phone number or password.', errExists: 'This number already has an account — sign in.', errPassword: 'Invalid password (8 characters minimum).', errRate: 'Too many attempts. Try again in a few minutes.',
+    needName: 'Enter your full name.', created: 'Account created. Disable “Confirm phone” on the Supabase side for immediate sign-in.', unexpected: 'Unexpected error.', welcomeLogin: 'Sign in to your account',
+    welcomeRegister: 'Create your account in 30 seconds', fullName: 'Full name', fullNamePh: 'e.g. Kouassi Yao', phone: 'Phone number', password: 'Password', passwordPh: '8 characters minimum',
+    signIn: 'Sign in', signUp: 'Create my account', toRegister: 'No account yet? Sign up', toLogin: 'Already have an account? Sign in', terms: 'By continuing, you accept our Terms and Privacy Policy.',
+  },
+  profileEdit: {
+    error: 'Error', uploadFail: 'Upload failed.', deleteFail: 'Deletion failed.', coverTitle: 'Cover photo', gallery: 'Gallery', camera: 'Camera', removeCover: 'Remove cover', cancel: 'Cancel',
+    photoTitle: 'Change my photo', removePhoto: 'Remove photo', nameReq: 'Name required', nameReqBody: 'Enter your full name (2 characters minimum).', saveFail: 'Could not save.',
+    savedTitle: 'Profile updated', savedBody: 'Your information has been saved.', title: 'Edit profile', addCover: 'Add a cover photo', edit: 'Edit', add: 'Add',
+    changePhoto: 'Change photo', addPhoto: 'Add a photo', name: 'Full name', namePh: 'Your name', city: 'City', cityPh: 'Abidjan', bio: 'Bio', bioPh: 'A few words about you…', save: 'Save',
+  },
+  scan: {
+    fallback: 'Unable to open the QR scanner. Please try again.', unrecTitle: 'QR not recognized', unrecBody: 'This code is not a Soutra-Playce payment QR.', error: 'Error', ok: 'OK', retry: 'Retry', cancel: 'Cancel', ownTitle: 'Your own QR', ownBody: 'You cannot pay yourself.', unreadable: 'Unable to process this QR code. Try again.',
+    title: 'Pay by QR', subtitle: 'Scan or show your code', scan: 'Scan', myQr: 'My QR', permTitle: 'Camera access required', permBody: 'Allow the camera to scan payment QR codes.',
+    permFail: 'Unable to request camera permission. Open the system settings.', allow: 'Allow camera', hint: 'Aim at a Soutra-Playce payment QR', noPhone: 'No number is linked to your account.',
+    qrUnavailable: 'QR unavailable', qrHint: 'Have this code scanned to receive money.',
+  },
+  event: {
+    error: 'Error', notFoundAlert: 'Event not found.', loadFail: 'Unable to load the event.', pendingTitle: 'Payment in progress', pendingBody: 'Your ticket is being validated. It will appear in your tickets once confirmed.',
+    failTitle: 'Payment not completed', failBody: 'The payment did not go through, the ticket was not purchased. Try again.', buyFail: 'Unable to buy this ticket.', title: 'Event', notFound: 'Event not found',
+    bought: 'Ticket purchased 🎉', boughtBody: 'Your ticket for {title} is available in your tickets.', seeTickets: 'View my tickets', tbc: 'Venue to be confirmed', by: 'Organized by {name}', program: 'Program',
+    tickets: 'Tickets', free: 'Free entry — just show up on the day.', soldOut: 'Sold out', left_one: '{n} seat left', left_other: '{n} seats left', buy: 'Buy — {amount}', choose: 'Choose a ticket type',
+  },
+  request: {
+    sentTitle: 'Request sent', sentBody: '{name} received your request for {amount}.', error: 'Error', sendFail: 'Unable to send the request.', notFoundTitle: 'Recipient not found',
+    notFoundBody: 'No Soutra-Playce account is linked to this number.', confirmTitle: 'Confirm request', confirmBody: 'Request {amount} from {name}?', cancel: 'Cancel', ask: 'Request',
+    title: 'Request money', who: 'Person’s number', amount: 'Amount requested', reason: 'Reason (optional)', reasonPh: 'e.g. my share of the dinner',
+    info: 'The person receives your request in real time and chooses to pay or decline. Nothing is charged until they accept.', askAmount: 'Request {amount}', send: 'Send request',
+  },
 };

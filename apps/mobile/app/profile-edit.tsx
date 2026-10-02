@@ -7,12 +7,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
+import { useI18n } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { pickAvatarFromGallery, pickAvatarFromCamera, uploadAvatar, removeAvatar } from '@/lib/profile-photo';
 import { pickCoverFromGallery, pickCoverFromCamera, uploadCover, removeCover } from '@/lib/profile-cover';
 
 export default function ProfileEdit() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const sb = supabase as any;
@@ -58,18 +60,18 @@ export default function ProfileEdit() {
       const url = await uploadCover(user.id, asset);
       setCoverUrl(url);
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Upload impossible.');
+      Alert.alert(t('profileEdit.error'), err?.message ?? t('profileEdit.uploadFail'));
     } finally {
       setCoverBusy(false);
     }
   }
 
   function askChangeCover() {
-    Alert.alert('Photo de couverture', undefined, [
-      { text: 'Galerie', onPress: () => changeCover('gallery') },
-      { text: 'Caméra', onPress: () => changeCover('camera') },
-      ...(coverUrl ? [{ text: 'Retirer la couverture', style: 'destructive' as const, onPress: () => removeCoverPhoto() }] : []),
-      { text: 'Annuler', style: 'cancel' as const },
+    Alert.alert(t('profileEdit.coverTitle'), undefined, [
+      { text: t('profileEdit.gallery'), onPress: () => changeCover('gallery') },
+      { text: t('profileEdit.camera'), onPress: () => changeCover('camera') },
+      ...(coverUrl ? [{ text: t('profileEdit.removeCover'), style: 'destructive' as const, onPress: () => removeCoverPhoto() }] : []),
+      { text: t('profileEdit.cancel'), style: 'cancel' as const },
     ]);
   }
 
@@ -80,7 +82,7 @@ export default function ProfileEdit() {
       await removeCover(user.id);
       setCoverUrl(null);
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Suppression impossible.');
+      Alert.alert(t('profileEdit.error'), err?.message ?? t('profileEdit.deleteFail'));
     } finally {
       setCoverBusy(false);
     }
@@ -95,18 +97,18 @@ export default function ProfileEdit() {
       const url = await uploadAvatar(user.id, asset);
       setAvatarUrl(url);
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Upload impossible.');
+      Alert.alert(t('profileEdit.error'), err?.message ?? t('profileEdit.uploadFail'));
     } finally {
       setPhotoBusy(false);
     }
   }
 
   function askChangePhoto() {
-    Alert.alert('Changer ma photo', undefined, [
-      { text: 'Galerie', onPress: () => changePhoto('gallery') },
-      { text: 'Caméra', onPress: () => changePhoto('camera') },
-      ...(avatarUrl ? [{ text: 'Retirer la photo', style: 'destructive' as const, onPress: () => removePhoto() }] : []),
-      { text: 'Annuler', style: 'cancel' as const },
+    Alert.alert(t('profileEdit.photoTitle'), undefined, [
+      { text: t('profileEdit.gallery'), onPress: () => changePhoto('gallery') },
+      { text: t('profileEdit.camera'), onPress: () => changePhoto('camera') },
+      ...(avatarUrl ? [{ text: t('profileEdit.removePhoto'), style: 'destructive' as const, onPress: () => removePhoto() }] : []),
+      { text: t('profileEdit.cancel'), style: 'cancel' as const },
     ]);
   }
 
@@ -117,7 +119,7 @@ export default function ProfileEdit() {
       await removeAvatar(user.id);
       setAvatarUrl(null);
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Suppression impossible.');
+      Alert.alert(t('profileEdit.error'), err?.message ?? t('profileEdit.deleteFail'));
     } finally {
       setPhotoBusy(false);
     }
@@ -128,7 +130,7 @@ export default function ProfileEdit() {
   async function save() {
     if (!user?.id) return;
     if (fullName.trim().length < 2) {
-      Alert.alert('Nom requis', 'Indique ton nom complet (2 caractères minimum).');
+      Alert.alert(t('profileEdit.nameReq'), t('profileEdit.nameReqBody'));
       return;
     }
     setSaving(true);
@@ -142,10 +144,10 @@ export default function ProfileEdit() {
       .eq('id', user.id);
     setSaving(false);
     if (error) {
-      Alert.alert('Erreur', error.message ?? 'Enregistrement impossible.');
+      Alert.alert(t('profileEdit.error'), error.message ?? t('profileEdit.saveFail'));
       return;
     }
-    Alert.alert('Profil mis à jour', 'Tes informations ont été enregistrées.', [
+    Alert.alert(t('profileEdit.savedTitle'), t('profileEdit.savedBody'), [
       { text: 'OK', onPress: () => router.back() },
     ]);
   }
@@ -156,7 +158,7 @@ export default function ProfileEdit() {
         <Pressable hitSlop={10} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </Pressable>
-        <Text style={s.headerTitle}>Modifier le profil</Text>
+        <Text style={s.headerTitle}>{t('profileEdit.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -181,7 +183,7 @@ export default function ProfileEdit() {
               ) : (
                 <View style={[s.coverImg, s.coverPlaceholder]}>
                   <Ionicons name="image-outline" size={32} color={colors.neutral[400]} />
-                  <Text style={s.coverPlaceholderText}>Ajouter une photo de couverture</Text>
+                  <Text style={s.coverPlaceholderText}>{t('profileEdit.addCover')}</Text>
                 </View>
               )}
               {coverBusy ? (
@@ -189,7 +191,7 @@ export default function ProfileEdit() {
               ) : (
                 <View style={s.coverEditBadge}>
                   <Ionicons name="camera" size={14} color="#fff" />
-                  <Text style={s.coverEditText}>{coverUrl ? 'Modifier' : 'Ajouter'}</Text>
+                  <Text style={s.coverEditText}>{coverUrl ? t('profileEdit.edit') : t('profileEdit.add')}</Text>
                 </View>
               )}
             </Pressable>
@@ -213,21 +215,21 @@ export default function ProfileEdit() {
                 )}
               </Pressable>
               <Pressable onPress={askChangePhoto} disabled={photoBusy} hitSlop={6}>
-                <Text style={s.avatarHint}>{avatarUrl ? 'Changer la photo' : 'Ajouter une photo'}</Text>
+                <Text style={s.avatarHint}>{avatarUrl ? t('profileEdit.changePhoto') : t('profileEdit.addPhoto')}</Text>
               </Pressable>
             </View>
 
-            <Text style={s.label}>Nom complet</Text>
+            <Text style={s.label}>{t('profileEdit.name')}</Text>
             <TextInput
               value={fullName}
               onChangeText={setFullName}
               style={s.input}
-              placeholder="Ton nom"
+              placeholder={t('profileEdit.namePh')}
               placeholderTextColor={colors.neutral[400]}
               autoCapitalize="words"
             />
 
-            <Text style={[s.label, s.spaced]}>Ville</Text>
+            <Text style={[s.label, s.spaced]}>{t('profileEdit.city')}</Text>
             <TextInput
               value={city}
               onChangeText={setCity}
@@ -236,12 +238,12 @@ export default function ProfileEdit() {
               placeholderTextColor={colors.neutral[400]}
             />
 
-            <Text style={[s.label, s.spaced]}>Bio</Text>
+            <Text style={[s.label, s.spaced]}>{t('profileEdit.bio')}</Text>
             <TextInput
               value={bio}
               onChangeText={setBio}
               style={[s.input, s.textArea]}
-              placeholder="Quelques mots sur toi…"
+              placeholder={t('profileEdit.bioPh')}
               placeholderTextColor={colors.neutral[400]}
               multiline
               maxLength={280}
@@ -255,7 +257,7 @@ export default function ProfileEdit() {
             >
               {saving
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={s.ctaText}>Enregistrer</Text>}
+                : <Text style={s.ctaText}>{t('profileEdit.save')}</Text>}
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
