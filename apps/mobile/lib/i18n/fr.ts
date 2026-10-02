@@ -79,6 +79,34 @@ export const fr = {
     cancelFail: 'Annulation impossible', yourReview: 'Votre avis', reviewPlaceholder: 'Racontez votre expérience (optionnel)', reviewPublish: 'Publier mon avis', reviewThanks: 'Merci pour votre avis !',
     reviewTitle: 'Avis', starLabel: '{n} étoile(s)',
   },
+  hotelBk: {
+    title: 'Mes réservations', count_one: '{n} réservation', count_other: '{n} réservations',
+    emptyTitle: 'Aucune réservation pour l’instant', emptyBody: 'Explore les hôtels et réserve ta première chambre.', explore: 'Explorer',
+    status: { pending: 'En attente paiement', confirmed: 'Confirmée', checked_in: 'Arrivé', checked_out: 'Séjour terminé', cancelled: 'Annulée', refunded: 'Remboursée' },
+    nights_one: '{n} nuit', nights_other: '{n} nuits',
+    error: 'Erreur', payStartFail: 'Impossible de démarrer le paiement', invalidResponse: 'Réponse GeniusPay invalide', unexpected: 'Erreur inattendue',
+    cancelTitle: 'Annuler la réservation', cancelBody: 'Cette action est définitive. Continuer ?', no: 'Non', cancelDo: 'Annuler', cancelFail: 'Annulation impossible',
+    stepCreated: 'Réservation créée', stepPaid: 'Paiement confirmé', stepCheckin: 'Arrivée (check-in)', stepDone: 'Séjour terminé', stepCancelled: 'Annulée',
+    stay: 'Séjour', checkIn: 'Check-in', checkOut: 'Check-out', duration: 'Durée', guests: 'Invités', total: 'Total', followUp: 'Suivi',
+    paying: 'Démarrage du paiement…', payNow: 'Payer maintenant · {amount}', cancelling: 'Annulation…', cancelBooking: 'Annuler la réservation',
+  },
+  tickets: {
+    unknownPlace: 'Lieu inconnu', shop: 'Boutique', hotel: 'Hôtel', event: 'Événement', delivery: 'Livraison', pickup: 'À retirer', atHome: 'À domicile',
+    error: 'Erreur', unexpected: 'Erreur inattendue', none: 'Aucun billet pour l’instant', summary: '{up} à venir · {past} dans l’historique', loading: 'Chargement…',
+    emptyTitle: 'Pas encore de billet', emptyText: 'Réserve une table, commande dans une boutique, une nuit d’hôtel ou un billet d’événement — tes billets apparaîtront tous ici.',
+    exploreVenues: 'Explorer les lieux', upcoming: 'À venir', history: 'Historique', downloadPdf: 'Télécharger le ticket PDF', close: 'Fermer',
+    lStatus: 'Statut : {v}', lDate: 'Date : {v}', lParty: 'Personnes : {v}', lDeposit: 'Dépôt : {v}', lQr: 'QR : {v}…', lShop: 'Boutique : {v}', lDelivery: 'Livraison : {v}',
+    lTotal: 'Total : {v}', lPlacedOn: 'Passée le : {v}', lTier: 'Tarif : {v}', lPrice: 'Prix : {v}', lHotel: 'Hôtel : {v}', lCheckin: 'Check-in : {v}', lCheckout: 'Check-out : {v}',
+    orderTitle: 'Commande {n}', bookingTitle: 'Réservation {n}', items_one: '{n} article', items_other: '{n} articles', nights_one: '{n} nuit', nights_other: '{n} nuits',
+    persons_one: '{n} personne', persons_other: '{n} personnes', oneTicket: '1 billet',
+    dParty: 'Personnes', dNotes: 'Notes', dOrderNo: 'N° commande', dItems: 'Articles', dDelivery: 'Livraison', dTier: 'Tarif', dBookingNo: 'N° réservation', dCheckin: 'Check-in', dCheckout: 'Check-out', dDuration: 'Durée',
+    st: {
+      pending: 'En attente', confirmed: 'Confirmée', arrived: 'Arrivé', no_show: 'No show', cancelled: 'Annulée', refunded: 'Remboursée', preparing: 'En préparation',
+      ready: 'Prête', delivered: 'Livrée', checked_in: 'Check-in', checked_out: 'Séjour terminé', valid: 'Valide', scanned: 'Scanné', refundedM: 'Remboursé', transferred: 'Transféré',
+    },
+    kind: { reservation: 'Réservation', order: 'Commande', booking: 'Hôtel', event: 'Événement' },
+    today: 'Aujourd’hui à {time}', tomorrow: 'Demain à {time}', inDays: 'Dans {n} jours', daysAgo: 'Il y a {n} jours',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

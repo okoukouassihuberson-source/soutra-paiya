@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors } from '@/lib/theme';
+import { useI18n, tr, trn, intlLocale, type TKey } from '@/lib/i18n';
 import { exportTicketPdf } from '@/lib/ticket-pdf';
 
 // ============================================================================
@@ -111,7 +112,7 @@ function mapReservationToTicket(r: RawReservation): Ticket {
   return {
     id: r.id,
     kind: 'reservation',
-    title: r.venue?.name ?? 'Lieu inconnu',
+    title: r.venue?.name ?? tr('tickets.unknownPlace'),
     date: new Date(r.date_time),
     status: r.status,
     amount: r.deposit_xof,
@@ -127,12 +128,12 @@ function mapOrderToTicket(o: RawOrder): Ticket {
   return {
     id: o.order_id,
     kind: 'order',
-    title: o.venue_name ?? 'Boutique',
+    title: o.venue_name ?? tr('tickets.shop'),
     date: new Date(o.created_at),
     status: o.status,
     amount: o.total_xof,
     coverUrl: o.venue_cover_url,
-    location: o.delivery_method === 'delivery' ? 'Livraison' : 'À retirer',
+    location: o.delivery_method === 'delivery' ? tr('tickets.delivery') : tr('tickets.pickup'),
     nightsOrCountOrSize: o.items_count,
     raw: o,
   };
@@ -142,7 +143,7 @@ function mapBookingToTicket(b: RawBooking): Ticket {
   return {
     id: b.booking_id,
     kind: 'booking',
-    title: b.venue_name ?? 'Hôtel',
+    title: b.venue_name ?? tr('tickets.hotel'),
     date: new Date(b.check_in_date),
     status: b.status,
     amount: b.total_xof,
@@ -157,7 +158,7 @@ function mapEventTicketToTicket(t: RawEventTicket): Ticket {
   return {
     id: t.id,
     kind: 'event',
-    title: t.event?.title ?? 'Événement',
+    title: t.event?.title ?? tr('tickets.event'),
     date: new Date(t.event?.starts_at ?? t.created_at),
     status: t.status,
     amount: t.price_xof,
@@ -177,6 +178,7 @@ export default function Tickets() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -253,7 +255,7 @@ export default function Tickets() {
       setTickets(collected);
     } catch (err: any) {
       console.error('[tickets] unexpected:', err);
-      Alert.alert('Erreur', err?.message ?? 'Erreur inattendue');
+      Alert.alert(tr('tickets.error'), err?.message ?? tr('tickets.unexpected'));
       setTickets([]);
     } finally {
       setLoading(false);
@@ -280,13 +282,13 @@ export default function Tickets() {
   }, [tickets]);
 
   const subtitle = tickets.length === 0
-    ? 'Aucun billet pour l\'instant'
-    : `${upcoming.length} à venir · ${past.length} dans l'historique`;
+    ? t('tickets.none')
+    : t('tickets.summary', { up: upcoming.length, past: past.length });
 
   if (authLoading || loading) {
     return (
       <SafeAreaView style={s.safe}>
-        <TabHeader subtitle="Chargement…" />
+        <TabHeader subtitle={t('tickets.loading')} />
         <View style={{ paddingTop: spacing.md }}>
           <View style={s.skeletonSection}>
             <Skeleton width={140} height={18} />
@@ -309,17 +311,16 @@ export default function Tickets() {
           <View style={s.emptyIconWrap}>
             <Ionicons name="ticket-outline" size={56} color={c.primary[400]} />
           </View>
-          <Text style={s.emptyTitle}>Pas encore de billet</Text>
+          <Text style={s.emptyTitle}>{t('tickets.emptyTitle')}</Text>
           <Text style={s.emptyText}>
-            Réserve une table, commande dans une boutique, une nuit d&apos;hôtel
-            ou un billet d&apos;événement — tes billets apparaîtront tous ici.
+            {t('tickets.emptyText')}
           </Text>
           <Pressable
             style={({ pressed }) => [s.cta, pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }]}
             onPress={() => router.push('/(tabs)/explore')}
           >
             <Ionicons name="compass" size={18} color="#fff" />
-            <Text style={s.ctaText}>Explorer les lieux</Text>
+            <Text style={s.ctaText}>{t('tickets.exploreVenues')}</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -337,7 +338,7 @@ export default function Tickets() {
           <>
             <View style={s.sectionTitleRow}>
               <View style={[s.sectionAccent, { backgroundColor: c.primary[500] }]} />
-              <Text style={s.sectionTitle}>À venir</Text>
+              <Text style={s.sectionTitle}>{t('tickets.upcoming')}</Text>
               <Text style={s.sectionCount}>{upcoming.length}</Text>
             </View>
             {upcoming.map((t) => (
@@ -350,7 +351,7 @@ export default function Tickets() {
           <>
             <View style={s.sectionTitleRow}>
               <View style={[s.sectionAccent, { backgroundColor: c.neutral[400] }]} />
-              <Text style={s.sectionTitle}>Historique</Text>
+              <Text style={s.sectionTitle}>{t('tickets.history')}</Text>
               <Text style={s.sectionCount}>{past.length}</Text>
             </View>
             {past.map((t) => (
@@ -369,19 +370,20 @@ export default function Tickets() {
 
 function openDetail(t: Ticket, c: ColorPalette) {
   const status = statusMeta(t.kind, t.status, c);
-  const dateStr = t.date.toLocaleString('fr-FR');
-  const pdfButton = { text: 'Télécharger le ticket PDF', onPress: () => downloadTicketPdf(t, c) };
-  const closeButton = { text: 'Fermer', style: 'cancel' as const };
+  const intl = intlLocale();
+  const dateStr = t.date.toLocaleString(intl);
+  const pdfButton = { text: tr('tickets.downloadPdf'), onPress: () => downloadTicketPdf(t, c) };
+  const closeButton = { text: tr('tickets.close'), style: 'cancel' as const };
 
   if (t.kind === 'reservation') {
     const r = t.raw as RawReservation;
     Alert.alert(
       t.title,
-      `Statut : ${status.label}\n` +
-      `Date : ${dateStr}\n` +
-      `Personnes : ${r.party_size}\n` +
-      `Dépôt : ${formatXOF(t.amount)}\n` +
-      `QR : ${r.qr_code.slice(0, 8)}…`,
+      `${tr('tickets.lStatus', { v: status.label })}\n` +
+      `${tr('tickets.lDate', { v: dateStr })}\n` +
+      `${tr('tickets.lParty', { v: r.party_size })}\n` +
+      `${tr('tickets.lDeposit', { v: formatXOF(t.amount) })}\n` +
+      `${tr('tickets.lQr', { v: r.qr_code.slice(0, 8) })}`,
       [pdfButton, closeButton],
     );
     return;
@@ -390,13 +392,13 @@ function openDetail(t: Ticket, c: ColorPalette) {
   if (t.kind === 'order') {
     const o = t.raw as RawOrder;
     Alert.alert(
-      `Commande ${o.order_number}`,
-      `Boutique : ${t.title}\n` +
-      `Statut : ${status.label}\n` +
-      `${o.items_count} article${o.items_count > 1 ? 's' : ''}\n` +
-      `Livraison : ${o.delivery_method === 'delivery' ? 'À domicile' : 'À retirer'}\n` +
-      `Total : ${formatXOF(t.amount)}\n` +
-      `Passée le : ${dateStr}`,
+      tr('tickets.orderTitle', { n: o.order_number }),
+      `${tr('tickets.lShop', { v: t.title })}\n` +
+      `${tr('tickets.lStatus', { v: status.label })}\n` +
+      `${trn('tickets.items', o.items_count)}\n` +
+      `${tr('tickets.lDelivery', { v: o.delivery_method === 'delivery' ? tr('tickets.atHome') : tr('tickets.pickup') })}\n` +
+      `${tr('tickets.lTotal', { v: formatXOF(t.amount) })}\n` +
+      `${tr('tickets.lPlacedOn', { v: dateStr })}`,
       [pdfButton, closeButton],
     );
     return;
@@ -406,11 +408,11 @@ function openDetail(t: Ticket, c: ColorPalette) {
     const e = t.raw as RawEventTicket;
     Alert.alert(
       t.title,
-      `Tarif : ${e.tier_name}\n` +
-      `Statut : ${status.label}\n` +
-      `Date : ${dateStr}\n` +
-      `Prix : ${formatXOF(t.amount)}\n` +
-      `QR : ${e.qr_code.slice(0, 8)}…`,
+      `${tr('tickets.lTier', { v: e.tier_name })}\n` +
+      `${tr('tickets.lStatus', { v: status.label })}\n` +
+      `${tr('tickets.lDate', { v: dateStr })}\n` +
+      `${tr('tickets.lPrice', { v: formatXOF(t.amount) })}\n` +
+      `${tr('tickets.lQr', { v: e.qr_code.slice(0, 8) })}`,
       [pdfButton, closeButton],
     );
     return;
@@ -419,13 +421,13 @@ function openDetail(t: Ticket, c: ColorPalette) {
   // booking
   const b = t.raw as RawBooking;
   Alert.alert(
-    `Réservation ${b.booking_number}`,
-    `Hôtel : ${t.title}\n` +
-    `Statut : ${status.label}\n` +
-    `Check-in : ${new Date(b.check_in_date).toLocaleDateString('fr-FR')}\n` +
-    `Check-out : ${new Date(b.check_out_date).toLocaleDateString('fr-FR')}\n` +
-    `${b.nights_count} nuit${b.nights_count > 1 ? 's' : ''}\n` +
-    `Total : ${formatXOF(t.amount)}`,
+    tr('tickets.bookingTitle', { n: b.booking_number }),
+    `${tr('tickets.lHotel', { v: t.title })}\n` +
+    `${tr('tickets.lStatus', { v: status.label })}\n` +
+    `${tr('tickets.lCheckin', { v: new Date(b.check_in_date).toLocaleDateString(intl) })}\n` +
+    `${tr('tickets.lCheckout', { v: new Date(b.check_out_date).toLocaleDateString(intl) })}\n` +
+    `${trn('tickets.nights', b.nights_count)}\n` +
+    `${tr('tickets.lTotal', { v: formatXOF(t.amount) })}`,
     [pdfButton, closeButton],
   );
 }
@@ -436,7 +438,8 @@ function openDetail(t: Ticket, c: ColorPalette) {
  */
 function downloadTicketPdf(t: Ticket, c: ColorPalette) {
   const status = statusMeta(t.kind, t.status, c);
-  const dateStr = t.date.toLocaleString('fr-FR', {
+  const intl = intlLocale();
+  const dateStr = t.date.toLocaleString(intl, {
     dateStyle: 'long',
     timeStyle: 'short',
   });
@@ -448,31 +451,31 @@ function downloadTicketPdf(t: Ticket, c: ColorPalette) {
     const r = t.raw as RawReservation;
     code = r.qr_code;
     detailsLines.push(
-      { label: 'Personnes', value: String(r.party_size) },
+      { label: tr('tickets.dParty'), value: String(r.party_size) },
     );
-    if (r.notes) detailsLines.push({ label: 'Notes', value: r.notes });
+    if (r.notes) detailsLines.push({ label: tr('tickets.dNotes'), value: r.notes });
   } else if (t.kind === 'order') {
     const o = t.raw as RawOrder;
     code = o.order_number;
     detailsLines.push(
-      { label: 'N° commande', value: o.order_number },
-      { label: 'Articles', value: String(o.items_count) },
-      { label: 'Livraison', value: o.delivery_method === 'delivery' ? 'À domicile' : 'À retirer' },
+      { label: tr('tickets.dOrderNo'), value: o.order_number },
+      { label: tr('tickets.dItems'), value: String(o.items_count) },
+      { label: tr('tickets.dDelivery'), value: o.delivery_method === 'delivery' ? tr('tickets.atHome') : tr('tickets.pickup') },
     );
   } else if (t.kind === 'event') {
     const e = t.raw as RawEventTicket;
     code = e.qr_code;
     detailsLines.push(
-      { label: 'Tarif', value: e.tier_name },
+      { label: tr('tickets.dTier'), value: e.tier_name },
     );
   } else {
     const b = t.raw as RawBooking;
     code = b.booking_number;
     detailsLines.push(
-      { label: 'N° réservation', value: b.booking_number },
-      { label: 'Check-in', value: new Date(b.check_in_date).toLocaleDateString('fr-FR') },
-      { label: 'Check-out', value: new Date(b.check_out_date).toLocaleDateString('fr-FR') },
-      { label: 'Durée', value: `${b.nights_count} nuit${b.nights_count > 1 ? 's' : ''}` },
+      { label: tr('tickets.dBookingNo'), value: b.booking_number },
+      { label: tr('tickets.dCheckin'), value: new Date(b.check_in_date).toLocaleDateString(intl) },
+      { label: tr('tickets.dCheckout'), value: new Date(b.check_out_date).toLocaleDateString(intl) },
+      { label: tr('tickets.dDuration'), value: trn('tickets.nights', b.nights_count) },
     );
   }
 
@@ -507,44 +510,44 @@ function statusMeta(kind: TicketKind, status: string, c: ColorPalette): { color:
   // Reservations
   if (kind === 'reservation') {
     switch (status) {
-      case 'pending': return { color: c.warning, label: 'En attente', icon: 'time-outline' };
-      case 'confirmed': return { color: c.success, label: 'Confirmée', icon: 'checkmark-circle' };
-      case 'arrived': return { color: c.primary[600], label: 'Arrivé', icon: 'walk' };
-      case 'no_show': return { color: c.danger, label: 'No show', icon: 'alert-circle' };
-      case 'cancelled': return { color: c.danger, label: 'Annulée', icon: 'close-circle' };
-      case 'refunded': return { color: c.neutral[500], label: 'Remboursée', icon: 'arrow-undo' };
+      case 'pending': return { color: c.warning, label: tr('tickets.st.pending'), icon: 'time-outline' };
+      case 'confirmed': return { color: c.success, label: tr('tickets.st.confirmed'), icon: 'checkmark-circle' };
+      case 'arrived': return { color: c.primary[600], label: tr('tickets.st.arrived'), icon: 'walk' };
+      case 'no_show': return { color: c.danger, label: tr('tickets.st.no_show'), icon: 'alert-circle' };
+      case 'cancelled': return { color: c.danger, label: tr('tickets.st.cancelled'), icon: 'close-circle' };
+      case 'refunded': return { color: c.neutral[500], label: tr('tickets.st.refunded'), icon: 'arrow-undo' };
     }
   }
   // Orders
   if (kind === 'order') {
     switch (status) {
-      case 'pending': return { color: c.warning, label: 'En attente', icon: 'time-outline' };
-      case 'confirmed': return { color: '#3b82f6', label: 'Confirmée', icon: 'checkmark-circle' };
-      case 'preparing': return { color: '#6366f1', label: 'En préparation', icon: 'cube-outline' };
-      case 'ready': return { color: c.success, label: 'Prête', icon: 'bag-check' };
-      case 'delivered': return { color: '#059669', label: 'Livrée', icon: 'checkmark-done' };
-      case 'cancelled': return { color: c.danger, label: 'Annulée', icon: 'close-circle' };
-      case 'refunded': return { color: c.neutral[500], label: 'Remboursée', icon: 'arrow-undo' };
+      case 'pending': return { color: c.warning, label: tr('tickets.st.pending'), icon: 'time-outline' };
+      case 'confirmed': return { color: '#3b82f6', label: tr('tickets.st.confirmed'), icon: 'checkmark-circle' };
+      case 'preparing': return { color: '#6366f1', label: tr('tickets.st.preparing'), icon: 'cube-outline' };
+      case 'ready': return { color: c.success, label: tr('tickets.st.ready'), icon: 'bag-check' };
+      case 'delivered': return { color: '#059669', label: tr('tickets.st.delivered'), icon: 'checkmark-done' };
+      case 'cancelled': return { color: c.danger, label: tr('tickets.st.cancelled'), icon: 'close-circle' };
+      case 'refunded': return { color: c.neutral[500], label: tr('tickets.st.refunded'), icon: 'arrow-undo' };
     }
   }
   // Bookings
   if (kind === 'booking') {
     switch (status) {
-      case 'pending': return { color: c.warning, label: 'En attente', icon: 'time-outline' };
-      case 'confirmed': return { color: c.success, label: 'Confirmée', icon: 'checkmark-circle' };
-      case 'checked_in': return { color: c.primary[600], label: 'Check-in', icon: 'log-in' };
-      case 'checked_out': return { color: '#059669', label: 'Séjour terminé', icon: 'log-out' };
-      case 'cancelled': return { color: c.danger, label: 'Annulée', icon: 'close-circle' };
-      case 'refunded': return { color: c.neutral[500], label: 'Remboursée', icon: 'arrow-undo' };
+      case 'pending': return { color: c.warning, label: tr('tickets.st.pending'), icon: 'time-outline' };
+      case 'confirmed': return { color: c.success, label: tr('tickets.st.confirmed'), icon: 'checkmark-circle' };
+      case 'checked_in': return { color: c.primary[600], label: tr('tickets.st.checked_in'), icon: 'log-in' };
+      case 'checked_out': return { color: '#059669', label: tr('tickets.st.checked_out'), icon: 'log-out' };
+      case 'cancelled': return { color: c.danger, label: tr('tickets.st.cancelled'), icon: 'close-circle' };
+      case 'refunded': return { color: c.neutral[500], label: tr('tickets.st.refunded'), icon: 'arrow-undo' };
     }
   }
   // Event tickets
   if (kind === 'event') {
     switch (status) {
-      case 'valid': return { color: c.success, label: 'Valide', icon: 'checkmark-circle' };
-      case 'scanned': return { color: c.primary[600], label: 'Scanné', icon: 'qr-code' };
-      case 'refunded': return { color: c.neutral[500], label: 'Remboursé', icon: 'arrow-undo' };
-      case 'transferred': return { color: '#6366f1', label: 'Transféré', icon: 'swap-horizontal' };
+      case 'valid': return { color: c.success, label: tr('tickets.st.valid'), icon: 'checkmark-circle' };
+      case 'scanned': return { color: c.primary[600], label: tr('tickets.st.scanned'), icon: 'qr-code' };
+      case 'refunded': return { color: c.neutral[500], label: tr('tickets.st.refundedM'), icon: 'arrow-undo' };
+      case 'transferred': return { color: '#6366f1', label: tr('tickets.st.transferred'), icon: 'swap-horizontal' };
     }
   }
   return { color: c.neutral[500], label: status, icon: 'help-circle' };
@@ -552,10 +555,10 @@ function statusMeta(kind: TicketKind, status: string, c: ColorPalette): { color:
 
 function kindMeta(kind: TicketKind): { label: string; icon: keyof typeof Ionicons.glyphMap; color: string } {
   switch (kind) {
-    case 'reservation': return { label: 'Réservation', icon: 'restaurant', color: '#f97316' };
-    case 'order':       return { label: 'Commande',    icon: 'bag',        color: '#7c3aed' };
-    case 'booking':     return { label: 'Hôtel',       icon: 'bed',        color: '#0891b2' };
-    case 'event':       return { label: 'Événement',   icon: 'calendar',   color: '#dc2626' };
+    case 'reservation': return { label: tr('tickets.kind.reservation'), icon: 'restaurant', color: '#f97316' };
+    case 'order':       return { label: tr('tickets.kind.order'),    icon: 'bag',        color: '#7c3aed' };
+    case 'booking':     return { label: tr('tickets.kind.booking'),       icon: 'bed',        color: '#0891b2' };
+    case 'event':       return { label: tr('tickets.kind.event'),   icon: 'calendar',   color: '#dc2626' };
   }
 }
 
@@ -564,13 +567,14 @@ function relativeDateTime(d: Date): string {
   const sameDay = d.toDateString() === now.toDateString();
   const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1);
   const isTomorrow = d.toDateString() === tomorrow.toDateString();
-  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  if (sameDay) return `Aujourd'hui à ${time}`;
-  if (isTomorrow) return `Demain à ${time}`;
+  const intl = intlLocale();
+  const time = d.toLocaleTimeString(intl, { hour: '2-digit', minute: '2-digit' });
+  if (sameDay) return tr('tickets.today', { time });
+  if (isTomorrow) return tr('tickets.tomorrow', { time });
   const diffDays = Math.round((d.getTime() - now.getTime()) / (24 * 3600 * 1000));
-  if (diffDays > 1 && diffDays <= 7) return `Dans ${diffDays} jours`;
-  if (diffDays < -1 && diffDays >= -7) return `Il y a ${Math.abs(diffDays)} jours`;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (diffDays > 1 && diffDays <= 7) return tr('tickets.inDays', { n: diffDays });
+  if (diffDays < -1 && diffDays >= -7) return tr('tickets.daysAgo', { n: Math.abs(diffDays) });
+  return d.toLocaleDateString(intl, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 // ============================================================================
@@ -596,13 +600,13 @@ function TicketCard({
   // Sous-ligne contextuelle selon le type
   let secondaryLine: string;
   if (ticket.kind === 'reservation') {
-    secondaryLine = `${ticket.nightsOrCountOrSize} personne${ticket.nightsOrCountOrSize > 1 ? 's' : ''}`;
+    secondaryLine = trn('tickets.persons', ticket.nightsOrCountOrSize);
   } else if (ticket.kind === 'order') {
-    secondaryLine = `${ticket.nightsOrCountOrSize} article${ticket.nightsOrCountOrSize > 1 ? 's' : ''}`;
+    secondaryLine = trn('tickets.items', ticket.nightsOrCountOrSize);
   } else if (ticket.kind === 'event') {
-    secondaryLine = '1 billet';
+    secondaryLine = tr('tickets.oneTicket');
   } else {
-    secondaryLine = `${ticket.nightsOrCountOrSize} nuit${ticket.nightsOrCountOrSize > 1 ? 's' : ''}`;
+    secondaryLine = trn('tickets.nights', ticket.nightsOrCountOrSize);
   }
 
   return (

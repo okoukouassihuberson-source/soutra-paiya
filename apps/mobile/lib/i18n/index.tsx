@@ -17,6 +17,10 @@ const STORAGE_KEY = 'soutra.locale';
 let current: Locale = DEFAULT_LOCALE;
 export const currentLocale = () => current;
 export const tr = (key: TKey, params?: Params) => createI18n(current).t(key, params);
+/** Pluriel hors composant. */
+export const trn = (key: string, n: number, params?: Params) => createI18n(current).tn(key, n, params);
+/** Locale Intl courante (dates / nombres) hors composant. */
+export const intlLocale = () => createI18n(current).intl;
 
 interface Ctx { i18n: I18n; setLocale: (l: Locale) => void }
 const LocaleCtx = createContext<Ctx>({ i18n: createI18n(DEFAULT_LOCALE), setLocale: () => {} });
