@@ -3,6 +3,8 @@ import { TOURISM_CATEGORIES } from '@soutra/shared';
 import { listDestinations, listTrips } from '@/lib/tourism';
 import { listActivities } from '@/lib/activities';
 import { getI18n } from '@/lib/i18n/server';
+import { listPublicOffers } from '@/lib/offers';
+import { OfferCard } from './Offers';
 import { SearchBar } from './SearchBar';
 import { DestinationCardView, TripCardView, ActivityCardView } from './Cards';
 
@@ -11,10 +13,11 @@ const HERO_IMG = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?a
 /** Hero + catégories + destinations/voyages à la une de la page d'accueil V2. */
 export async function HomeTourism() {
   const { t, lp, tdyn } = getI18n();
-  const [destinations, trips, acts] = await Promise.all([
+  const [destinations, trips, acts, offers] = await Promise.all([
     listDestinations({ featured: true, limit: 8 }),
     listTrips({ scope: 'national', limit: 3 }),
     listActivities({ limit: 4, sort: 'popular' }),
+    listPublicOffers(3),
   ]);
   return (
     <>
@@ -43,6 +46,13 @@ export async function HomeTourism() {
           ))}
         </div>
       </section>
+
+      {offers.length > 0 && (
+        <section aria-labelledby="home-offers" className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between"><h2 id="home-offers" className="font-display text-2xl font-bold text-dark sm:text-3xl">🏷️ {t('offers.homeTitle')}</h2><Link href={lp('/promotions')} className="text-sm font-semibold text-primary-600">{t('common.seeAll')}</Link></div>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">{offers.map((o) => <OfferCard key={o.id} offer={o} withTarget />)}</div>
+        </section>
+      )}
 
       {destinations.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">

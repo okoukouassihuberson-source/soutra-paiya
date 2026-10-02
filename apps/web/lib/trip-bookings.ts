@@ -1,6 +1,7 @@
 import { supabaseServer } from './supabase-server';
 
 export interface TripBookingRow {
+  discount_xof?: number | null; promo_code?: string | null;
   id: string; reference: string; trip_id: string; participants: number;
   unit_price_xof: number; total_xof: number; paid_xof: number; status: string;
   qr_token: string; used_at: string | null; created_at: string; expires_at: string | null;
@@ -17,7 +18,7 @@ export interface TripPaymentRow {
 
 const TRIP_COLS =
   'slug, title, scope, city, country, starts_on, ends_on, departure_point, departure_time, deposit_pct, cover_url, i18n';
-const COLS = `id, reference, trip_id, participants, unit_price_xof, total_xof, paid_xof, status, qr_token, used_at, created_at, expires_at, trips(${TRIP_COLS})`;
+const COLS = `id, reference, trip_id, participants, unit_price_xof, total_xof, discount_xof, promo_code, paid_xof, status, qr_token, used_at, created_at, expires_at, trips(${TRIP_COLS})`;
 
 // RLS : un voyageur ne lit que ses propres réservations (filtre explicite en plus).
 export async function listMyTripBookings(userId: string): Promise<TripBookingRow[]> {

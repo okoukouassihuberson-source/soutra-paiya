@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { TripPackage } from '@soutra/shared';
 import { useI18n } from '@/lib/i18n/client';
 import { supabaseBrowser } from '@/lib/supabase';
+import { PriceSummary, PromoField, usePricePreview } from '@/components/tourism/Promo';
 
 export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
   tripId: string; basePrice: number; packages: TripPackage[]; seatsLeft: number; cta: string;
@@ -17,6 +18,8 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
 
+  const [code, setCode] = useState('');
+  const preview = usePricePreview('trip', tripId, n, pkg || null, code);
   const unit = packages.find((p) => p.id === pkg)?.price_xof ?? basePrice;
 
   async function submit(e: React.FormEvent) {
@@ -26,12 +29,14 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
     const { data: s } = await sb.auth.getSession();
     if (!s.session) { setMsg({ ok: false, text: 'login' }); setBusy(false); return; }
     const { data, error } = await sb.rpc('create_trip_booking', {
-      p_trip_id: tripId, p_participants: n, p_package_id: pkg || null, p_phone: phone || null, p_notes: null,
+      p_trip_id: tripId, p_participants: n, p_package_id: pkg || null, p_phone: phone || null, p_notes: null, p_promo_code: code.trim() || null,
     });
     setBusy(false);
     if (error) {
-      const code = ['NOT_AUTHENTICATED', 'NOT_ENOUGH_SEATS', 'TRIP_NOT_AVAILABLE', 'TRIP_ALREADY_STARTED', 'PACKAGE_NOT_FOUND', 'INVALID_PARTICIPANTS'].find((k) => error.message?.includes(k));
-      setMsg({ ok: false, text: code ? t(`booking.err.${code}` as 'booking.err.NOT_ENOUGH_SEATS') : t('booking.err.generic') });
+      const promo = String(error.message ?? '').match(/PROMO_[A-Z_]+/)?.[0];
+      if (promo) { setMsg({ ok: false, text: t(`promo.err.${promo}` as 'promo.err.generic') }); return; }
+      const known = ['NOT_AUTHENTICATED', 'NOT_ENOUGH_SEATS', 'TRIP_NOT_AVAILABLE', 'TRIP_ALREADY_STARTED', 'PACKAGE_NOT_FOUND', 'INVALID_PARTICIPANTS'].find((k) => error.message?.includes(k));
+      setMsg({ ok: false, text: known ? t(`booking.err.${known}` as 'booking.err.NOT_ENOUGH_SEATS') : t('booking.err.generic') });
       return;
     }
     setMsg({ ok: true, text: t('booking.created', { ref: data.reference, total: fmtXOF(data.total_xof) }) });
@@ -62,10 +67,8 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
       <label className="block text-sm font-semibold">{t('booking.phone')}
         <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full rounded-xl border border-neutral-300" />
       </label>
-      <div className="flex items-center justify-between border-t pt-3">
-        <span className="text-sm text-neutral-600">{t('booking.total')}</span>
-        <span className="text-xl font-bold text-primary-600">{fmtXOF(unit * n)}</span>
-      </div>
+      <PromoField value={code} onChange={setCode} preview={preview} />
+      <PriceSummary preview={preview} fallback={unit * n} label={t('booking.total')} />
       <button disabled={busy} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-white hover:bg-primary-600 disabled:opacity-60">
         {busy ? t('booking.booking') : cta}
       </button>

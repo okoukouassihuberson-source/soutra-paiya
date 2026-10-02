@@ -62,12 +62,13 @@ function shortName(full?: string | null): string {
 }
 
 export interface ActivityBookingRow {
+  discount_xof?: number | null; promo_code?: string | null;
   id: string; reference: string; activity_id: string; slot_id: string; participants: number; total_xof: number;
   paid_xof: number; status: string; qr_token: string; used_at: string | null; created_at: string; expires_at: string | null;
   activities: { slug: string; title: string; category: string; city: string | null; cover_url: string | null; duration_minutes: number; address: string | null; i18n?: Record<string, Record<string, string>> | null } | null;
   activity_slots: { starts_at: string } | null;
 }
-const BOOKING_COLS = 'id, reference, activity_id, slot_id, participants, total_xof, paid_xof, status, qr_token, used_at, created_at, expires_at, activities(slug, title, category, city, cover_url, duration_minutes, address, i18n), activity_slots(starts_at)';
+const BOOKING_COLS = 'id, reference, activity_id, slot_id, participants, total_xof, discount_xof, promo_code, paid_xof, status, qr_token, used_at, created_at, expires_at, activities(slug, title, category, city, cover_url, duration_minutes, address, i18n), activity_slots(starts_at)';
 
 export async function listMyActivityBookings(userId: string): Promise<ActivityBookingRow[]> {
   const { data, error } = await db().from('activity_bookings').select(BOOKING_COLS).eq('user_id', userId)

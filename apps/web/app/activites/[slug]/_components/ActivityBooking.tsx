@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { ActivitySlot } from '@soutra/shared';
 import { useI18n } from '@/lib/i18n/client';
 import { supabaseBrowser } from '@/lib/supabase';
+import { PriceSummary, PromoField, usePricePreview } from '@/components/tourism/Promo';
 
 export function ActivityBooking({ slots, basePrice, maxGroup, minAge }: {
   slots: ActivitySlot[]; basePrice: number; maxGroup: number; minAge: number;
@@ -17,6 +18,8 @@ export function ActivityBooking({ slots, basePrice, maxGroup, minAge }: {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string; id?: string } | null>(null);
 
+  const [code, setCode] = useState('');
+  const preview = usePricePreview('activity', slotId || null, n, null, code);
   const slot = slots.find((s) => s.id === slotId);
   const left = slot ? slot.capacity - slot.booked : 0;
   const maxN = Math.max(1, Math.min(maxGroup, left));
@@ -42,11 +45,13 @@ export function ActivityBooking({ slots, basePrice, maxGroup, minAge }: {
     const sb = supabaseBrowser() as any;
     const { data: s } = await sb.auth.getSession();
     if (!s.session) { setMsg({ ok: false, text: 'login' }); setBusy(false); return; }
-    const { data, error } = await sb.rpc('create_activity_booking', { p_slot_id: slotId, p_participants: n, p_phone: phone || null, p_notes: null });
+    const { data, error } = await sb.rpc('create_activity_booking', { p_slot_id: slotId, p_participants: n, p_phone: phone || null, p_notes: null, p_promo_code: code.trim() || null });
     setBusy(false);
     if (error) {
-      const code = ['NOT_AUTHENTICATED', 'NOT_ENOUGH_SEATS', 'SLOT_CLOSED', 'GROUP_TOO_LARGE', 'ACTIVITY_NOT_AVAILABLE', 'INVALID_PARTICIPANTS'].find((k) => error.message?.includes(k));
-      setMsg({ ok: false, text: code ? t(`act.err.${code}` as 'act.err.SLOT_CLOSED') : t('act.err.generic') });
+      const promo = String(error.message ?? '').match(/PROMO_[A-Z_]+/)?.[0];
+      if (promo) { setMsg({ ok: false, text: t(`promo.err.${promo}` as 'promo.err.generic') }); return; }
+      const known = ['NOT_AUTHENTICATED', 'NOT_ENOUGH_SEATS', 'SLOT_CLOSED', 'GROUP_TOO_LARGE', 'ACTIVITY_NOT_AVAILABLE', 'INVALID_PARTICIPANTS'].find((k) => error.message?.includes(k));
+      setMsg({ ok: false, text: known ? t(`act.err.${known}` as 'act.err.SLOT_CLOSED') : t('act.err.generic') });
       return;
     }
     setMsg({ ok: true, id: data.id, text: t('act.created', { ref: data.reference, total: fmtXOF(data.total_xof) }) });
@@ -83,10 +88,8 @@ export function ActivityBooking({ slots, basePrice, maxGroup, minAge }: {
       <label className="block text-sm font-semibold">{t('common.phone')}
         <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-2" />
       </label>
-      <div className="flex items-center justify-between border-t pt-3">
-        <span className="text-sm text-neutral-600">{slot ? slotFmt(slot.starts_at) : ''}</span>
-        <span className="text-xl font-bold text-primary-600">{fmtXOF(unit * n)}</span>
-      </div>
+      <PromoField value={code} onChange={setCode} preview={preview} />
+      <PriceSummary preview={preview} fallback={unit * n} label={slot ? slotFmt(slot.starts_at) : ''} />
       <button disabled={busy || !slot} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-white hover:bg-primary-600 disabled:opacity-60">{busy ? t('act.booking') : t('act.book')}</button>
       {msg && (msg.text === 'login'
         ? <p className="text-sm text-danger">{t('booking.loginPrompt')}<Link className="underline" href="/login">{t('common.signIn')}</Link></p>

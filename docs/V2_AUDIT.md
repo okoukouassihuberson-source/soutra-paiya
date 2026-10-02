@@ -17,7 +17,7 @@
 | Avis, modération, note moyenne, signalement | **EXISTE** | migration 0076 (photos d'avis à vérifier). |
 | Favoris | **EXISTE** | table `favorites`, mobile `favorites.tsx`. |
 | Notifications internes + push | **EXISTE → COMPLÉTÉ (phase 2)** | 0079/0080, `send-push`, `push_tokens` conservés. Ajout : préférences par canal, file d'envoi multicanal, déclencheurs voyages/activités, rappels, email, push navigateur, centre de notifications web (§3 septies). WhatsApp/SMS : architecture prête, fournisseur à brancher. |
-| Codes promo | **EXISTE** | `promo_codes` (0015/0038). Offres flash/early booking/groupe : **ABSENT**. |
+| Codes promo | **EXISTE** | `promo_codes` (0015/0038, abonnements) conservé. Offres voyages/activités (flash, early booking, groupe, couple, famille, anniversaire, entreprise) : **AJOUTÉ** (0091, § 3 nonies). |
 | Abonnements pros, monétisation, mise en avant | **EXISTE/PARTIEL** | `subscriptions`, `monetization_*`. Commission configurable par catégorie : à compléter. |
 | Fidélité, Splits, Wallet, Social | **EXISTE** | hors périmètre tourisme, **conservés**. |
 | Admin dashboard | **EXISTE/PARTIEL** | `/admin` (onglets). Stats tourisme (voyages, destinations) : **ABSENT**. |
@@ -92,9 +92,17 @@
 6. **Tests** : 10 tests (`pnpm --filter @soutra/web test:i18n` : parité des dictionnaires, routage, pluriels, surcharge de contenu, formats, hreflang, middleware dont l'anti-falsification) ; 41 vérifications Chromium sur API simulée (FR inchangé, EN, canonical/hreflang, sélecteur + cookie, 404, sitemap, manifest et service worker non interceptés) ; migration 0090 testée sur PostgreSQL 16 en transaction unique.
 7. **Limites** : sections marketing de l'accueil, fiche établissement, connexion, compte, Pro, admin, scan, fidélité, abonnements et application mobile restent en français ; le **texte des notifications** est généré en français côté base (les écrans et préférences sont traduits) ; les emails sont en français ; aucune relecture humaine des traductions anglaises (à faire relire avant publication).
 
+## 3 nonies. Livré en phase 2 (promotions et offres)
+1. **Migration `0091_offers.sql`** (additive) : `tourism_offers` (offres plateforme ou partenaire ; 8 types : promotion, vente flash, réservation anticipée, groupe, couple, famille, anniversaire, entreprise ; pourcentage 1–90 % ou montant fixe, plafond, bornes de participants et de délai, fenêtre de validité, plafonds d'utilisation total et par client, visibilité publique/privée, contenu traduisible) et `tourism_offer_redemptions`. Colonnes `discount_xof`, `offer_id`, `promo_code` sur les réservations de voyages et d'activités.
+2. **Prix toujours recalculé côté base** : `create_trip_booking` / `create_activity_booking` (signatures étendues par `p_promo_code`) choisissent **une seule** offre, la meilleure (pas de cumul), sous verrou de lignes (plafonds d'utilisation sans dépassement concurrent) ; le montant payable est le total remisé ; la remise ne descend jamais le total sous 200 FCFA. Une annulation ou expiration libère l'utilisation. `preview_booking_price` donne l'aperçu affiché (informatif).
+3. **Règles de sécurité** : un partenaire ne crée/modifie que ses offres et ne cible que ses propres voyages/activités ; les offres privées ne sont jamais listées ; les offres « anniversaire » et « entreprise » exigent un code (l'âge n'est pas vérifiable) ; code obligatoirement authentifié. Bug trouvé et corrigé en test : logique à trois valeurs qui laissait l'offre d'un partenaire s'appliquer aux voyages d'un autre.
+4. **Interface** : champ code promo + prix avant/après dans les deux formulaires de réservation, bloc « Offres disponibles » sur les fiches, page `/promotions` (+ sitemap, menu, bande « Offres du moment » à l'accueil), ligne de réduction dans « Mes voyages / Mes activités », onglet « Offres » côté organisateur et administration (vue d'ensemble : offres actives, utilisations, réductions accordées). FR/EN.
+5. **Tests** : 20 scénarios SQL sur PostgreSQL 16 (contraintes, offres automatiques, casse du code, codes d'erreur, plafonds, limites par client, libération à l'annulation, plancher 200 FCFA, RLS, listes publiques, vue admin) ; `tsc`, `next build` et tests i18n verts. **Non testé** : parcours navigateur de l'interface des offres.
+6. **Limites** : pas de limitation de débit contre l'essai de codes (authentification requise seulement) ; une seule offre par réservation ; textes des notifications de promotion non émis ; traductions anglaises non relues.
+
 ## 4. Feuille de route
 - **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
-- **Phase 3** : promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
+- **Phase 3** : commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions
 - Déployer : `supabase db push` puis `supabase functions deploy geniuspay-pay-trip`. Appliquer 0082 puis 0083 (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.

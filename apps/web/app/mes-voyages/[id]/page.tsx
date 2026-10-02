@@ -51,6 +51,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
             <div><dt className="text-neutral-500">{t('my.reference')}</dt><dd className="font-mono font-semibold">{b.reference}</dd></div>
             <div><dt className="text-neutral-500">{t('my.participants')}</dt><dd className="font-semibold">{b.participants}</dd></div>
             {tr?.departure_point && <div><dt className="text-neutral-500">{t('my.departure')}</dt><dd className="font-semibold">{tr.departure_point}{tr.departure_time ? ` · ${tr.departure_time.slice(0, 5)}` : ''}</dd></div>}
+            {Number(b.discount_xof) > 0 && <div><dt className="text-neutral-500">{t('promo.discount')}</dt><dd className="font-semibold text-success">−{i.fmtXOF(Number(b.discount_xof))}{b.promo_code ? ` (${b.promo_code})` : ''}</dd></div>}
             <div><dt className="text-neutral-500">{t('my.amountPaid')}</dt><dd className="font-semibold">{i.fmtXOF(b.paid_xof)} / {i.fmtXOF(b.total_xof)}</dd></div>
           </dl>
           {tr && <Link className="mt-3 inline-block text-sm font-semibold text-primary-600 underline" href={lp(`/voyages/${tr.slug}`)}>{t('my.viewTrip')}</Link>}

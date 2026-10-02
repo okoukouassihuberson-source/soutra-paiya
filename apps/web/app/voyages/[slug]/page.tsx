@@ -5,6 +5,8 @@ import { formatTripDates, seatsLeft } from '@soutra/shared';
 import { getTrip } from '@/lib/tourism';
 import { TourismNav } from '@/components/tourism/TourismNav';
 import { BookingForm } from './_components/BookingForm';
+import { OffersBlock } from '@/components/tourism/Offers';
+import { listOffersForTarget } from '@/lib/offers';
 import { getI18n } from '@/lib/i18n/server';
 import { languageAlternates, openGraphLocale } from '@/lib/i18n/seo';
 
@@ -37,6 +39,7 @@ export default async function TripPage({ params }: { params: { slug: string } })
   const r = await getTrip(params.slug);
   if (!r) notFound();
   const { trip, days, packages, destination } = r;
+  const offers = await listOffersForTarget('trip', trip.id);
   const national = trip.scope === 'national';
   const left = seatsLeft(trip);
   const title = field(trip, 'title') ?? trip.title;
@@ -110,6 +113,7 @@ export default async function TripPage({ params }: { params: { slug: string } })
               </section>
             )}
 
+            <OffersBlock offers={offers} />
             {conditions && <section><h2 className="mb-2 font-display text-xl font-bold">{t('common.conditions')}</h2><p className="whitespace-pre-line text-sm text-neutral-700">{conditions}</p></section>}
             {destination && <Link href={lp(`/destinations/${destination.slug}`)} className="inline-block font-semibold text-primary-600 underline">{t('trip.explore', { name: field(destination as any, 'name') ?? destination.name })}</Link>}
           </div>

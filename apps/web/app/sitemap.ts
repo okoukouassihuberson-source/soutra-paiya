@@ -21,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     (rows ?? []).flatMap((r) => multi(`${prefix}/${r.slug}`, { lastModified: r.updated_at, priority }));
   return [
     ...multi('/', { priority: 1 }),
-    ...['/explorer', '/destinations', '/voyages/nationaux', '/voyages/internationaux', '/activites'].flatMap((p) => multi(p, { priority: 0.8 })),
+    ...['/explorer', '/destinations', '/voyages/nationaux', '/voyages/internationaux', '/activites', '/promotions'].flatMap((p) => multi(p, { priority: 0.8 })),
     ...entries(dests.data, '/destinations', 0.8),
     ...entries(trips.data, '/voyages', 0.7),
     ...entries(acts.data, '/activites', 0.7),

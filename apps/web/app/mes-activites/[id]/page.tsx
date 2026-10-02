@@ -49,6 +49,7 @@ export default async function ActivityBookingPage({ params, searchParams }: { pa
             <div><dt className="text-neutral-500">{t('my.reference')}</dt><dd className="font-mono font-semibold">{b.reference}</dd></div>
             <div><dt className="text-neutral-500">{t('my.participants')}</dt><dd className="font-semibold">{b.participants}</dd></div>
             {a?.address || a?.city ? <div className="col-span-2"><dt className="text-neutral-500">{t('my.place')}</dt><dd className="font-semibold">{[a?.address, a?.city].filter(Boolean).join(', ')}</dd></div> : null}
+            {Number(b.discount_xof) > 0 && <div><dt className="text-neutral-500">{t('promo.discount')}</dt><dd className="font-semibold text-success">−{i.fmtXOF(Number(b.discount_xof))}{b.promo_code ? ` (${b.promo_code})` : ''}</dd></div>}
             <div><dt className="text-neutral-500">{t('my.amount')}</dt><dd className="font-semibold">{i.fmtXOF(b.paid_xof)} / {i.fmtXOF(b.total_xof)}</dd></div>
           </dl>
           {a && <Link className="mt-3 inline-block text-sm font-semibold text-primary-600 underline" href={lp(`/activites/${a.slug}`)}>{t('my.viewActivity')}</Link>}

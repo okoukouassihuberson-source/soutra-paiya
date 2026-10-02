@@ -6,6 +6,8 @@ import { getActivity } from '@/lib/activities';
 import { TourismNav } from '@/components/tourism/TourismNav';
 import { ActivityBooking } from './_components/ActivityBooking';
 import { ReportButton } from './_components/ReportButton';
+import { OffersBlock } from '@/components/tourism/Offers';
+import { listOffersForTarget } from '@/lib/offers';
 import { getI18n } from '@/lib/i18n/server';
 import { languageAlternates, openGraphLocale } from '@/lib/i18n/seo';
 
@@ -38,6 +40,7 @@ export default async function ActivityPage({ params }: { params: { slug: string 
   const r = await getActivity(params.slug);
   if (!r) notFound();
   const { activity: a, slots, reviews, destination } = r;
+  const offers = await listOffersForTarget('activity', a.id);
   const title = field(a, 'title') ?? a.title;
   const description = field(a, 'description');
   const conditions = field(a, 'conditions');
@@ -100,6 +103,7 @@ export default async function ActivityPage({ params }: { params: { slug: string 
                 <a className="mt-2 inline-block text-sm font-semibold text-primary-600 underline" href={`https://www.openstreetmap.org/directions?to=${a.latitude}%2C${a.longitude}`} target="_blank" rel="noreferrer">{t('common.directions')}</a>
               </section>
             )}
+            <OffersBlock offers={offers} />
             <section aria-labelledby="avis"><h2 id="avis" className="mb-3 font-display text-xl font-bold">{t('common.reviews')} {a.rating_count > 0 && <span className="text-base font-normal text-neutral-500">{t('act.reviewsSummary', { avg: Number(a.rating_avg).toFixed(1), count: a.rating_count })}</span>}</h2>
               {reviews.length === 0 ? <p className="text-sm text-neutral-500">{t('act.noReviews')}</p> : (
                 <ul className="space-y-4">{reviews.map((rv) => (
