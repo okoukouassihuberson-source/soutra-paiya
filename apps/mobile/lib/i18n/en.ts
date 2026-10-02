@@ -264,4 +264,39 @@ export const en: Dict = {
     done: 'Completed ✓', badges: 'Badges', noBadges: 'No badges yet.', rewards: 'Rewards', redeem: 'Redeem', leaderboard: 'Leaderboard', history: 'History',
     emptyTitle: 'No points yet', emptyBody: 'Make your first merchant payment to earn your first points.',
   },
+  money: {
+    balance: 'Available balance', ok: 'OK', error: 'Error', enterAmount: 'Enter an amount', phoneHint: 'Expected format: +225 followed by 10 digits.', phonePh: '+225XXXXXXXXXX',
+    send: {
+      title: 'Send', subtitle: 'Instant transfer to another user', doneTitle: 'Transfer successful 🎉', doneBody: '{amount} sent to {name}.', failTitle: 'Transfer failed', generic: 'An error occurred.',
+      notFoundTitle: 'Recipient not found', notFoundBody: 'No Soutra-Playce account is linked to this number.', confirmTitle: 'Confirm transfer', confirmBody: 'Send {amount} to {name}?',
+      cancel: 'Cancel', sendBtn: 'Send', recent: 'Recent contacts', recipient: 'Recipient’s number', amount: 'Amount', note: 'Note (optional)', notePh: 'e.g. refund, gift…',
+      irreversible: 'Irreversible transfer', irreversibleBody: 'Double-check the number — a sent transfer cannot be cancelled.', sendAmount: 'Send {amount}', pinTitle: 'Confirm your transfer',
+    },
+    topup: {
+      title: 'Top up', subtitle: 'Card, Orange, MTN, Wave', badAmount: 'Invalid amount', badAmountBody: 'Enter an amount between {min} and {max}.', doneTitle: 'Top-up successful 🎉',
+      doneBody: 'Your wallet has been credited with {amount}.', pendingTitle: 'Payment in progress', pendingBody: 'Your payment is being validated. Your balance will update shortly.',
+      failTitle: 'Payment not completed', failBody: 'The top-up was not completed. You have not been charged.', errorBody: 'Unable to process the top-up.', amountLabel: 'Amount to top up',
+      quick: 'Quick amounts', secure: '100% secure payment', secureBody: 'Via GeniusPay — bank card and mobile money (Orange Money, MTN MoMo, Wave).', pay: 'Pay {amount}',
+    },
+    withdraw: {
+      title: 'Withdraw', subtitle: 'To Orange, MTN or Wave', doneSent: '{net} was sent to your {provider} account (1% fee: {fee}).', doneQueued: 'Your withdrawal of {amount} is being processed.',
+      doneTitle: 'Withdrawal recorded', failTitle: 'Withdrawal failed', generic: 'An error occurred.', kycTitle: 'Identity verification required', kycSub: 'Tap to complete your KYC and unlock withdrawals.',
+      amount: 'Amount to withdraw', operator: 'Mobile money operator', phoneLabel: 'Mobile money number', instant: 'Instant processing',
+      instantBody: 'Your balance is debited immediately. If it fails, it is automatically refunded. Withdrawals are subject to a flat 1% fee.', withdraw: 'Withdraw {amount}',
+    },
+  },
+  requests: {
+    status: { accepted: 'Paid', declined: 'Declined', cancelled: 'Cancelled', pending: 'Pending' }, paidTitle: 'Payment made', paidBody: '{amount} sent to {name}.', yourContact: 'your contact', thisContact: 'this contact',
+    failTitle: 'Action failed', generic: 'An error occurred.', confirmTitle: 'Confirm payment', confirmBody: 'Pay {amount} to {name}?', cancel: 'Cancel', pay: 'Pay',
+    title: 'Money requests', subtitle: 'Received and sent', incoming: 'Received', outgoing: 'Sent', noIncoming: 'No requests received', noOutgoing: 'No requests sent',
+    hintIncoming: 'When someone asks you for money, it will show up here.', hintOutgoing: 'Ask a contact to pay you back or to pay for an expense.', newRequest: 'New request',
+    pinTitle: 'Confirm the payment', someone: 'Someone', theContact: 'the contact', asksYou: '{name} is asking you', youAsk: 'You are asking {name}', decline: 'Decline',
+  },
+  split: {
+    amountTitle: 'Amount', minTotal: 'The total must be at least {min}.', participants: 'Participants', needOne: 'Add at least one participant with a valid number.', dupTitle: 'Duplicate',
+    dupBody: 'The same number appears several times.', minShare: 'Each share must be at least {min}.', overTotal: 'The sum of the shares exceeds the bill total.', createdTitle: 'Split created 🎉',
+    createdBody: '{n} payment request(s) sent.', track: 'View progress', error: 'Error', createFail: 'Unable to create the split.', title: 'Split a bill', label: 'Title (optional)',
+    labelPh: 'e.g. Friday dinner', total: 'Total bill amount', equal: 'Equal', custom: 'Custom', share: 'Share', shareOf: 'Share: {amount}', add: 'Add a person',
+    requested: 'Requested from participants', yours: 'Your share', send: 'Send requests',
+  },
 };

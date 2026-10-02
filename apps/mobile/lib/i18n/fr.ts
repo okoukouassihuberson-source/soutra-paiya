@@ -266,6 +266,41 @@ export const fr = {
     done: 'Accomplie ✓', badges: 'Badges', noBadges: 'Aucun badge pour l’instant.', rewards: 'Récompenses', redeem: 'Échanger', leaderboard: 'Classement', history: 'Historique',
     emptyTitle: 'Aucun point pour l’instant', emptyBody: 'Fais ton premier paiement marchand pour gagner tes premiers points.',
   },
+  money: {
+    balance: 'Solde disponible', ok: 'OK', error: 'Erreur', enterAmount: 'Saisis un montant', phoneHint: 'Format attendu : +225 suivi de 10 chiffres.', phonePh: '+225XXXXXXXXXX',
+    send: {
+      title: 'Envoyer', subtitle: 'Transfert instantané à un autre user', doneTitle: 'Transfert réussi 🎉', doneBody: '{amount} envoyés à {name}.', failTitle: 'Échec du transfert', generic: 'Une erreur est survenue.',
+      notFoundTitle: 'Destinataire introuvable', notFoundBody: 'Aucun compte Soutra-Playce n’est associé à ce numéro.', confirmTitle: 'Confirmer le transfert', confirmBody: 'Envoyer {amount} à {name} ?',
+      cancel: 'Annuler', sendBtn: 'Envoyer', recent: 'Contacts récents', recipient: 'Numéro du destinataire', amount: 'Montant', note: 'Note (optionnelle)', notePh: 'Ex : remboursement, cadeau…',
+      irreversible: 'Transfert irréversible', irreversibleBody: 'Vérifie bien le numéro — un transfert envoyé ne peut pas être annulé.', sendAmount: 'Envoyer {amount}', pinTitle: 'Confirme ton envoi',
+    },
+    topup: {
+      title: 'Recharger', subtitle: 'Carte, Orange, MTN, Wave', badAmount: 'Montant invalide', badAmountBody: 'Saisis un montant entre {min} et {max}.', doneTitle: 'Recharge réussie 🎉',
+      doneBody: 'Ton wallet a été crédité de {amount}.', pendingTitle: 'Paiement en cours', pendingBody: 'Ton paiement est en cours de validation. Ton solde sera mis à jour sous peu.',
+      failTitle: 'Paiement non abouti', failBody: 'La recharge n’a pas été complétée. Aucun montant n’a été débité.', errorBody: 'Impossible de traiter la recharge.', amountLabel: 'Montant à recharger',
+      quick: 'Montants rapides', secure: 'Paiement 100 % sécurisé', secureBody: 'Via GeniusPay — carte bancaire et mobile money (Orange Money, MTN MoMo, Wave).', pay: 'Payer {amount}',
+    },
+    withdraw: {
+      title: 'Retirer', subtitle: 'Vers Orange, MTN ou Wave', doneSent: '{net} ont été envoyés vers ton compte {provider} (commission 1 % : {fee}).', doneQueued: 'Ton retrait de {amount} est en cours de traitement.',
+      doneTitle: 'Retrait enregistré', failTitle: 'Retrait impossible', generic: 'Une erreur est survenue.', kycTitle: 'Vérification d’identité requise', kycSub: 'Touche pour compléter ton KYC et débloquer les retraits.',
+      amount: 'Montant à retirer', operator: 'Opérateur mobile money', phoneLabel: 'Numéro mobile money', instant: 'Traitement instantané',
+      instantBody: 'Ton solde est débité immédiatement. En cas d’échec, il est automatiquement recrédité. Les retraits sont soumis à une commission fixe de 1 %.', withdraw: 'Retirer {amount}',
+    },
+  },
+  requests: {
+    status: { accepted: 'Payée', declined: 'Refusée', cancelled: 'Annulée', pending: 'En attente' }, paidTitle: 'Paiement effectué', paidBody: '{amount} envoyés à {name}.', yourContact: 'ton contact', thisContact: 'ce contact',
+    failTitle: 'Action impossible', generic: 'Une erreur est survenue.', confirmTitle: 'Confirmer le paiement', confirmBody: 'Payer {amount} à {name} ?', cancel: 'Annuler', pay: 'Payer',
+    title: 'Demandes d’argent', subtitle: 'Reçues et envoyées', incoming: 'Reçues', outgoing: 'Envoyées', noIncoming: 'Aucune demande reçue', noOutgoing: 'Aucune demande envoyée',
+    hintIncoming: 'Quand quelqu’un te demandera de l’argent, ça apparaîtra ici.', hintOutgoing: 'Demande à un contact de te rembourser ou de payer une dépense.', newRequest: 'Nouvelle demande',
+    pinTitle: 'Confirme le paiement', someone: 'Quelqu’un', theContact: 'le contact', asksYou: '{name} te demande', youAsk: 'Tu demandes à {name}', decline: 'Refuser',
+  },
+  split: {
+    amountTitle: 'Montant', minTotal: 'Le total doit être d’au moins {min}.', participants: 'Participants', needOne: 'Ajoute au moins un participant avec un numéro valide.', dupTitle: 'Doublon',
+    dupBody: 'Un même numéro apparaît plusieurs fois.', minShare: 'Chaque part doit être d’au moins {min}.', overTotal: 'La somme des parts dépasse le total de l’addition.', createdTitle: 'Partage créé 🎉',
+    createdBody: '{n} demande(s) de paiement envoyée(s).', track: 'Voir le suivi', error: 'Erreur', createFail: 'Impossible de créer le partage.', title: 'Partager une addition', label: 'Intitulé (optionnel)',
+    labelPh: 'Ex : Resto de vendredi', total: 'Montant total de l’addition', equal: 'Égal', custom: 'Personnalisé', share: 'Part', shareOf: 'Part : {amount}', add: 'Ajouter une personne',
+    requested: 'Demandé aux participants', yours: 'Ta part', send: 'Envoyer les demandes',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

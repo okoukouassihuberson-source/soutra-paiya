@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { useI18n, tr, intlLocale, type TKey } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { respondToRequest, type RequestAction } from '@/lib/requests';
@@ -24,16 +25,17 @@ interface Req {
   payer: { full_name: string | null } | null;
 }
 
-const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-  accepted: { label: 'Payée', color: colors.success, bg: '#dcfce7' },
-  declined: { label: 'Refusée', color: colors.danger, bg: '#fee2e2' },
-  cancelled: { label: 'Annulée', color: colors.neutral[500], bg: colors.neutral[100] },
-  pending: { label: 'En attente', color: '#d97706', bg: '#fef3c7' },
+const STATUS_META: Record<string, { color: string; bg: string }> = {
+  accepted: { color: colors.success, bg: '#dcfce7' },
+  declined: { color: colors.danger, bg: '#fee2e2' },
+  cancelled: { color: colors.neutral[500], bg: colors.neutral[100] },
+  pending: { color: '#d97706', bg: '#fef3c7' },
 };
 
 type Tab = 'incoming' | 'outgoing';
 
 export default function Requests() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id;
@@ -88,10 +90,10 @@ export default function Requests() {
       const { status } = await respondToRequest(req.id, action);
       await load();
       if (action === 'accept' && status === 'accepted') {
-        Alert.alert('Paiement effectué', `${formatXOF(req.amount_xof)} envoyés à ${req.requester?.full_name || 'ton contact'}.`);
+        Alert.alert(t('requests.paidTitle'), t('requests.paidBody', { amount: formatXOF(req.amount_xof), name: req.requester?.full_name || t('requests.yourContact') }));
       }
     } catch (err: any) {
-      Alert.alert('Action impossible', err?.message ?? 'Une erreur est survenue.');
+      Alert.alert(t('requests.failTitle'), err?.message ?? t('requests.generic'));
     } finally {
       setBusyId(null);
     }
@@ -103,9 +105,9 @@ export default function Requests() {
   };
 
   const confirmAccept = (req: Req) => {
-    Alert.alert('Confirmer le paiement', `Payer ${formatXOF(req.amount_xof)} à ${req.requester?.full_name || 'ce contact'} ?`, [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Payer', onPress: () => gatedAccept(req) },
+    Alert.alert(t('requests.confirmTitle'), t('requests.confirmBody', { amount: formatXOF(req.amount_xof), name: req.requester?.full_name || t('requests.thisContact') }), [
+      { text: t('requests.cancel'), style: 'cancel' },
+      { text: t('requests.pay'), onPress: () => gatedAccept(req) },
     ]);
   };
 
@@ -118,8 +120,8 @@ export default function Requests() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader
-        title="Demandes d'argent"
-        subtitle="Reçues et envoyées"
+        title={t('requests.title')}
+        subtitle={t('requests.subtitle')}
         trailing={(
           <Pressable
             onPress={() => router.push('/request')}
@@ -134,13 +136,13 @@ export default function Requests() {
       {/* Tabs */}
       <View style={s.tabs}>
         <Pressable style={[s.tab, tab === 'incoming' && s.tabActive]} onPress={() => setTab('incoming')}>
-          <Text style={[s.tabText, tab === 'incoming' && s.tabTextActive]}>Reçues</Text>
+          <Text style={[s.tabText, tab === 'incoming' && s.tabTextActive]}>{t('requests.incoming')}</Text>
           {incomingPending > 0 && (
             <View style={s.tabBadge}><Text style={s.tabBadgeText}>{incomingPending}</Text></View>
           )}
         </Pressable>
         <Pressable style={[s.tab, tab === 'outgoing' && s.tabActive]} onPress={() => setTab('outgoing')}>
-          <Text style={[s.tabText, tab === 'outgoing' && s.tabTextActive]}>Envoyées</Text>
+          <Text style={[s.tabText, tab === 'outgoing' && s.tabTextActive]}>{t('requests.outgoing')}</Text>
           {outgoingPending > 0 && (
             <View style={s.tabBadge}><Text style={s.tabBadgeText}>{outgoingPending}</Text></View>
           )}
@@ -161,12 +163,12 @@ export default function Requests() {
             <Ionicons name={tab === 'incoming' ? 'download-outline' : 'send-outline'} size={48} color={colors.primary[400]} />
           </View>
           <Text style={s.emptyTitle}>
-            {tab === 'incoming' ? 'Aucune demande reçue' : 'Aucune demande envoyée'}
+            {tab === 'incoming' ? t('requests.noIncoming') : t('requests.noOutgoing')}
           </Text>
           <Text style={s.emptyText}>
             {tab === 'incoming'
-              ? 'Quand quelqu\'un te demandera de l\'argent, ça apparaîtra ici.'
-              : 'Demande à un contact de te rembourser ou de payer une dépense.'}
+              ? t('requests.hintIncoming')
+              : t('requests.hintOutgoing')}
           </Text>
           {tab === 'outgoing' && (
             <Pressable
@@ -174,7 +176,7 @@ export default function Requests() {
               onPress={() => router.push('/request')}
             >
               <Ionicons name="add" size={18} color="#fff" />
-              <Text style={s.emptyBtnText}>Nouvelle demande</Text>
+              <Text style={s.emptyBtnText}>{t('requests.newRequest')}</Text>
             </Pressable>
           )}
         </ScrollView>
@@ -199,7 +201,7 @@ export default function Requests() {
 
       <PinPrompt
         visible={!!pinReq}
-        title="Confirme le paiement"
+        title={t('requests.pinTitle')}
         onSuccess={() => {
           const r = pinReq;
           setPinReq(null);
@@ -221,9 +223,10 @@ function RequestCard({
   onDecline: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const otherName = direction === 'incoming'
-    ? req.requester?.full_name || 'Quelqu\'un'
-    : req.payer?.full_name || 'le contact';
+    ? req.requester?.full_name || t('requests.someone')
+    : req.payer?.full_name || t('requests.theContact');
   const pending = req.status === 'pending';
   const meta = STATUS_META[req.status] ?? STATUS_META.pending;
   const initial = otherName.charAt(0).toUpperCase();
@@ -236,7 +239,7 @@ function RequestCard({
         </View>
         <View style={{ flex: 1 }}>
           <Text style={s.cardTitle} numberOfLines={1}>
-            {direction === 'incoming' ? `${otherName} te demande` : `Tu demandes à ${otherName}`}
+            {direction === 'incoming' ? t('requests.asksYou', { name: otherName }) : t('requests.youAsk', { name: otherName })}
           </Text>
           {!!req.note && <Text style={s.cardNote} numberOfLines={1}>« {req.note} »</Text>}
           <Text style={s.cardDate}>{relativeDate(req.created_at)}</Text>
@@ -246,7 +249,7 @@ function RequestCard({
 
       <View style={s.cardFooter}>
         <View style={[s.statusPill, { backgroundColor: meta.bg }]}>
-          <Text style={[s.statusPillText, { color: meta.color }]}>{meta.label}</Text>
+          <Text style={[s.statusPillText, { color: meta.color }]}>{t(`requests.status.${STATUS_META[req.status] ? req.status : 'pending'}` as TKey)}</Text>
         </View>
 
         {pending && direction === 'incoming' && (
@@ -256,7 +259,7 @@ function RequestCard({
               onPress={onDecline}
               disabled={busy}
             >
-              <Text style={s.declineText}>Refuser</Text>
+              <Text style={s.declineText}>{t('requests.decline')}</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [s.actionBtn, s.payBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
@@ -266,7 +269,7 @@ function RequestCard({
               {busy ? <ActivityIndicator color="#fff" size="small" /> : (
                 <>
                   <Ionicons name="checkmark" size={14} color="#fff" />
-                  <Text style={s.payText}>Payer</Text>
+                  <Text style={s.payText}>{t('requests.pay')}</Text>
                 </>
               )}
             </Pressable>
@@ -280,7 +283,7 @@ function RequestCard({
             disabled={busy}
           >
             {busy ? <ActivityIndicator color={colors.danger} size="small" /> : (
-              <Text style={s.declineText}>Annuler</Text>
+              <Text style={s.declineText}>{t('requests.cancel')}</Text>
             )}
           </Pressable>
         )}
@@ -308,13 +311,13 @@ function relativeDate(iso: string): string {
   const d = new Date(iso);
   const diff = Math.max(0, Date.now() - d.getTime());
   const m = Math.floor(diff / 60000);
-  if (m < 1) return 'à l\'instant';
-  if (m < 60) return `il y a ${m} min`;
+  if (m < 1) return tr('wallet.rel.now');
+  if (m < 60) return tr('wallet.rel.min', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
+  if (h < 24) return tr('wallet.rel.hour', { n: h });
   const days = Math.floor(h / 24);
-  if (days < 7) return `il y a ${days} j`;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  if (days < 7) return tr('wallet.rel.day', { n: days });
+  return d.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' });
 }
 
 const s = StyleSheet.create({

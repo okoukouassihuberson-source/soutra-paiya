@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { payWithGeniuspay } from '@/lib/geniuspay';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useI18n } from '@/lib/i18n';
 
 const QUICK_AMOUNTS = [1000, 2000, 5000, 10000, 25000];
 // Minimum imposé par GeniusPay = 200 XOF.
@@ -13,6 +14,7 @@ const MIN_XOF = 200;
 const MAX_XOF = 2_000_000;
 
 export default function Recharge() {
+  const { t } = useI18n();
   const router = useRouter();
   const [amount, setAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -23,8 +25,8 @@ export default function Recharge() {
   const handlePay = async () => {
     if (!valid) {
       Alert.alert(
-        'Montant invalide',
-        `Saisis un montant entre ${formatXOF(MIN_XOF)} et ${formatXOF(MAX_XOF)}.`,
+        t('money.topup.badAmount'),
+        t('money.topup.badAmountBody', { min: formatXOF(MIN_XOF), max: formatXOF(MAX_XOF) }),
       );
       return;
     }
@@ -32,14 +34,14 @@ export default function Recharge() {
       setSubmitting(true);
       const result = await payWithGeniuspay({ purpose: 'topup', amountXof: amountNum });
       if (result.status === 'success') {
-        Alert.alert('Recharge réussie 🎉', `Ton wallet a été crédité de ${formatXOF(amountNum)}.`, [{ text: 'OK', onPress: () => router.back() }]);
+        Alert.alert(t('money.topup.doneTitle'), t('money.topup.doneBody', { amount: formatXOF(amountNum) }), [{ text: t('money.ok'), onPress: () => router.back() }]);
       } else if (result.status === 'pending') {
-        Alert.alert('Paiement en cours', 'Ton paiement est en cours de validation. Ton solde sera mis à jour sous peu.', [{ text: 'OK', onPress: () => router.back() }]);
+        Alert.alert(t('money.topup.pendingTitle'), t('money.topup.pendingBody'), [{ text: t('money.ok'), onPress: () => router.back() }]);
       } else {
-        Alert.alert('Paiement non abouti', "La recharge n'a pas été complétée. Aucun montant n'a été débité.");
+        Alert.alert(t('money.topup.failTitle'), t('money.topup.failBody'));
       }
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Impossible de traiter la recharge.');
+      Alert.alert(t('money.error'), err?.message ?? t('money.topup.errorBody'));
     } finally {
       setSubmitting(false);
     }
@@ -48,14 +50,14 @@ export default function Recharge() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScreenHeader title="Recharger" subtitle="Carte, Orange, MTN, Wave" />
+        <ScreenHeader title={t('money.topup.title')} subtitle={t('money.topup.subtitle')} />
 
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }} keyboardShouldPersistTaps="handled">
           {/* Hero amount card avec décor */}
           <View style={s.amountCard}>
             <View style={s.bgCircle1} />
             <View style={s.bgCircle2} />
-            <Text style={s.amountLabel}>Montant à recharger</Text>
+            <Text style={s.amountLabel}>{t('money.topup.amountLabel')}</Text>
             <View style={s.amountRow}>
               <TextInput
                 style={s.amountInput}
@@ -76,7 +78,7 @@ export default function Recharge() {
 
           <View style={s.sectionTitleRow}>
             <View style={s.sectionAccent} />
-            <Text style={s.sectionTitle}>Montants rapides</Text>
+            <Text style={s.sectionTitle}>{t('money.topup.quick')}</Text>
           </View>
           <View style={s.quickRow}>
             {QUICK_AMOUNTS.map((q) => {
@@ -101,9 +103,9 @@ export default function Recharge() {
               <Ionicons name="shield-checkmark" size={18} color={colors.success} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.infoTitle}>Paiement 100 % sécurisé</Text>
+              <Text style={s.infoTitle}>{t('money.topup.secure')}</Text>
               <Text style={s.infoText}>
-                Via GeniusPay — carte bancaire et mobile money (Orange Money, MTN MoMo, Wave).
+                {t('money.topup.secureBody')}
               </Text>
             </View>
           </View>
@@ -125,7 +127,7 @@ export default function Recharge() {
               <>
                 <Ionicons name="lock-closed" size={16} color="#fff" />
                 <Text style={s.payBtnText}>
-                  {valid ? `Payer ${formatXOF(amountNum)}` : 'Saisis un montant'}
+                  {valid ? t('money.topup.pay', { amount: formatXOF(amountNum) }) : t('money.enterAmount')}
                 </Text>
               </>
             )}

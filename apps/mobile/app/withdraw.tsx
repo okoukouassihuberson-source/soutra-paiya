@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { requestWithdrawal, type WithdrawParams } from '@/lib/geniuspay';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useI18n } from '@/lib/i18n';
 
 type Provider = WithdrawParams['provider'];
 
@@ -21,6 +22,7 @@ const MIN_XOF = 100;
 const PHONE_RE = /^\+225[0-9]{10}$/;
 
 export default function Withdraw() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
 
@@ -66,11 +68,11 @@ export default function Withdraw() {
       setSubmitting(true);
       const result = await requestWithdrawal({ amountXof: amountNum, provider, phone });
       const msg = result.status === 'success'
-        ? `${formatXOF(fee.netXof)} ont été envoyés vers ton compte ${provider.toUpperCase()} (commission 1 % : ${formatXOF(fee.feeXof)}).`
-        : `Ton retrait de ${formatXOF(amountNum)} est en cours de traitement.`;
-      Alert.alert('Retrait enregistré', msg, [{ text: 'OK', onPress: () => router.back() }]);
+        ? t('money.withdraw.doneSent', { net: formatXOF(fee.netXof), provider: provider.toUpperCase(), fee: formatXOF(fee.feeXof) })
+        : t('money.withdraw.doneQueued', { amount: formatXOF(amountNum) });
+      Alert.alert(t('money.withdraw.doneTitle'), msg, [{ text: t('money.ok'), onPress: () => router.back() }]);
     } catch (err: any) {
-      Alert.alert('Retrait impossible', err?.message ?? 'Une erreur est survenue.');
+      Alert.alert(t('money.withdraw.failTitle'), err?.message ?? t('money.withdraw.generic'));
     } finally {
       setSubmitting(false);
     }
@@ -79,7 +81,7 @@ export default function Withdraw() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader title="Retirer" />
+        <ScreenHeader title={t('money.withdraw.title')} />
         <ActivityIndicator size="large" color={colors.primary[500]} style={{ flex: 1, marginTop: spacing.xl }} />
       </SafeAreaView>
     );
@@ -88,7 +90,7 @@ export default function Withdraw() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScreenHeader title="Retirer" subtitle="Vers Orange, MTN ou Wave" />
+        <ScreenHeader title={t('money.withdraw.title')} subtitle={t('money.withdraw.subtitle')} />
 
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }} keyboardShouldPersistTaps="handled">
           {!kycVerified && (
@@ -100,8 +102,8 @@ export default function Withdraw() {
                 <Ionicons name="alert-circle" size={20} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.kycTitle}>Vérification d'identité requise</Text>
-                <Text style={s.kycSub}>Touche pour compléter ton KYC et débloquer les retraits.</Text>
+                <Text style={s.kycTitle}>{t('money.withdraw.kycTitle')}</Text>
+                <Text style={s.kycSub}>{t('money.withdraw.kycSub')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.dark} />
             </Pressable>
@@ -109,14 +111,14 @@ export default function Withdraw() {
 
           {/* Balance card */}
           <View style={s.balanceCard}>
-            <Text style={s.balanceLabel}>Solde disponible</Text>
+            <Text style={s.balanceLabel}>{t('money.balance')}</Text>
             <Text style={s.balanceValue}>{formatXOF(balance)}</Text>
           </View>
 
           {/* Amount */}
           <View style={s.sectionTitleRow}>
             <View style={s.sectionAccent} />
-            <Text style={s.sectionTitle}>Montant à retirer</Text>
+            <Text style={s.sectionTitle}>{t('money.withdraw.amount')}</Text>
           </View>
           <View style={[s.fieldCard, amount.length > 0 && !amountValid && s.fieldCardError]}>
             <TextInput
@@ -150,7 +152,7 @@ export default function Withdraw() {
           {/* Provider */}
           <View style={s.sectionTitleRow}>
             <View style={s.sectionAccent} />
-            <Text style={s.sectionTitle}>Opérateur mobile money</Text>
+            <Text style={s.sectionTitle}>{t('money.withdraw.operator')}</Text>
           </View>
           <View style={s.providerGrid}>
             {PROVIDERS.map((p) => {
@@ -178,7 +180,7 @@ export default function Withdraw() {
           {/* Phone */}
           <View style={s.sectionTitleRow}>
             <View style={s.sectionAccent} />
-            <Text style={s.sectionTitle}>Numéro mobile money</Text>
+            <Text style={s.sectionTitle}>{t('money.withdraw.phoneLabel')}</Text>
           </View>
           <View style={[s.fieldCard, phone.length > 4 && !phoneValid && s.fieldCardError]}>
             <Ionicons name="call-outline" size={18} color={colors.neutral[500]} />
@@ -186,7 +188,7 @@ export default function Withdraw() {
               style={s.phoneInput}
               value={phone}
               onChangeText={(t) => setPhone(t.replace(/[^0-9+]/g, ''))}
-              placeholder="+225XXXXXXXXXX"
+              placeholder={t('money.phonePh')}
               placeholderTextColor={colors.neutral[400]}
               keyboardType="phone-pad"
               maxLength={14}
@@ -194,7 +196,7 @@ export default function Withdraw() {
             />
           </View>
           {phone.length > 4 && !phoneValid && (
-            <Text style={s.errorHint}>Format attendu : +225 suivi de 10 chiffres.</Text>
+            <Text style={s.errorHint}>{t('money.phoneHint')}</Text>
           )}
 
           {/* Info */}
@@ -203,10 +205,9 @@ export default function Withdraw() {
               <Ionicons name="time-outline" size={18} color={colors.primary[500]} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.infoTitle}>Traitement instantané</Text>
+              <Text style={s.infoTitle}>{t('money.withdraw.instant')}</Text>
               <Text style={s.infoText}>
-                Ton solde est débité immédiatement. En cas d'échec, il est automatiquement recrédité.
-                Les retraits sont soumis à une commission fixe de 1 %.
+                {t('money.withdraw.instantBody')}
               </Text>
             </View>
           </View>
@@ -228,7 +229,7 @@ export default function Withdraw() {
               <>
                 <Ionicons name="arrow-down-circle" size={18} color="#fff" />
                 <Text style={s.payBtnText}>
-                  {amountValid ? `Retirer ${formatXOF(amountNum)}` : 'Saisis un montant'}
+                  {amountValid ? t('money.withdraw.withdraw', { amount: formatXOF(amountNum) }) : t('money.enterAmount')}
                 </Text>
               </>
             )}

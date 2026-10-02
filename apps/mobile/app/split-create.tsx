@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
+import { useI18n } from '@/lib/i18n';
 import { createSplit } from '@/lib/splits';
 
 type Mode = 'equal' | 'custom';
@@ -27,6 +28,7 @@ interface Row {
 }
 
 export default function SplitCreate() {
+  const { t } = useI18n();
   const router = useRouter();
 
   const [title, setTitle] = useState('');
@@ -56,16 +58,16 @@ export default function SplitCreate() {
 
   const handleSend = async () => {
     if (totalNum < MIN_SHARE) {
-      Alert.alert('Montant', `Le total doit être d'au moins ${formatXOF(MIN_SHARE)}.`);
+      Alert.alert(t('split.amountTitle'), t('split.minTotal', { min: formatXOF(MIN_SHARE) }));
       return;
     }
     if (validRows.length === 0) {
-      Alert.alert('Participants', 'Ajoute au moins un participant avec un numéro valide.');
+      Alert.alert(t('split.participants'), t('split.needOne'));
       return;
     }
     const phones = validRows.map((r) => r.phone);
     if (new Set(phones).size !== phones.length) {
-      Alert.alert('Doublon', 'Un même numéro apparaît plusieurs fois.');
+      Alert.alert(t('split.dupTitle'), t('split.dupBody'));
       return;
     }
     const participants = validRows.map((r) => ({
@@ -73,11 +75,11 @@ export default function SplitCreate() {
       amountXof: shareOf(r),
     }));
     if (participants.some((p) => p.amountXof < MIN_SHARE)) {
-      Alert.alert('Montant', `Chaque part doit être d'au moins ${formatXOF(MIN_SHARE)}.`);
+      Alert.alert(t('split.amountTitle'), t('split.minShare', { min: formatXOF(MIN_SHARE) }));
       return;
     }
     if (mode === 'custom' && requestedTotal > totalNum) {
-      Alert.alert('Montant', 'La somme des parts dépasse le total de l\'addition.');
+      Alert.alert(t('split.amountTitle'), t('split.overTotal'));
       return;
     }
 
@@ -89,17 +91,17 @@ export default function SplitCreate() {
         participants,
       });
       Alert.alert(
-        'Partage créé 🎉',
-        `${participants.length} demande(s) de paiement envoyée(s).`,
+        t('split.createdTitle'),
+        t('split.createdBody', { n: participants.length }),
         [
           {
-            text: 'Voir le suivi',
+            text: t('split.track'),
             onPress: () => router.replace({ pathname: '/split', params: { id: splitId } }),
           },
         ],
       );
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Impossible de créer le partage.');
+      Alert.alert(t('split.error'), err?.message ?? t('split.createFail'));
     } finally {
       setSubmitting(false);
     }
@@ -115,7 +117,7 @@ export default function SplitCreate() {
           <Pressable hitSlop={10} onPress={() => router.back()} disabled={submitting}>
             <Ionicons name="chevron-back" size={28} color={colors.dark} />
           </Pressable>
-          <Text style={s.headerTitle}>Partager une addition</Text>
+          <Text style={s.headerTitle}>{t('split.title')}</Text>
           <View style={{ width: 28 }} />
         </View>
 
@@ -123,18 +125,18 @@ export default function SplitCreate() {
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={s.label}>Intitulé (optionnel)</Text>
+          <Text style={s.label}>{t('split.label')}</Text>
           <TextInput
             style={s.input}
             value={title}
             onChangeText={setTitle}
-            placeholder="Ex : Resto de vendredi"
+            placeholder={t('split.labelPh')}
             placeholderTextColor={colors.neutral[400]}
             maxLength={60}
             editable={!submitting}
           />
 
-          <Text style={s.label}>Montant total de l'addition</Text>
+          <Text style={s.label}>{t('split.total')}</Text>
           <View style={s.amountRow}>
             <TextInput
               style={s.amountInput}
@@ -158,13 +160,13 @@ export default function SplitCreate() {
                 disabled={submitting}
               >
                 <Text style={[s.modeText, mode === m && s.modeTextActive]}>
-                  {m === 'equal' ? 'Égal' : 'Personnalisé'}
+                  {m === 'equal' ? t('split.equal') : t('split.custom')}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          <Text style={s.label}>Participants</Text>
+          <Text style={s.label}>{t('split.participants')}</Text>
           {rows.map((r, i) => {
             const phoneOk = PHONE_RE.test(r.phone);
             return (
@@ -174,7 +176,7 @@ export default function SplitCreate() {
                     style={[s.rowInput, r.phone.length > 4 && !phoneOk && s.rowInputError]}
                     value={r.phone}
                     onChangeText={(t) => updateRow(i, 'phone', t.replace(/[^0-9+]/g, ''))}
-                    placeholder="+225XXXXXXXXXX"
+                    placeholder={t('money.phonePh')}
                     placeholderTextColor={colors.neutral[400]}
                     keyboardType="phone-pad"
                     maxLength={14}
@@ -186,7 +188,7 @@ export default function SplitCreate() {
                         style={s.shareInput}
                         value={r.amount}
                         onChangeText={(t) => updateRow(i, 'amount', t.replace(/[^0-9]/g, ''))}
-                        placeholder="Part"
+                        placeholder={t('split.share')}
                         placeholderTextColor={colors.neutral[400]}
                         keyboardType="number-pad"
                         maxLength={7}
@@ -196,7 +198,7 @@ export default function SplitCreate() {
                     </View>
                   ) : (
                     <Text style={s.shareEqual}>
-                      Part : {phoneOk ? formatXOF(equalShare) : '—'}
+                      {t('split.shareOf', { amount: phoneOk ? formatXOF(equalShare) : '—' })}
                     </Text>
                   )}
                 </View>
@@ -214,16 +216,16 @@ export default function SplitCreate() {
 
           <Pressable style={s.addBtn} onPress={addRow} disabled={submitting}>
             <Ionicons name="add" size={18} color={colors.primary[500]} />
-            <Text style={s.addBtnText}>Ajouter une personne</Text>
+            <Text style={s.addBtnText}>{t('split.add')}</Text>
           </Pressable>
 
           <View style={s.summary}>
             <View style={s.summaryLine}>
-              <Text style={s.summaryLabel}>Demandé aux participants</Text>
+              <Text style={s.summaryLabel}>{t('split.requested')}</Text>
               <Text style={s.summaryValue}>{formatXOF(requestedTotal)}</Text>
             </View>
             <View style={s.summaryLine}>
-              <Text style={s.summaryLabel}>Ta part</Text>
+              <Text style={s.summaryLabel}>{t('split.yours')}</Text>
               <Text style={[s.summaryValue, myShare < 0 && { color: colors.danger }]}>
                 {formatXOF(myShare)}
               </Text>
@@ -240,7 +242,7 @@ export default function SplitCreate() {
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={s.btnText}>Envoyer les demandes</Text>
+              <Text style={s.btnText}>{t('split.send')}</Text>
             )}
           </Pressable>
         </View>
