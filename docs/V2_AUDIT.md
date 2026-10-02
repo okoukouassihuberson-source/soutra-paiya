@@ -135,6 +135,4 @@
 - **Reste** : recette sur appareil de l'application mobile ; écran destinations, avis et filtres sur mobile ; i18n mobile ; espace organisateur mobile ; relecture humaine des traductions anglaises.
 
 ## 5. Déploiement / précautions
-- Déployer : `supabase db push` puis `supabase functions deploy geniuspay-pay-trip`. Appliquer 0082 puis 0083 (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.
-- Ne jamais exécuter `seed-dev-tourism.sql` en production.
-- Variables d'environnement : aucune nouvelle. `NEXT_PUBLIC_SITE_URL` recommandée pour sitemap/OG.
+Voir **`docs/RECETTE_V2.md`** : ordre de déploiement (migrations 0082 → 0094, fonctions Edge, secrets), vérifications en base, scénarios de recette par rôle et critères de mise en production. Ne jamais exécuter `seed-dev-tourism.sql` en production.
