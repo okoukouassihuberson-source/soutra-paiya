@@ -3,7 +3,7 @@ let pass=0, fail=0;
 const ok=(c,m)=>{ if(c){pass++;console.log('✅',m);} else {fail++;console.log('❌',m);} };
 (async()=>{
   const b=await chromium.launch({...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),args:['--no-sandbox']});
-  const ctx=await b.newContext({viewport:{width:390,height:844}});
+  const ctx=await b.newContext({serviceWorkers:'block',viewport:{width:390,height:844}});
   const session={access_token:'a.b.c',refresh_token:'r',expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:'bearer',user:{id:'u1',aud:'authenticated',email:'a@b.ci',role:'authenticated'}};
   await ctx.addCookies([{name:'sb-127-auth-token',value:encodeURIComponent(JSON.stringify(session)),domain:'localhost',path:'/'}]);
   const errs=[]; const p=await ctx.newPage(); p.on('pageerror',e=>errs.push(String(e))); p.on('console',m=>{ if(m.type()==='error') errs.push(m.text()); });

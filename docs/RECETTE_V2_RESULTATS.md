@@ -15,6 +15,7 @@ Légende : ✅ vérifié automatiquement en local · ⬜ non vérifiable ici, à
 | Tests i18n (parité FR/EN, routage, pluriels, middleware anti-falsification) | ✅ 10 / 10 |
 | `tsc` web et mobile | ✅ 0 erreur |
 | `next build` | ✅ compilé |
+| **Navigateur réel (Chromium) — espace organisateur** (`organizer-offers.js`) : bandeau de commission, création d'une offre « couple » (participants fixés à 2, propriétaire = utilisateur), messages d'erreur (95 %, code en double), date de fin obligatoire pour la vente flash, désactivation, suppression confirmée | ✅ 12 / 12 |
 | **Navigateur réel (Chromium, 390 px) contre faux Supabase** — `scripts/e2e-smoke/` : fiche voyage, offres, aperçu et total remisé (offre auto, code valide/inconnu, formule), réservation, erreur de limitation de codes, `/en` traduit, assistant (réponse, fiche cliquable, limite), pas de défilement horizontal, aucune erreur console | ✅ 25 / 25 |
 | Application web démarrée (`next start`) contre un faux Supabase : accueil, `/en`, explorer, voyages, activités, destinations, promotions FR/EN, sitemap (alternates `hreflang`), robots, 404 sur fiche inconnue, redirection vers `/login` pour `/assistant` et `/notifications`, en-tête `x-locale` falsifié sans effet | ✅ |
 
@@ -35,7 +36,7 @@ Légende : ✅ vérifié automatiquement en local · ⬜ non vérifiable ici, à
 
 ### C. Organisateur
 - ✅ Voyage publié : prix et commission verrouillés (`TRIP_LOCKED`) ; voyage d'un autre invisible ; contraintes de forme des offres (% > 90, couple ≠ 2, flash sans fin…) ; scan : refusé pour un organisateur étranger (sans révéler l'existence du billet), accepté une fois, refusé la seconde (`ALREADY_USED`).
-- ⬜ Création de voyage / activité dans l'interface, téléversement d'image réel, soumission, publication.
+- ✅ Gestion des offres dans l'interface (Chromium, faux serveur). ⬜ Création de voyage / activité dans l'interface, téléversement d'image réel, soumission, publication.
 
 ### D. Administration
 - ✅ Commissions : défaut 0 %, taux défaut, taux négocié, priorité élément > partenaire > défaut, **historique figé**, rapport, audit ; suppression : refusée avec réservation, acceptée sans, cascade, audit ; vue d'ensemble des offres.
@@ -62,7 +63,7 @@ Légende : ✅ vérifié automatiquement en local · ⬜ non vérifiable ici, à
 - ⬜ Mêmes contrôles contre la vraie API Supabase (politiques de stockage réelles, JWT réels).
 
 ## 3. Écarts trouvés pendant cette passe
-**Aucun nouveau défaut.** (Défauts trouvés et corrigés plus tôt au fil des modules : voir `docs/V2_AUDIT.md`.) Une réserve d'honnêteté : ces tests valident la logique et les garde-fous que j'ai moi-même écrits ; ils ne remplacent pas un regard extérieur ni un test avec de vrais fournisseurs.
+**Aucun défaut dans le code livré.** Une **observation sur du code existant** (non modifié, à vérifier en recette) : le service worker `public/sw.js` laisse passer sans cache uniquement les hôtes `*.supabase.co` / `*.supabase.in` ; toute autre requête GET non HTML ni statique (dont les requêtes de données des pages Next.js lors d'une navigation, et un Supabase sur domaine personnalisé ou auto-hébergé) suit une stratégie « stale-while-revalidate » et peut donc servir une réponse périodiquement périmée (constaté avec le faux serveur sur 127.0.0.1 : la liste d'offres ne se rafraîchissait pas après l'enregistrement). Si la préproduction utilise un domaine Supabase personnalisé, ou si des pages semblent « en retard » après une action, élargir `shouldBypass` (ou exclure les réponses JSON). (Défauts trouvés et corrigés plus tôt au fil des modules : voir `docs/V2_AUDIT.md`.) Une réserve d'honnêteté : ces tests valident la logique et les garde-fous que j'ai moi-même écrits ; ils ne remplacent pas un regard extérieur ni un test avec de vrais fournisseurs.
 
 ## 4. Pour terminer la recette
 1. Suivre `docs/RECETTE_V2.md` en préproduction en cochant les lignes ⬜ ci-dessus.
