@@ -53,6 +53,13 @@ export function ActivitiesTab() {
     if (e) { setError(e.message || 'Erreur'); return; }
     load();
   }
+  async function remove(a: Row) {
+    if (!confirm(`Supprimer définitivement « ${a.title} » ? Impossible si des réservations existent (utilisez alors « Archiver »).`)) return;
+    setError(null);
+    const { error: e } = await sb.rpc('admin_delete_activity', { p_activity_id: a.id });
+    if (e) { setError(String(e.message).includes('HAS_BOOKINGS') ? 'Suppression impossible : des réservations existent. Archivez l’activité à la place.' : e.message || 'Erreur'); return; }
+    load();
+  }
   async function moderateReview(id: string, status: 'published' | 'hidden') {
     const { error: e } = await sb.rpc('admin_moderate_activity_review', { p_review_id: id, p_status: status });
     if (e) { setError(e.message || 'Erreur'); return; }
@@ -134,6 +141,7 @@ export function ActivitiesTab() {
                 {(a.status === 'draft' || a.status === 'paused') && <button onClick={() => moderate(a.id, { p_status: 'published' })} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white">Publier</button>}
                 {a.status === 'published' && <button onClick={() => moderate(a.id, { p_status: 'paused' })} className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-200">Pause</button>}
                 {a.status !== 'archived' && <button onClick={() => moderate(a.id, { p_status: 'archived' }, `Archiver « ${a.title} » ? Elle ne sera plus réservable.`)} className="rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-400">Archiver</button>}
+                <button onClick={() => remove(a)} className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-400">Supprimer</button>
                 {a.status === 'published' && <a href={`/activites/${a.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-400 underline">Voir</a>}
               </div>
             </div>

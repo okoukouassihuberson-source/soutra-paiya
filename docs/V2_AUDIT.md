@@ -128,11 +128,14 @@
 2. **Même logique que le web** : `lib/tourism.ts` ne lit que les données publiées et n'écrit que par les RPC serveur (`create_trip_booking` / `create_activity_booking` avec `p_promo_code`, `cancel_*`) ; aperçu du prix via `preview_booking_price` (informatif, le serveur recalcule) ; paiement par `geniuspay-pay-trip` / `geniuspay-pay-activity` (page GeniusPay dans le navigateur intégré, puis `geniuspay-verify`) ; QR générés localement avec `react-native-qrcode-svg` (préfixes `soutra:trip:` / `soutra:act:`, lus par l'écran de scan organisateur).
 3. **Statuts** alignés sur la base : voyage « confirmé » = acompte payé (solde à régler), « payé » = totalité.
 4. **Vérifié** : `tsc` (mobile) sans erreur, web inchangé. **Non vérifié** : aucun lancement sur appareil ou émulateur, aucun test d'interface, aucun paiement réel — à recetter sur un build de développement avant publication.
-5. **Limites** : mobile en français uniquement (pas d'infrastructure i18n dans l'app) ; pas d'écran destinations ni de recherche / filtres avancés ; pas d'espace organisateur mobile (administration et partenaires restent sur le web) ; pas d'avis sur les activités depuis le mobile ; notifications push des rappels déjà gérées par `notify-dispatch` mais le routage vers ces écrans n'est pas branché.
+5. **Limites** : mobile en français uniquement (pas d'infrastructure i18n dans l'app) ; pas de recherche ni de filtres avancés ; pas d'espace organisateur mobile (administration et partenaires restent sur le web) ; pas d'avis sur les activités depuis le mobile ; notifications push des rappels déjà gérées par `notify-dispatch` mais le routage vers ces écrans n'est pas branché.
+
+## 3 quaterdecies. Livré en phase 2 (suppression admin + destinations mobile)
+1. **Migration `0095_admin_delete.sql`** : `admin_delete_trip` et `admin_delete_activity` — suppression définitive **uniquement s'il n'existe aucune réservation** (quel qu'en soit le statut) : l'historique financier n'est jamais détruit ; sinon `HAS_BOOKINGS` et l'administrateur utilise l'annulation / l'archivage. Programme, formules, créneaux et offres ciblées partent en cascade ; trace dans `audit_events`. Boutons « Supprimer » dans les onglets Voyages et Activités de l'admin. Testé sur PostgreSQL 16 (non-admin refusé, voyage avec réservation refusé, cascade, audit).
+2. **Mobile** : écran `/destinations` (liste, présentation dépliable) + raccourci dans Explorer ; `tsc` mobile et web verts, non lancé sur appareil.
 
 ## 4. Feuille de route
-- **Reste de la phase 2 (non fait)** : suppression d'un voyage côté admin (aujourd'hui : archivage via le statut).
-- **Reste** : recette sur appareil de l'application mobile ; écran destinations, avis et filtres sur mobile ; i18n mobile ; espace organisateur mobile ; relecture humaine des traductions anglaises.
+- **Reste** : recette sur appareil de l'application mobile ; avis et filtres sur mobile ; i18n mobile ; espace organisateur mobile ; relecture humaine des traductions anglaises.
 
 ## 5. Déploiement / précautions
-Voir **`docs/RECETTE_V2.md`** : ordre de déploiement (migrations 0082 → 0094, fonctions Edge, secrets), vérifications en base, scénarios de recette par rôle et critères de mise en production. Ne jamais exécuter `seed-dev-tourism.sql` en production.
+Voir **`docs/RECETTE_V2.md`** : ordre de déploiement (migrations 0082 → 0095, fonctions Edge, secrets), vérifications en base, scénarios de recette par rôle et critères de mise en production. Ne jamais exécuter `seed-dev-tourism.sql` en production.

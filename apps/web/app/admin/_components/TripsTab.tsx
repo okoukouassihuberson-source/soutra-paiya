@@ -68,6 +68,15 @@ export function TripsTab() {
     load();
   }
 
+  async function remove(t: { id: string; title: string }) {
+    if (!confirm(`Supprimer définitivement « ${t.title} » ? Impossible si des réservations existent (utilisez alors « Annuler »).`)) return;
+    setBusy(t.id); setError(null);
+    const { error: e } = await sb.rpc('admin_delete_trip', { p_trip_id: t.id });
+    setBusy(null);
+    if (e) { setError(String(e.message).includes('HAS_BOOKINGS') ? 'Suppression impossible : des réservations existent. Annulez le voyage à la place.' : e.message || 'Erreur'); return; }
+    load();
+  }
+
   return (
     <div className="space-y-6">
       {stats && (
@@ -136,6 +145,7 @@ export function TripsTab() {
                   {(t.status === 'draft' || t.status === 'closed') && <Btn busy={busy === t.id} tone="emerald" onClick={() => moderate(t.id, { p_status: 'published' })}>Publier</Btn>}
                   {(t.status === 'published' || t.status === 'full') && <Btn busy={busy === t.id} tone="neutral" onClick={() => moderate(t.id, { p_status: 'closed' })}>Clore</Btn>}
                   {t.status !== 'cancelled' && <Btn busy={busy === t.id} tone="red" onClick={() => moderate(t.id, { p_status: 'cancelled' }, `Annuler « ${t.title} » ? Les voyageurs déjà payés devront être remboursés manuellement.`)}>Annuler</Btn>}
+                  <Btn busy={busy === t.id} tone="red" onClick={() => remove(t)}>Supprimer</Btn>
                   {(t.status === 'published' || t.status === 'full') && <a href={`/voyages/${t.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-400 underline">Voir</a>}
                 </div>
               </div>

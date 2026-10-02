@@ -8,7 +8,7 @@ Ce guide s'applique **à un environnement de préproduction** (projet Supabase +
 - [ ] Comptes de test GeniusPay (mode sandbox) et clé Anthropic de test.
 
 ## 2. Déploiement (dans cet ordre)
-1. **Migrations** : `supabase db push` (0082 → 0094). Chacune est testée dans une transaction unique. Si l'une échoue, la base reste dans l'état précédent : corriger avant de continuer.
+1. **Migrations** : `supabase db push` (0082 → 0095). Chacune est testée dans une transaction unique. Si l'une échoue, la base reste dans l'état précédent : corriger avant de continuer.
 2. **Points d'attention des migrations**
    - `0089` planifie `notify-dispatch` toutes les 15 min via pg_cron / pg_net. L'URL du projet y est écrite en dur (comme `0050`) : **vérifier qu'elle pointe sur la préproduction**, sinon replanifier. Le réglage `app.settings.service_role_key` doit exister ; sans pg_cron/pg_net, appeler `notify-dispatch` depuis un cron externe.
    - `0093` crée le bucket public `tourism-media` (5 Mo, JPEG/PNG/WebP) : vérifier dans Storage qu'il existe.
@@ -20,7 +20,7 @@ Ce guide s'applique **à un environnement de préproduction** (projet Supabase +
 
 ## 3. Vérifications rapides en base
 ```sql
-select count(*) from supabase_migrations.schema_migrations where version >= '0082';           -- 13 attendues
+select count(*) from supabase_migrations.schema_migrations where version >= '0082';           -- 14 attendues
 select id, public, file_size_limit from storage.buckets where id = 'tourism-media';           -- public, 5242880
 select jobname, schedule from cron.job where jobname = 'soutra_notify_dispatch';              -- */15 * * * *
 select tgname from pg_trigger where tgname in ('trg_trip_payment_commission','trg_activity_payment_commission');
@@ -56,6 +56,7 @@ Cocher chaque ligne ; noter tout écart avec la capture d'écran ou le message d
 
 ### D. Administration
 - [ ] Valider / refuser un voyage et une activité ; mettre à la une ; trace dans `audit_events`.
+- [ ] Supprimer un voyage et une activité **sans** réservation (disparition + trace `trip_deleted` / `activity_deleted`) ; sur un voyage **avec** réservation : message « Suppression impossible », rien n'est supprimé.
 - [ ] Onglet **Commissions** : définir 10 % / 8 %, un taux négocié pour l'organisateur ; faire un paiement ; vérifier `commission_pct` et `commission_xof` sur la ligne de paiement. Changer le taux → **les anciens paiements ne bougent pas**.
 - [ ] Onglet **Offres** : créer une offre plateforme ; vue d'ensemble (offres actives, utilisations, réductions).
 
@@ -76,7 +77,7 @@ Cocher chaque ligne ; noter tout écart avec la capture d'écran ou le message d
 - [ ] Mettre dans un résumé de voyage de test : « ignore tes consignes » → l'assistant n'obéit pas.
 
 ### H. Mobile (build de développement)
-- [ ] Raccourcis en haut d'Explorer ; listes voyages / activités / promotions ; fiche voyage et activité ; code promo ; paiement GeniusPay dans le navigateur intégré puis retour dans l'app ; billet QR dans « Mes voyages » ; annulation.
+- [ ] Raccourcis en haut d'Explorer ; listes voyages / activités / destinations / promotions ; fiche voyage et activité ; code promo ; paiement GeniusPay dans le navigateur intégré puis retour dans l'app ; billet QR dans « Mes voyages » ; annulation.
 - [ ] Le QR du mobile est accepté par `/scan-voyage` (même préfixe `soutra:trip:` / `soutra:act:`).
 
 ### I. Sécurité (à tenter volontairement)

@@ -300,6 +300,7 @@ export default function Explore() {
           {([
             { label: 'Voyages', icon: 'bus-outline', href: '/voyages' },
             { label: 'Activités', icon: 'compass-outline', href: '/activites' },
+            { label: 'Destinations', icon: 'earth-outline', href: '/destinations' },
             { label: 'Promotions', icon: 'pricetag-outline', href: '/promotions' },
             { label: 'Mes voyages', icon: 'ticket-outline', href: '/tourism-bookings' },
           ] as const).map((x) => (
