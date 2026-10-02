@@ -18,10 +18,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import {
   typography, radius, spacing, type ColorPalette,
-  VENUE_CATEGORIES, VENUE_CATEGORY_GROUPS,
+  VENUE_CATEGORIES,
   type VenueCategoryGroup, type VenueCategoryMeta,
 } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n, type TKey } from '@/lib/i18n';
 import {
   listMyProVenues, getVenueDetail, updateProVenue, uploadVenueMedia,
   type ProVenue, type VenueDetail,
@@ -34,14 +35,12 @@ const GROUP_ORDER: VenueCategoryGroup[] = [
   'restauration', 'hebergement', 'loisirs', 'sport',
   'commerce', 'education', 'sante', 'services', 'tourisme', 'autres',
 ];
-const WEEKDAYS: { id: DayKey; label: string }[] = [
-  { id: 'mon', label: 'Lun' }, { id: 'tue', label: 'Mar' }, { id: 'wed', label: 'Mer' },
-  { id: 'thu', label: 'Jeu' }, { id: 'fri', label: 'Ven' }, { id: 'sat', label: 'Sam' }, { id: 'sun', label: 'Dim' },
-];
+const WEEKDAYS: DayKey[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export default function ProManage() {
   const router = useRouter();
+  const { t } = useI18n();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
   const params = useLocalSearchParams<{ venueId?: string }>();
@@ -116,7 +115,7 @@ export default function ProManage() {
           setCloseTime(hours[days[0]][1]);
         }
       } catch (err: any) {
-        Alert.alert('Erreur', err?.message ?? 'Établissement introuvable.');
+        Alert.alert(t('proManage.error'), err?.message ?? t('proManage.errNotFound'));
       } finally {
         setLoading(false);
       }
@@ -130,7 +129,7 @@ export default function ProManage() {
   async function pickAndUpload(kind: 'logo' | 'cover' | 'gallery') {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission requise', 'Autorise l\'accès à tes photos.');
+      Alert.alert(t('proManage.permTitle'), t('proManage.permBody'));
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -144,22 +143,22 @@ export default function ProManage() {
       else if (kind === 'cover') setCoverUrl(url);
       else setGalleryUrls((prev) => [...prev, url]);
     } catch (err: any) {
-      Alert.alert('Erreur upload', err?.message ?? 'Réessaie.');
+      Alert.alert(t('proManage.uploadFail'), err?.message ?? t('proManage.retry'));
     } finally {
       setUploadingKind(null);
     }
   }
 
-  const categoryLabel = category ? VENUE_CATEGORIES.find((m) => m.value === category)?.label ?? 'Catégorie' : '—';
+  const categoryLabel = category ? (VENUE_CATEGORIES.some((m) => m.value === category) ? t(`venueCat.${category}` as TKey) : t('proCreate.categoryFallback')) : '—';
 
   async function save() {
     if (!venueId) return;
     if (name.trim().length < 2 || !category || address.trim().length < 4) {
-      Alert.alert('Champs requis', 'Nom, catégorie et adresse sont obligatoires.');
+      Alert.alert(t('proManage.reqTitle'), t('proManage.reqBody'));
       return;
     }
     if (selectedDays.length > 0 && (!TIME_RE.test(openTime) || !TIME_RE.test(closeTime))) {
-      Alert.alert('Horaires invalides', 'Format attendu : HH:MM (ex. 09:00).');
+      Alert.alert(t('proManage.badHours'), t('proManage.badHoursBody'));
       return;
     }
     setSaving(true);
@@ -174,9 +173,9 @@ export default function ProManage() {
         city: city.trim() || 'Abidjan', district: district.trim() || null, address: address.trim(),
         opening_hours,
       });
-      Alert.alert('Enregistré ✓', 'Les informations de ton établissement sont à jour.');
+      Alert.alert(t('proManage.savedTitle'), t('proManage.savedBody'));
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Enregistrement impossible.');
+      Alert.alert(t('proManage.error'), err?.message ?? t('proManage.saveFail'));
     } finally {
       setSaving(false);
     }
@@ -195,20 +194,20 @@ export default function ProManage() {
       <SafeAreaView style={s.safe} edges={['top']}>
         <View style={s.header}>
           <Pressable onPress={() => router.back()} hitSlop={10}><Ionicons name="chevron-back" size={26} color={c.dark} /></Pressable>
-          <Text style={s.headerTitle}>Gérer mon établissement</Text>
+          <Text style={s.headerTitle}>{t('proManage.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
         {myVenues.length === 0 ? (
           <View style={s.center}>
             <Ionicons name="storefront-outline" size={48} color={c.neutral[300]} />
-            <Text style={s.emptyTitle}>Aucun établissement</Text>
+            <Text style={s.emptyTitle}>{t('proManage.none')}</Text>
             <Pressable onPress={() => router.push('/pro-create' as any)} style={[s.submitBtn, { backgroundColor: c.primary[500], marginTop: spacing.lg }]}>
-              <Text style={s.submitText}>Créer mon établissement</Text>
+              <Text style={s.submitText}>{t('proCreate.submit')}</Text>
             </Pressable>
           </View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-            <Text style={s.label}>Choisis l'établissement à gérer</Text>
+            <Text style={s.label}>{t('proManage.pickVenue')}</Text>
             {myVenues.map((v) => (
               <Pressable key={v.id} onPress={() => setVenueId(v.id)} style={s.venueRow}>
                 <Text style={s.venueRowText}>{v.name}</Text>
@@ -226,7 +225,7 @@ export default function ProManage() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={s.header}>
           <Pressable onPress={() => router.back()} hitSlop={10}><Ionicons name="chevron-back" size={26} color={c.dark} /></Pressable>
-          <Text style={s.headerTitle}>Gérer mon établissement</Text>
+          <Text style={s.headerTitle}>{t('proManage.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
 
@@ -234,15 +233,15 @@ export default function ProManage() {
           {venue?.status === 'active' && (
             <View style={[s.banner, { backgroundColor: c.secondary[50] }]}>
               <Ionicons name="checkmark-circle" size={18} color={c.success} />
-              <Text style={[s.bannerText, { color: c.secondary[700] }]}>Visible sur Soutra-Playce</Text>
+              <Text style={[s.bannerText, { color: c.secondary[700] }]}>{t('proManage.visible')}</Text>
             </View>
           )}
 
-          <Text style={s.section}>Informations générales</Text>
-          <Text style={s.label}>Nom</Text>
+          <Text style={s.section}>{t('proManage.general')}</Text>
+          <Text style={s.label}>{t('proManage.name')}</Text>
           <TextInput style={s.input} value={name} onChangeText={setName} placeholderTextColor={c.neutral[400]} />
 
-          <Text style={s.label}>Catégorie</Text>
+          <Text style={s.label}>{t('proManage.category')}</Text>
           <Pressable style={s.input} onPress={() => setShowCategoryPicker((v) => !v)}>
             <Text style={s.inputText}>{categoryLabel}</Text>
           </Pressable>
@@ -253,14 +252,14 @@ export default function ProManage() {
                 if (items.length === 0) return null;
                 return (
                   <View key={g}>
-                    <Text style={s.categoryGroupLabel}>{VENUE_CATEGORY_GROUPS[g]}</Text>
+                    <Text style={s.categoryGroupLabel}>{t(`venueGroup.${g}` as TKey)}</Text>
                     <View style={s.categoryChipsRow}>
                       {items.map((m) => {
                         const active = category === m.value;
                         return (
                           <Pressable key={m.value} onPress={() => { setCategory(m.value); setShowCategoryPicker(false); }} style={[s.categoryChip, active && s.categoryChipActive]}>
                             <Text style={{ fontSize: 14 }}>{m.emoji}</Text>
-                            <Text style={[s.categoryChipText, active && { color: '#fff' }]}>{m.label}</Text>
+                            <Text style={[s.categoryChipText, active && { color: '#fff' }]}>{t(`venueCat.${m.value}` as TKey)}</Text>
                           </Pressable>
                         );
                       })}
@@ -271,41 +270,41 @@ export default function ProManage() {
             </View>
           )}
 
-          <Text style={s.label}>Sous-catégorie (optionnel)</Text>
-          <TextInput style={s.input} value={subcategory} onChangeText={setSubcategory} placeholder="Ex. Maquis ivoirien" placeholderTextColor={c.neutral[400]} />
+          <Text style={s.label}>{t('proManage.subcategory')}</Text>
+          <TextInput style={s.input} value={subcategory} onChangeText={setSubcategory} placeholder={t('proManage.subcategoryPh')} placeholderTextColor={c.neutral[400]} />
 
-          <Text style={s.label}>Description</Text>
+          <Text style={s.label}>{t('proManage.description')}</Text>
           <TextInput style={[s.input, s.inputMultiline]} value={description} onChangeText={(v) => setDescription(v.slice(0, 2000))} multiline textAlignVertical="top" placeholderTextColor={c.neutral[400]} />
 
-          <Text style={s.section}>Contact</Text>
-          <Text style={s.label}>Téléphone</Text>
+          <Text style={s.section}>{t('proManage.contact')}</Text>
+          <Text style={s.label}>{t('proManage.phone')}</Text>
           <TextInput style={s.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor={c.neutral[400]} />
-          <Text style={s.label}>WhatsApp</Text>
+          <Text style={s.label}>{t('proManage.whatsapp')}</Text>
           <TextInput style={s.input} value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" placeholderTextColor={c.neutral[400]} />
-          <Text style={s.label}>E-mail</Text>
+          <Text style={s.label}>{t('proManage.email')}</Text>
           <TextInput style={s.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholderTextColor={c.neutral[400]} />
 
-          <Text style={s.section}>Localisation</Text>
+          <Text style={s.section}>{t('proManage.location')}</Text>
           <View style={s.row}>
             <View style={{ flex: 1 }}>
-              <Text style={s.label}>Ville</Text>
+              <Text style={s.label}>{t('proManage.city')}</Text>
               <TextInput style={s.input} value={city} onChangeText={setCity} placeholderTextColor={c.neutral[400]} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.label}>Quartier</Text>
+              <Text style={s.label}>{t('proManage.district')}</Text>
               <TextInput style={s.input} value={district} onChangeText={setDistrict} placeholderTextColor={c.neutral[400]} />
             </View>
           </View>
-          <Text style={s.label}>Adresse</Text>
+          <Text style={s.label}>{t('proManage.address')}</Text>
           <TextInput style={s.input} value={address} onChangeText={setAddress} placeholderTextColor={c.neutral[400]} />
 
-          <Text style={s.section}>Horaires d'ouverture</Text>
+          <Text style={s.section}>{t('proManage.hours')}</Text>
           <View style={s.categoryChipsRow}>
             {WEEKDAYS.map((d) => {
-              const active = selectedDays.includes(d.id);
+              const active = selectedDays.includes(d);
               return (
-                <Pressable key={d.id} onPress={() => toggleDay(d.id)} style={[s.categoryChip, active && s.categoryChipActive]}>
-                  <Text style={[s.categoryChipText, active && { color: '#fff' }]}>{d.label}</Text>
+                <Pressable key={d} onPress={() => toggleDay(d)} style={[s.categoryChip, active && s.categoryChipActive]}>
+                  <Text style={[s.categoryChipText, active && { color: '#fff' }]}>{t(`hours.short.${d}` as TKey)}</Text>
                 </Pressable>
               );
             })}
@@ -313,38 +312,38 @@ export default function ProManage() {
           {selectedDays.length > 0 && (
             <View style={s.row}>
               <View style={{ flex: 1 }}>
-                <Text style={s.label}>Ouverture</Text>
+                <Text style={s.label}>{t('proManage.open')}</Text>
                 <TextInput style={s.input} value={openTime} onChangeText={setOpenTime} placeholder="09:00" placeholderTextColor={c.neutral[400]} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.label}>Fermeture</Text>
+                <Text style={s.label}>{t('proManage.close')}</Text>
                 <TextInput style={s.input} value={closeTime} onChangeText={setCloseTime} placeholder="22:00" placeholderTextColor={c.neutral[400]} />
               </View>
             </View>
           )}
 
-          <Text style={s.section}>Photos</Text>
-          <Text style={s.label}>Logo</Text>
+          <Text style={s.section}>{t('proManage.photos')}</Text>
+          <Text style={s.label}>{t('proManage.logo')}</Text>
           <Pressable onPress={() => pickAndUpload('logo')} disabled={uploadingKind === 'logo'}>
             {logoUrl ? <Image source={{ uri: logoUrl }} style={s.logoPreview} /> : (
               <View style={s.photoPicker}>
                 {uploadingKind === 'logo' ? <ActivityIndicator color={c.primary[500]} /> : <Ionicons name="image-outline" size={24} color={c.primary[500]} />}
-                <Text style={s.photoPickerText}>Ajouter un logo</Text>
+                <Text style={s.photoPickerText}>{t('proManage.addLogo')}</Text>
               </View>
             )}
           </Pressable>
 
-          <Text style={s.label}>Photo de couverture</Text>
+          <Text style={s.label}>{t('proManage.cover')}</Text>
           <Pressable onPress={() => pickAndUpload('cover')} disabled={uploadingKind === 'cover'}>
             {coverUrl ? <Image source={{ uri: coverUrl }} style={s.coverPreview} /> : (
               <View style={s.photoPicker}>
                 {uploadingKind === 'cover' ? <ActivityIndicator color={c.primary[500]} /> : <Ionicons name="image-outline" size={24} color={c.primary[500]} />}
-                <Text style={s.photoPickerText}>Ajouter une photo de couverture</Text>
+                <Text style={s.photoPickerText}>{t('proManage.addCover')}</Text>
               </View>
             )}
           </Pressable>
 
-          <Text style={s.label}>Galerie</Text>
+          <Text style={s.label}>{t('proManage.gallery')}</Text>
           <View style={s.galleryRow}>
             {galleryUrls.map((uri) => <Image key={uri} source={{ uri }} style={s.galleryThumb} />)}
             <Pressable onPress={() => pickAndUpload('gallery')} disabled={uploadingKind === 'gallery'} style={s.galleryAdd}>
@@ -353,7 +352,7 @@ export default function ProManage() {
           </View>
 
           <Pressable onPress={save} disabled={saving} style={({ pressed }) => [s.submitBtn, { backgroundColor: c.primary[500] }, pressed && { opacity: 0.9 }]}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.submitText}>Enregistrer</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.submitText}>{t('proManage.save')}</Text>}
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

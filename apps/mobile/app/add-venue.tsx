@@ -21,6 +21,7 @@ import {
   VENUE_CATEGORIES, VENUE_CATEGORY_GROUPS,
   type VenueCategoryGroup, type VenueCategoryMeta,
 } from '@soutra/shared';
+import { useI18n, type TKey } from '@/lib/i18n';
 
 type VenueCategory = VenueCategoryMeta['value'];
 import { useColors } from '@/lib/theme';
@@ -34,6 +35,7 @@ const GROUP_ORDER: VenueCategoryGroup[] = [
 ];
 
 export default function AddVenue() {
+  const { t } = useI18n();
   const router = useRouter();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -76,13 +78,13 @@ export default function AddVenue() {
         perm = await Location.requestForegroundPermissionsAsync();
       }
       if (perm.status !== 'granted') {
-        Alert.alert('Permission refusée', 'Active la géolocalisation pour précisez l\'emplacement.');
+        Alert.alert(t('proCreate.permDenied'), t('proCreate.permBody'));
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
     } catch (err: any) {
-      Alert.alert('GPS indisponible', err?.message ?? 'Réessaie plus tard.');
+      Alert.alert(t('proCreate.gpsTitle'), err?.message ?? t('proCreate.retryLater'));
     } finally {
       setGpsBusy(false);
     }
@@ -90,12 +92,12 @@ export default function AddVenue() {
 
   const pickCover = async () => {
     if (!user?.id) {
-      Alert.alert('Connexion requise', 'Connecte-toi pour ajouter une photo.');
+      Alert.alert(t('addVenue.loginTitle'), t('addVenue.loginBody'));
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission requise', 'Autorise l\'accès à tes photos.');
+      Alert.alert(t('addVenue.permTitle'), t('addVenue.permBody'));
       return;
     }
     const r = await ImagePicker.launchImageLibraryAsync({
@@ -108,11 +110,11 @@ export default function AddVenue() {
     if (r.canceled || !r.assets[0]) return;
     const asset = r.assets[0];
     if (!asset.base64) {
-      Alert.alert('Erreur', 'Impossible de lire la photo.');
+      Alert.alert(t('addVenue.error'), t('addVenue.readFail'));
       return;
     }
     if (asset.fileSize && asset.fileSize > 8 * 1024 * 1024) {
-      Alert.alert('Image trop lourde', 'Choisis une image de moins de 8 Mo.');
+      Alert.alert(t('addVenue.bigTitle'), t('addVenue.bigBody'));
       return;
     }
     try {
@@ -130,15 +132,15 @@ export default function AddVenue() {
       const url = supabase.storage.from('social-media').getPublicUrl(path).data.publicUrl;
       setCoverUrl(url);
     } catch (err: any) {
-      Alert.alert('Erreur upload', err?.message ?? 'Réessaie.');
+      Alert.alert(t('addVenue.uploadFail'), err?.message ?? t('addVenue.retry'));
     } finally {
       setUploading(false);
     }
   };
 
   const categoryLabel = category
-    ? VENUE_CATEGORIES.find((m) => m.value === category)?.label ?? 'Catégorie'
-    : 'Choisir une catégorie…';
+    ? (VENUE_CATEGORIES.some((m) => m.value === category) ? t(`venueCat.${category}` as TKey) : t('proCreate.categoryFallback'))
+    : t('proCreate.pickCategory');
 
   const canSubmit =
     !submitting &&
@@ -165,23 +167,23 @@ export default function AddVenue() {
         coverUrl: coverUrl ?? undefined,
       });
       if (!res.ok && res.reason === 'ALREADY_SUBMITTED') {
-        Alert.alert('Déjà soumis', 'Une contribution avec ce nom et cette adresse est déjà en cours d\'examen.');
+        Alert.alert(t('addVenue.dupTitle'), t('addVenue.dupBody'));
       } else {
         Alert.alert(
-          'Contribution envoyée ✓',
-          'Merci ! L\'équipe Soutra-Playce va vérifier les infos et publier la fiche sous 24-48 h.',
+          t('addVenue.sentTitle'),
+          t('addVenue.sentBody'),
           [{ text: 'OK', onPress: () => router.back() }],
         );
       }
     } catch (err: any) {
       const code = err?.message ?? '';
       const msg =
-        code === 'NOT_AUTHENTICATED' ? 'Connecte-toi pour contribuer.'
-        : code === 'NAME_REQUIRED' ? 'Renseigne le nom du lieu.'
-        : code === 'ADDRESS_REQUIRED' ? 'Renseigne l\'adresse.'
-        : code === 'INVALID_CATEGORY' ? 'Catégorie invalide.'
-        : code || 'Impossible d\'envoyer la contribution.';
-      Alert.alert('Erreur', msg);
+        code === 'NOT_AUTHENTICATED' ? t('addVenue.errAuth')
+        : code === 'NAME_REQUIRED' ? t('addVenue.errName')
+        : code === 'ADDRESS_REQUIRED' ? t('proCreate.errAddress')
+        : code === 'INVALID_CATEGORY' ? t('proCreate.errCategory')
+        : code || t('addVenue.errSend');
+      Alert.alert(t('addVenue.error'), msg);
     } finally {
       setSubmitting(false);
     }
@@ -195,7 +197,7 @@ export default function AddVenue() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={c.dark} />
           </Pressable>
-          <Text style={s.headerTitle}>Ajouter un lieu</Text>
+          <Text style={s.headerTitle}>{t('addVenue.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
 
@@ -203,12 +205,12 @@ export default function AddVenue() {
           <View style={s.banner}>
             <Ionicons name="information-circle" size={18} color={c.primary[600]} />
             <Text style={s.bannerText}>
-              Tu connais un lieu pas encore listé ? Soumets-le, on le vérifie et on le publie pour toute la communauté.
+              {t('addVenue.info')}
             </Text>
           </View>
 
           {/* Cover photo (optionnel) */}
-          <Text style={s.label}>Photo de couverture (optionnel)</Text>
+          <Text style={s.label}>{t('addVenue.cover')}</Text>
           <Pressable
             onPress={pickCover}
             disabled={uploading || submitting}
@@ -221,24 +223,24 @@ export default function AddVenue() {
             ) : (
               <>
                 <Ionicons name="image-outline" size={30} color={c.neutral[500]} />
-                <Text style={s.coverHint}>Toucher pour ajouter une photo</Text>
+                <Text style={s.coverHint}>{t('addVenue.coverHint')}</Text>
               </>
             )}
           </Pressable>
 
           {/* Nom */}
-          <Text style={s.label}>Nom du lieu *</Text>
+          <Text style={s.label}>{t('addVenue.name')}</Text>
           <TextInput
             style={s.input}
             value={name}
             onChangeText={setName}
-            placeholder="Ex : Restaurant Le Baobab"
+            placeholder={t('proCreate.namePh')}
             placeholderTextColor={c.neutral[400]}
             editable={!submitting}
           />
 
           {/* Catégorie */}
-          <Text style={s.label}>Catégorie *</Text>
+          <Text style={s.label}>{t('proCreate.category')}</Text>
           <Pressable
             style={s.input}
             onPress={() => setShowCategoryPicker((v) => !v)}
@@ -253,7 +255,7 @@ export default function AddVenue() {
                 if (items.length === 0) return null;
                 return (
                   <View key={g}>
-                    <Text style={s.categoryGroupLabel}>{VENUE_CATEGORY_GROUPS[g]}</Text>
+                    <Text style={s.categoryGroupLabel}>{t(`venueGroup.${g}` as TKey)}</Text>
                     <View style={s.categoryChipsRow}>
                       {items.map((m) => {
                         const active = category === m.value;
@@ -268,7 +270,7 @@ export default function AddVenue() {
                             ]}
                           >
                             <Text style={{ fontSize: 14 }}>{m.emoji}</Text>
-                            <Text style={[s.categoryChipText, active && { color: '#fff' }]}>{m.label}</Text>
+                            <Text style={[s.categoryChipText, active && { color: '#fff' }]}>{t(`venueCat.${m.value}` as TKey)}</Text>
                           </Pressable>
                         );
                       })}
@@ -280,12 +282,12 @@ export default function AddVenue() {
           )}
 
           {/* Adresse */}
-          <Text style={s.label}>Adresse *</Text>
+          <Text style={s.label}>{t('proCreate.address')}</Text>
           <TextInput
             style={s.input}
             value={address}
             onChangeText={setAddress}
-            placeholder="Ex : Rue des Jardins, Riviera 2"
+            placeholder={t('proCreate.addressPh')}
             placeholderTextColor={c.neutral[400]}
             editable={!submitting}
           />
@@ -293,7 +295,7 @@ export default function AddVenue() {
           {/* Ville + quartier */}
           <View style={s.row}>
             <View style={{ flex: 1 }}>
-              <Text style={s.label}>Ville</Text>
+              <Text style={s.label}>{t('proCreate.city')}</Text>
               <TextInput
                 style={s.input}
                 value={city}
@@ -304,12 +306,12 @@ export default function AddVenue() {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.label}>Quartier</Text>
+              <Text style={s.label}>{t('proCreate.district')}</Text>
               <TextInput
                 style={s.input}
                 value={district}
                 onChangeText={setDistrict}
-                placeholder="Cocody, Plateau…"
+                placeholder={t('proCreate.districtPh')}
                 placeholderTextColor={c.neutral[400]}
                 editable={!submitting}
               />
@@ -317,7 +319,7 @@ export default function AddVenue() {
           </View>
 
           {/* GPS */}
-          <Text style={s.label}>Coordonnées GPS</Text>
+          <Text style={s.label}>{t('proCreate.gps')}</Text>
           <Pressable
             style={({ pressed }) => [s.gpsBtn, pressed && { opacity: 0.85 }]}
             onPress={requestGps}
@@ -331,18 +333,18 @@ export default function AddVenue() {
                 <Text style={s.gpsText}>
                   {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
                 </Text>
-                <Text style={s.gpsSub}>Toucher pour recalibrer</Text>
+                <Text style={s.gpsSub}>{t('proCreate.recalibrate')}</Text>
               </>
             ) : (
               <>
                 <Ionicons name="location-outline" size={18} color={c.primary[600]} />
-                <Text style={s.gpsText}>Utiliser ma position actuelle</Text>
+                <Text style={s.gpsText}>{t('proCreate.useMyPosition')}</Text>
               </>
             )}
           </Pressable>
 
           {/* Contact */}
-          <Text style={s.label}>Téléphone</Text>
+          <Text style={s.label}>{t('proCreate.phone')}</Text>
           <TextInput
             style={s.input}
             value={phone}
@@ -353,7 +355,7 @@ export default function AddVenue() {
             editable={!submitting}
           />
 
-          <Text style={s.label}>WhatsApp (optionnel)</Text>
+          <Text style={s.label}>{t('proCreate.whatsapp')}</Text>
           <TextInput
             style={s.input}
             value={whatsapp}
@@ -364,7 +366,7 @@ export default function AddVenue() {
             editable={!submitting}
           />
 
-          <Text style={s.label}>Site web (optionnel)</Text>
+          <Text style={s.label}>{t('addVenue.website')}</Text>
           <TextInput
             style={s.input}
             value={website}
@@ -377,12 +379,12 @@ export default function AddVenue() {
           />
 
           {/* Description */}
-          <Text style={s.label}>Description (optionnel)</Text>
+          <Text style={s.label}>{t('proCreate.description')}</Text>
           <TextInput
             style={[s.input, s.inputMultiline]}
             value={description}
             onChangeText={(v) => setDescription(v.slice(0, 2000))}
-            placeholder="Décris brièvement le lieu, l'ambiance, la spécialité…"
+            placeholder={t('addVenue.descriptionPh')}
             placeholderTextColor={c.neutral[400]}
             multiline
             textAlignVertical="top"
@@ -403,7 +405,7 @@ export default function AddVenue() {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={[s.submitText, { color: canSubmit ? '#fff' : c.neutral[500] }]}>
-                Envoyer la contribution
+                {t('addVenue.submit')}
               </Text>
             )}
           </Pressable>

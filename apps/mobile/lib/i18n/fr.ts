@@ -331,6 +331,34 @@ export const fr = {
     title: 'Demander de l’argent', who: 'Numéro de la personne', amount: 'Montant demandé', reason: 'Motif (optionnel)', reasonPh: 'Ex : ma part du resto',
     info: 'La personne reçoit ta demande en temps réel et choisit de payer ou de refuser. Rien n’est débité tant qu’elle n’a pas accepté.', askAmount: 'Demander {amount}', send: 'Envoyer la demande',
   },
+  proCreate: {
+    permDenied: 'Permission refusée', permBody: 'Active la géolocalisation pour préciser l’emplacement.', gpsTitle: 'GPS indisponible', retryLater: 'Réessaie plus tard.', pickCategory: 'Choisir une catégorie…', categoryFallback: 'Catégorie',
+    existsTitle: 'Déjà existant', existsBody: 'Tu as déjà un établissement avec ce nom et cette adresse.', error: 'Erreur', createFail: 'Création impossible.', createdTitle: 'Établissement créé ✓',
+    createdBody: 'Ton établissement est actif et visible sur Soutra-Playce. Tu peux maintenant ajouter tes horaires et tes photos.', continue: 'Continuer', errAuth: 'Connecte-toi pour créer ton établissement.',
+    errName: 'Renseigne le nom de ton établissement.', errNameLong: 'Nom trop long (200 caractères max).', errAddress: 'Renseigne l’adresse.', errCategory: 'Catégorie invalide.', errCreate: 'Impossible de créer l’établissement.',
+    title: 'Créer mon établissement', info: 'Ton établissement sera visible immédiatement sur Soutra-Playce — pas d’attente de validation. Tu pourras ajouter horaires et photos juste après.',
+    name: 'Nom de l’établissement *', namePh: 'Ex : Restaurant Le Baobab', category: 'Catégorie *', address: 'Adresse *', addressPh: 'Ex : Rue des Jardins, Riviera 2', city: 'Ville', district: 'Quartier', districtPh: 'Cocody, Plateau…',
+    gps: 'Coordonnées GPS', recalibrate: 'Toucher pour recalibrer', useMyPosition: 'Utiliser ma position actuelle', phone: 'Téléphone', whatsapp: 'WhatsApp (optionnel)', description: 'Description (optionnel)',
+    descriptionPh: 'Décris brièvement ton établissement, ta spécialité…', submit: 'Créer mon établissement',
+  },
+  venueCat: { restaurant: "Restaurant", maquis: "Maquis", cafe: "Café", bar: "Bar", lounge: "Lounge", fast_food: "Fast-food", patisserie: "Pâtisserie", hotel: "Hôtel", residence_meublee: "Résidence meublée", villa: "Villa", resort: "Resort", auberge: "Auberge", club: "Boîte de nuit", piscine: "Piscine", cinema: "Cinéma", casino: "Casino", centre_loisirs: "Centre de loisirs", parc: "Parc", event_space: "Espace événementiel", beach: "Plage privée", sport: "Complexe sportif", salle_sport: "Salle de sport", terrain_football: "Terrain de football", multisports: "Multisports", fitness: "Fitness", mall: "Centre commercial", supermarche: "Supermarché", boutique: "Boutique", maternelle: "Maternelle", primaire: "Primaire", college: "Collège", lycee: "Lycée", universite: "Université", grande_ecole: "Grande école", formation: "Centre de formation", bibliotheque: "Bibliothèque", residence_universitaire: "Résidence universitaire", hopital: "Hôpital", clinique: "Clinique", pharmacie: "Pharmacie", laboratoire: "Laboratoire", banque: "Banque", assurance: "Assurance", immobilier: "Agence immobilière", voyage: "Agence de voyage", comptable: "Cabinet comptable", juridique: "Cabinet juridique", salle_reception: "Salle de réception", organisateur_evenements: "Organisateur d'événements", prestataire_services: "Prestataire de services", vtc_transport: "VTC / Transport", site_touristique: "Site touristique", musee: "Musée", monument: "Monument", reserve_naturelle: "Réserve naturelle", attraction: "Attraction touristique", entreprise: "Entreprise", autre: "Autre" },
+  venueGroup: { restauration: "Restauration", hebergement: "Hébergement", loisirs: "Loisirs", sport: "Sport", commerce: "Commerce", education: "Éducation", sante: "Santé", services: "Services", tourisme: "Tourisme", autres: "Autres" },
+  addVenue: {
+    loginTitle: 'Connexion requise', loginBody: 'Connecte-toi pour ajouter une photo.', permTitle: 'Permission requise', permBody: 'Autorise l’accès à tes photos.', error: 'Erreur', readFail: 'Impossible de lire la photo.',
+    bigTitle: 'Image trop lourde', bigBody: 'Choisis une image de moins de 8 Mo.', uploadFail: 'Erreur upload', retry: 'Réessaie.', dupTitle: 'Déjà soumis', dupBody: 'Une contribution avec ce nom et cette adresse est déjà en cours d’examen.',
+    sentTitle: 'Contribution envoyée ✓', sentBody: 'Merci ! L’équipe Soutra-Playce va vérifier les infos et publier la fiche sous 24-48 h.', errAuth: 'Connecte-toi pour contribuer.', errName: 'Renseigne le nom du lieu.',
+    errSend: 'Impossible d’envoyer la contribution.', title: 'Ajouter un lieu', info: 'Tu connais un lieu pas encore listé ? Soumets-le, on le vérifie et on le publie pour toute la communauté.',
+    cover: 'Photo de couverture (optionnel)', coverHint: 'Toucher pour ajouter une photo', name: 'Nom du lieu *', website: 'Site web (optionnel)', descriptionPh: 'Décris brièvement le lieu, l’ambiance, la spécialité…', submit: 'Envoyer la contribution',
+  },
+  proManage: {
+    title: 'Gérer mon établissement', none: 'Aucun établissement', pickVenue: 'Choisis l’établissement à gérer', visible: 'Visible sur Soutra-Playce',
+    general: 'Informations générales', name: 'Nom', category: 'Catégorie', subcategory: 'Sous-catégorie (optionnel)', subcategoryPh: 'Ex. Maquis ivoirien', description: 'Description',
+    contact: 'Contact', phone: 'Téléphone', whatsapp: 'WhatsApp', email: 'E-mail', location: 'Localisation', city: 'Ville', district: 'Quartier', address: 'Adresse',
+    hours: 'Horaires d’ouverture', open: 'Ouverture', close: 'Fermeture', photos: 'Photos', logo: 'Logo', addLogo: 'Ajouter un logo', cover: 'Photo de couverture', addCover: 'Ajouter une photo de couverture', gallery: 'Galerie', save: 'Enregistrer',
+    error: 'Erreur', errNotFound: 'Établissement introuvable.', permTitle: 'Permission requise', permBody: 'Autorise l’accès à tes photos.', uploadFail: 'Erreur upload', retry: 'Réessaie.',
+    reqTitle: 'Champs requis', reqBody: 'Nom, catégorie et adresse sont obligatoires.', badHours: 'Horaires invalides', badHoursBody: 'Format attendu : HH:MM (ex. 09:00).',
+    savedTitle: 'Enregistré ✓', savedBody: 'Les informations de ton établissement sont à jour.', saveFail: 'Enregistrement impossible.',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;
