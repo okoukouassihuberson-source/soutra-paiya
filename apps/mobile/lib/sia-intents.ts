@@ -11,6 +11,8 @@
  * "amène-moi", + variantes phonétiques courantes.
  */
 
+import { tr, type TKey } from '@/lib/i18n';
+
 export type SiaIntent =
   | { kind: 'navigate'; pathname: string; label: string; spoken: string }
   | { kind: 'unknown' };
@@ -20,102 +22,102 @@ export type SiaIntent =
  * mots-clés (lower-case, sans accents) vers une route expo-router + un
  * libellé court pour le retour vocal / textuel.
  */
-const ROUTES: { keywords: string[]; pathname: string; label: string }[] = [
+const ROUTES: { keywords: string[]; pathname: string; id: string }[] = [
   // Wallet / Paiya-Pay
   {
-    keywords: ['wallet', 'portefeuille', 'porte feuille', 'paiya-pay', 'paiya pay', 'mon argent', 'mon solde', 'solde'],
+    keywords: ['wallet', 'portefeuille', 'porte feuille', 'paiya-pay', 'paiya pay', 'mon argent', 'mon solde', 'solde', 'my wallet', 'balance'],
     pathname: '/(tabs)/wallet',
-    label: 'Wallet',
+    id: 'wallet',
   },
   // Fidélité
   {
-    keywords: ['fidelite', 'fidélité', 'mes gains', 'mes recompenses', 'mes récompenses', 'mes points', 'mon niveau', 'mon classement'],
+    keywords: ['fidelite', 'fidélité', 'mes gains', 'mes recompenses', 'mes récompenses', 'mes points', 'mon niveau', 'mon classement', 'loyalty', 'my points', 'my rewards', 'my level'],
     pathname: '/loyalty',
-    label: 'Fidélité',
+    id: 'loyalty',
   },
   // Explore
   {
     keywords: ['explore', 'explorer', 'la carte', 'la map', 'autour de moi', 'restaurants', 'restos', 'maquis', 'hotels', 'hôtels'],
     pathname: '/(tabs)/explore',
-    label: 'Explorer',
+    id: 'explore',
   },
   // Tickets / réservations
   {
-    keywords: ['tickets', 'mes tickets', 'mes reservations', 'mes réservations', 'mes billets'],
+    keywords: ['tickets', 'mes tickets', 'mes reservations', 'mes réservations', 'mes billets', 'my bookings'],
     pathname: '/(tabs)/tickets',
-    label: 'Mes tickets',
+    id: 'tickets',
   },
   // Profile
   {
     keywords: ['profil', 'profile', 'mon profil', 'mon compte', 'compte'],
     pathname: '/(tabs)/profile',
-    label: 'Profil',
+    id: 'profile',
   },
   // Settings / paramètres
   {
     keywords: ['parametres', 'paramètres', 'reglages', 'réglages', 'settings'],
     pathname: '/settings',
-    label: 'Paramètres',
+    id: 'settings',
   },
   // Send / envoyer
   {
-    keywords: ['envoyer', 'envoie', 'envoi de l argent', 'envoi d argent', 'transferer', 'transférer'],
+    keywords: ['envoyer', 'envoie', 'envoi de l argent', 'envoi d argent', 'transferer', 'transférer', 'send money'],
     pathname: '/send',
-    label: 'Envoyer',
+    id: 'send',
   },
   // Request / demander
   {
-    keywords: ['demander', 'demande de l argent', 'demande d argent', 'requests', 'mes demandes'],
+    keywords: ['demander', 'demande de l argent', 'demande d argent', 'requests', 'mes demandes', 'request money', 'my requests'],
     pathname: '/requests',
-    label: 'Demandes',
+    id: 'requests',
   },
   // Scan QR
   {
     keywords: ['scan', 'scanner', 'qr code', 'qr', 'code qr'],
     pathname: '/scan',
-    label: 'Scanner QR',
+    id: 'scan',
   },
   // Recharge
   {
-    keywords: ['recharger', 'recharge', 'creditcard', 'top up', 'topup', 'mettre de l argent'],
+    keywords: ['recharger', 'recharge', 'creditcard', 'top up', 'topup', 'mettre de l argent', 'add money'],
     pathname: '/recharge',
-    label: 'Recharger',
+    id: 'recharge',
   },
   // Withdraw / retrait
   {
     keywords: ['retirer', 'retrait', 'withdraw'],
     pathname: '/withdraw',
-    label: 'Retrait',
+    id: 'withdraw',
   },
   // Split bill
   {
     keywords: ['split', 'split bill', 'partager addition', 'partager la note', 'partager le ticket'],
     pathname: '/splits',
-    label: 'Split Bill',
+    id: 'splits',
   },
   // Orders / commandes boutique
   {
-    keywords: ['commandes', 'mes commandes', 'orders'],
+    keywords: ['commandes', 'mes commandes', 'orders', 'my orders'],
     pathname: '/orders',
-    label: 'Mes commandes',
+    id: 'orders',
   },
   // Hotel bookings / nuits
   {
-    keywords: ['mes nuits', 'mes hotels', 'mes hôtels', 'mes reservations hotel', 'mes réservations hôtel', 'hotel bookings'],
+    keywords: ['mes nuits', 'mes hotels', 'mes hôtels', 'mes reservations hotel', 'mes réservations hôtel', 'hotel bookings', 'my stays', 'my nights'],
     pathname: '/hotel-bookings',
-    label: 'Mes nuits',
+    id: 'hotelBookings',
   },
   // Trending
   {
-    keywords: ['trending', 'tendances', 'tendance', 'populaires', 'top'],
+    keywords: ['trending', 'tendances', 'tendance', 'populaires', 'top', 'what is trending'],
     pathname: '/trending',
-    label: 'Tendances',
+    id: 'trending',
   },
   // Favorites
   {
-    keywords: ['favoris', 'favorites', 'mes favoris', 'sauvegardes', 'sauvegardés'],
+    keywords: ['favoris', 'favorites', 'mes favoris', 'sauvegardes', 'sauvegardés', 'my favourites', 'saved'],
     pathname: '/favorites',
-    label: 'Favoris',
+    id: 'favorites',
   },
 ];
 
@@ -137,6 +139,7 @@ const NAV_VERBS = [
   'amene', 'amene moi', 'amener', 'emmene', 'emmene moi',
   'ouvre moi', 'montre moi', 'affiche moi',
   'lance', 'lancer',
+  'open', 'show', 'show me', 'display', 'go to', 'take me to', 'launch',
 ];
 
 /**
@@ -165,8 +168,8 @@ export function parseSiaIntent(text: string): SiaIntent {
         return {
           kind: 'navigate',
           pathname: route.pathname,
-          label: route.label,
-          spoken: `J'ouvre ${route.label} pour toi.`,
+          label: tr(`sia.route.${route.id}` as TKey),
+          spoken: tr('sia.opening', { label: tr(`sia.route.${route.id}` as TKey) }),
         };
       }
       // Cas 2 : la requête EST quasi-uniquement le mot-clé ("wallet", "fidélité")
@@ -175,8 +178,8 @@ export function parseSiaIntent(text: string): SiaIntent {
         return {
           kind: 'navigate',
           pathname: route.pathname,
-          label: route.label,
-          spoken: `J'ouvre ${route.label} pour toi.`,
+          label: tr(`sia.route.${route.id}` as TKey),
+          spoken: tr('sia.opening', { label: tr(`sia.route.${route.id}` as TKey) }),
         };
       }
     }

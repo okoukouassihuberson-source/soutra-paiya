@@ -533,7 +533,6 @@ export default function Explore() {
         visible={voiceOpen}
         onClose={() => setVoiceOpen(false)}
         onResult={(text) => { setSearchQuery(text); setVoiceOpen(false); }}
-        locale="fr-FR"
       />
 
       {/* Fiche rapide flottante au tap sur marqueur carte (PR5 audit UX) */}

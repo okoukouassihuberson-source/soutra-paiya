@@ -430,6 +430,17 @@ export const fr = {
     paymentMethods: 'Moyens de paiement acceptés', encryption: 'Cryptage de bout en bout · paiement instantané', nextLevel: 'Prochain niveau :', maxLevel: 'Niveau maximum atteint 🎉', toLevel: '{pts} pour passer {level}', atTop: 'Tu es au sommet 👑', stars_one: '{n} étoile', stars_other: '{n} étoiles',
     level: { bronze: 'Bronze', silver: 'Argent', gold: 'Or', platinum: 'Platine', diamond: 'Diamant' }, pts: '{n} pts',
   },
+  comments: { error: 'Erreur', loadFail: 'Chargement impossible.', sendFail: 'Envoi échoué.', delTitle: 'Supprimer ce commentaire ?', delBody: 'Cette action est définitive.', cancel: 'Annuler', delete: 'Supprimer', delFail: 'Suppression impossible.', title: 'Commentaires', empty: 'Pas encore de commentaire. Sois le premier.', placeholder: 'Écris un commentaire…' },
+  voice: {
+    denied: 'Autorisation refusée. Va dans les réglages du téléphone.', micFail: 'Impossible de démarrer le micro', title: 'Recherche vocale', close: 'Fermer', speakNow: 'Parle maintenant…', tapSearch: 'Tap « Rechercher » ou réessaie', init: 'Initialisation…',
+    examples: '« Maquis près de moi », « pizza Cocody »…', retry: 'Réessayer', search: 'Rechercher',
+  },
+  sia: {
+    welcome: 'Salut, moi c’est SIA — Soutra Intelligent Assistant. Tape ou parle pour me poser une question, ou dis-moi « SIA ouvre… » pour naviguer.', unavailable: 'SIA indisponible', requestFail: 'Échec de la requête',
+    noVoiceTitle: 'Voix non disponible', noVoiceBody: 'Le moteur de synthèse vocale n’est pas embarqué dans cette version. Tu auras la voix de SIA au prochain build.', resetTitle: 'Réinitialiser ?', resetBody: 'Tu vas perdre la conversation en cours.', cancel: 'Annuler', reset: 'Réinitialiser',
+    subtitle: 'Soutra Intelligent Assistant', tryIt: 'Essaie', placeholder: 'Parle ou tape… (ex : SIA ouvre mon wallet)', suggestions: 'SIA, ouvre mon wallet|SIA, montre les hôtels|SIA, affiche ma fidélité|Comment recharger mon wallet ?', opening: 'J’ouvre {label} pour toi.',
+    route: { wallet: 'Wallet', loyalty: 'Fidélité', explore: 'Explorer', tickets: 'Mes tickets', profile: 'Profil', settings: 'Paramètres', send: 'Envoyer', requests: 'Demandes', scan: 'Scanner QR', recharge: 'Recharger', withdraw: 'Retrait', splits: 'Split Bill', orders: 'Mes commandes', hotelBookings: 'Mes nuits', trending: 'Tendances', favorites: 'Favoris' },
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

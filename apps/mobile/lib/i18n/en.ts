@@ -428,4 +428,15 @@ export const en: Dict = {
     paymentMethods: 'Accepted payment methods', encryption: 'End-to-end encryption · instant payment', nextLevel: 'Next level:', maxLevel: 'Maximum level reached 🎉', toLevel: '{pts} to reach {level}', atTop: 'You are at the top 👑', stars_one: '{n} star', stars_other: '{n} stars',
     level: { bronze: 'Bronze', silver: 'Silver', gold: 'Gold', platinum: 'Platinum', diamond: 'Diamond' }, pts: '{n} pts',
   },
+  comments: { error: 'Error', loadFail: 'Could not load.', sendFail: 'Could not send.', delTitle: 'Delete this comment?', delBody: 'This cannot be undone.', cancel: 'Cancel', delete: 'Delete', delFail: 'Could not delete.', title: 'Comments', empty: 'No comments yet. Be the first.', placeholder: 'Write a comment…' },
+  voice: {
+    denied: 'Permission denied. Go to your phone settings.', micFail: 'Could not start the microphone', title: 'Voice search', close: 'Close', speakNow: 'Speak now…', tapSearch: 'Tap “Search” or try again', init: 'Initialising…',
+    examples: '“Maquis near me”, “pizza Cocody”…', retry: 'Try again', search: 'Search',
+  },
+  sia: {
+    welcome: 'Hi, I’m SIA — Soutra Intelligent Assistant. Type or speak to ask me a question, or say “SIA open…” to navigate.', unavailable: 'SIA unavailable', requestFail: 'Request failed',
+    noVoiceTitle: 'Voice not available', noVoiceBody: 'The speech engine is not bundled in this version. You will get SIA’s voice in the next build.', resetTitle: 'Reset?', resetBody: 'You will lose the current conversation.', cancel: 'Cancel', reset: 'Reset',
+    subtitle: 'Soutra Intelligent Assistant', tryIt: 'Try', placeholder: 'Speak or type… (e.g. SIA open my wallet)', suggestions: 'SIA, open my wallet|SIA, show me the hotels|SIA, show my loyalty|How do I top up my wallet?', opening: 'Opening {label} for you.',
+    route: { wallet: 'Wallet', loyalty: 'Loyalty', explore: 'Explore', tickets: 'My tickets', profile: 'Profile', settings: 'Settings', send: 'Send', requests: 'Requests', scan: 'Scan QR', recharge: 'Top up', withdraw: 'Withdraw', splits: 'Split Bill', orders: 'My orders', hotelBookings: 'My stays', trending: 'Trending', favorites: 'Favourites' },
+  },
 };

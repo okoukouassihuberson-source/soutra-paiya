@@ -16,6 +16,7 @@ import { View, Text, Modal, Pressable, StyleSheet, Animated, Easing, Alert } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
+import { useI18n } from '@/lib/i18n';
 
 // Le module est en `require` dynamique pour éviter le crash si la lib
 // native n'est pas linkée (cas Expo Go).
@@ -30,13 +31,15 @@ try {
 
 type Props = {
   visible: boolean;
-  /** Langue BCP-47. Par défaut fr-FR (notre user-base est francophone). */
+  /** Langue BCP-47. Par défaut : langue de l'application (fr-FR / en-GB). */
   locale?: string;
   onClose: () => void;
   onResult: (text: string) => void;
 };
 
-export function VoiceSearchSheet({ visible, onClose, onResult, locale = 'fr-FR' }: Props) {
+export function VoiceSearchSheet({ visible, onClose, onResult, locale: localeProp }: Props) {
+  const { t, intl } = useI18n();
+  const locale = localeProp ?? intl;
   const [transcript, setTranscript] = useState('');
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +75,7 @@ export function VoiceSearchSheet({ visible, onClose, onResult, locale = 'fr-FR' 
         // Permissions micro + reconnaissance (iOS).
         const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
         if (!perm.granted) {
-          setError('Autorisation refusée. Va dans les réglages du téléphone.');
+          setError(t('voice.denied'));
           return;
         }
         if (cancelled) return;
@@ -105,7 +108,7 @@ export function VoiceSearchSheet({ visible, onClose, onResult, locale = 'fr-FR' 
         };
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        setError(msg || 'Impossible de démarrer le micro');
+        setError(msg || t('voice.micFail'));
       }
     })();
 
@@ -145,7 +148,7 @@ export function VoiceSearchSheet({ visible, onClose, onResult, locale = 'fr-FR' 
           <View style={s.handle} />
 
           <View style={s.header}>
-            <Text style={s.title}>Recherche vocale</Text>
+            <Text style={s.title}>{t('voice.title')}</Text>
             <Pressable onPress={onClose} hitSlop={10} style={s.closeBtn}>
               <Ionicons name="close" size={20} color={colors.dark} />
             </Pressable>
@@ -158,7 +161,7 @@ export function VoiceSearchSheet({ visible, onClose, onResult, locale = 'fr-FR' 
               </View>
               <Text style={s.errorText}>{error}</Text>
               <Pressable onPress={onClose} style={s.actionBtn}>
-                <Text style={s.actionBtnText}>Fermer</Text>
+                <Text style={s.actionBtnText}>{t('voice.close')}</Text>
               </Pressable>
             </View>
           ) : (
@@ -170,19 +173,19 @@ export function VoiceSearchSheet({ visible, onClose, onResult, locale = 'fr-FR' 
               </Animated.View>
 
               <Text style={s.status}>
-                {listening ? 'Parle maintenant…' : transcript ? 'Tap « Rechercher » ou réessaie' : 'Initialisation…'}
+                {listening ? t('voice.speakNow') : transcript ? t('voice.tapSearch') : t('voice.init')}
               </Text>
 
               <View style={s.transcriptBox}>
                 <Text style={s.transcript}>
-                  {transcript || <Text style={s.placeholder}>« Maquis près de moi », « pizza Cocody »…</Text>}
+                  {transcript || <Text style={s.placeholder}>{t('voice.examples')}</Text>}
                 </Text>
               </View>
 
               <View style={s.actions}>
                 <Pressable onPress={handleRestart} style={({ pressed }) => [s.actionBtnGhost, pressed && { opacity: 0.7 }]}>
                   <Ionicons name="refresh" size={16} color={colors.dark} />
-                  <Text style={s.actionBtnGhostText}>Réessayer</Text>
+                  <Text style={s.actionBtnGhostText}>{t('voice.retry')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleConfirm}
@@ -194,7 +197,7 @@ export function VoiceSearchSheet({ visible, onClose, onResult, locale = 'fr-FR' 
                   ]}
                 >
                   <Ionicons name="search" size={16} color="#fff" />
-                  <Text style={s.actionBtnText}>Rechercher</Text>
+                  <Text style={s.actionBtnText}>{t('voice.search')}</Text>
                 </Pressable>
               </View>
             </View>
