@@ -46,12 +46,21 @@ export async function listActivities(limit = 30): Promise<ActivityCard[]> {
   return (data ?? []) as ActivityCard[];
 }
 
-export async function getActivity(slug: string): Promise<{ activity: Activity; slots: ActivitySlot[] } | null> {
+export interface ActivityReview { id: string; rating: number; comment: string | null; created_at: string; author: string | null }
+
+export async function getActivity(slug: string): Promise<{ activity: Activity; slots: ActivitySlot[]; reviews: ActivityReview[] } | null> {
   const { data: activity } = await db.from('activities').select('*').eq('slug', slug).eq('status', 'published').maybeSingle();
   if (!activity) return null;
-  const { data: slots } = await db.from('activity_slots').select('*').eq('activity_id', activity.id).eq('status', 'open')
-    .gt('starts_at', new Date(Date.now() + 3600_000).toISOString()).order('starts_at').limit(40);
-  return { activity: activity as Activity, slots: (slots ?? []) as ActivitySlot[] };
+  const [{ data: slots }, { data: reviews }] = await Promise.all([
+    db.from('activity_slots').select('*').eq('activity_id', activity.id).eq('status', 'open')
+      .gt('starts_at', new Date(Date.now() + 3600_000).toISOString()).order('starts_at').limit(40),
+    db.from('activity_reviews').select('id, rating, comment, created_at, profiles(full_name)')
+      .eq('activity_id', activity.id).eq('status', 'published').order('created_at', { ascending: false }).limit(20),
+  ]);
+  return {
+    activity: activity as Activity, slots: (slots ?? []) as ActivitySlot[],
+    reviews: (reviews ?? []).map((r: any) => ({ id: r.id, rating: r.rating, comment: r.comment, created_at: r.created_at, author: r.profiles?.full_name ?? null })),
+  };
 }
 
 export async function listDestinations(limit = 40): Promise<Destination[]> {
@@ -145,17 +154,19 @@ export async function createActivityBooking(p: { slotId: string; participants: n
 export interface MyBooking {
   kind: 'trip' | 'activity'; id: string; reference: string; title: string; slug: string | null; cover_url: string | null;
   when: string | null; participants: number; total_xof: number; discount_xof: number; paid_xof: number;
-  status: string; qr_token: string | null; expires_at: string | null; deposit_pct: number;
+  status: string; qr_token: string | null; expires_at: string | null; deposit_pct: number; reviewed?: boolean;
 }
 export async function listMyBookings(userId: string): Promise<MyBooking[]> {
-  const [t, a] = await Promise.all([
+  const [t, a, r] = await Promise.all([
     db.from('trip_bookings')
       .select('id, reference, participants, total_xof, discount_xof, paid_xof, status, qr_token, expires_at, created_at, trips(slug, title, cover_url, starts_on, deposit_pct)')
       .eq('user_id', userId).order('created_at', { ascending: false }).limit(60),
     db.from('activity_bookings')
       .select('id, reference, participants, total_xof, discount_xof, paid_xof, status, qr_token, expires_at, created_at, activities(slug, title, cover_url), activity_slots(starts_at)')
       .eq('user_id', userId).order('created_at', { ascending: false }).limit(60),
+    db.from('activity_reviews').select('booking_id').eq('user_id', userId).limit(200),
   ]);
+  const reviewed = new Set<string>((r.data ?? []).map((x: any) => x.booking_id));
   const trips: MyBooking[] = (t.data ?? []).map((b: any) => ({
     kind: 'trip', id: b.id, reference: b.reference, title: b.trips?.title ?? 'Voyage', slug: b.trips?.slug ?? null, cover_url: b.trips?.cover_url ?? null,
     when: b.trips?.starts_on ?? null, participants: b.participants, total_xof: b.total_xof, discount_xof: b.discount_xof ?? 0, paid_xof: b.paid_xof,
@@ -164,7 +175,7 @@ export async function listMyBookings(userId: string): Promise<MyBooking[]> {
   const acts: MyBooking[] = (a.data ?? []).map((b: any) => ({
     kind: 'activity', id: b.id, reference: b.reference, title: b.activities?.title ?? 'Activité', slug: b.activities?.slug ?? null, cover_url: b.activities?.cover_url ?? null,
     when: b.activity_slots?.starts_at ?? null, participants: b.participants, total_xof: b.total_xof, discount_xof: b.discount_xof ?? 0, paid_xof: b.paid_xof,
-    status: b.status, qr_token: b.qr_token, expires_at: b.expires_at, deposit_pct: 100, created: b.created_at,
+    status: b.status, qr_token: b.qr_token, expires_at: b.expires_at, deposit_pct: 100, created: b.created_at, reviewed: reviewed.has(b.id),
   }));
   return [...trips, ...acts].sort((x: any, y: any) => String(y.created).localeCompare(String(x.created)));
 }
@@ -180,3 +191,11 @@ export const BOOKING_STATUS: Record<string, { label: string; color: string }> = 
   used: { label: 'Utilisée', color: '#6366f1' }, completed: { label: 'Terminée', color: '#6366f1' },
   cancelled: { label: 'Annulée', color: '#737373' }, expired: { label: 'Expirée', color: '#737373' }, refunded: { label: 'Remboursée', color: '#a855f7' },
 };
+
+export async function submitActivityReview(bookingId: string, rating: number, comment: string): Promise<void> {
+  const { error } = await db.rpc('submit_activity_review', { p_booking_id: bookingId, p_rating: rating, p_comment: comment.trim() || null });
+  if (error) {
+    const m = String(error.message);
+    throw new Error(m.includes('ALREADY_REVIEWED') ? 'Vous avez déjà donné votre avis.' : m.includes('NOT_ELIGIBLE') ? 'Vous pourrez donner votre avis après l’activité.' : 'Envoi impossible, réessayez.');
+  }
+}

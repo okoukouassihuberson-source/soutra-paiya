@@ -8,7 +8,7 @@ import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { OfferCardMobile, PriceBox, PromoBox, Stepper, usePricePreview } from '@/components/tourism/TourismUi';
 import { BookingPay } from '@/components/tourism/BookingPay';
-import { createActivityBooking, getActivity, listOffersForTarget, type BookingResult, type Offer } from '@/lib/tourism';
+import { createActivityBooking, getActivity, listOffersForTarget, type ActivityReview, type BookingResult, type Offer } from '@/lib/tourism';
 
 /** /activite/[slug] — fiche activité, créneaux, offres, réservation avec code promo et paiement. */
 export default function ActivityScreen() {
@@ -17,7 +17,7 @@ export default function ActivityScreen() {
   const router = useRouter();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
-  const [data, setData] = useState<{ activity: Activity; slots: ActivitySlot[] } | null | undefined>(undefined);
+  const [data, setData] = useState<{ activity: Activity; slots: ActivitySlot[]; reviews: ActivityReview[] } | null | undefined>(undefined);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [slotId, setSlotId] = useState<string | null>(null);
   const [n, setN] = useState(1);
@@ -66,6 +66,16 @@ export default function ActivityScreen() {
         </View>
 
         {offers.length > 0 && (<><Text style={s.h2}>🏷️ Offres disponibles</Text>{offers.map((o) => <OfferCardMobile key={o.id} offer={o} />)}</>)}
+
+        <View style={s.section}>
+          <Text style={s.h3}>Avis{a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}</Text>
+          {data.reviews.length === 0 ? <Text style={s.meta}>Pas encore d’avis. Les avis sont déposés par les voyageurs ayant réalisé l’activité.</Text> : data.reviews.map((r) => (
+            <View key={r.id} style={s.review}>
+              <Text style={s.reviewHead}>{r.author || 'Voyageur'} <Text style={{ color: '#d97706' }} accessibilityLabel={`${r.rating} sur 5`}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</Text></Text>
+              {r.comment ? <Text style={s.body}>{r.comment}</Text> : null}
+            </View>
+          ))}
+        </View>
 
         {a.includes.length > 0 && <View style={s.section}><Text style={s.h3}>Inclus</Text>{a.includes.map((x) => <Text key={x} style={s.body}>✓ {x}</Text>)}</View>}
 
@@ -118,6 +128,8 @@ function makeStyles(c: ColorPalette) {
     meta: { fontSize: typography.fontSize.sm, color: c.neutral[600] },
     h2: { fontSize: typography.fontSize.lg, fontWeight: '800', color: c.dark, marginHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.sm },
     h3: { fontSize: typography.fontSize.base, fontWeight: '800', color: c.dark },
+    review: { padding: 12, borderRadius: radius.md, borderWidth: 1, borderColor: c.neutral[200], backgroundColor: c.light, gap: 4 },
+    reviewHead: { fontSize: 13, fontWeight: '800', color: c.dark },
     slots: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     slot: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.md, borderWidth: 1, borderColor: c.neutral[300] },
     slotOn: { backgroundColor: c.primary[500], borderColor: c.primary[500] },

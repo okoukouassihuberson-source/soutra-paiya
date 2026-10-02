@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Alert, Image } from 'react-native';
+import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Alert, Image, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import QRCode from 'react-native-qrcode-svg';
@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { BookingPay } from '@/components/tourism/BookingPay';
-import { BOOKING_STATUS, QR_ACTIVITY_PREFIX, QR_TRIP_PREFIX, cancelBooking, listMyBookings, type MyBooking } from '@/lib/tourism';
+import { BOOKING_STATUS, QR_ACTIVITY_PREFIX, QR_TRIP_PREFIX, cancelBooking, listMyBookings, submitActivityReview, type MyBooking } from '@/lib/tourism';
 
 /** /tourism-bookings — mes voyages et activités : paiement, billet QR, annulation. */
 export default function TourismBookingsScreen() {
@@ -73,6 +73,10 @@ export default function TourismBookingsScreen() {
                         <Text style={s.meta}>Présentez ce code à l’organisateur.</Text>
                       </View>
                     ) : null}
+                    {b.kind === 'activity' && !b.reviewed && (b.status === 'used' || (b.status === 'paid' && !!b.when && new Date(b.when) < new Date())) && (
+                      <ReviewBox c={c} onSend={async (rating, comment) => { try { await submitActivityReview(b.id, rating, comment); load(); } catch (e: any) { Alert.alert('Avis', e?.message ?? 'Réessayez.'); } }} />
+                    )}
+                    {b.kind === 'activity' && b.reviewed && <Text style={[s.meta, { color: '#059669' }]}>Merci pour votre avis !</Text>}
                     {canPay && <BookingPay kind={b.kind} bookingId={b.id} total={b.total_xof} paid={b.paid_xof} depositPct={b.deposit_pct} onDone={load} />}
                     {b.status === 'pending' && b.paid_xof === 0 && !expired && (
                       <Pressable onPress={() => cancel(b)}><Text style={s.cancel}>Annuler la réservation</Text></Pressable>
@@ -107,4 +111,30 @@ function makeStyles(c: ColorPalette) {
     qr: { alignItems: 'center', gap: 8, padding: spacing.md, backgroundColor: '#fff', borderRadius: radius.md },
     cancel: { textAlign: 'center', color: c.neutral[500], textDecorationLine: 'underline', fontWeight: '600' },
   });
+}
+
+/** Note de 1 à 5 + commentaire (activité vécue). */
+function ReviewBox({ c, onSend }: { c: ColorPalette; onSend: (rating: number, comment: string) => Promise<void> }) {
+  const s = useMemo(() => makeStyles(c), [c]);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={s.title}>Votre avis</Text>
+      <View style={{ flexDirection: 'row', gap: 6 }}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Pressable key={n} onPress={() => setRating(n)} hitSlop={6} accessibilityRole="button" accessibilityLabel={`${n} étoile${n > 1 ? 's' : ''}`} accessibilityState={{ selected: rating === n }}>
+            <Text style={{ fontSize: 30, color: n <= rating ? '#d97706' : c.neutral[300] }}>★</Text>
+          </Pressable>
+        ))}
+      </View>
+      <TextInput value={comment} onChangeText={setComment} multiline maxLength={1000} placeholder="Racontez votre expérience (optionnel)" placeholderTextColor={c.neutral[400]}
+                 style={{ borderWidth: 1, borderColor: c.neutral[300], borderRadius: radius.md, padding: 10, minHeight: 70, color: c.dark, backgroundColor: c.light, textAlignVertical: 'top' }} />
+      <Pressable disabled={busy || rating === 0} onPress={async () => { setBusy(true); await onSend(rating, comment); setBusy(false); }} accessibilityRole="button"
+                 style={[s.cta, (busy || rating === 0) && { opacity: 0.5 }]}>
+        {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.ctaText}>Publier mon avis</Text>}
+      </Pressable>
+    </View>
+  );
 }

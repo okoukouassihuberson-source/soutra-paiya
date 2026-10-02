@@ -78,6 +78,7 @@ Cocher chaque ligne ; noter tout écart avec la capture d'écran ou le message d
 
 ### H. Mobile (build de développement)
 - [ ] Raccourcis en haut d'Explorer ; listes voyages / activités / destinations / promotions ; fiche voyage et activité ; code promo ; paiement GeniusPay dans le navigateur intégré puis retour dans l'app ; billet QR dans « Mes voyages » ; annulation.
+- [ ] Avis : sur une activité payée dont le créneau est passé (forcer `starts_at` dans le passé), publier une note depuis « Mes voyages et activités » ; l'avis apparaît sur la fiche ; un second avis est refusé.
 - [ ] Le QR du mobile est accepté par `/scan-voyage` (même préfixe `soutra:trip:` / `soutra:act:`).
 
 ### I. Sécurité (à tenter volontairement)
