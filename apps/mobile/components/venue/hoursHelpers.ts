@@ -2,23 +2,16 @@
 // ouvert/fermé d'un établissement à partir de son `opening_hours` JSONB
 // (Record<dayKey, [open, close]>).
 
+import { tr, currentLocale, type TKey } from '@/lib/i18n';
+
 export type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
 export const DAY_ORDER: DayKey[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-export const DAY_LABELS: Record<DayKey, string> = {
-  mon: 'Lundi',
-  tue: 'Mardi',
-  wed: 'Mercredi',
-  thu: 'Jeudi',
-  fri: 'Vendredi',
-  sat: 'Samedi',
-  sun: 'Dimanche',
-};
-
-export const DAY_SHORT: Record<DayKey, string> = {
-  mon: 'Lun', tue: 'Mar', wed: 'Mer', thu: 'Jeu', fri: 'Ven', sat: 'Sam', sun: 'Dim',
-};
+/** Nom du jour dans la langue courante. */
+export const dayLabel = (d: DayKey): string => tr(`hours.day.${d}` as TKey);
+/** Nom court du jour dans la langue courante. */
+export const dayShort = (d: DayKey): string => tr(`hours.short.${d}` as TKey);
 
 /** Convertit le Date.getDay() (0=dim, 1=lun…) en DayKey ISO. */
 export function dayKeyFromDate(d: Date): DayKey {
@@ -39,13 +32,14 @@ export function parseTimeToMinutes(s: string | undefined | null): number | null 
   return h * 60 + min;
 }
 
-/** Formate "17:30" → "17h30" ; "17:00" → "17h". */
+/** Formate "17:30" → "17h30" ; "17:00" → "17h" (français) ; "17:30" / "17:00" (anglais). */
 export function formatTimeFR(s: string | undefined | null): string {
   if (!s) return '—';
   const m = parseTimeToMinutes(s);
   if (m == null) return s;
   const h = Math.floor(m / 60) % 24;
   const min = m % 60;
+  if (currentLocale() === 'en') return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
   return min === 0 ? `${h}h` : `${h}h${String(min).padStart(2, '0')}`;
 }
 
@@ -82,7 +76,7 @@ export function computeOpenStatus(
 
   let isOpen = false;
   let isClosingSoon = false;
-  let hint = 'Fermé aujourd\'hui';
+  let hint = tr('hours.closedToday');
 
   if (todayOpen && todayClose) {
     const o = parseTimeToMinutes(todayOpen);
@@ -105,8 +99,8 @@ export function computeOpenStatus(
       }
       isClosingSoon = minutesUntilClose != null && minutesUntilClose <= CLOSING_SOON_THRESHOLD_MIN;
       hint = isOpen
-        ? (isClosingSoon ? `Ferme bientôt (${formatTimeFR(todayClose)})` : `Ferme à ${formatTimeFR(todayClose)}`)
-        : `Ouvre à ${formatTimeFR(todayOpen)}`;
+        ? (isClosingSoon ? tr('hours.closesSoon', { time: formatTimeFR(todayClose) }) : tr('hours.closesAt', { time: formatTimeFR(todayClose) }))
+        : tr('hours.opensAt', { time: formatTimeFR(todayOpen) });
     }
   }
 
@@ -124,7 +118,7 @@ export function computeOpenStatus(
         isOpen = true;
         const minutesUntilClose = yc - nowMin;
         isClosingSoon = minutesUntilClose <= CLOSING_SOON_THRESHOLD_MIN;
-        hint = isClosingSoon ? `Ferme bientôt (${formatTimeFR(yRange[1])})` : `Ferme à ${formatTimeFR(yRange[1])}`;
+        hint = isClosingSoon ? tr('hours.closesSoon', { time: formatTimeFR(yRange[1]) }) : tr('hours.closesAt', { time: formatTimeFR(yRange[1]) });
       }
     }
   }

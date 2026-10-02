@@ -3,6 +3,10 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { LocaleProvider } from '@/lib/i18n/client';
+import { LOCALES } from '@/lib/i18n/config';
+import { getLocale } from '@/lib/i18n/server';
+import { createI18n } from '@/lib/i18n/t';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -20,14 +24,17 @@ export const viewport: Viewport = {
   ],
 };
 
-export const metadata: Metadata = {
+// La langue (en-tête posé par le middleware) rend titre/description/OG dépendants de la requête.
+export function generateMetadata(): Metadata {
+  const locale = getLocale();
+  const i = createI18n(locale);
+  return {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://soutra-paiya.vercel.app'),
   title: {
-    default: 'Soutra-Playce — Sors, réserve, paie. Zéro galère.',
+    default: i.t('meta.siteTitle'),
     template: '%s · Soutra-Playce',
   },
-  description:
-    "Découvre les meilleurs maquis, restos et événements à Abidjan. Paie avec Orange Money, Wave, MTN MoMo. Réservation garantie.",
+  description: i.t('meta.siteDescription'),
   keywords: ['Abidjan', 'réservation', 'restaurant', 'maquis', 'paiement mobile', 'Orange Money', 'Wave', "Côte d'Ivoire"],
   manifest: '/manifest.webmanifest',
   applicationName: 'Soutra-Playce',
@@ -57,13 +64,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Soutra-Playce',
     description: 'Sors, réserve, paie — zéro galère.',
-    locale: 'fr_CI',
+    locale: LOCALES[locale].og,
     type: 'website',
     siteName: 'Soutra-Playce',
     images: [{ url: '/logo.png', width: 1024, height: 1024, alt: 'Soutra-Playce' }],
   },
   twitter: { card: 'summary_large_image', title: 'Soutra-Playce', images: ['/logo.png'] },
-};
+  };
+}
 
 // Hôte Supabase pré-connecté pour économiser le handshake DNS/TLS au premier
 // appel réseau (auth, RPCs, storage). Extrait l'origine de NEXT_PUBLIC_SUPABASE_URL
@@ -77,8 +85,9 @@ const SUPABASE_ORIGIN = (() => {
 })();
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = getLocale();
   return (
-    <html lang="fr" className={inter.variable}>
+    <html lang={locale} dir={LOCALES[locale].dir} className={inter.variable}>
       <head>
         {/* Preconnect réseau pour Supabase : économise ~100-200ms au premier appel. */}
         <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />
@@ -87,9 +96,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
       </head>
       <body>
-        {children}
-        <ServiceWorkerRegistrar />
-        <PWAInstallPrompt />
+        <LocaleProvider locale={locale}>
+          {children}
+          <ServiceWorkerRegistrar />
+          <PWAInstallPrompt />
+        </LocaleProvider>
       </body>
     </html>
   );

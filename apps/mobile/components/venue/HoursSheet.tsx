@@ -3,7 +3,8 @@ import { Modal, View, Text, Pressable, StyleSheet, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
-import { DAY_ORDER, DAY_LABELS, formatTimeFR, type DayKey } from './hoursHelpers';
+import { useI18n } from '@/lib/i18n';
+import { DAY_ORDER, dayLabel, formatTimeFR, type DayKey } from './hoursHelpers';
 
 interface Props {
   visible: boolean;
@@ -21,18 +22,19 @@ interface Props {
  */
 export function HoursSheet({ visible, onClose, hours, todayKey }: Props) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={s.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fermer" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('hours.close')} />
         <View style={s.sheet}>
           <View style={s.handle} />
 
           <View style={s.headerRow}>
             <Ionicons name="time-outline" size={20} color={c.primary[500]} />
-            <Text style={s.title}>Horaires d'ouverture</Text>
+            <Text style={s.title}>{t('hours.title')}</Text>
             <Pressable hitSlop={10} onPress={onClose} style={s.closeBtn}>
               <Ionicons name="close" size={20} color={c.neutral[600]} />
             </Pressable>
@@ -45,13 +47,13 @@ export function HoursSheet({ visible, onClose, hours, todayKey }: Props) {
               const isOpenDay = range && range[0] && range[1];
               return (
                 <View key={day} style={[s.row, isToday && s.rowToday]}>
-                  <Text style={[s.day, isToday && s.dayToday]}>{DAY_LABELS[day]}</Text>
+                  <Text style={[s.day, isToday && s.dayToday]}>{dayLabel(day)}</Text>
                   {isOpenDay ? (
                     <Text style={[s.time, isToday && s.timeToday]}>
                       {formatTimeFR(range![0])} – {formatTimeFR(range![1])}
                     </Text>
                   ) : (
-                    <Text style={s.closed}>Fermé</Text>
+                    <Text style={s.closed}>{t('hours.closed')}</Text>
                   )}
                 </View>
               );

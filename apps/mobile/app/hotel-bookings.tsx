@@ -11,6 +11,7 @@ import { typography, radius, spacing, formatXOF, type ColorPalette } from '@sout
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
+import { useI18n, type TKey } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { PaymentMethodsStrip } from '@/components/PaymentMethodsStrip';
 
@@ -44,19 +45,20 @@ interface Booking {
   created_at: string;
 }
 
-const STATUS_META: Record<BookingStatus, { label: string; color: string; icon: string }> = {
-  pending:     { label: 'En attente paiement', color: '#f59e0b', icon: 'time-outline' },
-  confirmed:   { label: 'Confirmée',           color: '#3b82f6', icon: 'checkmark-circle-outline' },
-  checked_in:  { label: 'Arrivé',              color: '#6366f1', icon: 'log-in-outline' },
-  checked_out: { label: 'Séjour terminé',      color: '#059669', icon: 'checkmark-done-outline' },
-  cancelled:   { label: 'Annulée',             color: '#737373', icon: 'close-circle-outline' },
-  refunded:    { label: 'Remboursée',          color: '#a855f7', icon: 'refresh-circle-outline' },
+const STATUS_META: Record<BookingStatus, { color: string; icon: string }> = {
+  pending:     { color: '#f59e0b', icon: 'time-outline' },
+  confirmed:   { color: '#3b82f6', icon: 'checkmark-circle-outline' },
+  checked_in:  { color: '#6366f1', icon: 'log-in-outline' },
+  checked_out: { color: '#059669', icon: 'checkmark-done-outline' },
+  cancelled:   { color: '#737373', icon: 'close-circle-outline' },
+  refunded:    { color: '#a855f7', icon: 'refresh-circle-outline' },
 };
 
 export default function HotelBookingsScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const c = useColors();
+  const { t, tn } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -85,7 +87,7 @@ export default function HotelBookingsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader title="Mes réservations" />
+        <ScreenHeader title={t('hotelBk.title')} />
         <View style={s.center}><ActivityIndicator color={c.primary[500]} /></View>
       </SafeAreaView>
     );
@@ -94,8 +96,8 @@ export default function HotelBookingsScreen() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader
-        title="Mes réservations"
-        subtitle={`${bookings.length} réservation${bookings.length > 1 ? 's' : ''}`}
+        title={t('hotelBk.title')}
+        subtitle={tn('hotelBk.count', bookings.length)}
       />
 
       <ScrollView
@@ -105,13 +107,13 @@ export default function HotelBookingsScreen() {
         {bookings.length === 0 ? (
           <View style={s.empty}>
             <Ionicons name="bed-outline" size={56} color={c.neutral[400]} />
-            <Text style={s.emptyTitle}>Aucune réservation pour l&apos;instant</Text>
+            <Text style={s.emptyTitle}>{t('hotelBk.emptyTitle')}</Text>
             <Text style={s.emptyBody}>
-              Explore les hôtels et réserve ta première chambre.
+              {t('hotelBk.emptyBody')}
             </Text>
             <Pressable onPress={() => router.push('/(tabs)/explore')} style={s.cta}>
               <Ionicons name="compass" size={18} color="#fff" />
-              <Text style={s.ctaText}>Explorer</Text>
+              <Text style={s.ctaText}>{t('hotelBk.explore')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -131,6 +133,7 @@ export default function HotelBookingsScreen() {
  * ─────────────────────────────────────────────────── */
 
 function BookingCard({ c, booking, onPress }: { c: ColorPalette; booking: Booking; onPress: () => void }) {
+  const { t, tn, intl } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const meta = STATUS_META[booking.status];
   return (
@@ -146,12 +149,12 @@ function BookingCard({ c, booking, onPress }: { c: ColorPalette; booking: Bookin
         </View>
         <View style={[s.statusPill, { backgroundColor: meta.color + '20' }]}>
           <Ionicons name={meta.icon as any} size={12} color={meta.color} />
-          <Text style={[s.statusText, { color: meta.color }]}>{meta.label}</Text>
+          <Text style={[s.statusText, { color: meta.color }]}>{t(`hotelBk.status.${booking.status}` as TKey)}</Text>
         </View>
       </View>
       <View style={s.cardFooter}>
         <Text style={s.cardMeta}>
-          {formatDateRange(booking.check_in_date, booking.check_out_date)} · {booking.nights_count} nuit{booking.nights_count > 1 ? 's' : ''}
+          {formatDateRange(booking.check_in_date, booking.check_out_date, intl)} · {tn('hotelBk.nights', booking.nights_count)}
         </Text>
         <Text style={s.cardTotal}>{formatXOF(booking.total_xof)}</Text>
       </View>
@@ -167,6 +170,7 @@ function BookingDetailModal({
   booking, onClose, onChanged,
 }: { booking: Booking | null; onClose: () => void; onChanged: () => void }) {
   const c = useColors();
+  const { t, tn, intl } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [paying, setPaying] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -198,13 +202,13 @@ function BookingDetailModal({
         body: { booking_id: booking.booking_id },
       });
       if (error) {
-        Alert.alert('Erreur', error.message || 'Impossible de démarrer le paiement');
+        Alert.alert(t('hotelBk.error'), error.message || t('hotelBk.payStartFail'));
         return;
       }
       const url = (data as any)?.checkout_url;
       const reference = (data as any)?.reference;
       if (!url || !reference) {
-        Alert.alert('Erreur', 'Réponse GeniusPay invalide');
+        Alert.alert(t('hotelBk.error'), t('hotelBk.invalidResponse'));
         return;
       }
       // openAuthSessionAsync referme automatiquement le browser quand la
@@ -218,21 +222,21 @@ function BookingDetailModal({
       // Rafraîchit la liste pour afficher le nouveau statut
       onChanged();
     } catch (err) {
-      Alert.alert('Erreur', err instanceof Error ? err.message : 'Erreur inattendue');
+      Alert.alert(t('hotelBk.error'), err instanceof Error ? err.message : t('hotelBk.unexpected'));
     } finally {
       setPaying(false);
     }
-  }, [booking, onChanged]);
+  }, [booking, onChanged, t]);
 
   const handleCancel = useCallback(async () => {
     if (!booking) return;
     Alert.alert(
-      'Annuler la réservation',
-      'Cette action est définitive. Continuer ?',
+      t('hotelBk.cancelTitle'),
+      t('hotelBk.cancelBody'),
       [
-        { text: 'Non', style: 'cancel' },
+        { text: t('hotelBk.no'), style: 'cancel' },
         {
-          text: 'Annuler',
+          text: t('hotelBk.cancelDo'),
           style: 'destructive',
           onPress: async () => {
             setCancelling(true);
@@ -243,7 +247,7 @@ function BookingDetailModal({
             });
             setCancelling(false);
             if (error) {
-              Alert.alert('Erreur', error.message || 'Annulation impossible');
+              Alert.alert(t('hotelBk.error'), error.message || t('hotelBk.cancelFail'));
               return;
             }
             onClose();
@@ -252,7 +256,7 @@ function BookingDetailModal({
         },
       ],
     );
-  }, [booking, onClose, onChanged]);
+  }, [booking, onClose, onChanged, t]);
 
   if (!booking) return null;
   const meta = STATUS_META[booking.status];
@@ -260,18 +264,18 @@ function BookingDetailModal({
   const canCancel = booking.status === 'pending' || booking.status === 'confirmed';
 
   const steps: { label: string; date: string | null; done: boolean }[] = [
-    { label: 'Réservation créée', date: booking.created_at, done: true },
+    { label: t('hotelBk.stepCreated'), date: booking.created_at, done: true },
     {
-      label: 'Paiement confirmé',
+      label: t('hotelBk.stepPaid'),
       date: null,
       done: booking.payment_status === 'paid'
         || ['confirmed', 'checked_in', 'checked_out'].includes(booking.status),
     },
-    { label: 'Arrivée (check-in)', date: null, done: ['checked_in', 'checked_out'].includes(booking.status) },
-    { label: 'Séjour terminé',     date: null, done: booking.status === 'checked_out' },
+    { label: t('hotelBk.stepCheckin'), date: null, done: ['checked_in', 'checked_out'].includes(booking.status) },
+    { label: t('hotelBk.stepDone'), date: null, done: booking.status === 'checked_out' },
   ];
   if (booking.status === 'cancelled') {
-    steps.push({ label: 'Annulée', date: null, done: true });
+    steps.push({ label: t('hotelBk.stepCancelled'), date: null, done: true });
   }
 
   return (
@@ -284,7 +288,7 @@ function BookingDetailModal({
             <Text style={s.modalNumber}>{booking.booking_number}</Text>
             <View style={[s.statusPill, { backgroundColor: meta.color + '20', alignSelf: 'flex-start', marginTop: spacing.xs }]}>
               <Ionicons name={meta.icon as any} size={14} color={meta.color} />
-              <Text style={[s.statusText, { color: meta.color, fontSize: typography.fontSize.sm }]}>{meta.label}</Text>
+              <Text style={[s.statusText, { color: meta.color, fontSize: typography.fontSize.sm }]}>{t(`hotelBk.status.${booking.status}` as TKey)}</Text>
             </View>
 
             <View style={s.modalVenue}>
@@ -300,15 +304,15 @@ function BookingDetailModal({
             </View>
 
             {/* Détails séjour */}
-            <Text style={s.sectionTitle}>Séjour</Text>
-            <Row label="Check-in" value={formatDateLongFR(booking.check_in_date)} />
-            <Row label="Check-out" value={formatDateLongFR(booking.check_out_date)} />
-            <Row label="Durée" value={`${booking.nights_count} nuit${booking.nights_count > 1 ? 's' : ''}`} />
-            <Row label="Invités" value={`${booking.guests_count}`} />
-            <Row label="Total" value={formatXOF(booking.total_xof)} bold />
+            <Text style={s.sectionTitle}>{t('hotelBk.stay')}</Text>
+            <Row label={t('hotelBk.checkIn')} value={formatDateLong(booking.check_in_date, intl)} />
+            <Row label={t('hotelBk.checkOut')} value={formatDateLong(booking.check_out_date, intl)} />
+            <Row label={t('hotelBk.duration')} value={tn('hotelBk.nights', booking.nights_count)} />
+            <Row label={t('hotelBk.guests')} value={`${booking.guests_count}`} />
+            <Row label={t('hotelBk.total')} value={formatXOF(booking.total_xof)} bold />
 
             {/* Timeline */}
-            <Text style={s.sectionTitle}>Suivi</Text>
+            <Text style={s.sectionTitle}>{t('hotelBk.followUp')}</Text>
             <View style={s.timeline}>
               {steps.map((step, i) => (
                 <View key={i} style={s.tlStep}>
@@ -319,7 +323,7 @@ function BookingDetailModal({
                     <Text style={[s.tlLabel, step.done && s.tlLabelDone]}>{step.label}</Text>
                     {step.date && (
                       <Text style={s.tlDate}>
-                        {new Date(step.date).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(step.date).toLocaleString(intl, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </Text>
                     )}
                   </View>
@@ -343,7 +347,7 @@ function BookingDetailModal({
                 >
                   <Ionicons name="card" size={20} color="#fff" />
                   <Text style={s.payBtnText}>
-                    {paying ? 'Démarrage Paystack…' : `Payer maintenant · ${formatXOF(booking.total_xof)}`}
+                    {paying ? t('hotelBk.paying') : t('hotelBk.payNow', { amount: formatXOF(booking.total_xof) })}
                   </Text>
                 </Pressable>
               </>
@@ -356,7 +360,7 @@ function BookingDetailModal({
                 style={({ pressed }) => [s.cancelBookBtn, (cancelling || pressed) && { opacity: 0.7 }]}
               >
                 <Text style={s.cancelBookBtnText}>
-                  {cancelling ? 'Annulation…' : 'Annuler la réservation'}
+                  {cancelling ? t('hotelBk.cancelling') : t('hotelBk.cancelBooking')}
                 </Text>
               </Pressable>
             )}
@@ -385,14 +389,14 @@ function Row({ label, value, bold = false }: { label: string; value: string; bol
   );
 }
 
-function formatDateRange(checkIn: string, checkOut: string): string {
+function formatDateRange(checkIn: string, checkOut: string, intl: string): string {
   const ci = new Date(checkIn);
   const co = new Date(checkOut);
   const fmt: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short' };
-  return `${ci.toLocaleDateString('fr-FR', fmt)} → ${co.toLocaleDateString('fr-FR', fmt)}`;
+  return `${ci.toLocaleDateString(intl, fmt)} → ${co.toLocaleDateString(intl, fmt)}`;
 }
-function formatDateLongFR(d: string): string {
-  return new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+function formatDateLong(d: string, intl: string): string {
+  return new Date(d).toLocaleDateString(intl, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 function makeStyles(c: ColorPalette) {

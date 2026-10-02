@@ -6,6 +6,7 @@ import { typography, radius, spacing, formatXOF, type ColorPalette } from '@sout
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
+import { useI18n, tr, intlLocale } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { LoyaltyLevelCard } from '@/components/LoyaltyLevelCard';
@@ -67,6 +68,7 @@ interface LeaderboardRow {
 }
 
 export default function LoyaltyScreen() {
+  const { t, tn, intl } = useI18n();
   const { user } = useAuth();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -149,20 +151,20 @@ export default function LoyaltyScreen() {
 
   const handleRedeem = useCallback(async (reward: RewardRow) => {
     if (!stats || (stats.points_balance ?? 0) < reward.points_cost) {
-      Alert.alert('Solde insuffisant', `Il te manque des points pour échanger « ${reward.label} ».`);
+      Alert.alert(t('loyalty.lowTitle'), t('loyalty.lowBody', { label: reward.label }));
       return;
     }
     setRedeeming(reward.code);
     try {
       const { data, error } = await (supabase.rpc as any)('redeem_loyalty_reward', { p_reward_code: reward.code });
       if (error || !data?.ok) {
-        Alert.alert('Échange impossible', data?.reason ?? error?.message ?? 'Une erreur est survenue.');
+        Alert.alert(t('loyalty.failTitle'), data?.reason ?? error?.message ?? t('loyalty.generic'));
         return;
       }
-      Alert.alert('Échangé !', `« ${reward.label} » a été réservé. Un admin va le confirmer.`);
+      Alert.alert(t('loyalty.doneTitle'), t('loyalty.doneBody', { label: reward.label }));
       load();
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Une erreur est survenue.');
+      Alert.alert(t('loyalty.error'), err?.message ?? t('loyalty.generic'));
     } finally {
       setRedeeming(null);
     }
@@ -170,7 +172,7 @@ export default function LoyaltyScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Fidélité" subtitle="Tes points Soutra-Playce" />
+      <ScreenHeader title={t('loyalty.title')} subtitle={t('loyalty.subtitle')} />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
@@ -181,14 +183,14 @@ export default function LoyaltyScreen() {
           <View style={s.heroIcon}>
             <Ionicons name="trophy" size={28} color="#fff" />
           </View>
-          <Text style={s.heroLabel}>Solde de points</Text>
+          <Text style={s.heroLabel}>{t('loyalty.balance')}</Text>
           {loading ? (
             <Skeleton width={180} height={42} />
           ) : (
-            <Text style={s.heroAmount}>{(stats?.points_balance ?? 0).toLocaleString('fr-FR')} pts</Text>
+            <Text style={s.heroAmount}>{(stats?.points_balance ?? 0).toLocaleString(intl)} pts</Text>
           )}
           <Text style={s.heroSub}>
-            {(stats?.points_lifetime ?? 0).toLocaleString('fr-FR')} pts gagnés depuis ton inscription
+            {t('loyalty.lifetime', { n: (stats?.points_lifetime ?? 0).toLocaleString(intl) })}
           </Text>
         </View>
 
@@ -198,23 +200,23 @@ export default function LoyaltyScreen() {
         {/* ═══════════ KPI grid ═══════════ */}
         <View style={s.kpiGrid}>
           <View style={s.kpiCard}>
-            <Text style={s.kpiLabel}>Sur 30 jours</Text>
-            <Text style={s.kpiValue}>{(stats?.period_points ?? 0).toLocaleString('fr-FR')} pts</Text>
-            <Text style={s.kpiSub}>{stats?.period_count ?? 0} gains</Text>
+            <Text style={s.kpiLabel}>{t('loyalty.last30')}</Text>
+            <Text style={s.kpiValue}>{(stats?.period_points ?? 0).toLocaleString(intl)} pts</Text>
+            <Text style={s.kpiSub}>{tn('loyalty.gains', stats?.period_count ?? 0)}</Text>
           </View>
           <View style={s.kpiCard}>
-            <Text style={s.kpiLabel}>Classement</Text>
+            <Text style={s.kpiLabel}>{t('loyalty.rank')}</Text>
             <Text style={s.kpiValue}>{stats?.rank ? `#${stats.rank}` : '—'}</Text>
-            <Text style={s.kpiSub}>sur tous les utilisateurs</Text>
+            <Text style={s.kpiSub}>{t('loyalty.rankSub')}</Text>
           </View>
         </View>
 
         {/* ═══════════ Missions ═══════════ */}
         <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Missions</Text>
+          <Text style={s.sectionTitle}>{t('loyalty.missions')}</Text>
         </View>
         {missions.length === 0 ? (
-          <Text style={s.emptyInline}>Aucune mission active pour l&apos;instant.</Text>
+          <Text style={s.emptyInline}>{t('loyalty.noMissions')}</Text>
         ) : (
           <View style={s.list}>
             {missions.map((m) => {
@@ -229,7 +231,7 @@ export default function LoyaltyScreen() {
                       <View style={[s.missionBarFill, { width: `${Math.round(pct * 100)}%`, backgroundColor: m.completed_at ? c.success : c.primary[500] }]} />
                     </View>
                     <Text style={s.rowSub}>
-                      {m.completed_at ? 'Accomplie ✓' : `${m.progress}/${target}`} · +{m.loyalty_missions?.points_reward ?? 0} pts
+                      {m.completed_at ? t('loyalty.done') : `${m.progress}/${target}`} · +{m.loyalty_missions?.points_reward ?? 0} pts
                     </Text>
                   </View>
                 </View>
@@ -240,11 +242,11 @@ export default function LoyaltyScreen() {
 
         {/* ═══════════ Badges ═══════════ */}
         <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Badges</Text>
+          <Text style={s.sectionTitle}>{t('loyalty.badges')}</Text>
           <Text style={s.sectionSub}>{badges.length} obtenu{badges.length > 1 ? 's' : ''}</Text>
         </View>
         {badges.length === 0 ? (
-          <Text style={s.emptyInline}>Aucun badge pour l&apos;instant.</Text>
+          <Text style={s.emptyInline}>{t('loyalty.noBadges')}</Text>
         ) : (
           <View style={s.badgeGrid}>
             {badges.map((b) => (
@@ -258,7 +260,7 @@ export default function LoyaltyScreen() {
 
         {/* ═══════════ Catalogue de récompenses ═══════════ */}
         <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Récompenses</Text>
+          <Text style={s.sectionTitle}>{t('loyalty.rewards')}</Text>
         </View>
         <View style={s.list}>
           {rewards.map((r) => {
@@ -278,7 +280,7 @@ export default function LoyaltyScreen() {
                   {redeeming === r.code ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={s.redeemBtnText}>Échanger</Text>
+                    <Text style={s.redeemBtnText}>{t('loyalty.redeem')}</Text>
                   )}
                 </Pressable>
               </View>
@@ -288,7 +290,7 @@ export default function LoyaltyScreen() {
 
         {/* ═══════════ Classement ═══════════ */}
         <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Classement</Text>
+          <Text style={s.sectionTitle}>{t('loyalty.leaderboard')}</Text>
         </View>
         <View style={s.list}>
           {leaderboard.map((row) => (
@@ -302,7 +304,7 @@ export default function LoyaltyScreen() {
 
         {/* ═══════════ Historique ═══════════ */}
         <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Historique</Text>
+          <Text style={s.sectionTitle}>{t('loyalty.history')}</Text>
           <Text style={s.sectionSub}>{history.length} mouvement{history.length > 1 ? 's' : ''}</Text>
         </View>
 
@@ -313,9 +315,9 @@ export default function LoyaltyScreen() {
         ) : history.length === 0 ? (
           <View style={s.emptyState}>
             <Ionicons name="trophy-outline" size={48} color={c.neutral[400]} />
-            <Text style={s.emptyTitle}>Aucun point pour l&apos;instant</Text>
+            <Text style={s.emptyTitle}>{t('loyalty.emptyTitle')}</Text>
             <Text style={s.emptyBody}>
-              Fais ton premier paiement marchand pour gagner tes premiers points.
+              {t('loyalty.emptyBody')}
             </Text>
           </View>
         ) : (
@@ -348,13 +350,13 @@ function relativeDate(iso: string): string {
   const d = new Date(iso);
   const now = Date.now();
   const m = Math.floor((now - d.getTime()) / 60000);
-  if (m < 1) return "à l'instant";
-  if (m < 60) return `il y a ${m} min`;
+  if (m < 1) return tr('wallet.rel.now');
+  if (m < 60) return tr('wallet.rel.min', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
+  if (h < 24) return tr('wallet.rel.hour', { n: h });
   const days = Math.floor(h / 24);
-  if (days < 7) return `il y a ${days} j`;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  if (days < 7) return tr('wallet.rel.day', { n: days });
+  return d.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' });
 }
 
 function makeStyles(c: ColorPalette) {

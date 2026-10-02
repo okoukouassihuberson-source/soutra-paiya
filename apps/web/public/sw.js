@@ -153,3 +153,36 @@ async function staleWhileRevalidate(req) {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
+
+
+// ============================================================================
+// Notifications push (PWA) — envoyées par l'Edge Function notify-dispatch.
+// Charge utile : { title, body, url, id }. `url` est toujours un chemin interne.
+// ============================================================================
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { title: 'Soutra-Playce', body: event.data ? event.data.text() : '' }; }
+  const title = typeof data.title === 'string' && data.title ? data.title : 'Soutra-Playce';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: typeof data.body === 'string' ? data.body : '',
+      icon: '/logo.png',
+      badge: '/icons/icon.svg',
+      tag: typeof data.id === 'string' ? data.id : undefined,
+      data: { url: typeof data.url === 'string' && data.url.startsWith('/') && !data.url.startsWith('//') ? data.url : '/notifications' },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/notifications';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ('focus' in c) { c.navigate(url).catch(() => {}); return c.focus(); }
+      }
+      return self.clients.openWindow(url);
+    }),
+  );
+});

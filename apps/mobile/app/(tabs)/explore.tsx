@@ -12,6 +12,7 @@ import { TabHeader } from '@/components/TabHeader';
 import { VenueCardSkeleton } from '@/components/Skeleton';
 import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/VoiceSearchSheet';
 import { useColors } from '@/lib/theme';
+import { useI18n, tr, type TKey } from '@/lib/i18n';
 
 // Aligné sur la vue `venues_public` (migration 0020). `lat`/`lng` proviennent
 // du point PostGIS `venues.location` projeté en colonnes simples.
@@ -46,24 +47,25 @@ const RADII_KM: { label: string; v: number }[] = [
 ];
 
 // Chips de catégorie : icône + label pour rythme visuel.
-const CHIPS: { label: string; category: string | null; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { label: 'Tout', category: null, icon: 'apps' },
-  { label: 'Maquis', category: 'maquis', icon: 'restaurant' },
-  { label: 'Restaurants', category: 'restaurant', icon: 'pizza' },
-  { label: 'Soirée', category: 'club', icon: 'wine' },
-  { label: 'Cafés', category: 'cafe', icon: 'cafe' },
-  { label: 'Hôtels', category: 'hotel', icon: 'bed' },
-  { label: 'Sport', category: 'sport', icon: 'football' },
+const CHIPS: { id: string; label: TKey; category: string | null; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 'all', label: 'explore.chipAll', category: null, icon: 'apps' },
+  { id: 'maquis', label: 'explore.chipMaquis', category: 'maquis', icon: 'restaurant' },
+  { id: 'restaurant', label: 'explore.chipRestaurants', category: 'restaurant', icon: 'pizza' },
+  { id: 'party', label: 'explore.chipParty', category: 'club', icon: 'wine' },
+  { id: 'cafe', label: 'explore.chipCafes', category: 'cafe', icon: 'cafe' },
+  { id: 'hotel', label: 'explore.chipHotels', category: 'hotel', icon: 'bed' },
+  { id: 'sport', label: 'explore.chipSport', category: 'sport', icon: 'football' },
 ];
 
 export default function Explore() {
   const router = useRouter();
+  const { t, tn } = useI18n();
   const palette = useColors();
   const s = useMemo(() => makeStyles(palette), [palette]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedChip, setSelectedChip] = useState<string>('Tout');
+  const [selectedChip, setSelectedChip] = useState<string>('all');
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -139,7 +141,7 @@ export default function Explore() {
 
       if (error) {
         console.error('[explore] load venues error:', error);
-        Alert.alert('Erreur', 'Impossible de charger les lieux. Vérifiez votre connexion.');
+        Alert.alert(t('explore.error'), t('explore.loadFail'));
         setVenues([]);
       } else {
         setVenues((data ?? []) as Venue[]);
@@ -166,7 +168,7 @@ export default function Explore() {
     setNearMeLoading(false);
     if (error) {
       console.error('[explore] nearby RPC error:', error);
-      Alert.alert('Erreur', error.message || 'Recherche par proximité indisponible.');
+      Alert.alert(t('explore.error'), error.message || t('explore.nearbyFail'));
       return;
     }
     setVenues((data || []) as Venue[]);
@@ -182,8 +184,8 @@ export default function Explore() {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
-        'Localisation refusée',
-        'Active la localisation dans les réglages du téléphone pour utiliser « Près de moi ».'
+        t('explore.locDenied'),
+        t('explore.locDeniedBody')
       );
       return;
     }
@@ -193,11 +195,11 @@ export default function Explore() {
       setNearMe(true);
     } catch (err) {
       console.error('[explore] getCurrentPosition error:', err);
-      Alert.alert('Localisation', 'Impossible d\'obtenir ta position. Réessaie en extérieur.');
+      Alert.alert(t('explore.locTitle'), t('explore.locFail'));
     }
   }
 
-  const selectedCategory = CHIPS.find((c) => c.label === selectedChip)?.category;
+  const selectedCategory = CHIPS.find((c) => c.id === selectedChip)?.category;
   const filteredVenues = useMemo(() => {
     const filtered = venues.filter((v) => {
       if (selectedCategory && v.category !== selectedCategory) return false;
@@ -254,7 +256,7 @@ export default function Explore() {
         }
       >
         <TabHeader
-          subtitle={`${filteredVenues.length} lieux à découvrir près de toi`}
+          subtitle={t('explore.count', { n: filteredVenues.length })}
           trailing={(
             <View style={{ flexDirection: 'row', gap: spacing.xs }}>
               {/* "Ajouter un lieu" — contribution communautaire (PR 9). */}
@@ -262,7 +264,7 @@ export default function Explore() {
                 hitSlop={10}
                 onPress={() => router.push('/add-venue')}
                 style={s.bellBtn}
-                accessibilityLabel="Ajouter un lieu"
+                accessibilityLabel={t('explore.addVenue')}
               >
                 <Ionicons name="add-circle-outline" size={22} color={palette.primary[500]} />
               </Pressable>
@@ -271,7 +273,7 @@ export default function Explore() {
                 hitSlop={10}
                 onPress={() => router.push('/trending')}
                 style={s.bellBtn}
-                accessibilityLabel="Ça bouge maintenant"
+                accessibilityLabel={t('explore.trendingLabel')}
               >
                 <Ionicons name="flame" size={20} color={palette.primary[500]} />
               </Pressable>
@@ -280,13 +282,13 @@ export default function Explore() {
                 hitSlop={10}
                 onPress={() => router.push('/events')}
                 style={s.bellBtn}
-                accessibilityLabel="Événements"
+                accessibilityLabel={t('explore.eventsLabel')}
               >
                 <Ionicons name="calendar-outline" size={20} color={palette.primary[500]} />
               </Pressable>
               <Pressable
                 hitSlop={10}
-                onPress={() => Alert.alert('Notifications', 'Aucune nouvelle notification.')}
+                onPress={() => Alert.alert(t('explore.notifTitle'), t('explore.notifNone'))}
                 style={s.bellBtn}
               >
                 <Ionicons name="notifications-outline" size={22} color={palette.dark} />
@@ -295,12 +297,29 @@ export default function Explore() {
           )}
         />
 
+        {/* V2 tourisme : accès rapide voyages, activités, promotions et mes réservations. */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+          {([
+            { label: t('home.trips'), icon: 'bus-outline', href: '/voyages' },
+            { label: t('home.activities'), icon: 'compass-outline', href: '/activites' },
+            { label: t('home.destinations'), icon: 'earth-outline', href: '/destinations' },
+            { label: t('home.promotions'), icon: 'pricetag-outline', href: '/promotions' },
+            { label: t('home.myTrips'), icon: 'ticket-outline', href: '/tourism-bookings' },
+          ] as const).map((x) => (
+            <Pressable key={x.href} onPress={() => router.push(x.href)} accessibilityRole="button" accessibilityLabel={x.label}
+                       style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99, backgroundColor: palette.primary[500] }}>
+              <Ionicons name={x.icon} size={16} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>{x.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
         <View style={s.searchBox}>
           <Ionicons name="search" size={18} color={palette.neutral[500]} />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Rechercher un lieu, un quartier…"
+            placeholder={t('explore.searchPlaceholder')}
             placeholderTextColor={palette.neutral[500]}
             style={s.searchInput}
             returnKeyType="search"
@@ -316,7 +335,7 @@ export default function Explore() {
             onPress={() => router.push({ pathname: '/search-ai', params: searchQuery.trim() ? { q: searchQuery.trim() } : {} })}
             hitSlop={6}
             style={({ pressed }) => [s.aiBtn, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}
-            accessibilityLabel="Recherche IA"
+            accessibilityLabel={t('explore.aiSearch')}
           >
             <Ionicons name="sparkles" size={16} color={palette.primary[500]} />
           </Pressable>
@@ -333,15 +352,15 @@ export default function Explore() {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipsRow}>
           {CHIPS.map((c) => {
-            const isActive = selectedChip === c.label;
+            const isActive = selectedChip === c.id;
             return (
               <Pressable
-                key={c.label}
-                onPress={() => setSelectedChip(c.label)}
+                key={c.id}
+                onPress={() => setSelectedChip(c.id)}
                 style={[s.chip, isActive && s.chipActive]}
               >
                 <Ionicons name={c.icon} size={14} color={isActive ? '#fff' : palette.neutral[700]} />
-                <Text style={[s.chipText, isActive && s.chipTextActive]}>{c.label}</Text>
+                <Text style={[s.chipText, isActive && s.chipTextActive]}>{t(c.label)}</Text>
               </Pressable>
             );
           })}
@@ -352,17 +371,17 @@ export default function Explore() {
           <Pressable onPress={toggleNearMe} style={[s.geoBtn, nearMe && s.geoBtnActive]}>
             <Ionicons name={nearMe ? 'navigate' : 'navigate-outline'} size={14} color={nearMe ? '#fff' : palette.primary[600]} />
             <Text style={[s.geoBtnText, nearMe && s.geoBtnTextActive]}>
-              {nearMe ? `Près de moi (${radiusKm} km)` : 'Près de moi'}
+              {nearMe ? t('explore.nearMeRadius', { km: radiusKm }) : t('explore.nearMe')}
             </Text>
           </Pressable>
           <Pressable onPress={() => setOpenNow((v) => !v)} style={[s.geoBtn, openNow && s.geoBtnActive]}>
             <Ionicons name="time-outline" size={14} color={openNow ? '#fff' : palette.primary[600]} />
-            <Text style={[s.geoBtnText, openNow && s.geoBtnTextActive]}>Ouvert maintenant</Text>
+            <Text style={[s.geoBtnText, openNow && s.geoBtnTextActive]}>{t('explore.openNow')}</Text>
           </Pressable>
           {/* PR Scores : trier par popularity_score desc */}
           <Pressable onPress={() => setSortByPopularity((v) => !v)} style={[s.geoBtn, sortByPopularity && s.geoBtnActive]}>
             <Ionicons name={sortByPopularity ? 'flame' : 'flame-outline'} size={14} color={sortByPopularity ? '#fff' : palette.primary[600]} />
-            <Text style={[s.geoBtnText, sortByPopularity && s.geoBtnTextActive]}>Top populaires</Text>
+            <Text style={[s.geoBtnText, sortByPopularity && s.geoBtnTextActive]}>{t('explore.topPopular')}</Text>
           </Pressable>
         </ScrollView>
 
@@ -398,7 +417,7 @@ export default function Explore() {
           <>
             <View style={s.sectionTitleRow}>
               <View style={s.sectionAccent} />
-              <Text style={s.sectionTitle}>Chargement…</Text>
+              <Text style={s.sectionTitle}>{t('explore.loading')}</Text>
             </View>
             <VenueCardSkeleton />
             <VenueCardSkeleton />
@@ -409,8 +428,8 @@ export default function Explore() {
             <View style={s.sectionTitleRow}>
               <View style={s.sectionAccent} />
               <Text style={s.sectionTitle}>
-                {filteredVenues.length} {filteredVenues.length > 1 ? 'lieux' : 'lieu'}
-                {selectedCategory ? ` · ${selectedChip}` : ''}
+                {tn('explore.venues', filteredVenues.length)}
+                {selectedCategory ? ` · ${t((CHIPS.find((x) => x.id === selectedChip)?.label ?? 'explore.chipAll') as TKey)}` : ''}
               </Text>
               {mapVenues.length < filteredVenues.length && (
                 <Text style={s.sectionHint}>{mapVenues.length} sur la carte</Text>
@@ -422,18 +441,18 @@ export default function Explore() {
                 <View style={s.emptyIconWrap}>
                   <Ionicons name="search-outline" size={48} color={palette.primary[400]} />
                 </View>
-                <Text style={s.emptyTitle}>Aucun lieu trouvé</Text>
+                <Text style={s.emptyTitle}>{t('explore.emptyTitle')}</Text>
                 <Text style={s.emptyText}>
                   {searchQuery || selectedCategory
-                    ? 'Essaie un autre filtre ou élargis le rayon.'
-                    : 'Aucun établissement actif pour l\'instant — reviens bientôt.'}
+                    ? t('explore.emptyFilter')
+                    : t('explore.emptyNone')}
                 </Text>
                 {(searchQuery || selectedCategory) && (
                   <Pressable
                     style={s.emptyBtn}
-                    onPress={() => { setSearchQuery(''); setSelectedChip('Tout'); setOpenNow(false); }}
+                    onPress={() => { setSearchQuery(''); setSelectedChip('all'); setOpenNow(false); }}
                   >
-                    <Text style={s.emptyBtnText}>Réinitialiser les filtres</Text>
+                    <Text style={s.emptyBtnText}>{t('explore.resetFilters')}</Text>
                   </Pressable>
                 )}
               </View>
@@ -461,18 +480,18 @@ export default function Explore() {
                       {isFeatured && (
                         <View style={s.featuredBadge}>
                           <Ionicons name="flame" size={11} color="#fff" />
-                          <Text style={s.featuredText}>Tendance</Text>
+                          <Text style={s.featuredText}>{t('explore.trending')}</Text>
                         </View>
                       )}
                       {v.is_open_now === true && (
                         <View style={[s.statusBadge, s.openBadge]}>
                           <View style={s.statusDot} />
-                          <Text style={s.statusText}>Ouvert</Text>
+                          <Text style={s.statusText}>{t('explore.open')}</Text>
                         </View>
                       )}
                       {v.is_open_now === false && (
                         <View style={[s.statusBadge, s.closedBadgeBg]}>
-                          <Text style={[s.statusText, { color: '#fff' }]}>Fermé</Text>
+                          <Text style={[s.statusText, { color: '#fff' }]}>{t('explore.closed')}</Text>
                         </View>
                       )}
                     </View>
@@ -549,16 +568,7 @@ function toQuickVenue(v: Venue): QuickVenue {
 }
 
 function labelForCategory(c: string): string {
-  switch (c) {
-    case 'maquis': return 'Maquis';
-    case 'restaurant': return 'Restaurant';
-    case 'club': return 'Club';
-    case 'cafe': return 'Café';
-    case 'hotel': return 'Hôtel';
-    case 'sport': return 'Sport';
-    case 'event_space': return 'Espace événementiel';
-    default: return c;
-  }
+  return ['maquis', 'restaurant', 'club', 'cafe', 'hotel', 'sport', 'event_space'].includes(c) ? tr(`explore.cat.${c}` as TKey) : c;
 }
 
 function makeStyles(c: ColorPalette) {

@@ -11,9 +11,11 @@ import { useState } from 'react';
  *
  * Utilisé par Topbar + Sidebar de l'AppShell.
  */
-export function BrandMark({ size = 'md', className = '' }: {
+export function BrandMark({ size = 'md', className = '', decorative = false }: {
   size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
+  /** true quand le nom « Soutra-Playce » est écrit à côté (évite l'alt redondant). */
+  decorative?: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
 
@@ -38,7 +40,7 @@ export function BrandMark({ size = 'md', className = '' }: {
   return (
     <img
       src="/logo.png"
-      alt="Soutra-Playce"
+      alt={decorative ? '' : 'Soutra-Playce'}
       width={64}
       height={64}
       onError={() => setImgError(true)}

@@ -9,6 +9,11 @@ import { formatXOF } from '@soutra/shared';
 import { ReportsTab } from './_components/ReportsTab';
 import { ClaimsTab } from './_components/ClaimsTab';
 import { SubmissionsTab } from './_components/SubmissionsTab';
+import { TripsTab } from './_components/TripsTab';
+import { DestinationsTab } from './_components/DestinationsTab';
+import { ActivitiesTab } from './_components/ActivitiesTab';
+import { CommissionsPanel } from '@/components/tourism/CommissionsPanel';
+import { OffersManager } from '@/components/tourism/OffersManager';
 import { MonetizationTab } from './_components/MonetizationTab';
 import { ModerationTab } from './_components/ModerationTab';
 import { SubscriptionsTab } from './_components/SubscriptionsTab';
@@ -35,13 +40,18 @@ const VenueCategoryBar      = dynamic(() => import('./_components/AdminCharts').
 const RevenueByProviderBar  = dynamic(() => import('./_components/AdminCharts').then(m => m.RevenueByProviderBar),  { ssr: false, loading: ChartLoader });
 const UsersByCityBar        = dynamic(() => import('./_components/AdminCharts').then(m => m.UsersByCityBar),        { ssr: false, loading: ChartLoader });
 
-type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'moderation' | 'subscriptions' | 'subscribers' | 'loyalty' | 'wallets' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
+type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'moderation' | 'subscriptions' | 'subscribers' | 'loyalty' | 'wallets' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings' | 'trips' | 'destinations' | 'activities' | 'offers' | 'commissions';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Vue d\'ensemble', icon: <IcoGrid /> },
   { id: 'analytics', label: 'Analytics', icon: <IcoChart /> },
   { id: 'users', label: 'Utilisateurs', icon: <IcoUsers /> },
   { id: 'venues', label: 'Établissements', icon: <IcoBuilding /> },
+  { id: 'trips', label: 'Voyages', icon: <IcoCalendar /> },
+  { id: 'destinations', label: 'Destinations', icon: <IcoBuilding /> },
+  { id: 'activities', label: 'Activités', icon: <IcoCalendar /> },
+  { id: 'offers', label: 'Offres', icon: <IcoCalendar /> },
+  { id: 'commissions', label: 'Commissions', icon: <IcoCalendar /> },
   { id: 'moderation', label: 'Modération Pro', icon: <IcoShield /> },
   { id: 'subscriptions', label: 'Abonnements', icon: <IcoCurrency /> },
   { id: 'subscribers', label: 'Abonnés', icon: <IcoUsers /> },
@@ -132,7 +142,7 @@ function AdminDashboard() {
   // bouton retour navigateur, deep-linking).
   const tabParam = searchParams?.get('tab');
   const tab: Tab = (
-    ['overview', 'analytics', 'users', 'venues', 'moderation', 'subscriptions', 'subscribers', 'loyalty', 'wallets', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
+    ['overview', 'analytics', 'users', 'venues', 'moderation', 'subscriptions', 'subscribers', 'loyalty', 'wallets', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings', 'trips', 'destinations', 'activities', 'offers', 'commissions'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'overview';
   const setTab = useCallback((next: Tab) => {
     router.replace(`/admin?tab=${next}`, { scroll: false });
@@ -721,6 +731,7 @@ function AdminDashboard() {
                     <span key="d" className="text-xs text-neutral-500">{fmtDate(u.created_at)}</span>,
                     <ActionGroup key="a" loading={actionLoading === u.id} actions={[
                       u.kyc_status !== 'verified' && { label: 'Vérifier KYC', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => updateProfile(u.id, { kyc_status: 'verified' }) },
+                      u.role === 'user' && { label: '→ Organisateur', cls: 'text-purple-400 hover:bg-purple-900/30', fn: () => updateProfile(u.id, { role: 'organizer' }) },
                       u.role !== 'admin' && { label: '→ Admin', cls: 'text-amber-400 hover:bg-amber-900/30', fn: () => updateProfile(u.id, { role: 'admin' }) },
                       u.role !== 'user' && u.role !== 'admin' && { label: '→ User', cls: 'text-neutral-400 hover:bg-neutral-800', fn: () => updateProfile(u.id, { role: 'user' }) },
                       !u.is_super_admin && !u.is_banned && { label: 'Bannir', cls: 'text-red-400 hover:bg-red-900/30', fn: () => setBanTarget(u) },
@@ -782,6 +793,11 @@ function AdminDashboard() {
 
           {/* ═══════════ REPORTS (signalements) ═══════════ */}
           {tab === 'reports' && <ReportsTab />}
+          {tab === 'trips' && !isModeratorOnly && <TripsTab />}
+          {tab === 'destinations' && !isModeratorOnly && <DestinationsTab />}
+          {tab === 'activities' && !isModeratorOnly && <ActivitiesTab />}
+          {tab === 'offers' && !isModeratorOnly && <OffersManager admin />}
+          {tab === 'commissions' && !isModeratorOnly && <CommissionsPanel />}
           {tab === 'claims' && <ClaimsTab />}
           {tab === 'submissions' && <SubmissionsTab />}
           {tab === 'monetization' && <MonetizationTab />}

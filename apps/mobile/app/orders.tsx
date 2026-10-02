@@ -11,6 +11,7 @@ import { typography, radius, spacing, formatXOF, type ColorPalette } from '@sout
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
+import { useI18n, tr, trn, intlLocale, type TKey } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { PaymentMethodsStrip } from '@/components/PaymentMethodsStrip';
 
@@ -60,20 +61,21 @@ interface Order {
   } | null;
 }
 
-const STATUS_META: Record<OrderStatus, { label: string; color: string; icon: string }> = {
-  pending:   { label: 'En attente',     color: '#f59e0b', icon: 'time-outline' },
-  confirmed: { label: 'Confirmée',      color: '#3b82f6', icon: 'checkmark-circle-outline' },
-  preparing: { label: 'En préparation', color: '#6366f1', icon: 'cube-outline' },
-  ready:     { label: 'Prête',          color: '#10b981', icon: 'bag-check-outline' },
-  delivered: { label: 'Livrée',         color: '#059669', icon: 'checkmark-done-outline' },
-  cancelled: { label: 'Annulée',        color: '#737373', icon: 'close-circle-outline' },
-  refunded:  { label: 'Remboursée',     color: '#a855f7', icon: 'refresh-circle-outline' },
+const STATUS_META: Record<OrderStatus, { color: string; icon: string }> = {
+  pending:   { color: '#f59e0b', icon: 'time-outline' },
+  confirmed: { color: '#3b82f6', icon: 'checkmark-circle-outline' },
+  preparing: { color: '#6366f1', icon: 'cube-outline' },
+  ready:     { color: '#10b981', icon: 'bag-check-outline' },
+  delivered: { color: '#059669', icon: 'checkmark-done-outline' },
+  cancelled: { color: '#737373', icon: 'close-circle-outline' },
+  refunded:  { color: '#a855f7', icon: 'refresh-circle-outline' },
 };
 
 export default function OrdersScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const c = useColors();
+  const { t, tn } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -113,7 +115,7 @@ export default function OrdersScreen() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader title="Mes commandes" />
+        <ScreenHeader title={t('orders.title')} />
         <View style={s.center}><ActivityIndicator color={c.primary[500]} /></View>
       </SafeAreaView>
     );
@@ -121,7 +123,7 @@ export default function OrdersScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Mes commandes" subtitle={`${orders.length} commande${orders.length > 1 ? 's' : ''}`} />
+      <ScreenHeader title={t('orders.title')} subtitle={tn('orders.count', orders.length)} />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
@@ -130,13 +132,13 @@ export default function OrdersScreen() {
         {orders.length === 0 ? (
           <View style={s.empty}>
             <Ionicons name="receipt-outline" size={56} color={c.neutral[400]} />
-            <Text style={s.emptyTitle}>Aucune commande pour l&apos;instant</Text>
+            <Text style={s.emptyTitle}>{t('orders.emptyTitle')}</Text>
             <Text style={s.emptyBody}>
-              Explore les boutiques et passe ta première commande.
+              {t('orders.emptyBody')}
             </Text>
             <Pressable onPress={() => router.push('/(tabs)/explore')} style={s.cta}>
               <Ionicons name="compass" size={18} color="#fff" />
-              <Text style={s.ctaText}>Explorer</Text>
+              <Text style={s.ctaText}>{t('orders.explore')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -156,6 +158,7 @@ export default function OrdersScreen() {
  * ─────────────────────────────────────────────────── */
 
 function OrderCard({ c, order, onPress }: { c: ColorPalette; order: Order; onPress: () => void }) {
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const meta = STATUS_META[order.status];
   return (
@@ -170,7 +173,7 @@ function OrderCard({ c, order, onPress }: { c: ColorPalette; order: Order; onPre
         </View>
         <View style={[s.statusPill, { backgroundColor: meta.color + '20' }]}>
           <Ionicons name={meta.icon as any} size={12} color={meta.color} />
-          <Text style={[s.statusText, { color: meta.color }]}>{meta.label}</Text>
+          <Text style={[s.statusText, { color: meta.color }]}>{t(`orders.status.${order.status}` as TKey)}</Text>
         </View>
       </View>
       <View style={s.cardFooter}>
@@ -189,6 +192,7 @@ function OrderCard({ c, order, onPress }: { c: ColorPalette; order: Order; onPre
 
 function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: () => void }) {
   const c = useColors();
+  const { t, intl } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [paying, setPaying] = useState(false);
 
@@ -200,13 +204,13 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
         body: { order_id: order.id },
       });
       if (error) {
-        Alert.alert('Erreur', error.message || 'Impossible de démarrer le paiement');
+        Alert.alert(t('orders.error'), error.message || t('orders.payStartFail'));
         return;
       }
       const url = (data as any)?.checkout_url;
       const reference = (data as any)?.reference;
       if (!url || !reference) {
-        Alert.alert('Erreur', 'Réponse GeniusPay invalide');
+        Alert.alert(t('orders.error'), t('orders.invalidResponse'));
         return;
       }
       // openAuthSessionAsync (au lieu de openBrowserAsync) referme
@@ -219,11 +223,11 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
         body: { reference },
       });
     } catch (err) {
-      Alert.alert('Erreur', err instanceof Error ? err.message : 'Erreur inattendue');
+      Alert.alert(t('orders.error'), err instanceof Error ? err.message : t('orders.unexpected'));
     } finally {
       setPaying(false);
     }
-  }, [order]);
+  }, [order, t]);
 
   if (!order) return null;
   const meta = STATUS_META[order.status];
@@ -231,14 +235,14 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
 
   // Timeline étapes (filtrées selon ce qui s'est passé)
   const steps: { label: string; date: string | null; done: boolean }[] = [
-    { label: 'Commande passée',   date: order.created_at,   done: true },
-    { label: 'Paiement confirmé', date: order.confirmed_at, done: !!order.confirmed_at },
-    { label: 'En préparation',    date: null,               done: ['preparing','ready','delivered'].includes(order.status) },
-    { label: 'Prête',             date: order.ready_at,     done: !!order.ready_at },
-    { label: 'Livrée',            date: order.delivered_at, done: !!order.delivered_at },
+    { label: t('orders.stepPlaced'), date: order.created_at,   done: true },
+    { label: t('orders.stepPaid'), date: order.confirmed_at, done: !!order.confirmed_at },
+    { label: t('orders.stepPreparing'), date: null,               done: ['preparing','ready','delivered'].includes(order.status) },
+    { label: t('orders.stepReady'), date: order.ready_at,     done: !!order.ready_at },
+    { label: t('orders.stepDelivered'), date: order.delivered_at, done: !!order.delivered_at },
   ];
   if (order.status === 'cancelled') {
-    steps.push({ label: 'Annulée', date: order.cancelled_at, done: true });
+    steps.push({ label: t('orders.stepCancelled'), date: order.cancelled_at, done: true });
   }
 
   return (
@@ -251,7 +255,7 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
             <Text style={s.modalNumber}>{order.order_number}</Text>
             <View style={[s.statusPill, { backgroundColor: meta.color + '20', alignSelf: 'flex-start', marginTop: spacing.xs }]}>
               <Ionicons name={meta.icon as any} size={14} color={meta.color} />
-              <Text style={[s.statusText, { color: meta.color, fontSize: typography.fontSize.sm }]}>{meta.label}</Text>
+              <Text style={[s.statusText, { color: meta.color, fontSize: typography.fontSize.sm }]}>{t(`orders.status.${order.status}` as TKey)}</Text>
             </View>
 
             {/* Venue */}
@@ -268,7 +272,7 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
             </View>
 
             {/* Items */}
-            <Text style={s.sectionTitle}>Articles</Text>
+            <Text style={s.sectionTitle}>{t('orders.items')}</Text>
             {order.items.map((it, i) => (
               <View key={i} style={s.itemRow}>
                 <View style={s.itemQtyBox}><Text style={s.itemQtyText}>×{it.qty}</Text></View>
@@ -286,16 +290,16 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
 
             {/* Totaux */}
             <View style={s.totals}>
-              <Row label="Sous-total" value={formatXOF(order.subtotal_xof)} />
+              <Row label={t('orders.subtotal')} value={formatXOF(order.subtotal_xof)} />
               {order.delivery_fee_xof > 0 && (
-                <Row label="Livraison" value={formatXOF(order.delivery_fee_xof)} />
+                <Row label={t('orders.delivery')} value={formatXOF(order.delivery_fee_xof)} />
               )}
-              <Row label="Total" value={formatXOF(order.total_xof)} bold />
+              <Row label={t('orders.total')} value={formatXOF(order.total_xof)} bold />
             </View>
 
             {/* Delivery */}
             <Text style={s.sectionTitle}>
-              {order.delivery_method === 'delivery' ? '🚚 Livraison' : '🏪 Retrait'}
+              {order.delivery_method === 'delivery' ? t('orders.byDelivery') : t('orders.pickup')}
             </Text>
             {order.delivery_method === 'delivery' && order.delivery_address && (
               <Text style={s.modalText}>{order.delivery_address}</Text>
@@ -307,14 +311,14 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
             {/* Contact */}
             {(order.contact_name || order.contact_phone) && (
               <>
-                <Text style={s.sectionTitle}>Contact</Text>
+                <Text style={s.sectionTitle}>{t('orders.contact')}</Text>
                 {order.contact_name && <Text style={s.modalText}>{order.contact_name}</Text>}
                 {order.contact_phone && <Text style={s.modalText}>{order.contact_phone}</Text>}
               </>
             )}
 
             {/* Timeline */}
-            <Text style={s.sectionTitle}>Suivi</Text>
+            <Text style={s.sectionTitle}>{t('orders.followUp')}</Text>
             <View style={s.timeline}>
               {steps.map((step, i) => (
                 <View key={i} style={s.tlStep}>
@@ -324,7 +328,7 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
                   <View style={{ flex: 1 }}>
                     <Text style={[s.tlLabel, step.done && s.tlLabelDone]}>{step.label}</Text>
                     {step.date && (
-                      <Text style={s.tlDate}>{new Date(step.date).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
+                      <Text style={s.tlDate}>{new Date(step.date).toLocaleString(intl, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</Text>
                     )}
                   </View>
                 </View>
@@ -347,14 +351,14 @@ function OrderDetailModal({ order, onClose }: { order: Order | null; onClose: ()
                 >
                   <Ionicons name="card" size={20} color="#fff" />
                   <Text style={s.payBtnText}>
-                    {paying ? 'Démarrage Paystack…' : `Payer maintenant · ${formatXOF(order.total_xof)}`}
+                    {paying ? t('orders.paying') : t('orders.payNow', { amount: formatXOF(order.total_xof) })}
                   </Text>
                 </Pressable>
               </>
             )}
 
             <Pressable onPress={onClose} style={s.closeBtn}>
-              <Text style={s.closeBtnText}>Fermer</Text>
+              <Text style={s.closeBtnText}>{t('orders.close')}</Text>
             </Pressable>
           </ScrollView>
         </View>
@@ -376,13 +380,13 @@ function Row({ label, value, bold = false }: { label: string; value: string; bol
 function relativeDate(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return "à l'instant";
-  if (m < 60) return `il y a ${m} min`;
+  if (m < 1) return tr('wallet.rel.now');
+  if (m < 60) return tr('wallet.rel.min', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
+  if (h < 24) return tr('wallet.rel.hour', { n: h });
   const d = Math.floor(h / 24);
-  if (d < 7) return `il y a ${d} j`;
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  if (d < 7) return tr('wallet.rel.day', { n: d });
+  return new Date(iso).toLocaleDateString(intlLocale(), { day: '2-digit', month: 'short' });
 }
 
 function makeStyles(c: ColorPalette) {

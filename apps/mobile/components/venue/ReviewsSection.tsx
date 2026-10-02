@@ -7,6 +7,7 @@ import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n, type TKey } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth-context';
 import { RatingDistribution } from './RatingDistribution';
 import { ReviewCard } from './ReviewCard';
@@ -27,17 +28,18 @@ interface Props {
   venueName: string;
 }
 
-const SORT_OPTIONS: { key: ReviewSort; label: string }[] = [
-  { key: 'recent', label: 'Récents' },
-  { key: 'helpful', label: 'Utiles' },
-  { key: 'rating_high', label: 'Note ↑' },
-  { key: 'rating_low', label: 'Note ↓' },
+const SORT_OPTIONS: { key: ReviewSort; label: TKey }[] = [
+  { key: 'recent', label: 'review.sortRecent' },
+  { key: 'helpful', label: 'review.sortHelpful' },
+  { key: 'rating_high', label: 'review.sortHigh' },
+  { key: 'rating_low', label: 'review.sortLow' },
 ];
 
 const PAGE_SIZE = 10;
 
 export function ReviewsSection({ venueId, venueName }: Props) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const { user } = useAuth();
 
@@ -114,7 +116,7 @@ export function ReviewsSection({ venueId, venueName }: Props) {
     deleteReview(reviewId)
       .then(() => void loadFirstPage(sort))
       .catch(() => {
-        Alert.alert('Erreur', "Impossible de supprimer l'avis.");
+        Alert.alert(t('review.error'), t('review.deleteFail'));
         void loadFirstPage(sort);
       });
   };
@@ -123,7 +125,7 @@ export function ReviewsSection({ venueId, venueName }: Props) {
 
   return (
     <View style={s.wrap}>
-      <Text style={s.sectionTitle}>Avis</Text>
+      <Text style={s.sectionTitle}>{t('review.section')}</Text>
 
       {loading ? (
         <ActivityIndicator color={c.primary[500]} style={{ marginVertical: spacing.lg }} />
@@ -136,7 +138,7 @@ export function ReviewsSection({ venueId, venueName }: Props) {
             onPress={() => { setEditingReview(null); setFormOpen(true); }}
           >
             <Ionicons name="star-outline" size={16} color="#fff" />
-            <Text style={s.ctaText}>{alreadyReviewed ? 'Gérer mon avis' : 'Laisser un avis'}</Text>
+            <Text style={s.ctaText}>{alreadyReviewed ? t('review.manage') : t('review.leave')}</Text>
           </Pressable>
 
           {reviews.length > 0 && (
@@ -149,7 +151,7 @@ export function ReviewsSection({ venueId, venueName }: Props) {
                     onPress={() => setSort(opt.key)}
                     style={[s.chip, active && s.chipActive]}
                   >
-                    <Text style={[s.chipText, active && s.chipTextActive]}>{opt.label}</Text>
+                    <Text style={[s.chipText, active && s.chipTextActive]}>{t(opt.label)}</Text>
                   </Pressable>
                 );
               })}
@@ -157,7 +159,7 @@ export function ReviewsSection({ venueId, venueName }: Props) {
           )}
 
           {reviews.length === 0 ? (
-            <Text style={s.emptyText}>Aucun avis pour l'instant. Sois le premier à en laisser un !</Text>
+            <Text style={s.emptyText}>{t('review.none')}</Text>
           ) : (
             <View style={{ marginTop: spacing.sm }}>
               {reviews.map((r) => (
@@ -175,7 +177,7 @@ export function ReviewsSection({ venueId, venueName }: Props) {
                   {loadingMore ? (
                     <ActivityIndicator color={c.primary[500]} />
                   ) : (
-                    <Text style={s.loadMoreText}>Voir plus d'avis</Text>
+                    <Text style={s.loadMoreText}>{t('review.more')}</Text>
                   )}
                 </Pressable>
               )}

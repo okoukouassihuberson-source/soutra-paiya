@@ -9,12 +9,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { decode } from 'base64-arraybuffer';
 import { colors, typography, radius, spacing } from '@soutra/shared';
+import { useI18n, type TKey } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 
 const ID_TYPES = ['CNI', 'Passeport', 'Permis de conduire'];
 
 export default function Kyc() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const sb = supabase as any;
@@ -52,7 +54,7 @@ export default function Kyc() {
   async function pickPhoto() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission requise', 'Autorise l\'accès aux photos pour ajouter ta pièce.');
+      Alert.alert(t('kyc.permTitle'), t('kyc.permBody'));
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -64,7 +66,7 @@ export default function Kyc() {
     if (res.canceled || !res.assets?.[0]) return;
     const asset = res.assets[0];
     if (!asset.base64) {
-      Alert.alert('Erreur', 'Image illisible. Réessaie avec une autre photo.');
+      Alert.alert(t('kyc.error'), t('kyc.unreadable'));
       return;
     }
     setPhotoUri(asset.uri);
@@ -74,15 +76,15 @@ export default function Kyc() {
   async function submit() {
     if (!user?.id) return;
     if (legalName.trim().length < 2) {
-      Alert.alert('Nom requis', 'Indique ton nom légal complet.');
+      Alert.alert(t('kyc.nameReq'), t('kyc.nameReqBody'));
       return;
     }
     if (idNumber.trim().length < 3) {
-      Alert.alert('Numéro requis', 'Indique le numéro de ta pièce d\'identité.');
+      Alert.alert(t('kyc.numReq'), t('kyc.numReqBody'));
       return;
     }
     if (!photoBase64) {
-      Alert.alert('Photo requise', 'Ajoute une photo de ta pièce d\'identité.');
+      Alert.alert(t('kyc.photoReq'), t('kyc.photoReqBody'));
       return;
     }
 
@@ -95,8 +97,8 @@ export default function Kyc() {
         .upload(path, decode(photoBase64), { contentType: 'image/jpeg', upsert: true });
       if (upErr) {
         Alert.alert(
-          'Envoi du document impossible',
-          'Vérifie que le bucket Storage « kyc » existe (migration 0006). ' + upErr.message,
+          t('kyc.uploadFail'),
+          t('kyc.uploadHint') + upErr.message,
         );
         return;
       }
@@ -114,14 +116,14 @@ export default function Kyc() {
         })
         .eq('id', user.id);
       if (error) {
-        Alert.alert('Erreur', error.message ?? 'Envoi impossible.');
+        Alert.alert(t('kyc.error'), error.message ?? t('kyc.sendFail'));
         return;
       }
 
       setStatus('pending');
       Alert.alert(
-        'Demande envoyée',
-        'Ta vérification KYC est en cours d\'examen. Tu seras notifié du résultat.',
+        t('kyc.sentTitle'),
+        t('kyc.sentBody'),
       );
     } finally {
       setSaving(false);
@@ -136,7 +138,7 @@ export default function Kyc() {
         <Pressable hitSlop={10} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </Pressable>
-        <Text style={s.headerTitle}>Vérification KYC</Text>
+        <Text style={s.headerTitle}>{t('kyc.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -151,85 +153,84 @@ export default function Kyc() {
             <View style={s.infoCard}>
               <Ionicons name="shield-checkmark" size={22} color={colors.secondary[500]} />
               <Text style={s.infoText}>
-                La vérification d'identité permet d'augmenter tes limites au-delà
-                de 200 000 FCFA et de sécuriser ton compte.
+                {t('kyc.info')}
               </Text>
             </View>
 
             {status === 'verified' && (
               <View style={[s.statusCard, { backgroundColor: colors.secondary[50] }]}>
-                <Text style={[s.statusTitle, { color: colors.success }]}>✓ Compte vérifié</Text>
-                <Text style={s.statusBody}>Ton identité a été validée. Tes limites sont relevées.</Text>
+                <Text style={[s.statusTitle, { color: colors.success }]}>{t('kyc.verifiedTitle')}</Text>
+                <Text style={s.statusBody}>{t('kyc.verifiedBody')}</Text>
               </View>
             )}
 
             {status === 'pending' && (
               <View style={[s.statusCard, { backgroundColor: '#FFF7E6' }]}>
-                <Text style={[s.statusTitle, { color: colors.warning }]}>⏳ Demande en cours</Text>
+                <Text style={[s.statusTitle, { color: colors.warning }]}>{t('kyc.pendingTitle')}</Text>
                 <Text style={s.statusBody}>
-                  Ta demande est en cours d'examen. Tu seras notifié du résultat.
+                  {t('kyc.pendingBody')}
                 </Text>
               </View>
             )}
 
             {status === 'rejected' && (
               <View style={[s.statusCard, { backgroundColor: '#FDECEC' }]}>
-                <Text style={[s.statusTitle, { color: colors.danger }]}>✗ Demande rejetée</Text>
-                <Text style={s.statusBody}>Vérifie tes informations et renvoie ta demande.</Text>
+                <Text style={[s.statusTitle, { color: colors.danger }]}>{t('kyc.rejectedTitle')}</Text>
+                <Text style={s.statusBody}>{t('kyc.rejectedBody')}</Text>
               </View>
             )}
 
             {canSubmit && (
               <>
-                <Text style={[s.label, s.spaced]}>Nom légal complet</Text>
+                <Text style={[s.label, s.spaced]}>{t('kyc.legalName')}</Text>
                 <TextInput
                   value={legalName}
                   onChangeText={setLegalName}
                   style={s.input}
-                  placeholder="Tel qu'inscrit sur ta pièce"
+                  placeholder={t('kyc.legalNamePh')}
                   placeholderTextColor={colors.neutral[400]}
                   autoCapitalize="words"
                 />
 
-                <Text style={[s.label, s.spaced]}>Type de pièce</Text>
+                <Text style={[s.label, s.spaced]}>{t('kyc.idType')}</Text>
                 <View style={s.chips}>
-                  {ID_TYPES.map((t) => {
-                    const active = idType === t;
+                  {ID_TYPES.map((it) => {
+                    const active = idType === it;
                     return (
                       <Pressable
-                        key={t}
-                        onPress={() => setIdType(t)}
+                        key={it}
+                        onPress={() => setIdType(it)}
                         style={[s.chip, active && s.chipActive]}
                       >
-                        <Text style={[s.chipText, active && s.chipTextActive]}>{t}</Text>
+                        <Text style={[s.chipText, active && s.chipTextActive]}>{t(`kyc.id.${it}` as TKey)}</Text>
                       </Pressable>
                     );
                   })}
                 </View>
 
-                <Text style={[s.label, s.spaced]}>Numéro de la pièce</Text>
+                <Text style={[s.label, s.spaced]}>{t('kyc.idNumber')}</Text>
                 <TextInput
                   value={idNumber}
                   onChangeText={setIdNumber}
                   style={s.input}
-                  placeholder="Numéro du document"
+                  placeholder={t('kyc.idNumberPh')}
                   placeholderTextColor={colors.neutral[400]}
                   autoCapitalize="characters"
                 />
 
-                <Text style={[s.label, s.spaced]}>Photo de la pièce</Text>
+                <Text style={[s.label, s.spaced]}>{t('kyc.photo')}</Text>
                 {photoUri ? (
                   <Pressable onPress={pickPhoto} style={s.photoPreviewWrap}>
                     <Image source={{ uri: photoUri }} style={s.photoPreview} />
                     <View style={s.photoOverlay}>
                       <Ionicons name="camera-reverse-outline" size={18} color="#fff" />
-                      <Text style={s.photoOverlayText}>Changer la photo</Text>
+                      <Text style={s.photoOverlayText}>{t('kyc.change')}</Text>
                     </View>
                   </Pressable>
                 ) : (
                   <Pressable onPress={pickPhoto} style={s.photoPicker}>
                     <Ionicons name="camera-outline" size={28} color={colors.primary[500]} />
-                    <Text style={s.photoPickerText}>Ajouter une photo de ta pièce</Text>
+                    <Text style={s.photoPickerText}>{t('kyc.add')}</Text>
                   </Pressable>
                 )}
 
@@ -240,7 +241,7 @@ export default function Kyc() {
                 >
                   {saving
                     ? <ActivityIndicator color="#fff" />
-                    : <Text style={s.ctaText}>Envoyer ma demande</Text>}
+                    : <Text style={s.ctaText}>{t('kyc.submit')}</Text>}
                 </Pressable>
               </>
             )}

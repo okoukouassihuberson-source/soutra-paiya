@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n';
 import { lookupRecipient, sendMoney } from '@/lib/wallet';
 import { hasPaymentPin } from '@/lib/security';
 import { PinPrompt } from '@/components/PinPrompt';
@@ -22,6 +23,7 @@ interface Beneficiary {
 }
 
 export default function Send() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const params = useLocalSearchParams<{ phone?: string; amount?: string }>();
@@ -73,9 +75,9 @@ export default function Send() {
         amountXof: amountNum,
         note: note.trim() || undefined,
       });
-      Alert.alert('Transfert réussi 🎉', `${formatXOF(amountNum)} envoyés à ${result.recipientName}.`, [{ text: 'OK', onPress: () => router.back() }]);
+      Alert.alert(t('money.send.doneTitle'), t('money.send.doneBody', { amount: formatXOF(amountNum), name: result.recipientName }), [{ text: t('money.ok'), onPress: () => router.back() }]);
     } catch (err: any) {
-      Alert.alert('Échec du transfert', err?.message ?? 'Une erreur est survenue.');
+      Alert.alert(t('money.send.failTitle'), err?.message ?? t('money.send.generic'));
     } finally {
       setSubmitting(false);
     }
@@ -92,19 +94,19 @@ export default function Send() {
     const recipient = await lookupRecipient(phone);
     setSubmitting(false);
     if (!recipient) {
-      Alert.alert('Destinataire introuvable', 'Aucun compte Soutra-Playce n\'est associé à ce numéro.');
+      Alert.alert(t('money.send.notFoundTitle'), t('money.send.notFoundBody'));
       return;
     }
-    Alert.alert('Confirmer le transfert', `Envoyer ${formatXOF(amountNum)} à ${recipient.name} ?`, [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Envoyer', onPress: gatedSend },
+    Alert.alert(t('money.send.confirmTitle'), t('money.send.confirmBody', { amount: formatXOF(amountNum), name: recipient.name }), [
+      { text: t('money.send.cancel'), style: 'cancel' },
+      { text: t('money.send.sendBtn'), onPress: gatedSend },
     ]);
   };
 
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader title="Envoyer" />
+        <ScreenHeader title={t('money.send.title')} />
         <ActivityIndicator size="large" color={colors.primary[500]} style={{ flex: 1, marginTop: spacing.xl }} />
       </SafeAreaView>
     );
@@ -113,11 +115,11 @@ export default function Send() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScreenHeader title="Envoyer" subtitle="Transfert instantané à un autre user" />
+        <ScreenHeader title={t('money.send.title')} subtitle={t('money.send.subtitle')} />
 
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }} keyboardShouldPersistTaps="handled">
           <View style={s.balanceCard}>
-            <Text style={s.balanceLabel}>Solde disponible</Text>
+            <Text style={s.balanceLabel}>{t('money.balance')}</Text>
             <Text style={s.balanceValue}>{formatXOF(balance)}</Text>
           </View>
 
@@ -126,7 +128,7 @@ export default function Send() {
             <>
               <View style={s.sectionTitleRow}>
                 <View style={s.sectionAccent} />
-                <Text style={s.sectionTitle}>Contacts récents</Text>
+                <Text style={s.sectionTitle}>{t('money.send.recent')}</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.contactsRow}>
                 {beneficiaries.map((b) => (
@@ -148,7 +150,7 @@ export default function Send() {
           {/* Recipient */}
           <View style={s.sectionTitleRow}>
             <View style={s.sectionAccent} />
-            <Text style={s.sectionTitle}>Numéro du destinataire</Text>
+            <Text style={s.sectionTitle}>{t('money.send.recipient')}</Text>
           </View>
           <View style={[s.fieldCard, phone.length > 4 && !phoneValid && s.fieldCardError]}>
             <Ionicons name="person-outline" size={18} color={colors.neutral[500]} />
@@ -156,7 +158,7 @@ export default function Send() {
               style={s.textField}
               value={phone}
               onChangeText={(t) => setPhone(t.replace(/[^0-9+]/g, ''))}
-              placeholder="+225XXXXXXXXXX"
+              placeholder={t('money.phonePh')}
               placeholderTextColor={colors.neutral[400]}
               keyboardType="phone-pad"
               maxLength={14}
@@ -171,13 +173,13 @@ export default function Send() {
             </Pressable>
           </View>
           {phone.length > 4 && !phoneValid && (
-            <Text style={s.errorHint}>Format attendu : +225 suivi de 10 chiffres.</Text>
+            <Text style={s.errorHint}>{t('money.phoneHint')}</Text>
           )}
 
           {/* Amount */}
           <View style={s.sectionTitleRow}>
             <View style={s.sectionAccent} />
-            <Text style={s.sectionTitle}>Montant</Text>
+            <Text style={s.sectionTitle}>{t('money.send.amount')}</Text>
           </View>
           <View style={[s.fieldCard, amount.length > 0 && !amountValid && s.fieldCardError]}>
             <TextInput
@@ -201,14 +203,14 @@ export default function Send() {
           {/* Note */}
           <View style={s.sectionTitleRow}>
             <View style={s.sectionAccent} />
-            <Text style={s.sectionTitle}>Note (optionnelle)</Text>
+            <Text style={s.sectionTitle}>{t('money.send.note')}</Text>
           </View>
           <View style={s.fieldCard}>
             <TextInput
               style={s.textField}
               value={note}
               onChangeText={setNote}
-              placeholder="Ex : remboursement, cadeau…"
+              placeholder={t('money.send.notePh')}
               placeholderTextColor={colors.neutral[400]}
               maxLength={140}
               editable={!submitting}
@@ -220,9 +222,9 @@ export default function Send() {
               <Ionicons name="warning-outline" size={18} color="#d97706" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.infoTitle}>Transfert irréversible</Text>
+              <Text style={s.infoTitle}>{t('money.send.irreversible')}</Text>
               <Text style={s.infoText}>
-                Vérifie bien le numéro — un transfert envoyé ne peut pas être annulé.
+                {t('money.send.irreversibleBody')}
               </Text>
             </View>
           </View>
@@ -244,7 +246,7 @@ export default function Send() {
               <>
                 <Ionicons name="send" size={16} color="#fff" />
                 <Text style={s.sendBtnText}>
-                  {amountValid ? `Envoyer ${formatXOF(amountNum)}` : 'Envoyer'}
+                  {amountValid ? t('money.send.sendAmount', { amount: formatXOF(amountNum) }) : t('money.send.sendBtn')}
                 </Text>
               </>
             )}
@@ -253,7 +255,7 @@ export default function Send() {
       </KeyboardAvoidingView>
       <PinPrompt
         visible={pinVisible}
-        title="Confirme ton envoi"
+        title={t('money.send.pinTitle')}
         onSuccess={() => { setPinVisible(false); doSend(); }}
         onCancel={() => setPinVisible(false)}
       />

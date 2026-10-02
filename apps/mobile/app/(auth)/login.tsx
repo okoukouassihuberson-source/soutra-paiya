@@ -3,22 +3,25 @@ import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Keyboa
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, radius, spacing, phoneSchema, passwordSchema } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
+import { useI18n, useSetLocale, LOCALES, tr } from '@/lib/i18n';
 
 type Mode = 'login' | 'register';
 
-/** Traduit les messages d'erreur Supabase en français lisible. */
+/** Traduit les messages d'erreur Supabase dans la langue courante. */
 function frenchError(message: string): string {
   const m = message.toLowerCase();
-  if (m.includes('invalid login credentials')) return 'Numéro ou mot de passe incorrect.';
+  if (m.includes('invalid login credentials')) return tr('login.errCredentials');
   if (m.includes('already registered') || m.includes('already been registered'))
-    return 'Ce numéro a déjà un compte — connecte-toi.';
-  if (m.includes('password')) return 'Mot de passe invalide (8 caractères minimum).';
+    return tr('login.errExists');
+  if (m.includes('password')) return tr('login.errPassword');
   if (m.includes('rate') || m.includes('too many') || m.includes('seconds'))
-    return 'Trop de tentatives. Réessaie dans quelques minutes.';
+    return tr('login.errRate');
   return message;
 }
 
 export default function Login() {
+  const { t, locale } = useI18n();
+  const setLocale = useSetLocale();
   const [mode, setMode] = useState<Mode>('login');
   const [phone, setPhone] = useState('+225');
   const [password, setPassword] = useState('');
@@ -33,7 +36,7 @@ export default function Login() {
     const passwordCheck = passwordSchema.safeParse(password);
     if (!passwordCheck.success) { setError(passwordCheck.error.issues[0].message); return; }
     if (mode === 'register' && fullName.trim().length < 2) {
-      setError('Indique ton nom complet.');
+      setError(t('login.needName'));
       return;
     }
 
@@ -50,13 +53,13 @@ export default function Login() {
         });
         if (error) { setError(frenchError(error.message)); return; }
         if (!data.session) {
-          setError('Compte créé. Désactive « Confirm phone » côté Supabase pour la connexion immédiate.');
+          setError(t('login.created'));
           return;
         }
       }
       // Session posée -> RootNav (app/_layout.tsx) redirige vers les tabs.
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inattendue.');
+      setError(err instanceof Error ? err.message : t('login.unexpected'));
     } finally {
       setLoading(false);
     }
@@ -66,20 +69,28 @@ export default function Login() {
     <SafeAreaView style={s.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={s.container}>
+          {/* Choix de la langue avant connexion (le français reste le défaut). */}
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginBottom: spacing.sm }}>
+            {LOCALES.map((l) => (
+              <Pressable key={l} onPress={() => setLocale(l)} hitSlop={8} accessibilityRole="button" accessibilityState={{ selected: locale === l }}>
+                <Text style={{ fontWeight: locale === l ? '800' : '500', color: locale === l ? colors.primary[600] : colors.neutral[500], fontSize: typography.fontSize.sm }}>{l.toUpperCase()}</Text>
+              </Pressable>
+            ))}
+          </View>
           <Text style={s.brand}>Soutra<Text style={{ color: colors.primary[500] }}>-Playce</Text></Text>
           <Text style={s.tagline}>
-            {mode === 'login' ? 'Connecte-toi à ton compte' : 'Crée ton compte en 30 secondes'}
+            {mode === 'login' ? t('login.welcomeLogin') : t('login.welcomeRegister')}
           </Text>
 
           <View style={{ marginTop: spacing['2xl'] }}>
             {mode === 'register' && (
               <>
-                <Text style={s.label}>Nom complet</Text>
+                <Text style={s.label}>{t('login.fullName')}</Text>
                 <TextInput
                   value={fullName}
                   onChangeText={setFullName}
                   style={s.input}
-                  placeholder="Ex. Kouassi Yao"
+                  placeholder={t('login.fullNamePh')}
                   placeholderTextColor={colors.neutral[400]}
                   autoCapitalize="words"
                 />
@@ -87,26 +98,26 @@ export default function Login() {
             )}
 
             <Text style={[s.label, mode === 'register' && s.labelSpaced]}>
-              Numéro de téléphone
+              {t('login.phone')}
             </Text>
             <TextInput
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
               style={s.input}
-              placeholder="+225XXXXXXXXXX"
+              placeholder={t('money.phonePh')}
               placeholderTextColor={colors.neutral[400]}
               autoCapitalize="none"
               autoComplete="tel"
             />
 
-            <Text style={[s.label, s.labelSpaced]}>Mot de passe</Text>
+            <Text style={[s.label, s.labelSpaced]}>{t('login.password')}</Text>
             <TextInput
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               style={s.input}
-              placeholder="8 caractères minimum"
+              placeholder={t('login.passwordPh')}
               placeholderTextColor={colors.neutral[400]}
               autoCapitalize="none"
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
@@ -117,7 +128,7 @@ export default function Login() {
             <Pressable onPress={submit} disabled={loading} style={({ pressed }) => [s.cta, pressed && { opacity: 0.85 }]}>
               {loading
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={s.ctaText}>{mode === 'login' ? 'Se connecter' : 'Créer mon compte'}</Text>}
+                : <Text style={s.ctaText}>{mode === 'login' ? t('login.signIn') : t('login.signUp')}</Text>}
             </Pressable>
 
             <Pressable
@@ -126,13 +137,13 @@ export default function Login() {
               style={s.switchBtn}
             >
               <Text style={s.switchText}>
-                {mode === 'login' ? "Pas encore de compte ? S'inscrire" : 'Déjà un compte ? Se connecter'}
+                {mode === 'login' ? t('login.toRegister') : t('login.toLogin')}
               </Text>
             </Pressable>
           </View>
 
           <Text style={s.terms}>
-            En continuant, tu acceptes nos CGU et notre politique de confidentialité.
+            {t('login.terms')}
           </Text>
         </View>
       </KeyboardAvoidingView>

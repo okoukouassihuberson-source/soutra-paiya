@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, formatDistance, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 
 interface SimilarVenue {
@@ -30,6 +31,7 @@ const MAX_RESULTS = 6;
 
 export function SimilarVenues({ venueId, category, coords }: Props) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [venues, setVenues] = useState<SimilarVenue[]>([]);
@@ -55,7 +57,7 @@ export function SimilarVenues({ venueId, category, coords }: Props) {
 
   return (
     <View style={s.wrap}>
-      <Text style={s.title}>Établissements similaires</Text>
+      <Text style={s.title}>{t('similar.title')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', gap: spacing.md }}>
           {venues.map((v) => (

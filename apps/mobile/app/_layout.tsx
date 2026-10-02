@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LocaleProvider } from '@/lib/i18n';
 
 function RootNav() {
   const { session, loading } = useAuth();
@@ -39,9 +40,11 @@ export default function RootLayout() {
   return (
     <ErrorBoundary zone="root">
       <ThemeProvider>
-        <AuthProvider>
-          <RootNav />
-        </AuthProvider>
+        <LocaleProvider>
+          <AuthProvider>
+            <RootNav />
+          </AuthProvider>
+        </LocaleProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

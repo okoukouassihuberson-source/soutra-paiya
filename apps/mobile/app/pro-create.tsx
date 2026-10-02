@@ -22,6 +22,7 @@ import {
   VENUE_CATEGORIES, VENUE_CATEGORY_GROUPS,
   type VenueCategoryGroup, type VenueCategoryMeta,
 } from '@soutra/shared';
+import { useI18n, type TKey } from '@/lib/i18n';
 import { useColors } from '@/lib/theme';
 import { createProVenue } from '@/lib/pro-venue';
 
@@ -33,6 +34,7 @@ const GROUP_ORDER: VenueCategoryGroup[] = [
 ];
 
 export default function ProCreate() {
+  const { t } = useI18n();
   const router = useRouter();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -68,21 +70,21 @@ export default function ProCreate() {
       let perm = await Location.getForegroundPermissionsAsync();
       if (perm.status !== 'granted') perm = await Location.requestForegroundPermissionsAsync();
       if (perm.status !== 'granted') {
-        Alert.alert('Permission refusée', 'Active la géolocalisation pour précisez l\'emplacement.');
+        Alert.alert(t('proCreate.permDenied'), t('proCreate.permBody'));
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
     } catch (err: any) {
-      Alert.alert('GPS indisponible', err?.message ?? 'Réessaie plus tard.');
+      Alert.alert(t('proCreate.gpsTitle'), err?.message ?? t('proCreate.retryLater'));
     } finally {
       setGpsBusy(false);
     }
   };
 
   const categoryLabel = category
-    ? VENUE_CATEGORIES.find((m) => m.value === category)?.label ?? 'Catégorie'
-    : 'Choisir une catégorie…';
+    ? (VENUE_CATEGORIES.some((m) => m.value === category) ? t(`venueCat.${category}` as TKey) : t('proCreate.categoryFallback'))
+    : t('proCreate.pickCategory');
 
   const canSubmit =
     !submitting && name.trim().length >= 2 && !!category && address.trim().length >= 4;
@@ -98,27 +100,27 @@ export default function ProCreate() {
       });
       if (!res.ok) {
         if (res.reason === 'ALREADY_EXISTS') {
-          Alert.alert('Déjà existant', 'Tu as déjà un établissement avec ce nom et cette adresse.');
+          Alert.alert(t('proCreate.existsTitle'), t('proCreate.existsBody'));
         } else {
-          Alert.alert('Erreur', 'Création impossible.');
+          Alert.alert(t('proCreate.error'), t('proCreate.createFail'));
         }
         return;
       }
       Alert.alert(
-        'Établissement créé ✓',
-        'Ton établissement est actif et visible sur Soutra-Playce. Tu peux maintenant ajouter tes horaires et tes photos.',
-        [{ text: 'Continuer', onPress: () => router.replace(`/pro-manage?venueId=${res.venue_id}` as any) }],
+        t('proCreate.createdTitle'),
+        t('proCreate.createdBody'),
+        [{ text: t('proCreate.continue'), onPress: () => router.replace(`/pro-manage?venueId=${res.venue_id}` as any) }],
       );
     } catch (err: any) {
       const code = err?.message ?? '';
       const msg =
-        code === 'NOT_AUTHENTICATED' ? 'Connecte-toi pour créer ton établissement.'
-        : code === 'NAME_REQUIRED' ? 'Renseigne le nom de ton établissement.'
-        : code === 'NAME_TOO_LONG' ? 'Nom trop long (200 caractères max).'
-        : code === 'ADDRESS_REQUIRED' ? 'Renseigne l\'adresse.'
-        : code === 'INVALID_CATEGORY' ? 'Catégorie invalide.'
-        : code || 'Impossible de créer l\'établissement.';
-      Alert.alert('Erreur', msg);
+        code === 'NOT_AUTHENTICATED' ? t('proCreate.errAuth')
+        : code === 'NAME_REQUIRED' ? t('proCreate.errName')
+        : code === 'NAME_TOO_LONG' ? t('proCreate.errNameLong')
+        : code === 'ADDRESS_REQUIRED' ? t('proCreate.errAddress')
+        : code === 'INVALID_CATEGORY' ? t('proCreate.errCategory')
+        : code || t('proCreate.errCreate');
+      Alert.alert(t('proCreate.error'), msg);
     } finally {
       setSubmitting(false);
     }
@@ -131,7 +133,7 @@ export default function ProCreate() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={c.dark} />
           </Pressable>
-          <Text style={s.headerTitle}>Créer mon établissement</Text>
+          <Text style={s.headerTitle}>{t('proCreate.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
 
@@ -139,19 +141,18 @@ export default function ProCreate() {
           <View style={s.banner}>
             <Ionicons name="flash" size={18} color={c.primary[600]} />
             <Text style={s.bannerText}>
-              Ton établissement sera visible immédiatement sur Soutra-Playce — pas d'attente
-              de validation. Tu pourras ajouter horaires et photos juste après.
+              {t('proCreate.info')}
             </Text>
           </View>
 
-          <Text style={s.label}>Nom de l'établissement *</Text>
+          <Text style={s.label}>{t('proCreate.name')}</Text>
           <TextInput
             style={s.input} value={name} onChangeText={setName}
-            placeholder="Ex : Restaurant Le Baobab" placeholderTextColor={c.neutral[400]}
+            placeholder={t('proCreate.namePh')} placeholderTextColor={c.neutral[400]}
             editable={!submitting}
           />
 
-          <Text style={s.label}>Catégorie *</Text>
+          <Text style={s.label}>{t('proCreate.category')}</Text>
           <Pressable style={s.input} onPress={() => setShowCategoryPicker((v) => !v)} disabled={submitting}>
             <Text style={[s.inputText, !category && { color: c.neutral[500] }]}>{categoryLabel}</Text>
           </Pressable>
@@ -162,7 +163,7 @@ export default function ProCreate() {
                 if (items.length === 0) return null;
                 return (
                   <View key={g}>
-                    <Text style={s.categoryGroupLabel}>{VENUE_CATEGORY_GROUPS[g]}</Text>
+                    <Text style={s.categoryGroupLabel}>{t(`venueGroup.${g}` as TKey)}</Text>
                     <View style={s.categoryChipsRow}>
                       {items.map((m) => {
                         const active = category === m.value;
@@ -173,7 +174,7 @@ export default function ProCreate() {
                             style={({ pressed }) => [s.categoryChip, active && s.categoryChipActive, pressed && { opacity: 0.85 }]}
                           >
                             <Text style={{ fontSize: 14 }}>{m.emoji}</Text>
-                            <Text style={[s.categoryChipText, active && { color: '#fff' }]}>{m.label}</Text>
+                            <Text style={[s.categoryChipText, active && { color: '#fff' }]}>{t(`venueCat.${m.value}` as TKey)}</Text>
                           </Pressable>
                         );
                       })}
@@ -184,25 +185,25 @@ export default function ProCreate() {
             </View>
           )}
 
-          <Text style={s.label}>Adresse *</Text>
+          <Text style={s.label}>{t('proCreate.address')}</Text>
           <TextInput
             style={s.input} value={address} onChangeText={setAddress}
-            placeholder="Ex : Rue des Jardins, Riviera 2" placeholderTextColor={c.neutral[400]}
+            placeholder={t('proCreate.addressPh')} placeholderTextColor={c.neutral[400]}
             editable={!submitting}
           />
 
           <View style={s.row}>
             <View style={{ flex: 1 }}>
-              <Text style={s.label}>Ville</Text>
+              <Text style={s.label}>{t('proCreate.city')}</Text>
               <TextInput style={s.input} value={city} onChangeText={setCity} placeholder="Abidjan" placeholderTextColor={c.neutral[400]} editable={!submitting} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.label}>Quartier</Text>
-              <TextInput style={s.input} value={district} onChangeText={setDistrict} placeholder="Cocody, Plateau…" placeholderTextColor={c.neutral[400]} editable={!submitting} />
+              <Text style={s.label}>{t('proCreate.district')}</Text>
+              <TextInput style={s.input} value={district} onChangeText={setDistrict} placeholder={t('proCreate.districtPh')} placeholderTextColor={c.neutral[400]} editable={!submitting} />
             </View>
           </View>
 
-          <Text style={s.label}>Coordonnées GPS</Text>
+          <Text style={s.label}>{t('proCreate.gps')}</Text>
           <Pressable style={({ pressed }) => [s.gpsBtn, pressed && { opacity: 0.85 }]} onPress={requestGps} disabled={gpsBusy || submitting}>
             {gpsBusy ? (
               <ActivityIndicator color={c.primary[600]} />
@@ -210,27 +211,27 @@ export default function ProCreate() {
               <>
                 <Ionicons name="checkmark-circle" size={18} color={c.success} />
                 <Text style={s.gpsText}>{coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</Text>
-                <Text style={s.gpsSub}>Toucher pour recalibrer</Text>
+                <Text style={s.gpsSub}>{t('proCreate.recalibrate')}</Text>
               </>
             ) : (
               <>
                 <Ionicons name="location-outline" size={18} color={c.primary[600]} />
-                <Text style={s.gpsText}>Utiliser ma position actuelle</Text>
+                <Text style={s.gpsText}>{t('proCreate.useMyPosition')}</Text>
               </>
             )}
           </Pressable>
 
-          <Text style={s.label}>Téléphone</Text>
+          <Text style={s.label}>{t('proCreate.phone')}</Text>
           <TextInput style={s.input} value={phone} onChangeText={setPhone} placeholder="+225 07 00 00 00 00" placeholderTextColor={c.neutral[400]} keyboardType="phone-pad" editable={!submitting} />
 
-          <Text style={s.label}>WhatsApp (optionnel)</Text>
+          <Text style={s.label}>{t('proCreate.whatsapp')}</Text>
           <TextInput style={s.input} value={whatsapp} onChangeText={setWhatsapp} placeholder="+225 07 00 00 00 00" placeholderTextColor={c.neutral[400]} keyboardType="phone-pad" editable={!submitting} />
 
-          <Text style={s.label}>Description (optionnel)</Text>
+          <Text style={s.label}>{t('proCreate.description')}</Text>
           <TextInput
             style={[s.input, s.inputMultiline]} value={description}
             onChangeText={(v) => setDescription(v.slice(0, 2000))}
-            placeholder="Décris brièvement ton établissement, ta spécialité…"
+            placeholder={t('proCreate.descriptionPh')}
             placeholderTextColor={c.neutral[400]} multiline textAlignVertical="top" editable={!submitting}
           />
           <Text style={s.counter}>{description.length} / 2000</Text>
@@ -240,7 +241,7 @@ export default function ProCreate() {
             style={({ pressed }) => [s.submitBtn, { backgroundColor: canSubmit ? c.primary[500] : c.neutral[200] }, pressed && canSubmit && { opacity: 0.9 }]}
           >
             {submitting ? <ActivityIndicator color="#fff" /> : (
-              <Text style={[s.submitText, { color: canSubmit ? '#fff' : c.neutral[500] }]}>Créer mon établissement</Text>
+              <Text style={[s.submitText, { color: canSubmit ? '#fff' : c.neutral[500] }]}>{t('proCreate.submit')}</Text>
             )}
           </Pressable>
         </ScrollView>

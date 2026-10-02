@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, formatVenuePriceLabel, distanceMeters, formatDistance, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { openDirections, dialPhone, openWhatsApp } from '@/lib/maps';
@@ -56,6 +57,7 @@ interface Venue {
 }
 
 export default function VenueDetail() {
+  const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
@@ -211,7 +213,7 @@ export default function VenueDetail() {
 
   const toggleFavorite = async () => {
     if (!user?.id || !id) {
-      Alert.alert('Connexion requise', 'Connecte-toi pour gérer tes favoris.');
+      Alert.alert(t('venue.loginRequired'), t('venue.loginFav'));
       return;
     }
     const sb = supabase as any;
@@ -233,7 +235,7 @@ export default function VenueDetail() {
       }
     } catch {
       setIsFavorite(!next);
-      Alert.alert('Erreur', 'Action sur les favoris impossible. Réessaie.');
+      Alert.alert(t('venue.error'), t('venue.favFail'));
     } finally {
       setFavBusy(false);
     }
@@ -244,7 +246,7 @@ export default function VenueDetail() {
     try {
       const url = `https://soutra-playce.com/v/${venue.slug}`;
       await Share.share({
-        message: `Découvre ${venue.name} sur Soutra-Playce : ${url}`,
+        message: t('venue.share', { name: venue.name, url }),
         url,
         title: venue.name,
       });
@@ -265,7 +267,7 @@ export default function VenueDetail() {
     return (
       <SafeAreaView style={s.safe}>
         <View style={s.center}>
-          <Text style={s.errorText}>Lieu non trouvé</Text>
+          <Text style={s.errorText}>{t('venue.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -292,7 +294,7 @@ export default function VenueDetail() {
             <Pressable
               hitSlop={10}
               onPress={() => setReportOpen(true)}
-              accessibilityLabel="Signaler un problème"
+              accessibilityLabel={t('venue.report')}
             >
               <Ionicons name="flag-outline" size={22} color={colors.neutral[600]} />
             </Pressable>
@@ -347,14 +349,14 @@ export default function VenueDetail() {
             <Pressable
               onPress={() => setClaimOpen(true)}
               style={({ pressed }) => [s.claimCard, pressed && { opacity: 0.92 }]}
-              accessibilityLabel="Revendiquer cet établissement"
+              accessibilityLabel={t('venue.claimAria')}
             >
               <View style={s.claimIconWrap}>
                 <Ionicons name="shield-checkmark" size={22} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.claimTitle}>Êtes-vous le propriétaire ?</Text>
-                <Text style={s.claimSub}>Revendiquez cet établissement pour gérer la fiche.</Text>
+                <Text style={s.claimTitle}>{t('venue.claimTitle')}</Text>
+                <Text style={s.claimSub}>{t('venue.claimSub')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.primary[600]} />
             </Pressable>
@@ -380,7 +382,7 @@ export default function VenueDetail() {
               disabled={!coords}
             >
               <Ionicons name="navigate" size={22} color={coords ? colors.primary[500] : colors.neutral[400]} />
-              <Text style={[s.actionLabel, !coords && s.actionLabelDisabled]}>Itinéraire</Text>
+              <Text style={[s.actionLabel, !coords && s.actionLabelDisabled]}>{t('venue.directions')}</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [s.actionBtn, !venue.phone && s.actionBtnDisabled, pressed && venue.phone && { opacity: 0.85 }]}
@@ -392,7 +394,7 @@ export default function VenueDetail() {
               disabled={!venue.phone}
             >
               <Ionicons name="call" size={22} color={venue.phone ? colors.primary[500] : colors.neutral[400]} />
-              <Text style={[s.actionLabel, !venue.phone && s.actionLabelDisabled]}>Appeler</Text>
+              <Text style={[s.actionLabel, !venue.phone && s.actionLabelDisabled]}>{t('venue.call')}</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [s.actionBtn, !venue.whatsapp && s.actionBtnDisabled, pressed && venue.whatsapp && { opacity: 0.85 }]}
@@ -404,7 +406,7 @@ export default function VenueDetail() {
               disabled={!venue.whatsapp}
             >
               <Ionicons name="logo-whatsapp" size={22} color={venue.whatsapp ? '#25D366' : colors.neutral[400]} />
-              <Text style={[s.actionLabel, !venue.whatsapp && s.actionLabelDisabled]}>WhatsApp</Text>
+              <Text style={[s.actionLabel, !venue.whatsapp && s.actionLabelDisabled]}>{t('venue.whatsapp')}</Text>
             </Pressable>
           </View>
 
@@ -429,8 +431,8 @@ export default function VenueDetail() {
                 <Ionicons name="cube" size={28} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.tour360Title}>Visite virtuelle 360°</Text>
-                <Text style={s.tour360Sub}>Explore l'établissement en immersion</Text>
+                <Text style={s.tour360Title}>{t('venue.tour360')}</Text>
+                <Text style={s.tour360Sub}>{t('venue.tour360Sub')}</Text>
               </View>
               <Ionicons name="open-outline" size={18} color={colors.primary[600]} />
             </Pressable>
@@ -487,7 +489,7 @@ export default function VenueDetail() {
           {/* Amenities */}
           {venue.amenities && venue.amenities.length > 0 && (
             <>
-              <Text style={s.sectionTitle}>Équipements</Text>
+              <Text style={s.sectionTitle}>{t('venue.amenities')}</Text>
               <View style={s.amenitiesGrid}>
                 {venue.amenities.map((amenity, idx) => (
                   <View key={idx} style={s.amenityTag}>
@@ -548,7 +550,7 @@ export default function VenueDetail() {
               });
             }}
           >
-            <Text style={s.ctaText}>🛏️  Réserver une chambre</Text>
+            <Text style={s.ctaText}>{t('venue.bookRoom')}</Text>
           </Pressable>
         ) : (
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -561,7 +563,7 @@ export default function VenueDetail() {
                 });
               }}
             >
-              <Text style={s.ctaTextSecondary}>📋  Menu</Text>
+              <Text style={s.ctaTextSecondary}>{t('venue.menu')}</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [s.ctaButton, { flex: 1 }, pressed && { opacity: 0.85 }]}
@@ -573,7 +575,7 @@ export default function VenueDetail() {
                 });
               }}
             >
-              <Text style={s.ctaText}>Réserver une table</Text>
+              <Text style={s.ctaText}>{t('venue.bookTable')}</Text>
             </Pressable>
           </View>
         )}

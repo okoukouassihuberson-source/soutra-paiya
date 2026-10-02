@@ -18,6 +18,7 @@ import { useAuth } from '@/lib/auth-context';
 import { buildPaymentQr, parsePaymentQr } from '@/lib/qr';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useI18n } from '@/lib/i18n';
 
 type Mode = 'scan' | 'myqr';
 
@@ -38,10 +39,11 @@ type Mode = 'scan' | 'myqr';
  *   4. Logs détaillés à chaque étape clé.
  */
 export default function ScanRoute() {
+  const { t } = useI18n();
   return (
     <ErrorBoundary
       zone="scan"
-      fallbackMessage="Impossible d'ouvrir le scanner QR. Veuillez réessayer."
+      fallbackMessage={t('scan.fallback')}
     >
       <Scan />
     </ErrorBoundary>
@@ -49,6 +51,7 @@ export default function ScanRoute() {
 }
 
 function Scan() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>('scan');
@@ -102,19 +105,19 @@ function Scan() {
       if (!qr) {
         console.log('[QR Scanner] QR rejected: unrecognized format');
         Alert.alert(
-          'QR non reconnu',
-          "Ce code n'est pas un QR de paiement Soutra-Playce.",
+          t('scan.unrecTitle'),
+          t('scan.unrecBody'),
           [
-            { text: 'Réessayer', onPress: () => setScanned(false) },
-            { text: 'Annuler', style: 'cancel', onPress: () => router.back() },
+            { text: t('scan.retry'), onPress: () => setScanned(false) },
+            { text: t('scan.cancel'), style: 'cancel', onPress: () => router.back() },
           ],
         );
         return;
       }
       if (qr.phone === myPhone) {
         console.log('[QR Scanner] QR rejected: self-payment');
-        Alert.alert('Ton propre QR', 'Tu ne peux pas te payer toi-même.', [
-          { text: 'OK', onPress: () => setScanned(false) },
+        Alert.alert(t('scan.ownTitle'), t('scan.ownBody'), [
+          { text: t('scan.ok'), onPress: () => setScanned(false) },
         ]);
         return;
       }
@@ -131,9 +134,9 @@ function Scan() {
     } catch (err) {
       console.error('[QR Scanner] handleScan exception:', err);
       Alert.alert(
-        'Erreur',
-        "Impossible de traiter ce QR code. Réessaie.",
-        [{ text: 'OK', onPress: () => setScanned(false) }],
+        t('scan.error'),
+        t('scan.unreadable'),
+        [{ text: t('scan.ok'), onPress: () => setScanned(false) }],
       );
     }
   };
@@ -146,7 +149,7 @@ function Scan() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Payer par QR" subtitle="Scanner ou afficher ton code" />
+      <ScreenHeader title={t('scan.title')} subtitle={t('scan.subtitle')} />
 
       <View style={s.toggle}>
         <Pressable
@@ -154,14 +157,14 @@ function Scan() {
           onPress={() => switchMode('scan')}
         >
           <Ionicons name="scan-outline" size={16} color={mode === 'scan' ? '#fff' : colors.neutral[600]} />
-          <Text style={[s.toggleText, mode === 'scan' && s.toggleTextActive]}>Scanner</Text>
+          <Text style={[s.toggleText, mode === 'scan' && s.toggleTextActive]}>{t('scan.scan')}</Text>
         </Pressable>
         <Pressable
           style={({ pressed }) => [s.toggleBtn, mode === 'myqr' && s.toggleBtnActive, pressed && { opacity: 0.85 }]}
           onPress={() => switchMode('myqr')}
         >
           <Ionicons name="qr-code" size={16} color={mode === 'myqr' ? '#fff' : colors.neutral[600]} />
-          <Text style={[s.toggleText, mode === 'myqr' && s.toggleTextActive]}>Mon QR</Text>
+          <Text style={[s.toggleText, mode === 'myqr' && s.toggleTextActive]}>{t('scan.myQr')}</Text>
         </Pressable>
       </View>
 
@@ -190,6 +193,7 @@ function ScanArea({
   scanned: boolean;
   onScan: (r: { data: string }) => void;
 }) {
+  const { t } = useI18n();
   if (!permission) {
     return (
       <View style={s.center}>
@@ -201,9 +205,9 @@ function ScanArea({
     return (
       <View style={s.center}>
         <Ionicons name="camera-outline" size={56} color={colors.neutral[400]} />
-        <Text style={s.permTitle}>Accès à la caméra requis</Text>
+        <Text style={s.permTitle}>{t('scan.permTitle')}</Text>
         <Text style={s.permText}>
-          Autorise la caméra pour scanner les QR codes de paiement.
+          {t('scan.permBody')}
         </Text>
         <Pressable
           style={s.permBtn}
@@ -214,13 +218,13 @@ function ScanArea({
             } catch (err) {
               console.error('[QR Scanner] requestPermission exception:', err);
               Alert.alert(
-                'Erreur',
-                "Impossible de demander la permission caméra. Ouvre les réglages système.",
+                t('scan.error'),
+                t('scan.permFail'),
               );
             }
           }}
         >
-          <Text style={s.permBtnText}>Autoriser la caméra</Text>
+          <Text style={s.permBtnText}>{t('scan.allow')}</Text>
         </Pressable>
       </View>
     );
@@ -244,7 +248,7 @@ function ScanArea({
         </View>
         <View style={s.scanHintWrap}>
           <Ionicons name="qr-code" size={16} color="#fff" />
-          <Text style={s.scanHint}>Vise un QR de paiement Soutra-Playce</Text>
+          <Text style={s.scanHint}>{t('scan.hint')}</Text>
         </View>
       </View>
     </View>
@@ -252,10 +256,11 @@ function ScanArea({
 }
 
 function MyQrArea({ phone, name }: { phone: string; name: string }) {
+  const { t } = useI18n();
   if (!phone) {
     return (
       <View style={s.center}>
-        <Text style={s.permText}>Aucun numéro associé à ton compte.</Text>
+        <Text style={s.permText}>{t('scan.noPhone')}</Text>
       </View>
     );
   }
@@ -276,7 +281,7 @@ function MyQrArea({ phone, name }: { phone: string; name: string }) {
           {payload ? (
             <QRCode value={payload} size={220} />
           ) : (
-            <Text style={s.permText}>QR indisponible</Text>
+            <Text style={s.permText}>{t('scan.qrUnavailable')}</Text>
           )}
         </View>
         {!!name && <Text style={s.qrName}>{name}</Text>}
@@ -284,7 +289,7 @@ function MyQrArea({ phone, name }: { phone: string; name: string }) {
       </View>
       <View style={s.qrHintBox}>
         <Ionicons name="information-circle" size={18} color={colors.primary[500]} />
-        <Text style={s.qrHint}>Fais scanner ce code pour recevoir de l'argent.</Text>
+        <Text style={s.qrHint}>{t('scan.qrHint')}</Text>
       </View>
     </View>
   );
