@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { slugify, type DestinationKind } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
+import { TranslationFields, collectI18n } from '@/components/tourism/TranslationFields';
+
+const TRANSLATABLE = [
+  { name: 'name', label: 'Nom' }, { name: 'tagline', label: 'Accroche' },
+  { name: 'description', label: 'Description', multiline: true }, { name: 'history', label: 'Histoire', multiline: true },
+];
 
 interface Row {
   id: string; slug: string; name: string; kind: DestinationKind; country_code: string; tagline: string | null;
@@ -50,6 +56,7 @@ export function DestinationsTab() {
       cover_url: g('cover_url') || null, venue_city: g('venue_city') || null,
       gallery_urls: g('gallery').split('\n').map((x) => x.trim()).filter(Boolean),
       latitude: num('latitude'), longitude: num('longitude'), is_featured: f.get('is_featured') === 'on', is_published: true,
+      i18n: collectI18n(f, TRANSLATABLE.map((x) => x.name)),
     });
     setBusy(false);
     if (error) { setErr(error.code === '23505' ? 'Ce slug existe déjà.' : error.message); return; }
@@ -79,6 +86,7 @@ export function DestinationsTab() {
             <label className={`${lbl} sm:col-span-2`}>Description<textarea name="description" rows={3} className={input} /></label>
             <label className={`${lbl} sm:col-span-2`}>Histoire<textarea name="history" rows={3} className={input} /></label>
             <label className={`${lbl} sm:col-span-2`}>Galerie (une URL par ligne)<textarea name="gallery" rows={2} className={input} /></label>
+            <TranslationFields fields={TRANSLATABLE} />
             <label className="flex items-center gap-2 text-xs text-neutral-300"><input type="checkbox" name="is_featured" /> Mettre à la une (accueil)</label>
           </div>
           <button disabled={busy} className="rounded-lg bg-primary-500 px-5 py-2 text-sm font-bold text-white disabled:opacity-60">{busy ? 'Création…' : 'Créer'}</button>

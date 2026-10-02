@@ -7,6 +7,9 @@
 export type TripScope = 'national' | 'international';
 export type TripStatus = 'draft' | 'published' | 'full' | 'closed' | 'cancelled';
 export type TripHighlight = 'a_la_une' | 'populaire' | 'nouveau' | 'promotion' | 'coup_de_coeur' | 'recommande';
+/** Traductions du contenu éditorial : { en: { title: '…' } } (champs absents = texte d'origine). */
+export type I18nContent = Record<string, Record<string, string>>;
+
 export type DestinationKind = 'country' | 'region' | 'city' | 'commune' | 'site';
 
 export interface Destination {
@@ -25,6 +28,7 @@ export interface Destination {
   longitude: number | null;
   venue_city: string | null;
   is_featured: boolean;
+  i18n?: I18nContent | null;
 }
 
 export interface Trip {
@@ -70,6 +74,7 @@ export interface Trip {
   highlight: TripHighlight | null;
   is_circuit: boolean;
   status: TripStatus;
+  i18n?: I18nContent | null;
 }
 
 export interface TripItineraryDay {
@@ -81,6 +86,7 @@ export interface TripItineraryDay {
   stops: string[];
   meals: string | null;
   lodging: string | null;
+  i18n?: I18nContent | null;
 }
 
 export interface TripPackage {
@@ -92,6 +98,7 @@ export interface TripPackage {
   includes: string[];
   price_xof: number;
   position: number;
+  i18n?: I18nContent | null;
 }
 
 export const seatsLeft = (t: Pick<Trip, 'seats_total' | 'seats_booked'>) =>
@@ -196,6 +203,7 @@ export interface Activity {
   includes: string[]; excludes: string[]; conditions: string | null;
   contact_phone: string | null; contact_whatsapp: string | null; highlight: TripHighlight | null;
   status: ActivityStatus; rating_avg: number; rating_count: number;
+  i18n?: I18nContent | null;
 }
 
 export interface ActivitySlot {

@@ -3,6 +3,12 @@
 import { useEffect, useState } from 'react';
 import { slugify, ACTIVITY_CATEGORIES } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
+import { TranslationFields, collectI18n } from './TranslationFields';
+
+const TRANSLATABLE = [
+  { name: 'title', label: 'Titre' }, { name: 'summary', label: 'Résumé' }, { name: 'description', label: 'Description', multiline: true },
+  { name: 'conditions', label: 'Conditions', multiline: true }, { name: 'includes', label: 'Inclus', list: true }, { name: 'excludes', label: 'Non inclus', list: true },
+];
 
 const input = 'w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600';
 const lbl = 'block text-xs font-semibold text-neutral-400';
@@ -47,6 +53,7 @@ export function ActivityEditor({ activityId, onSaved, onCancel }: { activityId?:
       min_participants: Number(g('min_participants') || 1), max_group_size: Number(g('max_group_size') || 20),
       languages: list('languages'), includes: list('includes'), excludes: list('excludes'), conditions: g('conditions') || null,
       contact_phone: g('contact_phone') || null, contact_whatsapp: g('contact_whatsapp') || null,
+      i18n: collectI18n(f, TRANSLATABLE.map((x) => x.name), a?.i18n),
     };
     const { error } = activityId
       ? await sb.from('activities').update(fields).eq('id', activityId)
@@ -88,6 +95,7 @@ export function ActivityEditor({ activityId, onSaved, onCancel }: { activityId?:
         <label className={`${lbl} sm:col-span-2`}>Conditions<textarea name="conditions" rows={2} defaultValue={v('conditions')} className={input} /></label>
         <label className={lbl}>Téléphone contact<input name="contact_phone" defaultValue={v('contact_phone')} className={input} /></label>
         <label className={lbl}>WhatsApp contact<input name="contact_whatsapp" defaultValue={v('contact_whatsapp')} className={input} /></label>
+        <TranslationFields fields={TRANSLATABLE} defaults={a?.i18n} />
       </div>
       {err && <p role="alert" className="text-sm text-red-400">{err}</p>}
       <div className="flex flex-wrap items-center gap-3">

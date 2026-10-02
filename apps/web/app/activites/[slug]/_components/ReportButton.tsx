@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase';
+import { useI18n } from '@/lib/i18n/client';
 
 export function ReportButton({ reviewId }: { reviewId: string }) {
+  const { t } = useI18n();
   const [state, setState] = useState<'idle' | 'done' | 'login'>('idle');
   async function report() {
     const sb = supabaseBrowser() as any;
@@ -12,7 +14,7 @@ export function ReportButton({ reviewId }: { reviewId: string }) {
     const { error } = await sb.rpc('report_activity_review', { p_review_id: reviewId, p_reason: null });
     setState(error ? 'idle' : 'done');
   }
-  if (state === 'done') return <span className="text-xs text-neutral-500">Merci, avis signalé.</span>;
-  if (state === 'login') return <span className="text-xs text-neutral-500">Connectez-vous pour signaler.</span>;
-  return <button onClick={report} className="text-xs text-neutral-500 underline">Signaler</button>;
+  if (state === 'done') return <span className="text-xs text-neutral-500">{t('common.reported')}</span>;
+  if (state === 'login') return <span className="text-xs text-neutral-500">{t('common.loginToReport')}</span>;
+  return <button onClick={report} className="text-xs text-neutral-500 underline">{t('common.report')}</button>;
 }

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { supabaseServer } from '@/lib/supabase-server';
+import { ENABLED_LOCALES, localePath } from '@/lib/i18n/config';
 
 export const revalidate = 3600;
 
@@ -12,14 +13,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     sb.from('trips').select('slug, updated_at').in('status', ['published', 'full']).limit(2000),
     sb.from('activities').select('slug, updated_at').eq('status', 'published').limit(5000),
   ]);
+  // Chaque URL traduite est déclarée dans sa langue, avec ses alternates hreflang.
+  const alternates = (path: string) => ({ languages: Object.fromEntries(ENABLED_LOCALES.map((l) => [l, base + localePath(path, l)])) });
+  const multi = (path: string, extra: { lastModified?: string; priority: number }): MetadataRoute.Sitemap =>
+    ENABLED_LOCALES.map((l) => ({ url: base + localePath(path, l), alternates: alternates(path), ...extra }));
   const entries = (rows: any[] | null, prefix: string, priority: number): MetadataRoute.Sitemap =>
-    (rows ?? []).map((r) => ({ url: `${base}${prefix}/${r.slug}`, lastModified: r.updated_at, priority }));
+    (rows ?? []).flatMap((r) => multi(`${prefix}/${r.slug}`, { lastModified: r.updated_at, priority }));
   return [
-    { url: base, priority: 1 },
-    ...['/explorer', '/destinations', '/voyages/nationaux', '/voyages/internationaux', '/activites'].map((p) => ({ url: `${base}${p}`, priority: 0.8 })),
+    ...multi('/', { priority: 1 }),
+    ...['/explorer', '/destinations', '/voyages/nationaux', '/voyages/internationaux', '/activites'].flatMap((p) => multi(p, { priority: 0.8 })),
     ...entries(dests.data, '/destinations', 0.8),
     ...entries(trips.data, '/voyages', 0.7),
     ...entries(acts.data, '/activites', 0.7),
-    ...entries(venues.data, '/v', 0.6),
+    // Fiches établissements : non traduites (français uniquement).
+    ...(venues.data ?? []).map((r: any) => ({ url: `${base}/v/${r.slug}`, lastModified: r.updated_at, priority: 0.6 })),
   ];
 }

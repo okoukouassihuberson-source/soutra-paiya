@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
 import { TripListing } from '@/components/tourism/TripListing';
+import { getI18n } from '@/lib/i18n/server';
+import { languageAlternates } from '@/lib/i18n/seo';
 
 export const revalidate = 120;
-export const metadata: Metadata = {
-  title: "Voyages groupés en Côte d'Ivoire",
-  description: "Voyages groupés nationaux : Assinie, Grand-Bassam, San Pedro, Korhogo, Man… Transport, hébergement et activités. Réservez sur Soutra-Playce.",
-  alternates: { canonical: '/voyages/nationaux' },
-};
+
+export function generateMetadata(): Metadata {
+  const { t, locale } = getI18n();
+  return { title: t('trips.nationalMetaTitle'), description: t('trips.nationalMetaDescription'), alternates: languageAlternates('/voyages/nationaux', locale) };
+}
+
 export default function Page() { return <TripListing scope="national" />; }

@@ -3,6 +3,16 @@
 import { useEffect, useState } from 'react';
 import { slugify, CONTINENTS } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
+import { TranslationFields, collectI18n } from './TranslationFields';
+import { PREFIXED_LOCALES } from '@/lib/i18n/config';
+
+const TRANSLATABLE = [
+  { name: 'title', label: 'Titre' }, { name: 'summary', label: 'Résumé' }, { name: 'description', label: 'Description', multiline: true },
+  { name: 'conditions', label: 'Conditions', multiline: true }, { name: 'transport', label: 'Transport' }, { name: 'lodging', label: 'Hébergement' },
+  { name: 'meals', label: 'Repas' }, { name: 'inclusions', label: 'Inclus', list: true }, { name: 'exclusions', label: 'Non inclus', list: true },
+  { name: 'activities', label: 'Activités', list: true },
+];
+const lines = (v: FormDataEntryValue | null) => String(v ?? '').split('\n').map((x) => x.trim());
 
 const input = 'w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600';
 const lbl = 'block text-xs font-semibold text-neutral-400';
@@ -11,6 +21,8 @@ interface Loaded {
   trip: Record<string, any>;
   days: string;
   packages: string;
+  daysTr: Record<string, string>;
+  packagesTr: Record<string, string>;
   existingPackages: { id: string; name: string }[];
 }
 
@@ -34,8 +46,8 @@ export function TripEditor({ tripId, onSaved, onCancel }: { tripId?: string; onS
     (async () => {
       const [{ data: trip }, { data: days }, { data: pkgs }] = await Promise.all([
         sb.from('trips').select('*').eq('id', tripId).maybeSingle(),
-        sb.from('trip_itineraries').select('day_number, title, stops').eq('trip_id', tripId).order('day_number'),
-        sb.from('trip_packages').select('id, name, price_xof, includes, is_active').eq('trip_id', tripId).order('position'),
+        sb.from('trip_itineraries').select('day_number, title, stops, i18n').eq('trip_id', tripId).order('day_number'),
+        sb.from('trip_packages').select('id, name, price_xof, includes, is_active, i18n').eq('trip_id', tripId).order('position'),
       ]);
       if (!trip) { setErr('Voyage introuvable.'); setLoading(false); return; }
       setScope(trip.scope);
@@ -44,6 +56,8 @@ export function TripEditor({ tripId, onSaved, onCancel }: { tripId?: string; onS
         trip,
         days: (days ?? []).map((d: any) => `${d.title}${d.stops?.length ? ` : ${d.stops.join(', ')}` : ''}`).join('\n'),
         packages: active.map((p: any) => `${p.name} | ${p.price_xof} | ${(p.includes ?? []).join(', ')}`).join('\n'),
+        daysTr: Object.fromEntries(PREFIXED_LOCALES.map((l) => [l, (days ?? []).map((d: any) => d.i18n?.[l]?.title ?? '').join('\n')])),
+        packagesTr: Object.fromEntries(PREFIXED_LOCALES.map((l) => [l, active.map((p: any) => p.i18n?.[l]?.name ?? '').join('\n')])),
         existingPackages: (pkgs ?? []).map((p: any) => ({ id: p.id, name: p.name })),
       });
       setLoading(false);
@@ -72,6 +86,7 @@ export function TripEditor({ tripId, onSaved, onCancel }: { tripId?: string; onS
       activities: list('activities'), inclusions: list('inclusions'), exclusions: list('exclusions'),
       conditions: g('conditions') || null, contact_phone: g('contact_phone') || null, contact_whatsapp: g('contact_whatsapp') || null,
       is_circuit: f.get('is_circuit') === 'on',
+      i18n: collectI18n(f, TRANSLATABLE.map((x) => x.name), loaded?.trip?.i18n),
     };
 
     let id = tripId;
@@ -90,13 +105,15 @@ export function TripEditor({ tripId, onSaved, onCancel }: { tripId?: string; onS
     // Programme : une ligne par jour « Titre : étape 1, étape 2 » (remplacé en entier)
     const days = g('days').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => {
       const [title, stops = ''] = l.split(':');
-      return { trip_id: id, day_number: i + 1, title: title.trim(), stops: stops.split(',').map((s) => s.trim()).filter(Boolean) };
+      const tr = Object.fromEntries(PREFIXED_LOCALES.map((l) => [l, lines(f.get(`days_tr:${l}`))[i]]).filter(([, v]) => v).map(([l, v]) => [l, { title: v }]));
+      return { trip_id: id, day_number: i + 1, title: title.trim(), stops: stops.split(',').map((s) => s.trim()).filter(Boolean), i18n: tr };
     });
     // Formules : une ligne par formule « Nom | prix | inclus 1, inclus 2 »
     const packages = g('packages').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => {
       const [name, price, inc = ''] = l.split('|').map((x) => x.trim());
       const code = (['essentielle', 'confort', 'premium', 'vip'] as const).find((c) => name.toLowerCase().includes(c)) ?? 'custom';
-      return { trip_id: id, code, name, price_xof: Number(price), position: i, includes: inc.split(',').map((s) => s.trim()).filter(Boolean), is_active: true };
+      const tr = Object.fromEntries(PREFIXED_LOCALES.map((l) => [l, lines(f.get(`packages_tr:${l}`))[i]]).filter(([, v]) => v).map(([l, v]) => [l, { name: v }]));
+      return { trip_id: id, code, name, price_xof: Number(price), position: i, includes: inc.split(',').map((s) => s.trim()).filter(Boolean), is_active: true, i18n: tr };
     });
 
     const errors: string[] = [];
@@ -166,6 +183,14 @@ export function TripEditor({ tripId, onSaved, onCancel }: { tripId?: string; onS
         <label className={`${lbl} sm:col-span-2`}>Formules (une ligne : « Nom | prix XOF | inclus 1, inclus 2 »)<textarea name="packages" rows={3} defaultValue={loaded?.packages ?? ''} className={input} placeholder="Formule Confort | 65000 | Transport, Hébergement" /></label>
         <label className={lbl}>Téléphone contact<input name="contact_phone" defaultValue={v('contact_phone')} className={input} /></label>
         <label className={lbl}>WhatsApp contact<input name="contact_whatsapp" defaultValue={v('contact_whatsapp')} className={input} /></label>
+        <TranslationFields fields={TRANSLATABLE} defaults={t.i18n}>
+          {PREFIXED_LOCALES.map((l) => (
+            <div key={l} className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+              <label className={lbl}>Programme — titres des jours (une ligne par jour, même ordre)<textarea name={`days_tr:${l}`} rows={3} defaultValue={loaded?.daysTr?.[l] ?? ''} className={input} /></label>
+              <label className={lbl}>Formules — noms (une ligne par formule, même ordre)<textarea name={`packages_tr:${l}`} rows={3} defaultValue={loaded?.packagesTr?.[l] ?? ''} className={input} /></label>
+            </div>
+          ))}
+        </TranslationFields>
       </div>
       {err && <p role="alert" className="text-sm text-red-400">{err}</p>}
       <div className="flex items-center gap-3">

@@ -3,8 +3,9 @@ import type { Metadata } from 'next';
 import { supabaseServer } from '@/lib/supabase-server';
 import { TourismNav } from '@/components/tourism/TourismNav';
 import { NotificationList } from './NotificationList';
+import { getI18n } from '@/lib/i18n/server';
 
-export const metadata: Metadata = { title: 'Notifications', robots: { index: false } };
+export function generateMetadata(): Metadata { return { title: getI18n().t('notif.title'), robots: { index: false } }; }
 export const dynamic = 'force-dynamic';
 
 export default async function NotificationsPage() {

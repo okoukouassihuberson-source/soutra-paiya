@@ -9,7 +9,8 @@ import { useEffect } from 'react';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { categoryEmoji, categoryLabel, formatXOF } from '@soutra/shared';
+import { categoryEmoji } from '@soutra/shared';
+import { useI18n } from '@/lib/i18n/client';
 
 export interface MapVenue {
   id: string; slug: string; name: string; category: string; lat: number; lng: number;
@@ -40,26 +41,27 @@ function FitBounds({ venues, user }: { venues: MapVenue[]; user?: [number, numbe
 }
 
 export default function VenuesMap({ venues, user }: { venues: MapVenue[]; user?: [number, number] }) {
+  const { t, lp, tdyn, fmtXOF } = useI18n();
   return (
     <MapContainer center={user ?? CI_CENTER} zoom={user ? 12 : 7} scrollWheelZoom
       className="h-[70vh] min-h-[420px] w-full rounded-2xl border border-neutral-200">
       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <FitBounds venues={venues} user={user} />
-      {user && <Marker position={user} icon={L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px #2563eb55"></div>', iconSize: [16, 16], iconAnchor: [8, 8] })}><Popup>Vous êtes ici</Popup></Marker>}
+      {user && <Marker position={user} icon={L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px #2563eb55"></div>', iconSize: [16, 16], iconAnchor: [8, 8] })}><Popup>{t('map.you')}</Popup></Marker>}
       {venues.map((v) => (
         <Marker key={v.id} position={[v.lat, v.lng]} icon={icon(categoryEmoji(v.category as any))}>
           <Popup>
             <div style={{ width: 210 }}>
               {v.cover_url && /* eslint-disable-next-line @next/next/no-img-element */ <img src={v.cover_url} alt="" style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8 }} />}
               <p style={{ margin: '6px 0 0', fontWeight: 700 }}>{v.name}</p>
-              <p style={{ margin: 0, fontSize: 12, color: '#555' }}>{categoryEmoji(v.category as any)} {categoryLabel(v.category as any)} · {[v.district, v.city].filter(Boolean).join(', ')}</p>
+              <p style={{ margin: 0, fontSize: 12, color: '#555' }}>{categoryEmoji(v.category as any)} {tdyn('venueCat', v.category, v.category)} · {[v.district, v.city].filter(Boolean).join(', ')}</p>
               <p style={{ margin: '2px 0', fontSize: 12 }}>
-                {(v.rating_count ?? 0) > 0 ? `★ ${Number(v.rating_avg).toFixed(1)} (${v.rating_count})` : 'Nouveau'}
-                {v.avg_price_xof ? ` · ~ ${formatXOF(v.avg_price_xof)}` : ''}
+                {(v.rating_count ?? 0) > 0 ? `★ ${Number(v.rating_avg).toFixed(1)} (${v.rating_count})` : t('common.new')}
+                {v.avg_price_xof ? ` · ~ ${fmtXOF(v.avg_price_xof)}` : ''}
               </p>
               <div style={{ display: 'flex', gap: 8, fontSize: 12, marginTop: 4 }}>
-                <a href={`/v/${v.slug}`} style={{ fontWeight: 700, color: '#EA580C' }}>Voir la fiche</a>
-                <a href={`https://www.openstreetmap.org/directions?to=${v.lat}%2C${v.lng}`} target="_blank" rel="noreferrer">Itinéraire</a>
+                <a href={`/v/${v.slug}`} style={{ fontWeight: 700, color: '#EA580C' }}>{t('common.viewSheet')}</a>
+                <a href={`https://www.openstreetmap.org/directions?to=${v.lat}%2C${v.lng}`} target="_blank" rel="noreferrer">{t('common.directions')}</a>
               </div>
             </div>
           </Popup>

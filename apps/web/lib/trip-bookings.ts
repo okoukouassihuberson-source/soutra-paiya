@@ -7,7 +7,7 @@ export interface TripBookingRow {
   trips: {
     slug: string; title: string; scope: string; city: string | null; country: string;
     starts_on: string; ends_on: string; departure_point: string | null;
-    departure_time: string | null; deposit_pct: number; cover_url: string | null;
+    departure_time: string | null; deposit_pct: number; cover_url: string | null; i18n?: Record<string, Record<string, string>> | null;
   } | null;
 }
 
@@ -16,7 +16,7 @@ export interface TripPaymentRow {
 }
 
 const TRIP_COLS =
-  'slug, title, scope, city, country, starts_on, ends_on, departure_point, departure_time, deposit_pct, cover_url';
+  'slug, title, scope, city, country, starts_on, ends_on, departure_point, departure_time, deposit_pct, cover_url, i18n';
 const COLS = `id, reference, trip_id, participants, unit_price_xof, total_xof, paid_xof, status, qr_token, used_at, created_at, expires_at, trips(${TRIP_COLS})`;
 
 // RLS : un voyageur ne lit que ses propres réservations (filtre explicite en plus).
@@ -38,8 +38,3 @@ export async function getMyTripBooking(userId: string, id: string) {
 }
 
 export const QR_PREFIX = 'soutra:trip:';
-
-export const BOOKING_STATUS_LABEL: Record<string, string> = {
-  pending: 'En attente de paiement', paid: 'Payé', confirmed: 'Confirmé (acompte versé)',
-  cancelled: 'Annulé', used: 'Utilisé',
-};

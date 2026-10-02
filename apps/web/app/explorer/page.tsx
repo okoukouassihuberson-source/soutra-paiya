@@ -8,6 +8,8 @@ import { TourismNav } from '@/components/tourism/TourismNav';
 import { ExplorerFilters, type FilterValues } from '@/components/tourism/ExplorerFilters';
 import { VenueCardView, TripCardView } from '@/components/tourism/Cards';
 import { VenuesMapLazy } from '@/components/tourism/VenuesMapLazy';
+import { getI18n } from '@/lib/i18n/server';
+import { languageAlternates } from '@/lib/i18n/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,23 +52,25 @@ function parse(sp: SP) {
 }
 
 export function generateMetadata({ searchParams }: { searchParams: SP }): Metadata {
+  const { t, tdyn, locale } = getI18n();
   const { v, cat } = parse(searchParams);
-  const where = v.city ? ` à ${v.city}` : " en Côte d'Ivoire";
-  const what = cat?.label ?? 'Explorer';
+  const where = v.city ? t('explorer.metaWhereCity', { city: v.city }) : t('explorer.metaWhereDefault');
+  const what = cat ? tdyn('cat', cat.key, cat.label) : t('explorer.title');
   const filtered = Object.keys(searchParams).some((k) => k !== 'cat');
   return {
     title: `${what}${where}`,
-    description: `${what}${where} : découvrez, comparez et réservez sur Soutra-Playce.`,
+    description: t('explorer.metaDescription', { what, where }),
     // Les pages filtrées ne sont pas indexées (contenu dupliqué) ; la page de catégorie l'est.
     robots: filtered ? { index: false, follow: true } : undefined,
-    alternates: { canonical: cat ? `/explorer?cat=${cat.key}` : '/explorer' },
+    alternates: languageAlternates(cat ? `/explorer?cat=${cat.key}` : '/explorer', locale),
   };
 }
 
 export default async function ExplorerPage({ searchParams }: { searchParams: SP }) {
+  const { t, tn, tdyn, lp, fmtNumber } = getI18n();
   const { v, params, cat, page, user } = parse(searchParams);
   // Catégories sans établissements (activités, voyages) : leur page dédiée.
-  if (cat && !cat.venueCategories) redirect(cat.href);
+  if (cat && !cat.venueCategories) redirect(lp(cat.href));
   const mapView = v.view === 'map';
 
   const showTrips = !cat || cat.key.startsWith('voyages');
@@ -88,7 +92,7 @@ export default async function ExplorerPage({ searchParams }: { searchParams: SP 
   const href = (extra: Record<string, string>) => {
     const q = new URLSearchParams(base);
     Object.entries(extra).forEach(([k, x]) => q.set(k, x));
-    return `/explorer?${q.toString()}`;
+    return lp(`/explorer?${q.toString()}`);
   };
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -96,58 +100,61 @@ export default async function ExplorerPage({ searchParams }: { searchParams: SP 
     <>
       <TourismNav />
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-8 sm:px-6 lg:px-8">
-        <h1 className="font-display text-3xl font-bold text-dark">{cat ? `${cat.emoji} ${cat.label}` : 'Explorer'}{v.city ? ` à ${v.city}` : ''}</h1>
+        <h1 className="font-display text-3xl font-bold text-dark">{(() => {
+          const what = cat ? `${cat.emoji} ${tdyn('cat', cat.key, cat.label)}` : t('explorer.title');
+          return v.city ? t('explorer.titleIn', { what, city: v.city }) : what;
+        })()}</h1>
         <div className="mt-5"><ExplorerFilters v={v} /></div>
 
-        <div className="mt-5 flex gap-2 overflow-x-auto pb-2" role="list" aria-label="Catégories">
+        <div className="mt-5 flex gap-2 overflow-x-auto pb-2" role="list" aria-label={t('explorer.categories')}>
           {TOURISM_CATEGORIES.map((c) => (
-            <Link key={c.key} role="listitem" href={c.key === cat?.key ? '/explorer' : c.href}
+            <Link key={c.key} role="listitem" href={c.key === cat?.key ? lp('/explorer') : lp(c.href)}
               className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium ${c.key === cat?.key ? 'border-primary-500 bg-primary-500 text-white' : 'border-neutral-200 bg-white text-neutral-700 hover:border-primary-300'}`}>
-              {c.emoji} {c.label}
+              {c.emoji} {tdyn('cat', c.key, c.label)}
             </Link>
           ))}
         </div>
 
         {trips.length > 0 && (
           <section className="mt-8">
-            <h2 className="mb-4 font-display text-xl font-bold">Voyages correspondants</h2>
+            <h2 className="mb-4 font-display text-xl font-bold">{t('explorer.matchingTrips')}</h2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{trips.map((t) => <TripCardView key={t.id} trip={t} />)}</div>
           </section>
         )}
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-neutral-600" aria-live="polite">
-            {res.error ? 'Recherche indisponible pour le moment.' : `${total} résultat${total > 1 ? 's' : ''}`}
-            {mapView && total > MAP_LIMIT ? ` (${MAP_LIMIT} affichés sur la carte — affinez vos filtres)` : ''}
+            {res.error ? t('explorer.unavailable') : tn('explorer.results', total, { n: fmtNumber(total) })}
+            {mapView && total > MAP_LIMIT ? t('explorer.mapCap', { max: MAP_LIMIT }) : ''}
           </p>
-          <div className="inline-flex overflow-hidden rounded-full border border-neutral-300 text-sm font-medium" role="group" aria-label="Affichage">
-            <Link href={href({ view: 'list' })} className={`px-4 py-1.5 ${!mapView ? 'bg-dark text-white' : 'bg-white'}`}>☰ Liste</Link>
-            <Link href={href({ view: 'map' })} className={`px-4 py-1.5 ${mapView ? 'bg-dark text-white' : 'bg-white'}`}>🗺️ Carte</Link>
+          <div className="inline-flex overflow-hidden rounded-full border border-neutral-300 text-sm font-medium" role="group" aria-label={t('explorer.display')}>
+            <Link href={href({ view: 'list' })} className={`px-4 py-1.5 ${!mapView ? 'bg-dark text-white' : 'bg-white'}`}>{t('explorer.viewList')}</Link>
+            <Link href={href({ view: 'map' })} className={`px-4 py-1.5 ${mapView ? 'bg-dark text-white' : 'bg-white'}`}>{t('explorer.viewMap')}</Link>
           </div>
         </div>
 
         <section className="mt-4">
           {venues.length === 0 ? (
-            <p className="rounded-2xl bg-neutral-50 p-8 text-center text-neutral-600">Aucun résultat. Essayez d’élargir vos filtres, une autre ville ou une autre catégorie.</p>
+            <p className="rounded-2xl bg-neutral-50 p-8 text-center text-neutral-600">{t('explorer.empty')}</p>
           ) : mapView ? (
             mapped.length === 0
-              ? <p className="rounded-2xl bg-neutral-50 p-8 text-center text-neutral-600">Ces établissements n’ont pas encore de position GPS.</p>
+              ? <p className="rounded-2xl bg-neutral-50 p-8 text-center text-neutral-600">{t('explorer.noGps')}</p>
               : <VenuesMapLazy venues={mapped} user={user} />
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {venues.map((x) => (
                 <div key={x.id} className="relative">
                   <VenueCardView venue={x} />
-                  {x.distance_km != null && <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-semibold text-white">{x.distance_km < 10 ? x.distance_km.toFixed(1) : Math.round(x.distance_km)} km</span>}
+                  {x.distance_km != null && <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-semibold text-white">{t('filters.km', { n: x.distance_km < 10 ? x.distance_km.toFixed(1) : Math.round(x.distance_km) })}</span>}
                 </div>
               ))}
             </div>
           )}
           {!mapView && pages > 1 && (
-            <nav className="mt-8 flex items-center justify-center gap-3" aria-label="Pagination">
-              {page > 1 && <Link className="rounded-full border px-5 py-2 text-sm font-medium" href={href({ page: String(page - 1) })}>← Précédent</Link>}
-              <span className="text-sm text-neutral-600">Page {page} / {pages}</span>
-              {page < pages && <Link className="rounded-full border px-5 py-2 text-sm font-medium" href={href({ page: String(page + 1) })}>Suivant →</Link>}
+            <nav className="mt-8 flex items-center justify-center gap-3" aria-label={t('common.pagination')}>
+              {page > 1 && <Link className="rounded-full border px-5 py-2 text-sm font-medium" href={href({ page: String(page - 1) })}>{t('common.previous')}</Link>}
+              <span className="text-sm text-neutral-600">{t('common.page', { n: page, total: pages })}</span>
+              {page < pages && <Link className="rounded-full border px-5 py-2 text-sm font-medium" href={href({ page: String(page + 1) })}>{t('common.next')}</Link>}
             </nav>
           )}
         </section>

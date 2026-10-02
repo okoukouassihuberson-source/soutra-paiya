@@ -8,12 +8,12 @@ import { listActivities, type ActivityCard } from './activities';
 const db = () => supabaseServer() as any;
 
 const TRIP_CARD_COLS =
-  'id, slug, scope, title, summary, country, country_code, continent, city, cover_url, starts_on, ends_on, duration_days, base_price_xof, seats_total, seats_booked, highlight, is_circuit, status, transport, lodging, meals';
+  'id, slug, scope, title, summary, country, country_code, continent, city, cover_url, starts_on, ends_on, duration_days, base_price_xof, seats_total, seats_booked, highlight, is_circuit, status, transport, lodging, meals, i18n';
 
 export type TripCard = Pick<Trip,
   'id' | 'slug' | 'scope' | 'title' | 'summary' | 'country' | 'country_code' | 'continent' | 'city' | 'cover_url' |
   'starts_on' | 'ends_on' | 'duration_days' | 'base_price_xof' | 'seats_total' | 'seats_booked' | 'highlight' |
-  'is_circuit' | 'status' | 'transport' | 'lodging' | 'meals'>;
+  'is_circuit' | 'status' | 'transport' | 'lodging' | 'meals' | 'i18n'>;
 
 export async function listTrips(opts: {
   scope: TripScope; continent?: string; q?: string; limit?: number; offset?: number;

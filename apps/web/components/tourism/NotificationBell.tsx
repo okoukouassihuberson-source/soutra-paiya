@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabaseBrowser } from '@/lib/supabase';
+import { useI18n } from '@/lib/i18n/client';
 
 /**
  * Cloche + compteur de non-lues. Invisible pour un visiteur non connecté.
  * Rafraîchie au chargement, au retour sur l'onglet et toutes les 60 s.
  */
 export function NotificationBell() {
+  const { t, lp } = useI18n();
   const [count, setCount] = useState<number | null>(null);
 
   const refresh = useCallback(async () => {
@@ -30,7 +32,7 @@ export function NotificationBell() {
 
   if (count === null) return null;
   return (
-    <Link href="/notifications" aria-label={count > 0 ? `Notifications : ${count} non lue${count > 1 ? 's' : ''}` : 'Notifications'}
+    <Link href={lp('/notifications')} aria-label={count > 0 ? t('nav.notificationsUnread', { n: count }) : t('nav.notifications')}
       className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-xl hover:bg-neutral-100">
       <span aria-hidden>🔔</span>
       {count > 0 && (

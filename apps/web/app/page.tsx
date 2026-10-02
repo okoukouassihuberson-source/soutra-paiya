@@ -3,10 +3,13 @@ import { LandingNavbar } from '@/components/marketing/LandingNavbar';
 import { PaymentLogo } from '@/components/marketing/PaymentLogo';
 import { HomeTourism } from '@/components/tourism/HomeTourism';
 import { EstablishmentLink } from '@/components/marketing/EstablishmentLink';
+import { LanguageSwitcher } from '@/components/tourism/LanguageSwitcher';
+import { getI18n } from '@/lib/i18n/server';
 
 export const revalidate = 120;
 
 export default function HomePage() {
+  const { locale, t, lp } = getI18n();
   return (
     <main className="overflow-x-hidden">
       <LandingNavbar />
@@ -14,6 +17,9 @@ export default function HomePage() {
       {/* V2 : portail touristique (hero recherche, catégories, destinations, voyages) */}
       <HomeTourism />
 
+      {/* Sections marketing (fintech, paiements, plans) : disponibles en français uniquement pour l'instant. */}
+      {locale === 'fr' && (
+        <>
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  TRUST — PAIEMENT SÉCURISÉ                              */}
       {/* ═══════════════════════════════════════════════════════ */}
@@ -608,9 +614,13 @@ export default function HomePage() {
         </div>
       </section>
 
+        </>
+      )}
+
       {/* ═══════════════════════════════════════════════════════ */}
       {/*  FOOTER                                                */}
       {/* ═══════════════════════════════════════════════════════ */}
+      {locale === 'fr' ? (
       <footer className="bg-dark py-12 text-neutral-400 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-8 sm:gap-10 md:grid-cols-4 md:gap-12">
@@ -720,6 +730,23 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+      ) : (
+      <footer className="bg-dark py-10 text-neutral-400">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 text-center sm:px-6">
+          <p className="font-display text-lg font-bold text-white">Soutra<span className="text-primary-400">-Playce</span></p>
+          <p className="max-w-md text-sm">{t('home.footerTagline')}</p>
+          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" aria-label="Footer">
+            <Link href={lp('/explorer')} className="hover:text-white">{t('nav.explore')}</Link>
+            <Link href={lp('/destinations')} className="hover:text-white">{t('nav.destinations')}</Link>
+            <Link href={lp('/activites')} className="hover:text-white">{t('nav.activities')}</Link>
+            <Link href={lp('/voyages/nationaux')} className="hover:text-white">{t('nav.tripsNational')}</Link>
+            <Link href={lp('/voyages/internationaux')} className="hover:text-white">{t('nav.tripsInternational')}</Link>
+            <Link href={lp('/organisateur')} className="hover:text-white">{t('home.footerPartner')}</Link>
+          </nav>
+          <LanguageSwitcher tone="dark" />
+        </div>
+      </footer>
+      )}
     </main>
   );
 }

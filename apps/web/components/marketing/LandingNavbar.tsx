@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { supabaseBrowser } from '@/lib/supabase';
 import { BrandMark } from '@/components/layout/BrandMark';
+import { LanguageSwitcher } from '@/components/tourism/LanguageSwitcher';
+import { useI18n } from '@/lib/i18n/client';
 
 /**
  * Navbar marketing — fixed-top sur dark hero, burger menu mobile.
@@ -17,6 +19,8 @@ import { BrandMark } from '@/components/layout/BrandMark';
  *     (l'install PWA effectif est piloté par <PWAInstallPrompt> dans le layout)
  */
 export function LandingNavbar() {
+  const { t, lp, locale } = useI18n();
+  const fr = locale === 'fr';  // sections marketing (fintech, offres Pro) : français uniquement
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   // Détection auth côté client : permet de basculer « Se connecter » →
@@ -101,18 +105,23 @@ export function LandingNavbar() {
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
-            <Link href="/explorer" className="text-sm text-neutral-400 transition hover:text-white">
-              Explorer
+            <Link href={lp('/explorer')} className="text-sm text-neutral-400 transition hover:text-white">
+              {t('nav.explore')}
             </Link>
-            <Link href="/destinations" className="text-sm text-neutral-400 transition hover:text-white">
-              Destinations
+            <Link href={lp('/activites')} className="text-sm text-neutral-400 transition hover:text-white">
+              {t('nav.activities')}
             </Link>
-            <Link href="/voyages/nationaux" className="text-sm text-neutral-400 transition hover:text-white">
-              Voyages 🇨🇮
+            <Link href={lp('/destinations')} className="text-sm text-neutral-400 transition hover:text-white">
+              {t('nav.destinations')}
             </Link>
-            <Link href="/voyages/internationaux" className="text-sm text-neutral-400 transition hover:text-white">
-              Voyages 🌍
+            <Link href={lp('/voyages/nationaux')} className="text-sm text-neutral-400 transition hover:text-white">
+              {t('nav.tripsNational')}
             </Link>
+            <Link href={lp('/voyages/internationaux')} className="text-sm text-neutral-400 transition hover:text-white">
+              {t('nav.tripsInternational')}
+            </Link>
+            {fr && (
+              <>
             <a href="#how" className="text-sm text-neutral-400 transition hover:text-white">
               Comment ça marche
             </a>
@@ -134,9 +143,12 @@ export function LandingNavbar() {
             <Link href={proHref} className="text-sm text-neutral-400 transition hover:text-white">
               Espace Pro
             </Link>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher tone="dark" className="hidden sm:inline-flex" />
             {authed ? (
               <Link
                 href="/account"
@@ -146,27 +158,27 @@ export function LandingNavbar() {
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
-                Mon compte
+                {t('nav.myAccount')}
               </Link>
             ) : (
               <Link
                 href="/login"
                 className="hidden rounded-lg px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white sm:block"
               >
-                Se connecter
+                {t('common.signIn')}
               </Link>
             )}
-            <a
+            {fr && <a
               href="#download"
               className="hidden rounded-full bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-600 hover:shadow-primary-500/40 sm:inline-flex"
             >
               Télécharger
-            </a>
+            </a>}
 
             {/* Burger mobile */}
             <button
               type="button"
-              aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu'}
+              aria-label={open ? t('menu.close') : t('menu.open')}
               aria-expanded={open}
               aria-controls="landing-mobile-menu"
               onClick={() => setOpen((v) => !v)}
@@ -199,7 +211,7 @@ export function LandingNavbar() {
         >
           <button
             type="button"
-            aria-label="Fermer le menu"
+            aria-label={t('menu.close')}
             onClick={() => setOpen(false)}
             className="absolute inset-0 animate-sheet-fade bg-black/60 backdrop-blur-sm"
           />
@@ -209,14 +221,21 @@ export function LandingNavbar() {
           >
             <ul className="space-y-1">
               {[
-                { href: '#how', label: 'Comment ça marche', accent: false },
-                { href: '#features', label: 'Fonctionnalités', accent: false },
-                { href: '/loyalty', label: 'Fidélité', accent: false },
-                { href: '/subscribe', label: 'Premium', accent: true },
-                { href: proHref, label: 'Espace Pro', accent: false },
+                { href: lp('/explorer'), label: t('nav.explore'), accent: false },
+                { href: lp('/activites'), label: t('nav.activities'), accent: false },
+                { href: lp('/destinations'), label: t('nav.destinations'), accent: false },
+                { href: lp('/voyages/nationaux'), label: t('nav.tripsNational'), accent: false },
+                { href: lp('/voyages/internationaux'), label: t('nav.tripsInternational'), accent: false },
+                ...(fr ? [
+                  { href: '#how', label: 'Comment ça marche', accent: false },
+                  { href: '#features', label: 'Fonctionnalités', accent: false },
+                  { href: '/loyalty', label: 'Fidélité', accent: false },
+                  { href: '/subscribe', label: 'Premium', accent: true },
+                  { href: proHref, label: 'Espace Pro', accent: false },
+                ] : []),
                 authed
-                  ? { href: '/account', label: 'Mon compte', accent: false }
-                  : { href: '/login', label: 'Se connecter', accent: false },
+                  ? { href: '/account', label: t('nav.myAccount'), accent: false }
+                  : { href: '/login', label: t('common.signIn'), accent: false },
               ].map((item) => (
                 <li key={item.href}>
                   <a
@@ -237,7 +256,8 @@ export function LandingNavbar() {
                   </a>
                 </li>
               ))}
-              <li className="pt-3">
+              <li className="flex justify-center pt-3 sm:hidden"><LanguageSwitcher tone="dark" /></li>
+              {fr && <li className="pt-3">
                 <a
                   href="#download"
                   onClick={() => setOpen(false)}
@@ -245,7 +265,7 @@ export function LandingNavbar() {
                 >
                   Télécharger l&apos;app
                 </a>
-              </li>
+              </li>}
             </ul>
           </nav>
         </div>

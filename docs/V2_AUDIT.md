@@ -31,7 +31,7 @@
 | Recherche globale + filtres | **AJOUTÉ (phase 2)** | `/explorer` : ville, commune, quartier, catégorie, prix, note, 10 services, ouvert maintenant, paiement en ligne, disponibilité hôtelière (dates), distance (« Près de moi »), tri, pagination serveur, vue carte. « Région » : non modélisé (couvert par ville/commune). |
 | SEO (sitemap, robots, JSON-LD, OG) | **PARTIEL → COMPLÉTÉ** | `sitemap.xml`, `robots.txt`, JSON-LD `TouristTrip/TouristDestination`, métadonnées. |
 | Marketplace d'activités | **AJOUTÉ (phase 2)** | `/activites`, fiche + créneaux + réservation + paiement + billet QR + avis ; espace organisateur/guide ; admin. Voir §3 sexies. |
-| Multilingue FR/EN | **ABSENT** | phase 3 (i18n sur les nouvelles pages). |
+| Multilingue FR/EN | **AJOUTÉ (phase 2)** | `/en/…`, dictionnaires typés, contenu éditorial traduisible, hreflang ; ES/IT/PT/AR prêts à brancher. Voir `docs/I18N.md` et §3 octies. |
 | Billet QR des voyages | **AJOUTÉ (phase 2)** | `/mes-voyages/[id]` (QR généré localement) + `/scan-voyage` (caméra ou saisie). Mobile : à faire. |
 | Paiement des voyages (acompte/solde/reçu) | **AJOUTÉ (phase 2, GeniusPay)** | Edge Function `geniuspay-pay-trip`, `trip_payments` (reçus). Paystack non étendu (comme les billets 0077). |
 
@@ -83,9 +83,18 @@
 6. **Tests** : 30+ scénarios SQL sur PostgreSQL 16 (événements, préférences, canaux, rappels et idempotence, file, reprise, sécurité : un client ne peut ni émettre, ni lire la file) ; 7 tests Deno (échappement HTML, liens sûrs, appels Resend et Expo simulés, nettoyage des jetons, contrôle d'accès) ; interface vérifiée dans Chromium avec une session simulée. **Non testés** : envoi réel (Resend, Expo, VAPID), le cron pg_cron/pg_net, et la réception d'un push dans un navigateur.
 7. Limites : les notifications mobiles existantes (réservations de table, commandes…) gardent leur circuit `send-push` ; l'application mobile n'affiche pas encore ces nouveaux types ; pas de temps réel (rafraîchissement toutes les 60 s) ; pas de vue d'administration de la file d'envoi.
 
+## 3 octies. Livré en phase 2 (multilingue FR/EN)
+1. **Architecture** (`docs/I18N.md`) : français inchangé à la racine, anglais en `/en/…` par réécriture du middleware (pas de dossier `[locale]`, aucune URL existante modifiée), en-tête `x-locale` non falsifiable, `<html lang dir>`, sélecteur de langue avec cookie, redirection de l'accueil selon le choix mémorisé. Dictionnaires typés : une clé ou un paramètre manquant est une erreur de compilation. ES / IT / PT / AR déclarés (AR en RTL), désactivés tant que le dictionnaire n'existe pas.
+2. **~470 textes** traduits (navigation, accueil, Explorer et filtres, destinations, voyages, activités, réservations, paiements, billets, avis, notifications et préférences, catégories, statuts, métadonnées).
+3. **SEO** : canonical par langue, `hreflang` + `x-default`, Open Graph localisé, sitemap avec alternates, pages filtrées toujours `noindex`.
+4. **Contenu éditorial** : migration `0090_content_translations.sql` (`i18n jsonb` + validation, `list_activities` renvoie i18n et cherche dans les titres traduits) ; blocs « Traduction » dans les éditeurs d'admin et d'organisateur (voyage, programme, formules, activité, destination).
+5. **Durcissement trouvé en chemin** (0090) : l'organisateur pouvait encore modifier formules et programme d'un voyage publié (donc le prix d'une formule après validation) ; ces tables ne sont plus modifiables par lui qu'en brouillon.
+6. **Tests** : 10 tests (`pnpm --filter @soutra/web test:i18n` : parité des dictionnaires, routage, pluriels, surcharge de contenu, formats, hreflang, middleware dont l'anti-falsification) ; 41 vérifications Chromium sur API simulée (FR inchangé, EN, canonical/hreflang, sélecteur + cookie, 404, sitemap, manifest et service worker non interceptés) ; migration 0090 testée sur PostgreSQL 16 en transaction unique.
+7. **Limites** : sections marketing de l'accueil, fiche établissement, connexion, compte, Pro, admin, scan, fidélité, abonnements et application mobile restent en français ; le **texte des notifications** est généré en français côté base (les écrans et préférences sont traduits) ; les emails sont en français ; aucune relecture humaine des traductions anglaises (à faire relire avant publication).
+
 ## 4. Feuille de route
 - **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
-- **Phase 3** : i18n FR/EN ; promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
+- **Phase 3** : promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions
 - Déployer : `supabase db push` puis `supabase functions deploy geniuspay-pay-trip`. Appliquer 0082 puis 0083 (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.
