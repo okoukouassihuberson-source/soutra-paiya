@@ -105,4 +105,30 @@ export const en: Dict = {
     kind: { reservation: 'Reservation', order: 'Order', booking: 'Hotel', event: 'Event' },
     today: 'Today at {time}', tomorrow: 'Tomorrow at {time}', inDays: 'In {n} days', daysAgo: '{n} days ago',
   },
+  wallet: {
+    subtitle: 'Your Soutra-Pay wallet', balance: 'Available balance', escrow: '{amount} in escrow', topup: 'Top up', withdraw: 'Withdraw',
+    recent: 'Recent activity', emptyTitle: 'No activity', emptyText: 'Top up your wallet to start paying, sending or receiving.',
+    pending: 'In progress', failed: 'Failed', loyalty: 'Loyalty', thisMonth: 'This month', spent: 'Spent', received: 'Received',
+    q: { send: 'Send', request: 'Request', split: 'Split Note', scan: 'Scan QR' },
+    tx: {
+      receivedFrom: 'Received from {name}', transferIn: 'Transfer received', sentTo: 'Sent to {name}', transferOut: 'Transfer sent', topup: 'Top-up', withdraw: 'Withdrawal',
+      payment: 'Payment', refund: 'Refund', split: 'Split Bill', escrow_hold: 'Escrow', escrow_release: 'Escrow release', fee: 'Fees',
+    },
+    spend: { payment: 'Payments', withdraw: 'Withdrawals', fee: 'Fees', split: 'Split Bill', transfer: 'Transfers' },
+    rel: { now: 'just now', min: '{n} min ago', hour: '{n} h ago', day: '{n} d ago' },
+  },
+  profile: {
+    user: 'User', logoutTitle: 'Sign out', logoutBody: 'Do you really want to sign out?', cancel: 'Cancel', logout: 'Sign out',
+    eyebrow: 'My profile', stats: { reservations: 'Bookings', posts: 'Posts', matches: 'Matches' }, account: 'My account', edit: 'Edit profile', kyc: 'KYC verification',
+    favorites: 'My favorites', sos: 'My SOS contacts', pro: 'Pro area', manager: 'Manager area', appearance: 'Appearance', program: 'Program', referral: 'Referral code',
+    referralBody: 'Your code: {code}\n\nShare it to earn 500 FCFA per referral.', referralPending: 'Your referral code is being generated.',
+    help: 'Help & legal', sia: 'SIA — Voice assistant', aiBadge: 'AI', helpCenter: 'Help center', helpBody: 'Ask SIA (above) or write to support@soutra.ci.',
+    terms: 'Terms & Privacy', termsTitle: 'Terms & Privacy', termsBody: 'The terms and privacy policy will be available here soon.',
+    version: 'Soutra-Playce · Version {v} · Beta', theme: 'Theme',
+    themes: {
+      light: 'Light', dark: 'Dark', system: 'System', lightSub: 'Cream background, dark text', darkSub: 'Black background, light text — saves OLED battery',
+      systemSub: 'Automatically follows your phone setting',
+    },
+    kycStatus: { verified: 'Verified', pending: 'In progress', rejected: 'Rejected', none: 'Not verified' },
+  },
 };

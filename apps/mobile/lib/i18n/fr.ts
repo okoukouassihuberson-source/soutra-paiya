@@ -107,6 +107,32 @@ export const fr = {
     kind: { reservation: 'Réservation', order: 'Commande', booking: 'Hôtel', event: 'Événement' },
     today: 'Aujourd’hui à {time}', tomorrow: 'Demain à {time}', inDays: 'Dans {n} jours', daysAgo: 'Il y a {n} jours',
   },
+  wallet: {
+    subtitle: 'Ton portefeuille Soutra-Pay', balance: 'Solde disponible', escrow: '{amount} en séquestre', topup: 'Recharger', withdraw: 'Retirer',
+    recent: 'Activité récente', emptyTitle: 'Aucune activité', emptyText: 'Recharge ton wallet pour commencer à payer, envoyer ou recevoir.',
+    pending: 'En cours', failed: 'Échec', loyalty: 'Fidélité', thisMonth: 'Ce mois-ci', spent: 'Dépenses', received: 'Revenus',
+    q: { send: 'Envoyer', request: 'Demander', split: 'Split Note', scan: 'Scanner QR' },
+    tx: {
+      receivedFrom: 'Reçu de {name}', transferIn: 'Transfert reçu', sentTo: 'Envoyé à {name}', transferOut: 'Transfert envoyé', topup: 'Rechargement', withdraw: 'Retrait',
+      payment: 'Paiement', refund: 'Remboursement', split: 'Split Bill', escrow_hold: 'Séquestre', escrow_release: 'Libération séquestre', fee: 'Frais',
+    },
+    spend: { payment: 'Paiements', withdraw: 'Retraits', fee: 'Frais', split: 'Split Bill', transfer: 'Transferts' },
+    rel: { now: 'à l’instant', min: 'il y a {n} min', hour: 'il y a {n} h', day: 'il y a {n} j' },
+  },
+  profile: {
+    user: 'Utilisateur', logoutTitle: 'Déconnexion', logoutBody: 'Veux-tu vraiment te déconnecter ?', cancel: 'Annuler', logout: 'Se déconnecter',
+    eyebrow: 'Mon profil', stats: { reservations: 'Réservations', posts: 'Posts', matches: 'Matchs' }, account: 'Mon compte', edit: 'Modifier le profil', kyc: 'Vérification KYC',
+    favorites: 'Mes favoris', sos: 'Mes contacts SOS', pro: 'Espace pro', manager: 'Espace gérant', appearance: 'Apparence', program: 'Programme', referral: 'Code de parrainage',
+    referralBody: 'Ton code : {code}\n\nPartage-le pour gagner 500 FCFA par filleul.', referralPending: 'Ton code de parrainage est en cours de génération.',
+    help: 'Aide & légal', sia: 'SIA — Assistant vocal', aiBadge: 'IA', helpCenter: 'Centre d’aide', helpBody: 'Pose ta question à SIA (au-dessus), ou écris à support@soutra.ci.',
+    terms: 'Conditions & Confidentialité', termsTitle: 'CGU & Confidentialité', termsBody: 'Les CGU et la politique de confidentialité seront bientôt disponibles ici.',
+    version: 'Soutra-Playce · Version {v} · Beta', theme: 'Thème',
+    themes: {
+      light: 'Clair', dark: 'Sombre', system: 'Système', lightSub: 'Fond crème, texte sombre', darkSub: 'Fond noir, texte clair — économise la batterie OLED',
+      systemSub: 'Suit automatiquement la pref de ton téléphone',
+    },
+    kycStatus: { verified: 'Vérifié', pending: 'En cours', rejected: 'Rejeté', none: 'Non vérifié' },
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

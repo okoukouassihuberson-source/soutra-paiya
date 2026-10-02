@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors, useTheme, type ThemeMode } from '@/lib/theme';
+import { useI18n, tr, type TKey } from '@/lib/i18n';
 
 interface ProfileRow {
   id: string;
@@ -24,6 +25,7 @@ interface ProfileRow {
 type Stats = { reservations: number; posts: number; matches: number } | null;
 
 export default function Profile() {
+  const { t } = useI18n();
   const { user, signOut } = useAuth();
   const router = useRouter();
   const c = useColors();
@@ -60,14 +62,14 @@ export default function Profile() {
     }, [user?.id]),
   );
 
-  const displayName = profile?.full_name?.trim() || profile?.phone || user?.phone || 'Utilisateur';
+  const displayName = profile?.full_name?.trim() || profile?.phone || user?.phone || t('profile.user');
   const initial = (profile?.full_name?.trim()?.[0] ?? user?.phone?.replace(/[+\s]/g, '')?.slice(-2, -1) ?? 'U').toUpperCase();
   const kyc = kycMeta(profile?.kyc_status, c);
 
   const handleSignOut = () => {
-    Alert.alert('Déconnexion', 'Veux-tu vraiment te déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: () => { void signOut(); } },
+    Alert.alert(t('profile.logoutTitle'), t('profile.logoutBody'), [
+      { text: t('profile.cancel'), style: 'cancel' },
+      { text: t('profile.logout'), style: 'destructive', onPress: () => { void signOut(); } },
     ]);
   };
 
@@ -90,7 +92,7 @@ export default function Profile() {
           )}
 
           <View style={s.heroTop}>
-            <Text style={s.heroEyebrow}>Mon profil</Text>
+            <Text style={s.heroEyebrow}>{t('profile.eyebrow')}</Text>
             <Pressable onPress={() => router.push('/profile-edit' as any)} hitSlop={10} style={s.heroAction}>
               <Ionicons name="create-outline" size={18} color="#fff" />
             </Pressable>
@@ -119,21 +121,21 @@ export default function Profile() {
 
         {/* Stats */}
         <View style={s.statsRow}>
-          <StatCard c={c} label="Réservations" value={stats?.reservations} icon="ticket" />
-          <StatCard c={c} label="Posts" value={stats?.posts} icon="chatbubble" />
-          <StatCard c={c} label="Matchs" value={stats?.matches} icon="heart" />
+          <StatCard c={c} label={t('profile.stats.reservations')} value={stats?.reservations} icon="ticket" />
+          <StatCard c={c} label={t('profile.stats.posts')} value={stats?.posts} icon="chatbubble" />
+          <StatCard c={c} label={t('profile.stats.matches')} value={stats?.matches} icon="heart" />
         </View>
 
         {/* Mon compte */}
         <View style={s.sectionTitleRow}>
           <View style={s.sectionAccent} />
-          <Text style={s.sectionTitle}>Mon compte</Text>
+          <Text style={s.sectionTitle}>{t('profile.account')}</Text>
         </View>
         <View style={s.menu}>
-          <MenuItem c={c} icon="person-outline" label="Modifier le profil" onPress={() => router.push('/profile-edit' as any)} />
-          <MenuItem c={c} icon="shield-checkmark-outline" label="Vérification KYC" badge={kyc.label} badgeColor={kyc.color} onPress={() => router.push('/kyc' as any)} />
-          <MenuItem c={c} icon="heart-outline" label="Mes favoris" onPress={() => router.push('/favorites' as any)} />
-          <MenuItem c={c} icon="medkit-outline" label="Mes contacts SOS" onPress={() => router.push('/sos-contacts' as any)} last />
+          <MenuItem c={c} icon="person-outline" label={t('profile.edit')} onPress={() => router.push('/profile-edit' as any)} />
+          <MenuItem c={c} icon="shield-checkmark-outline" label={t('profile.kyc')} badge={kyc.label} badgeColor={kyc.color} onPress={() => router.push('/kyc' as any)} />
+          <MenuItem c={c} icon="heart-outline" label={t('profile.favorites')} onPress={() => router.push('/favorites' as any)} />
+          <MenuItem c={c} icon="medkit-outline" label={t('profile.sos')} onPress={() => router.push('/sos-contacts' as any)} last />
         </View>
 
         {/* Espace gérant — toujours visible : /pro guide vers "Créer mon
@@ -145,13 +147,13 @@ export default function Profile() {
             cachait la section à tout Pro passé par la création directe. */}
         <View style={s.sectionTitleRow}>
           <View style={s.sectionAccent} />
-          <Text style={s.sectionTitle}>Espace pro</Text>
+          <Text style={s.sectionTitle}>{t('profile.pro')}</Text>
         </View>
         <View style={s.menu}>
           <MenuItem
             c={c}
             icon="storefront-outline"
-            label="Espace gérant"
+            label={t('profile.manager')}
             badge="Pro"
             badgeColor={c.primary[500]}
             onPress={() => router.push('/pro' as any)}
@@ -162,7 +164,7 @@ export default function Profile() {
         {/* Apparence */}
         <View style={s.sectionTitleRow}>
           <View style={s.sectionAccent} />
-          <Text style={s.sectionTitle}>Apparence</Text>
+          <Text style={s.sectionTitle}>{t('profile.appearance')}</Text>
         </View>
         <View style={s.menu}>
           <ThemeMenuItem c={c} onPress={() => setThemePickerOpen(true)} last />
@@ -171,19 +173,19 @@ export default function Profile() {
         {/* Programme */}
         <View style={s.sectionTitleRow}>
           <View style={s.sectionAccent} />
-          <Text style={s.sectionTitle}>Programme</Text>
+          <Text style={s.sectionTitle}>{t('profile.program')}</Text>
         </View>
         <View style={s.menu}>
           <MenuItem
             c={c}
             icon="gift-outline"
-            label="Code de parrainage"
+            label={t('profile.referral')}
             value={profile?.referral_code ?? '…'}
             onPress={() => Alert.alert(
-              'Code de parrainage',
+              t('profile.referral'),
               profile?.referral_code
-                ? `Ton code : ${profile.referral_code}\n\nPartage-le pour gagner 500 FCFA par filleul.`
-                : 'Ton code de parrainage est en cours de génération.'
+                ? t('profile.referralBody', { code: profile.referral_code })
+                : t('profile.referralPending')
             )}
             last
           />
@@ -192,12 +194,12 @@ export default function Profile() {
         {/* Aide */}
         <View style={s.sectionTitleRow}>
           <View style={s.sectionAccent} />
-          <Text style={s.sectionTitle}>Aide & légal</Text>
+          <Text style={s.sectionTitle}>{t('profile.help')}</Text>
         </View>
         <View style={s.menu}>
-          <MenuItem c={c} icon="sparkles-outline" label="SIA — Assistant vocal" badge="IA" badgeColor={c.primary[500]} onPress={() => router.push('/assistant' as any)} />
-          <MenuItem c={c} icon="help-circle-outline" label="Centre d'aide" onPress={() => Alert.alert('Centre d\'aide', 'Pose ta question à SIA (au-dessus), ou écris à support@soutra.ci.')} />
-          <MenuItem c={c} icon="document-text-outline" label="Conditions & Confidentialité" onPress={() => Alert.alert('CGU & Confidentialité', 'Les CGU et la politique de confidentialité seront bientôt disponibles ici.')} last />
+          <MenuItem c={c} icon="sparkles-outline" label={t('profile.sia')} badge={t('profile.aiBadge')} badgeColor={c.primary[500]} onPress={() => router.push('/assistant' as any)} />
+          <MenuItem c={c} icon="help-circle-outline" label={t('profile.helpCenter')} onPress={() => Alert.alert(t('profile.helpCenter'), t('profile.helpBody'))} />
+          <MenuItem c={c} icon="document-text-outline" label={t('profile.terms')} onPress={() => Alert.alert(t('profile.termsTitle'), t('profile.termsBody'))} last />
         </View>
 
         <Pressable
@@ -205,9 +207,9 @@ export default function Profile() {
           style={({ pressed }) => [s.signOut, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
         >
           <Ionicons name="log-out-outline" size={18} color={c.danger} />
-          <Text style={s.signOutText}>Se déconnecter</Text>
+          <Text style={s.signOutText}>{t('profile.logout')}</Text>
         </Pressable>
-        <Text style={s.version}>Soutra-Playce · Version 0.1.2 · Beta</Text>
+        <Text style={s.version}>{t('profile.version', { v: '0.1.2' })}</Text>
       </ScrollView>
 
       <ThemePickerModal visible={themePickerOpen} onClose={() => setThemePickerOpen(false)} />
@@ -267,8 +269,9 @@ function MenuItem({
 
 function ThemeMenuItem({ c, onPress, last }: { c: ColorPalette; onPress: () => void; last?: boolean }) {
   const { mode } = useTheme();
+  const { t } = useI18n();
   const ss = useMemo(() => makeStyles(c), [c]);
-  const label = mode === 'light' ? 'Clair' : mode === 'dark' ? 'Sombre' : 'Système';
+  const label = t(`profile.themes.${mode}` as TKey);
   const icon: keyof typeof Ionicons.glyphMap = mode === 'light' ? 'sunny-outline' : mode === 'dark' ? 'moon-outline' : 'contrast-outline';
   return (
     <Pressable
@@ -278,7 +281,7 @@ function ThemeMenuItem({ c, onPress, last }: { c: ColorPalette; onPress: () => v
       <View style={ss.menuIconWrap}>
         <Ionicons name={icon} size={18} color={c.primary[600]} />
       </View>
-      <Text style={ss.menuLabel}>Thème</Text>
+      <Text style={ss.menuLabel}>{t('profile.theme')}</Text>
       <Text style={ss.menuValue}>{label}</Text>
       <Ionicons name="chevron-forward" size={16} color={c.neutral[400]} />
     </Pressable>
@@ -288,11 +291,12 @@ function ThemeMenuItem({ c, onPress, last }: { c: ColorPalette; onPress: () => v
 function ThemePickerModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const c = useColors();
   const { mode, setMode } = useTheme();
+  const { t } = useI18n();
   const ss = useMemo(() => makeStyles(c), [c]);
   const choices: { v: ThemeMode; label: string; sub: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { v: 'light', label: 'Clair', sub: 'Fond crème, texte sombre', icon: 'sunny' },
-    { v: 'dark', label: 'Sombre', sub: 'Fond noir, texte clair — économise la batterie OLED', icon: 'moon' },
-    { v: 'system', label: 'Système', sub: 'Suit automatiquement la pref de ton téléphone', icon: 'contrast' },
+    { v: 'light', label: t('profile.themes.light'), sub: t('profile.themes.lightSub'), icon: 'sunny' },
+    { v: 'dark', label: t('profile.themes.dark'), sub: t('profile.themes.darkSub'), icon: 'moon' },
+    { v: 'system', label: t('profile.themes.system'), sub: t('profile.themes.systemSub'), icon: 'contrast' },
   ];
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -300,7 +304,7 @@ function ThemePickerModal({ visible, onClose }: { visible: boolean; onClose: () 
       <View style={ss.sheet}>
         <View style={ss.handle} />
         <View style={ss.sheetHeader}>
-          <Text style={ss.sheetTitle}>Apparence</Text>
+          <Text style={ss.sheetTitle}>{t('profile.appearance')}</Text>
           <Pressable onPress={onClose} hitSlop={10}>
             <Ionicons name="close" size={22} color={c.dark} />
           </Pressable>
@@ -331,10 +335,10 @@ function ThemePickerModal({ visible, onClose }: { visible: boolean; onClose: () 
 
 function kycMeta(status: string | null | undefined, c: ColorPalette): { label: string; color: string; bg: string; icon: keyof typeof Ionicons.glyphMap } {
   switch (status) {
-    case 'verified': return { label: 'Vérifié', color: c.success, bg: 'rgba(0,184,148,0.15)', icon: 'shield-checkmark' };
-    case 'pending': return { label: 'En cours', color: c.warning, bg: 'rgba(255,193,7,0.18)', icon: 'time' };
-    case 'rejected': return { label: 'Rejeté', color: c.danger, bg: 'rgba(230,57,70,0.18)', icon: 'close-circle' };
-    default: return { label: 'Non vérifié', color: '#fff', bg: 'rgba(255,255,255,0.2)', icon: 'shield-outline' };
+    case 'verified': return { label: tr('profile.kycStatus.verified'), color: c.success, bg: 'rgba(0,184,148,0.15)', icon: 'shield-checkmark' };
+    case 'pending': return { label: tr('profile.kycStatus.pending'), color: c.warning, bg: 'rgba(255,193,7,0.18)', icon: 'time' };
+    case 'rejected': return { label: tr('profile.kycStatus.rejected'), color: c.danger, bg: 'rgba(230,57,70,0.18)', icon: 'close-circle' };
+    default: return { label: tr('profile.kycStatus.none'), color: '#fff', bg: 'rgba(255,255,255,0.2)', icon: 'shield-outline' };
   }
 }
 

@@ -9,11 +9,13 @@ import { useAuth } from '@/lib/auth-context';
 import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors } from '@/lib/theme';
+import { useI18n, tr, trn, intlLocale, type TKey } from '@/lib/i18n';
 
 export default function Wallet() {
   const { user } = useAuth();
   const router = useRouter();
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [balance, setBalance] = useState<number>(0);
   const [locked, setLocked] = useState<number>(0);
@@ -70,7 +72,7 @@ export default function Wallet() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <TabHeader
-          subtitle="Ton portefeuille Soutra-Pay"
+          subtitle={t('wallet.subtitle')}
           trailing={(
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               <Pressable hitSlop={10} onPress={() => router.push('/search')} style={s.iconBtn}>
@@ -91,7 +93,7 @@ export default function Wallet() {
 
           <View style={s.balanceTop}>
             <View>
-              <Text style={s.balanceLabel}>Solde disponible</Text>
+              <Text style={s.balanceLabel}>{t('wallet.balance')}</Text>
               <View style={s.balanceValueRow}>
                 {walletLoading ? (
                   <Skeleton width={180} height={40} style={{ backgroundColor: 'rgba(255,255,255,0.25)' }} />
@@ -102,7 +104,7 @@ export default function Wallet() {
               {locked > 0 && (
                 <View style={s.lockedRow}>
                   <Ionicons name="lock-closed" size={11} color="rgba(255,255,255,0.85)" />
-                  <Text style={s.locked}>{formatXOF(locked)} en séquestre</Text>
+                  <Text style={s.locked}>{t('wallet.escrow', { amount: formatXOF(locked) })}</Text>
                 </View>
               )}
             </View>
@@ -117,14 +119,14 @@ export default function Wallet() {
               style={({ pressed }) => [s.balanceActionBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
             >
               <Ionicons name="add-circle" size={18} color={c.primary[600]} />
-              <Text style={s.balanceActionText}>Recharger</Text>
+              <Text style={s.balanceActionText}>{t('wallet.topup')}</Text>
             </Pressable>
             <Pressable
               onPress={() => router.push('/withdraw')}
               style={({ pressed }) => [s.balanceActionBtn, s.balanceActionBtnGhost, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
             >
               <Ionicons name="arrow-down-circle-outline" size={18} color="#fff" />
-              <Text style={[s.balanceActionText, { color: '#fff' }]}>Retirer</Text>
+              <Text style={[s.balanceActionText, { color: '#fff' }]}>{t('wallet.withdraw')}</Text>
             </Pressable>
           </View>
         </View>
@@ -133,14 +135,14 @@ export default function Wallet() {
         <View style={s.quickRow}>
           {QUICK.map((q) => (
             <Pressable
-              key={q.label}
+              key={t(q.label)}
               style={({ pressed }) => [s.quickItem, pressed && { transform: [{ scale: 0.95 }] }]}
               onPress={() => router.push(q.route as never)}
             >
               <View style={[s.quickIcon, { backgroundColor: q.bg }]}>
                 <Ionicons name={q.icon} size={22} color={q.color} />
               </View>
-              <Text style={s.quickLabel}>{q.label}</Text>
+              <Text style={s.quickLabel}>{t(q.label)}</Text>
             </Pressable>
           ))}
         </View>
@@ -154,7 +156,7 @@ export default function Wallet() {
         {/* Transactions récentes */}
         <View style={s.sectionTitleRow}>
           <View style={s.sectionAccent} />
-          <Text style={s.sectionTitle}>Activité récente</Text>
+          <Text style={s.sectionTitle}>{t('wallet.recent')}</Text>
         </View>
         <TransactionHistory c={c} userId={user?.id} refreshNonce={refreshNonce} />
       </ScrollView>
@@ -166,11 +168,11 @@ export default function Wallet() {
 // bookings hôtel sont désormais consolidés dans l'onglet Billets (tab
 // tickets), donc ils ne sont plus exposés ici. Split Note remplace ces
 // entrées pour offrir la découpe d'addition entre amis.
-const QUICK: { label: string; icon: keyof typeof Ionicons.glyphMap; bg: string; color: string; route: string }[] = [
-  { label: 'Envoyer', icon: 'send', bg: '#dbeafe', color: '#2563eb', route: '/send' },
-  { label: 'Demander', icon: 'download', bg: '#dcfce7', color: '#16a34a', route: '/requests' },
-  { label: 'Split Note', icon: 'people', bg: '#ede9fe', color: '#7c3aed', route: '/split-bill' },
-  { label: 'Scanner QR', icon: 'qr-code', bg: '#fce7f3', color: '#db2777', route: '/scan' },
+const QUICK: { label: TKey; icon: keyof typeof Ionicons.glyphMap; bg: string; color: string; route: string }[] = [
+  { label: 'wallet.q.send', icon: 'send', bg: '#dbeafe', color: '#2563eb', route: '/send' },
+  { label: 'wallet.q.request', icon: 'download', bg: '#dcfce7', color: '#16a34a', route: '/requests' },
+  { label: 'wallet.q.split', icon: 'people', bg: '#ede9fe', color: '#7c3aed', route: '/split-bill' },
+  { label: 'wallet.q.scan', icon: 'qr-code', bg: '#fce7f3', color: '#db2777', route: '/scan' },
 ];
 
 interface PartyProfile {
@@ -201,6 +203,7 @@ function TransactionHistory({
   userId?: string;
   refreshNonce: number;
 }) {
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -257,8 +260,8 @@ function TransactionHistory({
         <View style={s.emptyIconWrap}>
           <Ionicons name="receipt-outline" size={36} color={c.primary[400]} />
         </View>
-        <Text style={s.emptyTitle}>Aucune activité</Text>
-        <Text style={s.emptyText}>Recharge ton wallet pour commencer à payer, envoyer ou recevoir.</Text>
+        <Text style={s.emptyTitle}>{t('wallet.emptyTitle')}</Text>
+        <Text style={s.emptyText}>{t('wallet.emptyText')}</Text>
       </View>
     );
   }
@@ -281,12 +284,12 @@ function TransactionHistory({
                 <Text style={s.txDate}>{relativeDate(tx.created_at)}</Text>
                 {pending && (
                   <View style={[s.txStatusPill, { backgroundColor: '#fef3c7' }]}>
-                    <Text style={[s.txStatusText, { color: '#d97706' }]}>En cours</Text>
+                    <Text style={[s.txStatusText, { color: '#d97706' }]}>{t('wallet.pending')}</Text>
                   </View>
                 )}
                 {failed && (
                   <View style={[s.txStatusPill, { backgroundColor: '#fee2e2' }]}>
-                    <Text style={[s.txStatusText, { color: c.danger }]}>Échec</Text>
+                    <Text style={[s.txStatusText, { color: c.danger }]}>{t('wallet.failed')}</Text>
                   </View>
                 )}
               </View>
@@ -327,24 +330,24 @@ function txMeta(tx: Transaction, userId: string | undefined, c: ColorPalette): {
     const other = received ? partyDisplay(tx.sender) : partyDisplay(tx.counterparty);
     if (received) {
       return {
-        label: other ? `Reçu de ${other}` : 'Transfert reçu',
+        label: other ? tr('wallet.tx.receivedFrom', { name: other }) : tr('wallet.tx.transferIn'),
         icon: 'arrow-down', bg: '#dcfce7', color: '#16a34a',
       };
     }
     return {
-      label: other ? `Envoyé à ${other}` : 'Transfert envoyé',
+      label: other ? tr('wallet.tx.sentTo', { name: other }) : tr('wallet.tx.transferOut'),
       icon: 'arrow-up', bg: '#dbeafe', color: '#2563eb',
     };
   }
   switch (tx.type) {
-    case 'topup': return { label: 'Rechargement', icon: 'add-circle', bg: '#dcfce7', color: '#16a34a' };
-    case 'withdraw': return { label: 'Retrait', icon: 'arrow-down-circle', bg: '#fee2e2', color: '#dc2626' };
-    case 'payment': return { label: 'Paiement', icon: 'card', bg: '#ede9fe', color: '#7c3aed' };
-    case 'refund': return { label: 'Remboursement', icon: 'arrow-undo', bg: '#dcfce7', color: '#16a34a' };
-    case 'split': return { label: 'Split Bill', icon: 'people', bg: '#fef3c7', color: '#d97706' };
-    case 'escrow_hold': return { label: 'Séquestre', icon: 'lock-closed', bg: '#e0e7ff', color: '#4f46e5' };
-    case 'escrow_release': return { label: 'Libération séquestre', icon: 'lock-open', bg: '#dcfce7', color: '#16a34a' };
-    case 'fee': return { label: 'Frais', icon: 'receipt', bg: c.neutral[100], color: c.neutral[600] };
+    case 'topup': return { label: tr('wallet.tx.topup'), icon: 'add-circle', bg: '#dcfce7', color: '#16a34a' };
+    case 'withdraw': return { label: tr('wallet.tx.withdraw'), icon: 'arrow-down-circle', bg: '#fee2e2', color: '#dc2626' };
+    case 'payment': return { label: tr('wallet.tx.payment'), icon: 'card', bg: '#ede9fe', color: '#7c3aed' };
+    case 'refund': return { label: tr('wallet.tx.refund'), icon: 'arrow-undo', bg: '#dcfce7', color: '#16a34a' };
+    case 'split': return { label: tr('wallet.tx.split'), icon: 'people', bg: '#fef3c7', color: '#d97706' };
+    case 'escrow_hold': return { label: tr('wallet.tx.escrow_hold'), icon: 'lock-closed', bg: '#e0e7ff', color: '#4f46e5' };
+    case 'escrow_release': return { label: tr('wallet.tx.escrow_release'), icon: 'lock-open', bg: '#dcfce7', color: '#16a34a' };
+    case 'fee': return { label: tr('wallet.tx.fee'), icon: 'receipt', bg: c.neutral[100], color: c.neutral[600] };
     default: return { label: tx.type, icon: 'help-circle', bg: c.neutral[100], color: c.neutral[600] };
   }
 }
@@ -353,14 +356,14 @@ function relativeDate(iso: string): string {
   const d = new Date(iso);
   const now = Date.now();
   const m = Math.floor((now - d.getTime()) / 60000);
-  if (m < 1) return 'à l\'instant';
-  if (m < 60) return `il y a ${m} min`;
+  if (m < 1) return tr('wallet.rel.now');
+  if (m < 60) return tr('wallet.rel.min', { n: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
+  if (h < 24) return tr('wallet.rel.hour', { n: h });
   const days = Math.floor(h / 24);
-  if (days < 7) return `il y a ${days} j`;
+  if (days < 7) return tr('wallet.rel.day', { n: days });
   // Au-delà d'une semaine, date + heure (spec audit UX wallet PR2).
-  return d.toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(intlLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 /**
@@ -373,6 +376,7 @@ function LoyaltyTeaser({
   c, userId, refreshNonce,
 }: { c: ColorPalette; userId?: string; refreshNonce: number }) {
   const router = useRouter();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [stats, setStats] = useState<{
     balance: number;
@@ -413,7 +417,7 @@ function LoyaltyTeaser({
         <Ionicons name="trophy" size={20} color="#fff" />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={s.loyaltyTeaserLabel}>Fidélité</Text>
+        <Text style={s.loyaltyTeaserLabel}>{t('wallet.loyalty')}</Text>
         <Text style={s.loyaltyTeaserAmount}>{stats.balance.toLocaleString('fr-FR')} pts</Text>
         {stats.levelLabel && (
           <Text style={s.loyaltyTeaserSub}>
@@ -426,13 +430,6 @@ function LoyaltyTeaser({
   );
 }
 
-const SPEND_TYPE_LABEL: Record<string, string> = {
-  payment: 'Paiements',
-  withdraw: 'Retraits',
-  fee: 'Frais',
-  split: 'Split Bill',
-  transfer: 'Transferts',
-};
 
 /**
  * Résumé "Ce mois-ci" : dépenses/revenus agrégés depuis `transactions`
@@ -442,6 +439,7 @@ const SPEND_TYPE_LABEL: Record<string, string> = {
 function SpendingSummary({
   c, userId, refreshNonce,
 }: { c: ColorPalette; userId?: string; refreshNonce: number }) {
+  const { t, tdyn } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [summary, setSummary] = useState<{
     spent: number;
@@ -474,14 +472,14 @@ function SpendingSummary({
 
   return (
     <View style={s.spendingCard}>
-      <Text style={s.spendingTitle}>Ce mois-ci</Text>
+      <Text style={s.spendingTitle}>{t('wallet.thisMonth')}</Text>
       <View style={s.spendingStatsRow}>
         <View style={{ flex: 1 }}>
-          <Text style={s.spendingStatLabel}>Dépenses</Text>
+          <Text style={s.spendingStatLabel}>{t('wallet.spent')}</Text>
           <Text style={[s.spendingStatValue, { color: c.danger }]}>{formatXOF(summary.spent)}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={s.spendingStatLabel}>Revenus</Text>
+          <Text style={s.spendingStatLabel}>{t('wallet.received')}</Text>
           <Text style={[s.spendingStatValue, { color: c.success }]}>{formatXOF(summary.received)}</Text>
         </View>
       </View>
@@ -489,7 +487,7 @@ function SpendingSummary({
         <View style={s.spendingBreakdown}>
           {summary.byType.map((t) => (
             <View key={t.type} style={s.spendingBarRow}>
-              <Text style={s.spendingBarLabel} numberOfLines={1}>{SPEND_TYPE_LABEL[t.type] ?? t.type}</Text>
+              <Text style={s.spendingBarLabel} numberOfLines={1}>{tdyn('wallet.spend', t.type, t.type)}</Text>
               <View style={s.spendingBarTrack}>
                 <View style={[s.spendingBarFill, { width: `${Math.round((t.amount / maxAmount) * 100)}%`, backgroundColor: c.primary[500] }]} />
               </View>

@@ -9,7 +9,14 @@ const walk = (d) => readdirSync(d).flatMap((f) => {
   if (f === 'node_modules' || f === 'i18n' || f.endsWith('.test.ts')) return [];
   return statSync(p).isDirectory() ? walk(p) : /\.(tsx?)$/.test(f) ? [p] : [];
 });
-const FR = /[àâçéèêëîïôûùüÿœÀÉÈÊ]|\b(Aucun|Aucune|Chargement|Erreur|Retour|Envoyer|Annuler|Valider)\b/;
+// Texte d'interface en dur, quelle que soit la langue : accents français, texte JSX littéral (>Texte<),
+// props de texte (title= label= placeholder= subtitle=), Alert.alert('…').
+const FR = new RegExp([
+  '[àâçéèêëîïôûùüÿœÀÉÈÊ]',
+  '>\\s*[A-Za-z][^<>{}]{2,}</',
+  '\\b(title|label|placeholder|subtitle|text|description)=["\'][^"\']*[A-Za-z]{3,}',
+  'Alert\\.alert\\(\\s*[\'"`]',
+].join('|'));
 const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).map((l) => l.replace(/\/\/.*$/, '')).join('\n');
 
 const rows = [];
