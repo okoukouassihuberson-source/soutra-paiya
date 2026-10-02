@@ -100,9 +100,17 @@
 5. **Tests** : 20 scénarios SQL sur PostgreSQL 16 (contraintes, offres automatiques, casse du code, codes d'erreur, plafonds, limites par client, libération à l'annulation, plancher 200 FCFA, RLS, listes publiques, vue admin) ; `tsc`, `next build` et tests i18n verts. **Non testé** : parcours navigateur de l'interface des offres.
 6. **Limites** : pas de limitation de débit contre l'essai de codes (authentification requise seulement) ; une seule offre par réservation ; textes des notifications de promotion non émis ; traductions anglaises non relues.
 
+## 3 decies. Livré en phase 2 (commissions configurables)
+1. **Migration `0092_commissions.sql`** (additive) : taux par défaut plateforme (voyages / activités, **0 % tant que l'admin n'a rien réglé** : aucun changement à l'application), surcharge par partenaire, priorité **taux du voyage/activité > taux du partenaire > taux par défaut** (`effective_commission_pct`).
+2. **Commission figée à l'encaissement** : `trip_payments` et `activity_payments` portent `commission_pct` + `commission_xof` (déclencheur à l'insertion, donc aucune modification des fonctions de règlement). Changer un taux n'affecte que les paiements futurs ; avant, le calcul était rétroactif. Reprise de l'existant avec le taux de l'élément (même résultat qu'avant). `admin_tourism_stats` et `admin_activity_overview` somment désormais ces montants.
+3. **RPC admin** (audit dans `audit_events`) : `admin_set_commission_defaults`, `admin_set_organizer_commission` (deux NULL = suppression), `admin_commission_report` (totaux, 12 mois, top partenaires). **Transparence** : `get_my_commission` (le partenaire voit ses taux et ce qui a été prélevé). Tables sans politique d'écriture.
+4. **Interface** : onglet « Commissions » dans l'admin ; bandeau « Votre commission » dans l'espace organisateur.
+5. **Tests** : 8 scénarios SQL sur PostgreSQL 16 (0 % par défaut, historique figé après changement de taux, priorité des trois niveaux, bornes 0–100, droits admin / partenaire, RLS, rapport, audit, reprise). `tsc` vert. **Non testé** : l'interface dans un navigateur.
+6. **Limites** : commission calculée sur le montant encaissé (après réduction) ; pas de remboursement ni de reversement automatique au partenaire (les réservations annulées sont exclues des statistiques) ; textes en français uniquement (espaces admin / partenaire).
+
 ## 4. Feuille de route
 - **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
-- **Phase 3** : commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
+- **Phase 3** : assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions
 - Déployer : `supabase db push` puis `supabase functions deploy geniuspay-pay-trip`. Appliquer 0082 puis 0083 (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.
