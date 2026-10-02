@@ -461,4 +461,9 @@ export const en: Dict = {
     title: 'Settings', pinReqTitle: 'PIN required', pinReqBody: 'Set a payment PIN first.', signOutTitle: 'Sign out', signOutBody: 'Do you want to sign out?', cancel: 'Cancel', signOut: 'Sign out', myAccount: 'My account',
     account: 'Account', profile: 'My profile', kyc: 'Identity verification (KYC)', security: 'Security', pin: 'Payment PIN', pinOn: 'On', pinOff: 'Not set', bio: 'Biometric unlock', bioNA: 'Not available on this device', bioNeedPin: 'Set a PIN first', changePw: 'Change password',
   },
+  revenuePdf: {
+    title: 'Revenue report', subtitle: 'Venue revenue report', ref: 'Ref.', period: 'Period', financials: 'Financial indicators', gross: 'Gross revenue', grossSub: 'Total flows generated', commission: 'Soutra-Playce commission', commissionSub: '{pct}% of gross',
+    net: 'Net revenue', netSub: 'Gross – commission', billable: 'Billed fees', billableSub: 'Featuring, advertising, certification…', deltaText: 'commission versus the previous period', reservations: 'Bookings', tickets: 'Tickets sold', payments: 'Payments',
+    bySource: 'Breakdown by source', source: 'Source', amount: 'Amount', events: 'Events', lastLines: 'Line details (last 50)', date: 'Date', rule: 'Rule applied', footer: 'Automatically generated — non-contractual document',
+  },
 };

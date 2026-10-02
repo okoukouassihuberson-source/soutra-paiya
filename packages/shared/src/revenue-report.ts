@@ -45,6 +45,23 @@ export interface RevenueReportEventRow {
   rule_name: string | null;
 }
 
+/** Textes du rapport (français par défaut) — surchargeables pour une autre langue. */
+export interface RevenueReportLabels {
+  title: string; subtitle: string; ref: string; period: string; financials: string;
+  gross: string; grossSub: string; commission: string; commissionSub: string; net: string; netSub: string; billable: string; billableSub: string;
+  deltaText: string; reservations: string; tickets: string; payments: string;
+  bySource: string; source: string; amount: string; events: string; lastLines: string; date: string; rule: string; footer: string;
+}
+
+export const REVENUE_LABELS_FR: RevenueReportLabels = {
+  title: 'Rapport de revenus', subtitle: 'Rapport de revenus établissement', ref: 'Réf.', period: 'Période', financials: 'Indicateurs financiers',
+  gross: 'Revenus bruts', grossSub: 'Total des flux générés', commission: 'Commission Soutra-Playce', commissionSub: '{pct}% du brut', net: 'Revenus nets', netSub: 'Brut – commission',
+  billable: 'Frais facturés', billableSub: 'Mise en avant, publicité, certif…',
+  deltaText: 'de commission par rapport à la période précédente', reservations: 'Réservations', tickets: 'Billets vendus', payments: 'Paiements',
+  bySource: 'Ventilation par source', source: 'Source', amount: 'Montant', events: 'Events', lastLines: 'Détail des lignes (50 dernières)', date: 'Date', rule: 'Règle appliquée',
+  footer: 'Généré automatiquement — document non contractuel',
+};
+
 export interface RevenueReportOptions {
   venue: RevenueReportVenue;
   summary: RevenueReportSummary;
@@ -52,6 +69,12 @@ export interface RevenueReportOptions {
   events?: RevenueReportEventRow[];
   periodLabel: string;
   generatedAt?: Date;
+  /** Langue du document (BCP-47, ex. « en-GB »). Défaut : fr-FR. */
+  locale?: string;
+  /** Textes traduits (les clés absentes retombent sur le français). */
+  labels?: Partial<RevenueReportLabels>;
+  /** Libellés des sources monétaires traduits (clé = kind). */
+  kindLabels?: Record<string, string>;
 }
 
 // Métadonnées d'affichage des 17 sources monétaires.
@@ -85,16 +108,16 @@ function esc(s: string | null | undefined): string {
     .replace(/'/g, '&#39;');
 }
 
-function formatDateFR(d: Date): string {
-  return new Intl.DateTimeFormat('fr-FR', {
+function formatDateFR(d: Date, locale = 'fr-FR'): string {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   }).format(d);
 }
 
-function formatShortDateFR(iso: string): string {
+function formatShortDateFR(iso: string, locale = 'fr-FR'): string {
   const d = new Date(iso);
-  return new Intl.DateTimeFormat('fr-FR', {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
   }).format(d);
 }
@@ -106,6 +129,9 @@ function formatShortDateFR(iso: string): string {
 export function buildRevenueReportHtml(opts: RevenueReportOptions): string {
   const { venue, summary, byKind, events = [], periodLabel } = opts;
   const generatedAt = opts.generatedAt ?? new Date();
+  const locale = opts.locale ?? 'fr-FR';
+  const L: RevenueReportLabels = { ...REVENUE_LABELS_FR, ...opts.labels };
+  const KL = { ...KIND_LABELS, ...opts.kindLabels };
 
   const deltaSign = summary.delta_pct == null
     ? ''
@@ -115,7 +141,7 @@ export function buildRevenueReportHtml(opts: RevenueReportOptions): string {
     ? ''
     : `<div class="delta ${summary.delta_pct >= 0 ? 'delta-pos' : 'delta-neg'}">
         ${summary.delta_pct >= 0 ? '↗' : '↘'} ${deltaSign}${summary.delta_pct}%
-        de commission par rapport à la période précédente
+        ${esc(L.deltaText)}
         (${formatXOF(summary.previous_commission_xof)} → ${formatXOF(summary.commission_xof)})
        </div>`;
 
@@ -123,7 +149,7 @@ export function buildRevenueReportHtml(opts: RevenueReportOptions): string {
   const maxByKind = Math.max(1, ...byKind.map((b) => b.total_xof));
   const kindRows = byKind
     .map((b) => {
-      const label = KIND_LABELS[b.kind] ?? b.kind;
+      const label = KL[b.kind] ?? b.kind;
       const pct = (b.total_xof / maxByKind) * 100;
       return `<tr>
         <td class="kind-label">${esc(label)}</td>
@@ -142,9 +168,9 @@ export function buildRevenueReportHtml(opts: RevenueReportOptions): string {
   const eventRows = events
     .slice(0, 50)
     .map((e) => {
-      const label = KIND_LABELS[e.kind] ?? e.kind;
+      const label = KL[e.kind] ?? e.kind;
       return `<tr>
-        <td>${esc(formatShortDateFR(e.ts))}</td>
+        <td>${esc(formatShortDateFR(e.ts, locale))}</td>
         <td>${esc(label)}</td>
         <td class="num">${formatXOF(e.amount_xof)}</td>
         <td class="muted">${esc(e.rule_name ?? '—')}</td>
@@ -153,10 +179,10 @@ export function buildRevenueReportHtml(opts: RevenueReportOptions): string {
     .join('');
 
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="${esc(locale.split('-')[0])}">
 <head>
 <meta charset="utf-8" />
-<title>Rapport de revenus — ${esc(venue.name)}</title>
+<title>${esc(L.title)} — ${esc(venue.name)}</title>
 <style>
   @page { size: A4; margin: 18mm; }
   * { box-sizing: border-box; }
@@ -295,11 +321,11 @@ export function buildRevenueReportHtml(opts: RevenueReportOptions): string {
 <div class="header">
   <div>
     <div class="brand">Soutra-Playce</div>
-    <div class="brand-sub">Rapport de revenus établissement</div>
+    <div class="brand-sub">${esc(L.subtitle)}</div>
   </div>
   <div class="meta-right">
-    <div class="date">${esc(formatDateFR(generatedAt))}</div>
-    <div>Réf. : SP-REV-${generatedAt.getTime().toString(36).toUpperCase()}</div>
+    <div class="date">${esc(formatDateFR(generatedAt, locale))}</div>
+    <div>${esc(L.ref)} : SP-REV-${generatedAt.getTime().toString(36).toUpperCase()}</div>
   </div>
 </div>
 
@@ -308,56 +334,56 @@ export function buildRevenueReportHtml(opts: RevenueReportOptions): string {
   <div class="venue-meta">
     ${esc(venue.category)}${venue.district ? ' · ' + esc(venue.district) : ''}${venue.city ? ' · ' + esc(venue.city) : ''}
   </div>
-  <div class="period">Période : ${esc(periodLabel)}</div>
+  <div class="period">${esc(L.period)} : ${esc(periodLabel)}</div>
 </div>
 
-<h2>Indicateurs financiers</h2>
+<h2>${esc(L.financials)}</h2>
 <div class="kpi-grid">
   <div class="kpi kpi-blue">
-    <div class="kpi-label">Revenus bruts</div>
+    <div class="kpi-label">${esc(L.gross)}</div>
     <div class="kpi-value">${formatXOF(summary.gross_xof)}</div>
-    <div class="kpi-sub">Total des flux générés</div>
+    <div class="kpi-sub">${esc(L.grossSub)}</div>
   </div>
   <div class="kpi kpi-amber">
-    <div class="kpi-label">Commission Soutra-Playce</div>
+    <div class="kpi-label">${esc(L.commission)}</div>
     <div class="kpi-value">${formatXOF(summary.commission_xof)}</div>
-    <div class="kpi-sub">${summary.commission_rate_pct}% du brut</div>
+    <div class="kpi-sub">${esc(L.commissionSub.replace('{pct}', String(summary.commission_rate_pct)))}</div>
   </div>
   <div class="kpi kpi-green">
-    <div class="kpi-label">Revenus nets</div>
+    <div class="kpi-label">${esc(L.net)}</div>
     <div class="kpi-value">${formatXOF(summary.net_xof)}</div>
-    <div class="kpi-sub">Brut – commission</div>
+    <div class="kpi-sub">${esc(L.netSub)}</div>
   </div>
   <div class="kpi kpi-purple">
-    <div class="kpi-label">Frais facturés</div>
+    <div class="kpi-label">${esc(L.billable)}</div>
     <div class="kpi-value">${formatXOF(summary.billable_xof)}</div>
-    <div class="kpi-sub">Mise en avant, publicité, certif…</div>
+    <div class="kpi-sub">${esc(L.billableSub)}</div>
   </div>
 </div>
 
 ${deltaBlock}
 
 <div class="counts">
-  <div class="count-box"><div class="v">${summary.reservation_events}</div>Réservations</div>
-  <div class="count-box"><div class="v">${summary.ticket_events}</div>Billets vendus</div>
-  <div class="count-box"><div class="v">${summary.payment_events}</div>Paiements</div>
+  <div class="count-box"><div class="v">${summary.reservation_events}</div>${esc(L.reservations)}</div>
+  <div class="count-box"><div class="v">${summary.ticket_events}</div>${esc(L.tickets)}</div>
+  <div class="count-box"><div class="v">${summary.payment_events}</div>${esc(L.payments)}</div>
 </div>
 
 ${byKind.length > 0 ? `
-<h2>Ventilation par source</h2>
+<h2>${esc(L.bySource)}</h2>
 <table class="kinds">
   <thead>
-    <tr><th>Source</th><th></th><th class="num">Montant</th><th class="num">Events</th></tr>
+    <tr><th>${esc(L.source)}</th><th></th><th class="num">${esc(L.amount)}</th><th class="num">${esc(L.events)}</th></tr>
   </thead>
   <tbody>${kindRows}</tbody>
 </table>
 ` : ''}
 
 ${events.length > 0 ? `
-<h2>Détail des lignes (50 dernières)</h2>
+<h2>${esc(L.lastLines)}</h2>
 <table>
   <thead>
-    <tr><th>Date</th><th>Source</th><th class="num">Montant</th><th>Règle appliquée</th></tr>
+    <tr><th>${esc(L.date)}</th><th>${esc(L.source)}</th><th class="num">${esc(L.amount)}</th><th>${esc(L.rule)}</th></tr>
   </thead>
   <tbody>${eventRows}</tbody>
 </table>
@@ -365,7 +391,7 @@ ${events.length > 0 ? `
 
 <div class="footer">
   <div>Soutra-Playce · soutra-paiya.vercel.app</div>
-  <div>Généré automatiquement — document non contractuel</div>
+  <div>${esc(L.footer)}</div>
 </div>
 
 </body>

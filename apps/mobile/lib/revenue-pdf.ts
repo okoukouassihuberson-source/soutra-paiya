@@ -19,7 +19,8 @@ import {
   type RevenueReportEventRow,
   type RevenueReportVenue,
 } from '@soutra/shared';
-import { tr } from '@/lib/i18n';
+import { tr, intlLocale, type TKey } from '@/lib/i18n';
+import { PRO_KIND_META } from '@/lib/pro-revenue';
 
 export interface ExportRevenuePdfParams {
   venue: RevenueReportVenue;
@@ -42,6 +43,12 @@ export async function exportRevenuePdf(params: ExportRevenuePdfParams): Promise<
     byKind: params.byKind,
     events: params.events ?? [],
     periodLabel: params.periodLabel,
+    locale: intlLocale(),
+    labels: Object.fromEntries(
+      (['title', 'subtitle', 'ref', 'period', 'financials', 'gross', 'grossSub', 'commission', 'commissionSub', 'net', 'netSub', 'billable', 'billableSub', 'deltaText', 'reservations', 'tickets', 'payments', 'bySource', 'source', 'amount', 'events', 'lastLines', 'date', 'rule', 'footer'] as const)
+        .map((k) => [k, tr(`revenuePdf.${k}` as TKey)]),
+    ),
+    kindLabels: Object.fromEntries(Object.keys(PRO_KIND_META).map((k) => [k, PRO_KIND_META[k].label])),
   });
 
   try {

@@ -463,6 +463,11 @@ export const fr = {
     title: 'Paramètres', pinReqTitle: 'Code PIN requis', pinReqBody: 'Définis d’abord un code PIN de paiement.', signOutTitle: 'Déconnexion', signOutBody: 'Veux-tu te déconnecter ?', cancel: 'Annuler', signOut: 'Se déconnecter', myAccount: 'Mon compte',
     account: 'Compte', profile: 'Mon profil', kyc: 'Vérification d’identité (KYC)', security: 'Sécurité', pin: 'Code PIN de paiement', pinOn: 'Activé', pinOff: 'Non défini', bio: 'Déverrouillage biométrique', bioNA: 'Non disponible sur cet appareil', bioNeedPin: 'Définis d’abord un code PIN', changePw: 'Changer le mot de passe',
   },
+  revenuePdf: {
+    title: 'Rapport de revenus', subtitle: 'Rapport de revenus établissement', ref: 'Réf.', period: 'Période', financials: 'Indicateurs financiers', gross: 'Revenus bruts', grossSub: 'Total des flux générés', commission: 'Commission Soutra-Playce', commissionSub: '{pct}% du brut',
+    net: 'Revenus nets', netSub: 'Brut – commission', billable: 'Frais facturés', billableSub: 'Mise en avant, publicité, certif…', deltaText: 'de commission par rapport à la période précédente', reservations: 'Réservations', tickets: 'Billets vendus', payments: 'Paiements',
+    bySource: 'Ventilation par source', source: 'Source', amount: 'Montant', events: 'Événements', lastLines: 'Détail des lignes (50 dernières)', date: 'Date', rule: 'Règle appliquée', footer: 'Généré automatiquement — document non contractuel',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;
