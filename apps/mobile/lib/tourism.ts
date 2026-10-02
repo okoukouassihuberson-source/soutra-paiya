@@ -15,9 +15,17 @@ export const QR_ACTIVITY_PREFIX = 'soutra:act:';
 export type TripCard = Pick<Trip, 'id' | 'slug' | 'title' | 'scope' | 'city' | 'country' | 'cover_url' | 'starts_on' | 'ends_on' | 'duration_days' | 'base_price_xof' | 'seats_total' | 'seats_booked' | 'highlight'>;
 const TRIP_CARD = 'id, slug, title, scope, city, country, cover_url, starts_on, ends_on, duration_days, base_price_xof, seats_total, seats_booked, highlight';
 
-export async function listTrips(scope: TripScope, limit = 30): Promise<TripCard[]> {
-  const { data, error } = await db.from('trips').select(TRIP_CARD).eq('scope', scope)
+/** Terme sûr pour ilike / or() PostgREST : ni jokers ni séparateurs. */
+const safeTerm = (v: string) => v.replace(/[%_,()\\*"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+
+export interface TripFilters { q?: string; maxPrice?: number | null }
+export async function listTrips(scope: TripScope, filters: TripFilters = {}, limit = 30): Promise<TripCard[]> {
+  let q = db.from('trips').select(TRIP_CARD).eq('scope', scope)
     .in('status', ['published', 'full']).gte('starts_on', today()).order('starts_on').limit(limit);
+  const t = safeTerm(filters.q ?? '');
+  if (t) q = q.or(`title.ilike.%${t}%,city.ilike.%${t}%,country.ilike.%${t}%`);
+  if (filters.maxPrice && filters.maxPrice > 0) q = q.lte('base_price_xof', Math.round(filters.maxPrice));
+  const { data, error } = await q;
   if (error) throw error;
   return (data ?? []) as TripCard[];
 }
@@ -37,9 +45,11 @@ export interface ActivityCard {
   price_xof: number; duration_minutes: number; rating_avg: number; rating_count: number; next_slot_at: string | null;
 }
 
-export async function listActivities(limit = 30): Promise<ActivityCard[]> {
+export interface ActivityFilters { q?: string; category?: string | null; maxPrice?: number | null }
+export async function listActivities(filters: ActivityFilters = {}, limit = 30): Promise<ActivityCard[]> {
   const { data, error } = await db.rpc('list_activities', {
-    p_q: null, p_category: null, p_city: null, p_min_price: null, p_max_price: null, p_date: null,
+    p_q: safeTerm(filters.q ?? '') || null, p_category: filters.category || null, p_city: null, p_min_price: null,
+    p_max_price: filters.maxPrice && filters.maxPrice > 0 ? Math.round(filters.maxPrice) : null, p_date: null,
     p_max_age: null, p_destination: null, p_sort: 'popular', p_limit: limit, p_offset: 0,
   });
   if (error) throw error;

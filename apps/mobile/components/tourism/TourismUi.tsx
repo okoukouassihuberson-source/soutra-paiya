@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, TextInput, Image, StyleSheet } from 'react-native';
+import { View, Text, Pressable, TextInput, Image, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { radius, spacing, typography, formatXOF, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
@@ -106,6 +106,47 @@ export function Stepper({ value, min, max, onChange, label }: { value: number; m
         <Text style={s.stepValue}>{value}</Text>
         <Pressable onPress={() => onChange(Math.min(max, value + 1))} hitSlop={8} accessibilityLabel="Plus" style={s.stepBtn}><Ionicons name="add" size={20} color={c.dark} /></Pressable>
       </View>
+    </View>
+  );
+}
+
+const BUDGETS: { label: string; value: number | null }[] = [
+  { label: 'Tous budgets', value: null }, { label: '≤ 25 000', value: 25000 }, { label: '≤ 50 000', value: 50000 },
+  { label: '≤ 100 000', value: 100000 }, { label: '≤ 250 000', value: 250000 }, { label: '≤ 500 000', value: 500000 },
+];
+
+/** Recherche + budget maximum (par personne) + catégories optionnelles. */
+export function FilterBar({ q, onQ, maxPrice, onMaxPrice, categories, category, onCategory }: {
+  q: string; onQ: (v: string) => void; maxPrice: number | null; onMaxPrice: (v: number | null) => void;
+  categories?: { key: string; label: string }[]; category?: string | null; onCategory?: (k: string | null) => void;
+}) {
+  const c = useColors();
+  const s = useMemo(() => makeStyles(c), [c]);
+  const chip = (on: boolean) => ({ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99, borderWidth: 1, borderColor: on ? c.primary[500] : c.neutral[300], backgroundColor: on ? c.primary[500] : c.light });
+  const chipText = (on: boolean) => ({ fontSize: 12, fontWeight: '700' as const, color: on ? '#fff' : c.neutral[700] });
+  return (
+    <View style={{ gap: 8, paddingBottom: spacing.sm }}>
+      <View style={{ paddingHorizontal: spacing.md }}>
+        <TextInput value={q} onChangeText={onQ} placeholder="Rechercher (ville, pays, thème…)" placeholderTextColor={c.neutral[400]} returnKeyType="search"
+                   autoCorrect={false} accessibilityLabel="Rechercher" style={s.input} />
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: spacing.md }}>
+        {BUDGETS.map((b) => (
+          <Pressable key={b.label} onPress={() => onMaxPrice(b.value)} accessibilityRole="button" accessibilityState={{ selected: maxPrice === b.value }} style={chip(maxPrice === b.value)}>
+            <Text style={chipText(maxPrice === b.value)}>{b.label}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+      {categories && onCategory ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: spacing.md }}>
+          <Pressable onPress={() => onCategory(null)} accessibilityRole="button" accessibilityState={{ selected: !category }} style={chip(!category)}><Text style={chipText(!category)}>Toutes</Text></Pressable>
+          {categories.map((k) => (
+            <Pressable key={k.key} onPress={() => onCategory(k.key)} accessibilityRole="button" accessibilityState={{ selected: category === k.key }} style={chip(category === k.key)}>
+              <Text style={chipText(category === k.key)}>{k.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
     </View>
   );
 }

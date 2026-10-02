@@ -132,10 +132,10 @@
 
 ## 3 quaterdecies. Livré en phase 2 (suppression admin + destinations mobile)
 1. **Migration `0095_admin_delete.sql`** : `admin_delete_trip` et `admin_delete_activity` — suppression définitive **uniquement s'il n'existe aucune réservation** (quel qu'en soit le statut) : l'historique financier n'est jamais détruit ; sinon `HAS_BOOKINGS` et l'administrateur utilise l'annulation / l'archivage. Programme, formules, créneaux et offres ciblées partent en cascade ; trace dans `audit_events`. Boutons « Supprimer » dans les onglets Voyages et Activités de l'admin. Testé sur PostgreSQL 16 (non-admin refusé, voyage avec réservation refusé, cascade, audit).
-2. **Mobile** : écran `/destinations` (liste, présentation dépliable) + raccourci dans Explorer ; **avis sur les activités** (liste des avis sur la fiche ; dans « Mes voyages et activités », note 1–5 + commentaire une fois l'activité vécue, via `submit_activity_review` : mêmes règles d'éligibilité que le web) ; `tsc` mobile et web verts, non lancé sur appareil.
+2. **Mobile** : **recherche et filtres** sur les listes voyages (texte, budget maximum) et activités (texte, budget, catégorie), avec les mêmes garde-fous de saisie que le web (termes assainis, filtrage côté serveur) ; écran `/destinations` (liste, présentation dépliable) + raccourci dans Explorer ; **avis sur les activités** (liste des avis sur la fiche ; dans « Mes voyages et activités », note 1–5 + commentaire une fois l'activité vécue, via `submit_activity_review` : mêmes règles d'éligibilité que le web) ; `tsc` mobile et web verts, non lancé sur appareil.
 
 ## 4. Feuille de route
-- **Reste** : recette sur appareil de l'application mobile ; filtres avancés sur mobile ; i18n mobile ; espace organisateur mobile ; relecture humaine des traductions anglaises.
+- **Reste** : recette sur appareil de l'application mobile ; filtres avancés (dates, distance, carte) sur mobile ; i18n mobile ; espace organisateur mobile ; relecture humaine des traductions anglaises.
 
 ## 5. Déploiement / précautions
 Voir **`docs/RECETTE_V2.md`** : ordre de déploiement (migrations 0082 → 0095, fonctions Edge, secrets), vérifications en base, scénarios de recette par rôle et critères de mise en production. Ne jamais exécuter `seed-dev-tourism.sql` en production.

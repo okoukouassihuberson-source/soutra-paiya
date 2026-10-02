@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { radius, spacing, typography, seatsLeft, formatTripDates, type ColorPalette, type TripScope } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { TourismCard } from '@/components/tourism/TourismUi';
+import { FilterBar, TourismCard } from '@/components/tourism/TourismUi';
 import { listTrips, type TripCard } from '@/lib/tourism';
 
 /** /voyages — voyages de groupe nationaux et internationaux. */
@@ -18,12 +18,16 @@ export default function VoyagesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
+  const [q, setQ] = useState('');
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [dq, setDq] = useState('');
+  useEffect(() => { const t = setTimeout(() => setDq(q), 400); return () => clearTimeout(t); }, [q]);
 
   const load = useCallback(async () => {
     setError(false);
-    try { setItems(await listTrips(scope)); } catch { setItems([]); setError(true); }
+    try { setItems(await listTrips(scope, { q: dq, maxPrice })); } catch { setItems([]); setError(true); }
     setLoading(false); setRefreshing(false);
-  }, [scope]);
+  }, [scope, dq, maxPrice]);
   useEffect(() => { setLoading(true); load(); }, [load]);
 
   return (
@@ -36,10 +40,11 @@ export default function VoyagesScreen() {
           </Pressable>
         ))}
       </View>
+      <FilterBar q={q} onQ={setQ} maxPrice={maxPrice} onMaxPrice={setMaxPrice} />
       {loading ? <View style={s.center}><ActivityIndicator color={c.primary[500]} /></View> : (
         <ScrollView contentContainerStyle={{ paddingBottom: spacing['2xl'] }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}>
           {error && <Text style={s.empty}>Impossible de charger les voyages. Tirez pour réessayer.</Text>}
-          {!error && items.length === 0 && <Text style={s.empty}>Aucun voyage à venir pour le moment.</Text>}
+          {!error && items.length === 0 && <Text style={s.empty}>Aucun voyage ne correspond à votre recherche.</Text>}
           {items.map((t) => {
             const left = seatsLeft(t);
             return (
