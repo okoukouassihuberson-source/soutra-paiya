@@ -13,9 +13,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { typography, radius, spacing, formatXOF, type ColorPalette } from '@soutra/shared';
+import { typography, radius, spacing, formatXOF, VENUE_CATEGORIES, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n, type TKey } from '@/lib/i18n';
 import {
   listMyProVenues, getProRevenueSummary, getProRevenueByKind,
   getProRevenueTimeline, listProRevenueEvents,
@@ -25,13 +26,17 @@ import {
 import { getVenuePayableBalance, type VenuePayoutBalance } from '@/lib/venue-payout';
 import { exportRevenuePdf } from '@/lib/revenue-pdf';
 
-const PERIODS: { id: string; label: string; days: number }[] = [
-  { id: '7d', label: '7 j', days: 7 },
-  { id: '30d', label: '30 j', days: 30 },
-  { id: '90d', label: '90 j', days: 90 },
+const PERIODS: { id: string; days: number }[] = [
+  { id: '7d', days: 7 },
+  { id: '30d', days: 30 },
+  { id: '90d', days: 90 },
 ];
 
+const VENUE_CAT_KEYS = new Set<string>(VENUE_CATEGORIES.map((m) => m.value));
+const KIND_KEYS = Object.fromEntries(Object.keys(PRO_KIND_META).map((k) => [k, true]));
+
 export default function ProDashboard() {
+  const { t, tn, intl } = useI18n();
   const router = useRouter();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -51,12 +56,13 @@ export default function ProDashboard() {
   const [exporting, setExporting] = useState(false);
 
   const selectedVenue = venues.find((v) => v.id === selectedVenueId) ?? null;
+  const kindLabel = (kind: string, fallback: string) => (kind in KIND_KEYS ? t(`proKind.${kind}` as TKey) : fallback);
 
   const handleExportPdf = async () => {
     if (!summary || !selectedVenue) return;
     setExporting(true);
     try {
-      const periodLabel = PERIODS.find((p) => p.id === period)?.label ?? '30 j';
+      const periodLabel = t('pro.days', { n: PERIODS.find((p) => p.id === period)?.days ?? 30 });
       await exportRevenuePdf({
         venue: {
           name: selectedVenue.name,
@@ -147,15 +153,15 @@ export default function ProDashboard() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={c.dark} />
           </Pressable>
-          <Text style={s.headerTitle}>Espace gérant</Text>
+          <Text style={s.headerTitle}>{t('pro.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
         <View style={s.center}>
           <Ionicons name="lock-closed" size={48} color={c.neutral[300]} />
-          <Text style={s.emptyTitle}>Connexion requise</Text>
-          <Text style={s.emptySub}>Connecte-toi pour accéder à l'espace gérant.</Text>
+          <Text style={s.emptyTitle}>{t('pro.loginTitle')}</Text>
+          <Text style={s.emptySub}>{t('pro.loginBody')}</Text>
           <Pressable onPress={() => router.push('/(auth)/login' as any)} style={[s.primaryBtn, { marginTop: spacing.lg }]}>
-            <Text style={s.primaryBtnText}>Se connecter</Text>
+            <Text style={s.primaryBtnText}>{t('pro.signIn')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -172,22 +178,20 @@ export default function ProDashboard() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={c.dark} />
           </Pressable>
-          <Text style={s.headerTitle}>Espace gérant</Text>
+          <Text style={s.headerTitle}>{t('pro.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
         <View style={s.center}>
           <Ionicons name="storefront-outline" size={48} color={c.neutral[300]} />
-          <Text style={s.emptyTitle}>Aucun établissement</Text>
+          <Text style={s.emptyTitle}>{t('pro.noneTitle')}</Text>
           <Text style={s.emptySub}>
-            Crée ton établissement — il sera actif immédiatement sur
-            Soutra-Playce. Ou revendique un lieu qui t'appartient déjà
-            depuis sa fiche.
+            {t('pro.noneBody')}
           </Text>
           <Pressable onPress={() => router.push('/pro-create' as any)} style={[s.primaryBtn, { marginTop: spacing.lg }]}>
-            <Text style={s.primaryBtnText}>Créer mon établissement</Text>
+            <Text style={s.primaryBtnText}>{t('pro.create')}</Text>
           </Pressable>
           <Pressable onPress={() => router.push('/(tabs)/explore')} style={{ marginTop: spacing.md }}>
-            <Text style={s.linkText}>Ou explorer les lieux pour en revendiquer un</Text>
+            <Text style={s.linkText}>{t('pro.explore')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -201,12 +205,12 @@ export default function ProDashboard() {
         <Pressable onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={26} color={c.dark} />
         </Pressable>
-        <Text style={s.headerTitle}>Espace gérant</Text>
+        <Text style={s.headerTitle}>{t('pro.title')}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
           <Pressable
             onPress={() => router.push(`/pro-manage?venueId=${selectedVenueId}` as any)}
             hitSlop={10}
-            accessibilityLabel="Gérer les informations de l'établissement"
+            accessibilityLabel={t('pro.manageA11y')}
           >
             <Ionicons name="create-outline" size={24} color={c.primary[500]} />
           </Pressable>
@@ -264,7 +268,7 @@ export default function ProDashboard() {
           <View style={s.venueHeader}>
             <Text style={s.venueName}>{selectedVenue.name}</Text>
             <Text style={s.venueSub}>
-              {selectedVenue.category}
+              {VENUE_CAT_KEYS.has(selectedVenue.category) ? t(`venueCat.${selectedVenue.category}` as TKey) : selectedVenue.category}
               {' · '}
               {selectedVenue.city}
             </Text>
@@ -281,7 +285,7 @@ export default function ProDashboard() {
                 onPress={() => setPeriod(p.id)}
                 style={[s.periodChip, active && s.periodChipActive]}
               >
-                <Text style={[s.periodText, active && { color: '#fff' }]}>{p.label}</Text>
+                <Text style={[s.periodText, active && { color: '#fff' }]}>{t('pro.days', { n: p.days })}</Text>
               </Pressable>
             );
           })}
@@ -296,30 +300,30 @@ export default function ProDashboard() {
             {/* KPIs 2x2 */}
             <View style={s.kpiGrid}>
               <KpiCard
-                label="Brut"
+                label={t('pro.gross')}
                 value={summary ? formatXOF(summary.gross_xof) : '—'}
-                sub="Total des flux"
+                sub={t('pro.grossSub')}
                 emoji="📈"
                 tone="blue"
                 colors={c}
                 styles={s}
               />
               <KpiCard
-                label="Commission Soutra"
+                label={t('pro.commission')}
                 value={summary ? formatXOF(summary.commission_xof) : '—'}
-                sub={summary ? `${summary.commission_rate_pct}% du brut` : ''}
+                sub={summary ? t('pro.commissionSub', { pct: summary.commission_rate_pct }) : ''}
                 emoji="🏷️"
                 tone="amber"
                 colors={c}
                 styles={s}
               />
               <KpiCard
-                label="Revenus nets"
+                label={t('pro.net')}
                 value={summary ? formatXOF(summary.net_xof) : '—'}
                 sub={
                   payable
-                    ? `dont ${formatXOF(payable.payable_xof)} retirables`
-                    : 'Brut – commission'
+                    ? t('pro.netWithdraw', { amount: formatXOF(payable.payable_xof) })
+                    : t('pro.netSub')
                 }
                 emoji="💰"
                 tone="emerald"
@@ -327,9 +331,9 @@ export default function ProDashboard() {
                 styles={s}
               />
               <KpiCard
-                label="Frais facturés"
+                label={t('pro.billable')}
                 value={summary ? formatXOF(summary.billable_xof) : '—'}
-                sub="Mise en avant, pub…"
+                sub={t('pro.billableSub')}
                 emoji="🧾"
                 tone="purple"
                 colors={c}
@@ -342,16 +346,16 @@ export default function ProDashboard() {
               <Pressable
                 onPress={() => router.push(`/venue-payout?venueId=${selectedVenueId}` as any)}
                 style={({ pressed }) => [s.payoutCta, pressed && { opacity: 0.92, transform: [{ scale: 0.99 }] }]}
-                accessibilityLabel="Retirer mes revenus"
+                accessibilityLabel={t('pro.withdraw')}
               >
                 <View style={s.payoutCtaIcon}>
                   <Ionicons name="arrow-down-circle" size={20} color="#fff" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.payoutCtaTitle}>Retirer mes revenus</Text>
+                  <Text style={s.payoutCtaTitle}>{t('pro.withdraw')}</Text>
                   <Text style={s.payoutCtaSub}>
-                    {formatXOF(payable.payable_xof)} disponibles
-                    {payable.pending_xof > 0 ? ` · ${formatXOF(payable.pending_xof)} en cours` : ''}
+                    {t('pro.available', { amount: formatXOF(payable.payable_xof) })}
+                    {payable.pending_xof > 0 ? t('pro.inProgress', { amount: formatXOF(payable.pending_xof) }) : ''}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#fff" />
@@ -376,7 +380,7 @@ export default function ProDashboard() {
                     { color: summary.delta_pct >= 0 ? c.primary[700] : '#B91C1C' },
                   ]}
                 >
-                  {summary.delta_pct > 0 ? '+' : ''}{summary.delta_pct}% commission vs période précédente
+                  {t('pro.delta', { pct: `${summary.delta_pct > 0 ? '+' : ''}${summary.delta_pct}` })}
                 </Text>
               </View>
             )}
@@ -384,7 +388,7 @@ export default function ProDashboard() {
             {/* Timeline brut vs net */}
             {timeline.length > 0 && (
               <View style={s.card}>
-                <Text style={s.cardTitle}>Évolution brut vs net</Text>
+                <Text style={s.cardTitle}>{t('pro.chart')}</Text>
                 <View style={s.chartRow}>
                   {timeline.map((row, i) => {
                     const grossH = Math.max(4, (row.gross_xof / maxGross) * 100);
@@ -419,11 +423,11 @@ export default function ProDashboard() {
                 <View style={s.legendRow}>
                   <View style={s.legendItem}>
                     <View style={[s.legendDot, { backgroundColor: c.primary[100] }]} />
-                    <Text style={s.legendText}>Brut</Text>
+                    <Text style={s.legendText}>{t('pro.legendGross')}</Text>
                   </View>
                   <View style={s.legendItem}>
                     <View style={[s.legendDot, { backgroundColor: c.success }]} />
-                    <Text style={s.legendText}>Net (après commission)</Text>
+                    <Text style={s.legendText}>{t('pro.legendNet')}</Text>
                   </View>
                 </View>
               </View>
@@ -432,7 +436,7 @@ export default function ProDashboard() {
             {/* Ventilation par source */}
             {byKind.length > 0 && (
               <View style={s.card}>
-                <Text style={s.cardTitle}>Détail par source</Text>
+                <Text style={s.cardTitle}>{t('pro.bySource')}</Text>
                 {byKind.map((b) => {
                   const meta = PRO_KIND_META[b.kind] ?? { label: b.kind, emoji: '💼', color: c.neutral[600] };
                   const max = Math.max(1, ...byKind.map((x) => x.total_xof));
@@ -441,7 +445,7 @@ export default function ProDashboard() {
                     <View key={b.kind} style={{ marginBottom: spacing.md }}>
                       <View style={s.kindRow}>
                         <Text style={s.kindLabel}>
-                          {meta.emoji} {meta.label}
+                          {meta.emoji} {kindLabel(b.kind, meta.label)}
                         </Text>
                         <Text style={[s.kindValue, { color: meta.color }]}>
                           {formatXOF(b.total_xof)}
@@ -452,7 +456,7 @@ export default function ProDashboard() {
                           style={[s.barFill, { width: `${Math.max(2, pct)}%`, backgroundColor: meta.color }]}
                         />
                       </View>
-                      <Text style={s.kindCount}>{b.event_count} event{b.event_count > 1 ? 's' : ''}</Text>
+                      <Text style={s.kindCount}>{tn('pro.events', b.event_count)}</Text>
                     </View>
                   );
                 })}
@@ -462,11 +466,9 @@ export default function ProDashboard() {
             {/* Empty state si rien */}
             {summary && summary.event_count === 0 && (
               <View style={[s.card, { backgroundColor: '#FEF3C7', borderColor: '#FCD34D' }]}>
-                <Text style={[s.cardTitle, { color: '#92400E' }]}>Aucun revenu sur cette période</Text>
+                <Text style={[s.cardTitle, { color: '#92400E' }]}>{t('pro.emptyTitle')}</Text>
                 <Text style={{ fontSize: typography.fontSize.xs, color: '#92400E', lineHeight: 17, marginTop: spacing.xs }}>
-                  Les revenus apparaîtront ici dès que tu auras de nouvelles réservations honorées,
-                  billets vendus ou paiements reçus. Si l'historique est ancien, demande à l'équipe
-                  Soutra-Playce de lancer le backfill admin.
+                  {t('pro.emptyBody')}
                 </Text>
               </View>
             )}
@@ -478,7 +480,7 @@ export default function ProDashboard() {
                   onPress={() => setShowEvents((v) => !v)}
                   style={s.detailHeader}
                 >
-                  <Text style={s.cardTitle}>📋 {events.length} dernières lignes</Text>
+                  <Text style={s.cardTitle}>{t('pro.lastLines', { n: events.length })}</Text>
                   <Ionicons
                     name={showEvents ? 'chevron-up' : 'chevron-down'}
                     size={20}
@@ -492,9 +494,9 @@ export default function ProDashboard() {
                       return (
                         <View key={e.id} style={s.eventRow}>
                           <View style={{ flex: 1 }}>
-                            <Text style={s.eventLabel}>{meta.emoji} {meta.label}</Text>
+                            <Text style={s.eventLabel}>{meta.emoji} {kindLabel(e.kind, meta.label)}</Text>
                             <Text style={s.eventDate}>
-                              {new Date(e.ts).toLocaleString('fr-FR', {
+                              {new Date(e.ts).toLocaleString(intl, {
                                 day: '2-digit', month: 'short',
                                 hour: '2-digit', minute: '2-digit',
                               })}

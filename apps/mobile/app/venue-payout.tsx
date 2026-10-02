@@ -18,6 +18,7 @@ import {
   typography, radius, spacing, formatXOF, type ColorPalette,
 } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n, type TKey } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -36,14 +37,15 @@ const MIN_XOF = 1000;
 const MAX_XOF = 2000000;
 const PHONE_RE = /^\+225[0-9]{10}$/;
 
-const STATUS_META: Record<VenuePayoutRow['status'], { label: string; bg: string; fg: string }> = {
-  pending: { label: 'En cours', bg: '#fef3c7', fg: '#92400e' },
-  success: { label: 'Réussi',   bg: '#d1fae5', fg: '#065f46' },
-  failed:  { label: 'Échec',    bg: '#fee2e2', fg: '#b91c1c' },
-  reversed: { label: 'Annulé',  bg: '#e5e7eb', fg: '#374151' },
+const STATUS_META: Record<VenuePayoutRow['status'], { bg: string; fg: string }> = {
+  pending: { bg: '#fef3c7', fg: '#92400e' },
+  success: { bg: '#d1fae5', fg: '#065f46' },
+  failed:  { bg: '#fee2e2', fg: '#b91c1c' },
+  reversed: { bg: '#e5e7eb', fg: '#374151' },
 };
 
 export default function VenuePayout() {
+  const { t, intl } = useI18n();
   const router = useRouter();
   const params = useLocalSearchParams<{ venueId?: string }>();
   const venueId = params.venueId ?? '';
@@ -82,8 +84,8 @@ export default function VenuePayout() {
     } catch (err) {
       console.error('[venue-payout] load:', err);
       Alert.alert(
-        'Chargement impossible',
-        err instanceof Error ? err.message : 'Erreur inconnue',
+        t('payout.loadFail'),
+        err instanceof Error ? err.message : t('payout.unknownErr'),
       );
     } finally {
       setLoading(false);
@@ -117,13 +119,13 @@ export default function VenuePayout() {
         phone,
       });
       const msg = result.status === 'success'
-        ? `${formatXOF(amountNum)} ont été envoyés vers ton compte ${provider.toUpperCase()}.`
-        : `Ton retrait de ${formatXOF(amountNum)} est en cours de traitement.`;
-      Alert.alert('Retrait enregistré', msg, [
+        ? t('payout.sent', { amount: formatXOF(amountNum), provider: provider.toUpperCase() })
+        : t('payout.processing', { amount: formatXOF(amountNum) });
+      Alert.alert(t('payout.savedTitle'), msg, [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (err: any) {
-      Alert.alert('Retrait impossible', err?.message ?? 'Une erreur est survenue.');
+      Alert.alert(t('payout.failTitle'), err?.message ?? t('payout.generic'));
     } finally {
       setSubmitting(false);
     }
@@ -132,12 +134,12 @@ export default function VenuePayout() {
   if (!venueId) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader title="Retirer mes revenus" />
+        <ScreenHeader title={t('payout.title')} />
         <View style={s.center}>
           <Ionicons name="alert-circle" size={48} color={c.neutral[300]} />
-          <Text style={s.emptyTitle}>Aucun établissement sélectionné</Text>
+          <Text style={s.emptyTitle}>{t('payout.noVenue')}</Text>
           <Pressable onPress={() => router.replace('/pro')} style={[s.primaryBtn, { marginTop: spacing.lg }]}>
-            <Text style={s.primaryBtnText}>Ouvrir l'Espace gérant</Text>
+            <Text style={s.primaryBtnText}>{t('payout.openPro')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -147,7 +149,7 @@ export default function VenuePayout() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader title="Retirer mes revenus" subtitle={venueName || undefined} />
+        <ScreenHeader title={t('payout.title')} subtitle={venueName || undefined} />
         <ActivityIndicator size="large" color={c.primary[500]} style={{ flex: 1, marginTop: spacing.xl }} />
       </SafeAreaView>
     );
@@ -156,7 +158,7 @@ export default function VenuePayout() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScreenHeader title="Retirer mes revenus" subtitle={venueName || undefined} />
+        <ScreenHeader title={t('payout.title')} subtitle={venueName || undefined} />
 
         <ScrollView
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }}
@@ -172,8 +174,8 @@ export default function VenuePayout() {
                 <Ionicons name="alert-circle" size={20} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.kycTitle}>Vérification d'identité requise</Text>
-                <Text style={s.kycSub}>Touche pour compléter ton KYC et débloquer les retraits.</Text>
+                <Text style={s.kycTitle}>{t('payout.kycTitle')}</Text>
+                <Text style={s.kycSub}>{t('payout.kycSub')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={c.dark} />
             </Pressable>
@@ -182,18 +184,18 @@ export default function VenuePayout() {
           {/* Balance card */}
           <View style={s.balanceCard}>
             <View>
-              <Text style={s.balanceLabel}>Solde payable</Text>
+              <Text style={s.balanceLabel}>{t('payout.payable')}</Text>
               <Text style={s.balanceValue}>{formatXOF(payable)}</Text>
             </View>
             <View style={s.balanceMeta}>
               <Text style={s.balanceMetaItem}>
-                Net : {formatXOF(balance?.net_xof ?? 0)}
+                {t('payout.net', { amount: formatXOF(balance?.net_xof ?? 0) })}
               </Text>
               <Text style={s.balanceMetaItem}>
-                En attente : {formatXOF(balance?.pending_xof ?? 0)}
+                {t('payout.pendingAmt', { amount: formatXOF(balance?.pending_xof ?? 0) })}
               </Text>
               <Text style={s.balanceMetaItem}>
-                Déjà payé : {formatXOF(balance?.paid_xof ?? 0)}
+                {t('payout.paidAmt', { amount: formatXOF(balance?.paid_xof ?? 0) })}
               </Text>
             </View>
           </View>
@@ -204,9 +206,9 @@ export default function VenuePayout() {
                 <Ionicons name="information-circle-outline" size={18} color={c.primary[500]} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.infoTitle}>Aucun revenu retirable</Text>
+                <Text style={s.infoTitle}>{t('payout.noneTitle')}</Text>
                 <Text style={s.infoText}>
-                  Tes futurs revenus (réservations honorées, billets vendus, paiements) apparaîtront ici.
+                  {t('payout.noneBody')}
                 </Text>
               </View>
             </View>
@@ -215,13 +217,13 @@ export default function VenuePayout() {
               {/* Amount */}
               <View style={s.sectionTitleRow}>
                 <View style={s.sectionAccent} />
-                <Text style={s.sectionTitle}>Montant à retirer</Text>
+                <Text style={s.sectionTitle}>{t('payout.amount')}</Text>
               </View>
               <View style={[s.fieldCard, amount.length > 0 && !amountValid && s.fieldCardError]}>
                 <TextInput
                   style={s.amountInput}
                   value={amount}
-                  onChangeText={(t) => setAmount(t.replace(/[^0-9]/g, ''))}
+                  onChangeText={(v) => setAmount(v.replace(/[^0-9]/g, ''))}
                   placeholder="0"
                   placeholderTextColor={c.neutral[400]}
                   keyboardType="number-pad"
@@ -233,17 +235,17 @@ export default function VenuePayout() {
               {amount.length > 0 && !amountValid && (
                 <Text style={s.errorHint}>
                   {amountNum > payable
-                    ? `Solde payable insuffisant (${formatXOF(payable)}).`
+                    ? t('payout.insufficient', { amount: formatXOF(payable) })
                     : amountNum > MAX_XOF
-                      ? `Maximum ${formatXOF(MAX_XOF)} par opération.`
-                      : `Minimum ${formatXOF(MIN_XOF)}.`}
+                      ? t('payout.max', { amount: formatXOF(MAX_XOF) })
+                      : t('payout.min', { amount: formatXOF(MIN_XOF) })}
                 </Text>
               )}
 
               {/* Provider */}
               <View style={s.sectionTitleRow}>
                 <View style={s.sectionAccent} />
-                <Text style={s.sectionTitle}>Opérateur mobile money</Text>
+                <Text style={s.sectionTitle}>{t('payout.operator')}</Text>
               </View>
               <View style={s.providerGrid}>
                 {PROVIDERS.map((p) => {
@@ -271,15 +273,15 @@ export default function VenuePayout() {
               {/* Phone */}
               <View style={s.sectionTitleRow}>
                 <View style={s.sectionAccent} />
-                <Text style={s.sectionTitle}>Numéro mobile money</Text>
+                <Text style={s.sectionTitle}>{t('payout.number')}</Text>
               </View>
               <View style={[s.fieldCard, phone.length > 4 && !phoneValid && s.fieldCardError]}>
                 <Ionicons name="call-outline" size={18} color={c.neutral[500]} />
                 <TextInput
                   style={s.phoneInput}
                   value={phone}
-                  onChangeText={(t) => setPhone(t.replace(/[^0-9+]/g, ''))}
-                  placeholder="+225XXXXXXXXXX"
+                  onChangeText={(v) => setPhone(v.replace(/[^0-9+]/g, ''))}
+                  placeholder={t('money.phonePh')}
                   placeholderTextColor={c.neutral[400]}
                   keyboardType="phone-pad"
                   maxLength={14}
@@ -287,7 +289,7 @@ export default function VenuePayout() {
                 />
               </View>
               {phone.length > 4 && !phoneValid && (
-                <Text style={s.errorHint}>Format attendu : +225 suivi de 10 chiffres.</Text>
+                <Text style={s.errorHint}>{t('money.phoneHint')}</Text>
               )}
 
               {/* Info Paystack */}
@@ -296,9 +298,9 @@ export default function VenuePayout() {
                   <Ionicons name="time-outline" size={18} color={c.primary[500]} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.infoTitle}>Traitement Paystack</Text>
+                  <Text style={s.infoTitle}>{t('payout.infoTitle')}</Text>
                   <Text style={s.infoText}>
-                    Le solde est réservé immédiatement. En cas d'échec, il est restauré automatiquement.
+                    {t('payout.infoBody')}
                   </Text>
                 </View>
               </View>
@@ -308,7 +310,7 @@ export default function VenuePayout() {
           {/* Historique des retraits */}
           {history.length > 0 && (
             <View style={s.historyCard}>
-              <Text style={s.historyTitle}>Historique des retraits</Text>
+              <Text style={s.historyTitle}>{t('payout.history')}</Text>
               {history.map((h) => {
                 const meta = STATUS_META[h.status] ?? STATUS_META.pending;
                 return (
@@ -316,7 +318,7 @@ export default function VenuePayout() {
                     <View style={{ flex: 1 }}>
                       <Text style={s.historyAmount}>{formatXOF(h.amount_xof)}</Text>
                       <Text style={s.historyMeta}>
-                        {new Date(h.requested_at).toLocaleString('fr-FR', {
+                        {new Date(h.requested_at).toLocaleString(intl, {
                           day: '2-digit', month: 'short',
                           hour: '2-digit', minute: '2-digit',
                         })}
@@ -328,7 +330,7 @@ export default function VenuePayout() {
                       )}
                     </View>
                     <View style={[s.statusBadge, { backgroundColor: meta.bg }]}>
-                      <Text style={[s.statusText, { color: meta.fg }]}>{meta.label}</Text>
+                      <Text style={[s.statusText, { color: meta.fg }]}>{t(`payout.status.${h.status}` as TKey)}</Text>
                     </View>
                   </View>
                 );
@@ -354,7 +356,7 @@ export default function VenuePayout() {
                 <>
                   <Ionicons name="arrow-down-circle" size={18} color="#fff" />
                   <Text style={s.payBtnText}>
-                    {amountValid ? `Retirer ${formatXOF(amountNum)}` : 'Saisis un montant'}
+                    {amountValid ? t('payout.withdraw', { amount: formatXOF(amountNum) }) : t('payout.enterAmount')}
                   </Text>
                 </>
               )}

@@ -357,4 +357,26 @@ export const en: Dict = {
     reqTitle: 'Required fields', reqBody: 'Name, category and address are required.', badHours: 'Invalid hours', badHoursBody: 'Expected format: HH:MM (e.g. 09:00).',
     savedTitle: 'Saved ✓', savedBody: 'Your venue information is up to date.', saveFail: 'Could not save.',
   },
+  payout: {
+    title: 'Withdraw my earnings', loadFail: 'Could not load', unknownErr: 'Unknown error', savedTitle: 'Withdrawal recorded', sent: '{amount} was sent to your {provider} account.', processing: 'Your withdrawal of {amount} is being processed.',
+    failTitle: 'Withdrawal failed', generic: 'Something went wrong.', noVenue: 'No venue selected', openPro: 'Open the manager space', kycTitle: 'Identity verification required', kycSub: 'Tap to complete your KYC and unlock withdrawals.',
+    payable: 'Payable balance', net: 'Net: {amount}', pendingAmt: 'Pending: {amount}', paidAmt: 'Already paid: {amount}', noneTitle: 'No withdrawable earnings', noneBody: 'Your future earnings (honoured bookings, tickets sold, payments) will appear here.',
+    amount: 'Amount to withdraw', insufficient: 'Insufficient payable balance ({amount}).', max: 'Maximum {amount} per transaction.', min: 'Minimum {amount}.', operator: 'Mobile money operator', number: 'Mobile money number',
+    infoTitle: 'Paystack processing', infoBody: 'The balance is reserved immediately. If it fails, it is restored automatically.', history: 'Withdrawal history', withdraw: 'Withdraw {amount}', enterAmount: 'Enter an amount',
+    status: { pending: 'In progress', success: 'Successful', failed: 'Failed', reversed: 'Reversed' },
+  },
+  proKind: {
+    reservation_commission_pct: 'Booking commission', reservation_commission_fixed: 'Booking commission (fixed)', service_fee_pct: 'Service fee', service_fee_fixed: 'Service fee (fixed)', payment_commission: 'Payment commission',
+    subscription_commission: 'Subscription commission', ticket_commission: 'Ticketing commission', marketplace_commission: 'Marketplace commission', affiliation_commission: 'Affiliate commission', user_cashback: 'User rebate (legacy)',
+    loyalty_bonus: 'Loyalty bonus', featured_listing: 'Featured listing', advertising: 'Advertising', account_verification: 'Account verification', venue_certification: 'Venue certification', event_publication: 'Event publication', promo_publication: 'Promo publication',
+  },
+  pro: {
+    title: 'Manager space', loginTitle: 'Sign-in required', loginBody: 'Sign in to access the manager space.', signIn: 'Sign in', noneTitle: 'No venue',
+    noneBody: 'Create your venue — it goes live immediately on Soutra-Playce. Or claim a place you already own from its page.', create: 'Create my venue', explore: 'Or browse venues to claim one',
+    manageA11y: 'Manage venue information', days: '{n} d', gross: 'Gross', grossSub: 'Total flows', commission: 'Soutra commission', commissionSub: '{pct}% of gross', net: 'Net earnings', netWithdraw: 'of which {amount} withdrawable', netSub: 'Gross – commission',
+    billable: 'Billed fees', billableSub: 'Featuring, ads…', withdraw: 'Withdraw my earnings', available: '{amount} available', inProgress: ' · {amount} in progress', delta: '{pct}% commission vs previous period',
+    chart: 'Gross vs net trend', legendGross: 'Gross', legendNet: 'Net (after commission)', bySource: 'Breakdown by source', events_one: '{n} event', events_other: '{n} events',
+    emptyTitle: 'No earnings in this period', emptyBody: 'Earnings will show up here as soon as you have new honoured bookings, tickets sold or payments received. If the history is old, ask the Soutra-Playce team to run the admin backfill.',
+    lastLines: '📋 Last {n} lines',
+  },
 };

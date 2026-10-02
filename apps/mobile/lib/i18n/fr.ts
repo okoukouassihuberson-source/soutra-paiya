@@ -359,6 +359,28 @@ export const fr = {
     reqTitle: 'Champs requis', reqBody: 'Nom, catégorie et adresse sont obligatoires.', badHours: 'Horaires invalides', badHoursBody: 'Format attendu : HH:MM (ex. 09:00).',
     savedTitle: 'Enregistré ✓', savedBody: 'Les informations de ton établissement sont à jour.', saveFail: 'Enregistrement impossible.',
   },
+  payout: {
+    title: 'Retirer mes revenus', loadFail: 'Chargement impossible', unknownErr: 'Erreur inconnue', savedTitle: 'Retrait enregistré', sent: '{amount} ont été envoyés vers ton compte {provider}.', processing: 'Ton retrait de {amount} est en cours de traitement.',
+    failTitle: 'Retrait impossible', generic: 'Une erreur est survenue.', noVenue: 'Aucun établissement sélectionné', openPro: 'Ouvrir l’Espace gérant', kycTitle: 'Vérification d’identité requise', kycSub: 'Touche pour compléter ton KYC et débloquer les retraits.',
+    payable: 'Solde payable', net: 'Net : {amount}', pendingAmt: 'En attente : {amount}', paidAmt: 'Déjà payé : {amount}', noneTitle: 'Aucun revenu retirable', noneBody: 'Tes futurs revenus (réservations honorées, billets vendus, paiements) apparaîtront ici.',
+    amount: 'Montant à retirer', insufficient: 'Solde payable insuffisant ({amount}).', max: 'Maximum {amount} par opération.', min: 'Minimum {amount}.', operator: 'Opérateur mobile money', number: 'Numéro mobile money',
+    infoTitle: 'Traitement Paystack', infoBody: 'Le solde est réservé immédiatement. En cas d’échec, il est restauré automatiquement.', history: 'Historique des retraits', withdraw: 'Retirer {amount}', enterAmount: 'Saisis un montant',
+    status: { pending: 'En cours', success: 'Réussi', failed: 'Échec', reversed: 'Annulé' },
+  },
+  proKind: {
+    reservation_commission_pct: 'Commission réservation', reservation_commission_fixed: 'Commission résa (fixe)', service_fee_pct: 'Frais de service', service_fee_fixed: 'Frais de service (fixe)', payment_commission: 'Commission paiement',
+    subscription_commission: 'Commission abonnement', ticket_commission: 'Commission billetterie', marketplace_commission: 'Commission marketplace', affiliation_commission: 'Commission affiliation', user_cashback: 'Ristourne utilisateur (historique)',
+    loyalty_bonus: 'Bonus fidélité', featured_listing: 'Mise en avant', advertising: 'Publicité', account_verification: 'Vérification compte', venue_certification: 'Certification venue', event_publication: 'Publication événement', promo_publication: 'Publication promo',
+  },
+  pro: {
+    title: 'Espace gérant', loginTitle: 'Connexion requise', loginBody: 'Connecte-toi pour accéder à l’espace gérant.', signIn: 'Se connecter', noneTitle: 'Aucun établissement',
+    noneBody: 'Crée ton établissement — il sera actif immédiatement sur Soutra-Playce. Ou revendique un lieu qui t’appartient déjà depuis sa fiche.', create: 'Créer mon établissement', explore: 'Ou explorer les lieux pour en revendiquer un',
+    manageA11y: 'Gérer les informations de l’établissement', days: '{n} j', gross: 'Brut', grossSub: 'Total des flux', commission: 'Commission Soutra', commissionSub: '{pct}% du brut', net: 'Revenus nets', netWithdraw: 'dont {amount} retirables', netSub: 'Brut – commission',
+    billable: 'Frais facturés', billableSub: 'Mise en avant, pub…', withdraw: 'Retirer mes revenus', available: '{amount} disponibles', inProgress: ' · {amount} en cours', delta: '{pct}% commission vs période précédente',
+    chart: 'Évolution brut vs net', legendGross: 'Brut', legendNet: 'Net (après commission)', bySource: 'Détail par source', events_one: '{n} événement', events_other: '{n} événements',
+    emptyTitle: 'Aucun revenu sur cette période', emptyBody: 'Les revenus apparaîtront ici dès que tu auras de nouvelles réservations honorées, billets vendus ou paiements reçus. Si l’historique est ancien, demande à l’équipe Soutra-Playce de lancer le backfill admin.',
+    lastLines: '📋 {n} dernières lignes',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;
