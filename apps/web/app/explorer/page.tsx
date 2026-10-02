@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { TOURISM_CATEGORIES } from '@soutra/shared';
 import { exploreVenues, listTrips, type ExploreParams } from '@/lib/tourism';
@@ -64,6 +65,8 @@ export function generateMetadata({ searchParams }: { searchParams: SP }): Metada
 
 export default async function ExplorerPage({ searchParams }: { searchParams: SP }) {
   const { v, params, cat, page, user } = parse(searchParams);
+  // Catégories sans établissements (activités, voyages) : leur page dédiée.
+  if (cat && !cat.venueCategories) redirect(cat.href);
   const mapView = v.view === 'map';
 
   const showTrips = !cat || cat.key.startsWith('voyages');

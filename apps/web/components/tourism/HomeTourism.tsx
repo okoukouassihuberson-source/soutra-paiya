@@ -1,16 +1,18 @@
 import Link from 'next/link';
 import { TOURISM_CATEGORIES } from '@soutra/shared';
 import { listDestinations, listTrips } from '@/lib/tourism';
+import { listActivities } from '@/lib/activities';
 import { SearchBar } from './SearchBar';
-import { DestinationCardView, TripCardView } from './Cards';
+import { DestinationCardView, TripCardView, ActivityCardView } from './Cards';
 
 const HERO_IMG = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=70';
 
 /** Hero + catégories + destinations/voyages à la une de la page d'accueil V2. */
 export async function HomeTourism() {
-  const [destinations, trips] = await Promise.all([
+  const [destinations, trips, acts] = await Promise.all([
     listDestinations({ featured: true, limit: 8 }),
     listTrips({ scope: 'national', limit: 3 }),
+    listActivities({ limit: 4, sort: 'popular' }),
   ]);
   return (
     <>
@@ -51,6 +53,13 @@ export async function HomeTourism() {
         <section className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between"><h2 className="font-display text-2xl font-bold text-dark sm:text-3xl">🇨🇮 Prochains voyages groupés</h2><Link href="/voyages/nationaux" className="text-sm font-semibold text-primary-600">Tout voir →</Link></div>
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{trips.map((t) => <TripCardView key={t.id} trip={t} />)}</div>
+        </section>
+      )}
+
+      {acts.items.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between"><h2 className="font-display text-2xl font-bold text-dark sm:text-3xl">🎯 Activités à vivre</h2><Link href="/activites" className="text-sm font-semibold text-primary-600">Tout voir →</Link></div>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{acts.items.map((a) => <ActivityCardView key={a.id} activity={a} />)}</div>
         </section>
       )}
     </>

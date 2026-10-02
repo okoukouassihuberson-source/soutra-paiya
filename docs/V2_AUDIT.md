@@ -30,7 +30,7 @@
 | Circuits (jour par jour) | **ABSENT → AJOUTÉ** | `trips.is_circuit` + `trip_itineraries`. |
 | Recherche globale + filtres | **AJOUTÉ (phase 2)** | `/explorer` : ville, commune, quartier, catégorie, prix, note, 10 services, ouvert maintenant, paiement en ligne, disponibilité hôtelière (dates), distance (« Près de moi »), tri, pagination serveur, vue carte. « Région » : non modélisé (couvert par ville/commune). |
 | SEO (sitemap, robots, JSON-LD, OG) | **PARTIEL → COMPLÉTÉ** | `sitemap.xml`, `robots.txt`, JSON-LD `TouristTrip/TouristDestination`, métadonnées. |
-| Marketplace d'activités | **ABSENT** | phase 2. |
+| Marketplace d'activités | **AJOUTÉ (phase 2)** | `/activites`, fiche + créneaux + réservation + paiement + billet QR + avis ; espace organisateur/guide ; admin. Voir §3 sexies. |
 | Multilingue FR/EN | **ABSENT** | phase 3 (i18n sur les nouvelles pages). |
 | Billet QR des voyages | **AJOUTÉ (phase 2)** | `/mes-voyages/[id]` (QR généré localement) + `/scan-voyage` (caméra ou saisie). Mobile : à faire. |
 | Paiement des voyages (acompte/solde/reçu) | **AJOUTÉ (phase 2, GeniusPay)** | Edge Function `geniuspay-pay-trip`, `trip_payments` (reçus). Paystack non étendu (comme les billets 0077). |
@@ -66,8 +66,16 @@
 3. **Tests** : RPC sur PostgreSQL 16 + PostGIS (18 scénarios : services, injection, prix, note, catégories, casse, texte, distance, rayon, tris, disponibilité, dates/coordonnées invalides, pagination) ; 20 000 lieux : recherche texte 20 ms (index trigramme utilisé), recherche par distance 54 ms. Interface vérifiée dans Chromium sur une API simulée (mobile et desktop). Défauts trouvés et corrigés : champs sans bordure (classe `border` manquante, y compris dans les formulaires de réservation et de scan) et barre de navigation qui se cassait sur deux lignes.
 4. Limites : tuiles OpenStreetMap non vérifiables depuis le bac à sable ; la carte affiche au plus 100 résultats ; les « services » reposent sur les étiquettes saisies par les professionnels (texte libre).
 
+## 3 sexies. Livré en phase 2 (activités touristiques)
+1. **Migration `0087_activities.sql`** : `activities`, `activity_slots` (capacité par créneau), `activity_bookings`, `activity_payments` (reçus), `activity_reviews` + `activity_review_reports`. RPC : `create_activity_booking` (verrou du créneau, anti-surbooking, libération des impayés après 1 h, clôture 1 h avant le départ), `cancel_activity_booking` (jamais d'annulation silencieuse d'un montant payé), paiement (`get_activity_booking_payment_info`, `geniuspay_settle_activity_booking`, branche `activity_booking` dans `geniuspay_settle_charge`), `scan_activity_ticket` (fenêtre horaire), `submit_activity_review` (uniquement après une activité réellement vécue), signalement et modération des avis, `submit_activity_for_review`, `admin_moderate_activity`, tableaux de bord organisateur/admin, `list_activities` (filtres, date, prix, tri, pagination). Note moyenne recalculée automatiquement.
+2. **Sécurité** : un voyageur lit ses réservations ; l'organisateur (rôles organisateur, propriétaire, **guide**, admin) gère ses activités ; une activité publiée est verrouillée (seules la pause et la reprise d'une activité déjà approuvée sont permises) ; compteurs, note, commission et mise en avant réservés à l'admin ; aucune écriture directe sur réservations, paiements et avis.
+3. **Web** : `/activites` (filtres, catégories, date), `/activites/[slug]` (créneaux groupés par jour, réservation, avis, signalement, JSON-LD), `/mes-activites` (billet QR, paiement, annulation, avis), onglet Activités dans `/organisateur` (éditeur, générateur de créneaux, participants), onglet Activités dans l'admin (publication, commission, mise en avant, avis signalés), accueil et pages destination, sitemap, scanner unifié voyages/activités.
+4. **Edge Function** `geniuspay-pay-activity` (préfixe `sp-act-`, retour sur `/mes-activites/[id]`).
+5. **Tests** : 17 scénarios sur PostgreSQL 16 (droits, verrouillage, surbooking, expiration, paiement idempotent, scan, avis, modération, liste publique). Interface vérifiée dans Chromium sur une API simulée (liste, fiche, choix de créneau, total, invitation à se connecter).
+6. Limites : avis sans photos (champ non prévu pour l'instant) ; images d'activités par URL ; paiement GeniusPay non testé de bout en bout (pas de clés) ; paiement intégral uniquement (pas d'acompte) ; pas encore de notifications ; scan mobile natif non fait.
+
 ## 4. Feuille de route
-- **Reste de la phase 2 (non fait)** : activités (table `activities` + réservation) ; écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
+- **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
 - **Phase 3** : i18n FR/EN ; notifications voyages (rappel, solde à payer) + email ; promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { supabaseServer } from '@/lib/supabase-server';
-import { OrganizerDashboard } from './OrganizerDashboard';
+import { OrganizerHome } from './OrganizerHome';
 
 export const metadata: Metadata = { title: 'Espace organisateur', robots: { index: false } };
 export const dynamic = 'force-dynamic';
@@ -41,7 +41,7 @@ export default async function OrganizerPage() {
           </div>
           <Link href="/scan-voyage" className="rounded-full border border-neutral-700 px-4 py-2 text-sm font-semibold hover:border-primary-500">📷 Scanner un billet</Link>
         </div>
-        <OrganizerDashboard />
+        <OrganizerHome />
       </div>
     </main>
   );

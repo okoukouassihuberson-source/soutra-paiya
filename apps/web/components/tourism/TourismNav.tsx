@@ -4,7 +4,7 @@ const LINKS = [
   { href: '/explorer', label: 'Explorer' },
   { href: '/explorer?cat=hotels', label: 'Hébergements' },
   { href: '/explorer?cat=restaurants', label: 'Restaurants' },
-  { href: '/explorer?cat=activites', label: 'Activités' },
+  { href: '/activites', label: 'Activités' },
   { href: '/destinations', label: 'Destinations' },
   { href: '/voyages/nationaux', label: 'Voyages 🇨🇮' },
   { href: '/voyages/internationaux', label: 'Voyages 🌍' },

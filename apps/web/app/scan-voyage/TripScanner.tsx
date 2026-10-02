@@ -5,10 +5,12 @@ import { formatXOF } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
 
 const PREFIX = 'soutra:trip:';
-type Result = { ok: boolean; error?: string; reference?: string; traveler?: string; participants?: number; trip?: string; balance_due_xof?: number };
+const ACT_PREFIX = 'soutra:act:';
+type Result = { ok: boolean; error?: string; reference?: string; traveler?: string; participants?: number; trip?: string; activity?: string; starts_at?: string; balance_due_xof?: number };
 
 const ERRORS: Record<string, string> = {
   UNKNOWN_TICKET: 'Billet inconnu.', ALREADY_USED: 'Billet déjà utilisé.', NOT_PAID: 'Billet non payé / annulé.',
+  OUT_OF_WINDOW: 'Billet hors de la plage horaire de l’activité.',
 };
 
 export function TripScanner() {
@@ -21,12 +23,21 @@ export function TripScanner() {
 
   async function validate(raw: string) {
     if (busy.current) return;
-    const token = raw.trim().replace(PREFIX, '');
+    const value = raw.trim();
+    // Les QR portent un préfixe (voyage / activité) ; un code saisi à la main peut n'avoir que le jeton.
+    const isAct = value.startsWith(ACT_PREFIX);
+    const token = value.replace(PREFIX, '').replace(ACT_PREFIX, '');
     if (!/^[a-f0-9]{32}$/.test(token)) { setMsg('QR code invalide.'); setRes(null); return; }
     busy.current = true; setMsg(null);
-    const { data, error } = await (supabaseBrowser() as any).rpc('scan_trip_ticket', { p_qr_token: token });
+    const sb = supabaseBrowser() as any;
+    const call = (fn: string) => sb.rpc(fn, { p_qr_token: token });
+    let { data, error } = await call(isAct ? 'scan_activity_ticket' : 'scan_trip_ticket');
+    // Jeton saisi sans préfixe : essai de l'autre type si le premier ne le connaît pas.
+    if (!error && data?.error === 'UNKNOWN_TICKET' && !value.startsWith(PREFIX) && !isAct) {
+      ({ data, error } = await call('scan_activity_ticket'));
+    }
     busy.current = false;
-    if (error) { setMsg(error.message?.includes('NOT_AUTHORIZED') ? "Ce billet n'appartient pas à l'un de vos voyages." : 'Erreur de validation.'); setRes(null); return; }
+    if (error) { setMsg(error.message?.includes('NOT_AUTHORIZED') ? "Ce billet n'appartient pas à l'un de vos voyages ou activités." : 'Erreur de validation.'); setRes(null); return; }
     setRes(data as Result);
   }
 
@@ -69,7 +80,7 @@ export function TripScanner() {
         <div role="status" className={`rounded-2xl p-4 ${res.ok ? 'bg-emerald-50 text-emerald-900' : 'bg-red-50 text-red-800'}`}>
           <p className="text-lg font-bold">{res.ok ? '✅ Billet valide' : `❌ ${ERRORS[res.error ?? ''] ?? 'Refusé'}`}</p>
           {res.traveler && <p>{res.traveler}</p>}
-          {res.ok && <p className="text-sm">{res.trip} · {res.reference} · {res.participants} pers.</p>}
+          {res.ok && <p className="text-sm">{res.trip ?? res.activity} · {res.reference} · {res.participants} pers.</p>}
           {res.ok && !!res.balance_due_xof && <p className="mt-1 font-semibold text-amber-800">Solde à encaisser : {formatXOF(res.balance_due_xof)}</p>}
         </div>
       )}

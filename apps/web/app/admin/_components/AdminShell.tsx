@@ -86,6 +86,7 @@ const NAV_ADMIN: NavItem[] = [
   { id: 'moderation',    label: 'Modération Pro', href: '/admin?tab=moderation',   icon: <IcoCheck />,      inBottomNav: true, match: 'exact' },
   { id: 'trips',         label: 'Voyages',        href: '/admin?tab=trips',        icon: <IcoCalendar />,                      match: 'exact' },
   { id: 'destinations',  label: 'Destinations',   href: '/admin?tab=destinations', icon: <IcoStore />,                         match: 'exact' },
+  { id: 'activities',    label: 'Activités',      href: '/admin?tab=activities',   icon: <IcoCalendar />,                      match: 'exact' },
   { id: 'subscriptions', label: 'Abonnements',    href: '/admin?tab=subscriptions',icon: <IcoCard />,                          match: 'exact' },
   { id: 'subscribers',   label: 'Abonnés',        href: '/admin?tab=subscribers',  icon: <IcoUsers />,                         match: 'exact' },
   { id: 'loyalty',       label: 'Fidélité',       href: '/admin?tab=loyalty',      icon: <IcoCash />,                          match: 'exact' },

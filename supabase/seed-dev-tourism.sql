@@ -55,3 +55,27 @@ select t.id, p.code, p.name, p.inc, p.price, p.pos from public.trips t,
          ('vip','Formule VIP',array['Transport','Hôtel premium','Activités','Accompagnement personnalisé'],160000,3)) as p(code,name,inc,price,pos)
 where t.slug = 'demo-week-end-assinie'
 on conflict (trip_id, name) do nothing;
+
+-- ----------------------------------------------------------------------------
+-- Activités de démo (DEV UNIQUEMENT) + créneaux sur les 14 prochains jours
+-- ----------------------------------------------------------------------------
+with org as (select id from public.profiles where role = 'admin' order by created_at limit 1)
+insert into public.activities
+  (slug, organizer_id, destination_id, title, summary, category, city, address, latitude, longitude, price_xof,
+   duration_minutes, min_age, max_group_size, languages, includes, conditions, contact_whatsapp, highlight, status, approved_at)
+select v.slug, org.id, (select id from public.destinations d where d.slug = v.dest), v.title, v.summary, v.category, v.city, v.address,
+       v.lat, v.lng, v.price, v.dur, v.age, v.grp, array['Français'], v.incl,
+       'Annulation gratuite jusqu''à 24 h avant. Gilets de sauvetage fournis.', '+2250700000000', v.hl, 'published', now()
+from org, (values
+ ('demo-balade-lagune-assinie','assinie','Balade en bateau sur la lagune','Coucher de soleil et mangroves en pirogue motorisée','balade_bateau','Assinie','Embarcadère d''Assinie-France',5.1500,-3.2833,15000,120,0,8,array['Gilets de sauvetage','Boisson'],'populaire'),
+ ('demo-visite-bassam','grand-bassam','Visite guidée du quartier France','Histoire coloniale, musée et artisanat','visite_guidee','Grand-Bassam','Place de la mairie',5.2000,-3.7400,8000,150,0,15,array['Guide','Entrée du musée'],'a_la_une'),
+ ('demo-rando-man','man','Randonnée de la Dent de Man','Ascension guidée et vue sur les 18 montagnes','randonnee','Man','Départ ville de Man',7.4125,-7.5538,12000,300,12,10,array['Guide','Eau'],null),
+ ('demo-atelier-attieke','bonoua','Atelier cuisine : attiéké et poisson braisé','Cuisinez et dégustez avec une cheffe locale','atelier_cuisine','Bonoua','Maison de la chef',5.2736,-3.5944,10000,180,8,6,array['Ingrédients','Repas'],'nouveau')
+) as v(slug,dest,title,summary,category,city,address,lat,lng,price,dur,age,grp,incl,hl)
+on conflict (slug) do nothing;
+
+insert into public.activity_slots (activity_id, starts_at, capacity)
+select a.id, (current_date + d.n)::timestamptz + t.h * interval '1 hour', 8
+from public.activities a, generate_series(2, 15) as d(n), (values (9), (15)) as t(h)
+where a.slug like 'demo-%'
+on conflict (activity_id, starts_at) do nothing;

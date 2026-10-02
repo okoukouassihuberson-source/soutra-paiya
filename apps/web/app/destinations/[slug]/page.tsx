@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { TOURISM_CATEGORIES } from '@soutra/shared';
 import { getDestination } from '@/lib/tourism';
 import { TourismNav } from '@/components/tourism/TourismNav';
-import { VenueCardView, TripCardView } from '@/components/tourism/Cards';
+import { VenueCardView, TripCardView, ActivityCardView } from '@/components/tourism/Cards';
 
 export const revalidate = 300;
 
@@ -26,13 +26,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 const SECTIONS: { key: string; title: string }[] = [
   { key: 'hotels', title: '🏨 Hôtels' }, { key: 'residences', title: '🏠 Résidences' }, { key: 'villas', title: '🏡 Villas' },
   { key: 'restaurants', title: '🍽️ Restaurants' }, { key: 'maquis', title: '🍢 Maquis' }, { key: 'bars', title: '🍸 Bars & Lounges' },
-  { key: 'plages', title: '🏖️ Plages' }, { key: 'sites', title: '🌴 Sites touristiques' }, { key: 'activites', title: '🎯 Activités' },
+  { key: 'plages', title: '🏖️ Plages' }, { key: 'sites', title: '🌴 Sites touristiques' },
 ];
 
 export default async function DestinationPage({ params }: { params: { slug: string } }) {
   const r = await getDestination(params.slug);
   if (!r) notFound();
-  const { destination: d, venues, trips, events } = r;
+  const { destination: d, venues, trips, events, activities } = r;
 
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'TouristDestination', name: d.name,
@@ -67,6 +67,16 @@ export default async function DestinationPage({ params }: { params: { slug: stri
           )}
 
           {trips.length > 0 && <section><h2 className="mb-3 font-display text-xl font-bold">🚌 Voyages disponibles</h2><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{trips.map((t) => <TripCardView key={t.id} trip={t} />)}</div></section>}
+
+          {activities.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-end justify-between">
+                <h2 className="font-display text-xl font-bold">🎯 Activités</h2>
+                <Link className="text-sm font-semibold text-primary-600" href={`/activites?city=${encodeURIComponent(d.venue_city ?? d.name)}`}>Tout voir →</Link>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{activities.map((x) => <ActivityCardView key={x.id} activity={x} />)}</div>
+            </section>
+          )}
 
           {SECTIONS.map((s) => {
             const cats = TOURISM_CATEGORIES.find((c) => c.key === s.key)?.venueCategories ?? [];

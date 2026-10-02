@@ -4,7 +4,7 @@ import { supabaseServer } from '@/lib/supabase-server';
 import { TourismNav } from '@/components/tourism/TourismNav';
 import { TripScanner } from './TripScanner';
 
-export const metadata: Metadata = { title: 'Scanner un billet de voyage', robots: { index: false } };
+export const metadata: Metadata = { title: 'Scanner un billet', robots: { index: false } };
 
 export default async function ScanTripPage() {
   const sb = supabaseServer() as any;
@@ -17,7 +17,7 @@ export default async function ScanTripPage() {
       <TourismNav />
       <main className="mx-auto max-w-md px-4 pb-28 pt-8">
         <h1 className="font-display text-2xl font-bold">Scanner un billet</h1>
-        <p className="mt-1 text-sm text-neutral-600">Réservé à l’organisateur du voyage (ou à un administrateur).</p>
+        <p className="mt-1 text-sm text-neutral-600">Voyages et activités — réservé à l’organisateur concerné (ou à un administrateur).</p>
         <TripScanner />
       </main>
     </>

@@ -151,7 +151,7 @@ export const TOURISM_CATEGORIES: TourismCategoryCard[] = [
   { key: 'bars', emoji: '🍸', label: 'Bars & Lounges', href: '/explorer?cat=bars', venueCategories: ['bar', 'lounge'], image: img('photo-1514933651103-005eec06c04b') },
   { key: 'plages', emoji: '🏖️', label: 'Plages', href: '/explorer?cat=plages', venueCategories: ['beach'], image: img('photo-1507525428034-b723cf961d3e') },
   { key: 'sites', emoji: '🌴', label: 'Sites touristiques', href: '/explorer?cat=sites', venueCategories: ['parc', 'musee', 'monument', 'attraction'], image: img('photo-1516026672322-bc52d61a55d5') },
-  { key: 'activites', emoji: '🎯', label: 'Activités', href: '/explorer?cat=activites', venueCategories: ['centre_loisirs', 'piscine'], image: img('photo-1530053969600-caed2596d242') },
+  { key: 'activites', emoji: '🎯', label: 'Activités', href: '/activites', image: img('photo-1530053969600-caed2596d242') },
   { key: 'voyages-nationaux', emoji: '🚌', label: 'Voyages nationaux', href: '/voyages/nationaux', image: img('photo-1488646953014-85cb44e25828') },
   { key: 'voyages-internationaux', emoji: '✈️', label: 'Voyages internationaux', href: '/voyages/internationaux', image: img('photo-1436491865332-7a61a109cc05') },
   { key: 'evenements', emoji: '🎉', label: 'Événements', href: '/explorer?cat=evenements', venueCategories: ['event_space'], image: img('photo-1492684223066-81342ee5ff30') },
@@ -161,4 +161,61 @@ export function formatTripDates(startsOn: string, endsOn: string, locale = 'fr-F
   const f = (d: string) =>
     new Date(`${d}T00:00:00`).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
   return startsOn === endsOn ? f(startsOn) : `${f(startsOn)} → ${f(endsOn)}`;
+}
+
+// ─── Activités touristiques (marketplace) ───────────────────────────────────
+
+export type ActivityStatus = 'draft' | 'published' | 'paused' | 'archived';
+
+export const ACTIVITY_CATEGORIES: { key: string; label: string; emoji: string }[] = [
+  { key: 'balade_bateau', label: 'Balade en bateau', emoji: '⛵' },
+  { key: 'visite_guidee', label: 'Visite guidée', emoji: '🧭' },
+  { key: 'randonnee', label: 'Randonnée', emoji: '🥾' },
+  { key: 'safari', label: 'Safari', emoji: '🦒' },
+  { key: 'peche', label: 'Pêche', emoji: '🎣' },
+  { key: 'plongee', label: 'Plongée', emoji: '🤿' },
+  { key: 'jet_ski', label: 'Jet-ski', emoji: '🌊' },
+  { key: 'quad', label: 'Quad', emoji: '🏍️' },
+  { key: 'visite_culturelle', label: 'Visite culturelle', emoji: '🏛️' },
+  { key: 'atelier_cuisine', label: 'Atelier cuisine', emoji: '🍳' },
+  { key: 'artisanat', label: 'Découverte artisanale', emoji: '🧵' },
+  { key: 'excursion', label: 'Excursion', emoji: '🚐' },
+  { key: 'photographie', label: 'Photographie touristique', emoji: '📸' },
+  { key: 'autre', label: 'Autre', emoji: '🎯' },
+];
+
+export const activityCategoryLabel = (key: string) => ACTIVITY_CATEGORIES.find((c) => c.key === key)?.label ?? 'Activité';
+export const activityCategoryEmoji = (key: string) => ACTIVITY_CATEGORIES.find((c) => c.key === key)?.emoji ?? '🎯';
+
+export interface Activity {
+  id: string; slug: string; organizer_id: string; venue_id: string | null; destination_id: string | null;
+  title: string; summary: string | null; description: string | null; category: string;
+  city: string | null; address: string | null; latitude: number | null; longitude: number | null;
+  cover_url: string | null; gallery_urls: string[]; price_xof: number; duration_minutes: number;
+  min_age: number; min_participants: number; max_group_size: number; languages: string[];
+  includes: string[]; excludes: string[]; conditions: string | null;
+  contact_phone: string | null; contact_whatsapp: string | null; highlight: TripHighlight | null;
+  status: ActivityStatus; rating_avg: number; rating_count: number;
+}
+
+export interface ActivitySlot {
+  id: string; activity_id: string; starts_at: string; capacity: number; booked: number;
+  price_xof: number | null; status: 'open' | 'closed';
+}
+
+export function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60 * 24) {
+    const h = Math.floor(minutes / 60), m = minutes % 60;
+    return m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h`;
+  }
+  const d = Math.round(minutes / (60 * 24));
+  return `${d} jour${d > 1 ? 's' : ''}`;
+}
+
+/** Les créneaux sont stockés en UTC ; la Côte d'Ivoire est en UTC+0 toute l'année. */
+export function formatSlot(startsAt: string, locale = 'fr-FR'): string {
+  return new Date(startsAt).toLocaleString(locale, {
+    weekday: 'short', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan',
+  });
 }

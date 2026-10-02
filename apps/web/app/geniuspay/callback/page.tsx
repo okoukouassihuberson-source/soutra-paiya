@@ -101,6 +101,27 @@ function CallbackInner() {
       return;
     }
 
+    // Cas 1 ter : paiement d'activité (sp-act-…) → verify + retour sur la réservation.
+    if (reference && reference.startsWith('sp-act-')) {
+      const bookingId = searchParams?.get('booking');
+      const back = (outcome: string) =>
+        router.replace(bookingId ? `/mes-activites/${encodeURIComponent(bookingId)}?status=${outcome}` : '/mes-activites');
+      setStage('verifying');
+      (async () => {
+        try {
+          if (forcedFailed) { back('failed'); return; }
+          const { data, error } = await (sb.functions as any).invoke('geniuspay-verify', { body: { reference } });
+          if (error) { console.error('[gp-callback] verify activity:', error); back('failed'); return; }
+          const status = (data as { status?: string } | null)?.status;
+          back(status === 'success' ? 'success' : status === 'pending' ? 'pending' : 'failed');
+        } catch (err) {
+          console.error('[gp-callback] verify activity fatal:', err);
+          back('failed');
+        }
+      })();
+      return;
+    }
+
     // Cas 2 : flows mobile → deep-link (voir doc en tête de fichier).
     const target = `soutrapaiya://geniuspay${window.location.search}`;
     setDeepLink(target);

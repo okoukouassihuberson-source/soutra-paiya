@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { HIGHLIGHT_LABELS, formatTripDates, formatXOF, seatsLeft, categoryLabel, categoryEmoji, type Destination } from '@soutra/shared';
+import { HIGHLIGHT_LABELS, formatTripDates, formatXOF, seatsLeft, categoryLabel, categoryEmoji, activityCategoryEmoji, activityCategoryLabel, formatDuration, formatSlot, type Destination, type TripHighlight } from '@soutra/shared';
 import type { TripCard, VenueCard } from '@/lib/tourism';
+import type { ActivityCard } from '@/lib/activities';
 
 function Cover({ src, alt }: { src: string | null; alt: string }) {
   return src
@@ -62,6 +63,28 @@ export function DestinationCardView({ destination }: { destination: Destination 
       <div className="absolute inset-x-0 bottom-0 p-4 text-white">
         <h3 className="font-display text-xl font-bold">{destination.name}</h3>
         {destination.tagline && <p className="text-sm text-white/80">{destination.tagline}</p>}
+      </div>
+    </Link>
+  );
+}
+
+export function ActivityCardView({ activity }: { activity: ActivityCard }) {
+  return (
+    <Link href={`/activites/${activity.slug}`} className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl">
+      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
+        <Cover src={activity.cover_url} alt={activity.title} />
+        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold">{activityCategoryEmoji(activity.category)} {activityCategoryLabel(activity.category)}</span>
+        {activity.highlight && <span className="absolute right-3 top-3 rounded-full bg-primary-500 px-3 py-1 text-xs font-bold text-white">{HIGHLIGHT_LABELS[activity.highlight as TripHighlight] ?? ''}</span>}
+        <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">{formatDuration(activity.duration_minutes)}</span>
+      </div>
+      <div className="space-y-1 p-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">{activity.city ?? 'Côte d’Ivoire'}</p>
+        <h3 className="font-display text-base font-bold leading-snug text-dark">{activity.title}</h3>
+        {activity.next_slot_at && <p className="text-xs text-neutral-600">Prochain départ : {formatSlot(activity.next_slot_at)}</p>}
+        <div className="flex items-end justify-between pt-1">
+          <p className="text-lg font-bold text-primary-600"><span className="text-xs font-normal text-neutral-500">dès </span>{formatXOF(activity.price_xof)}</p>
+          <span className="text-sm font-semibold text-amber-600">{activity.rating_count > 0 ? `★ ${Number(activity.rating_avg).toFixed(1)} (${activity.rating_count})` : 'Nouveau'}</span>
+        </div>
       </div>
     </Link>
   );

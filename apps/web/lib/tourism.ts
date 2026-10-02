@@ -1,5 +1,6 @@
 import { supabaseServer } from './supabase-server';
 import type { Destination, Trip, TripItineraryDay, TripPackage, TripScope } from '@soutra/shared';
+import { listActivities, type ActivityCard } from './activities';
 
 // Les types DB générés (database.ts) ne connaissent pas encore les tables 0082
 // → on passe par `any` comme le fait déjà app/v/[slug]/page.tsx, et on type
@@ -89,18 +90,21 @@ export async function getDestination(slug: string) {
   if (!dest) return null;
   const city = (dest.venue_city ?? dest.name) as string;
   const today = new Date().toISOString().slice(0, 10);
-  const [venues, trips, events] = await Promise.all([
+  const [venues, trips, events, activities] = await Promise.all([
     searchVenues({ city, limit: 60 }),
     sb.from('trips').select(TRIP_CARD_COLS).eq('destination_id', dest.id)
       .in('status', ['published', 'full']).gte('starts_on', today).order('starts_on').limit(12),
     sb.from('events').select('id, title, slug, cover_url, starts_on:starts_at, city')
       .eq('status', 'published').ilike('city', city).gte('ends_at', new Date().toISOString())
       .order('starts_at').limit(6),
+    // Activités rattachées à la destination, sinon celles de la même ville.
+    listActivities({ destinationId: dest.id, limit: 8 }).then(async (r) => (r.items.length ? r.items : (await listActivities({ city, limit: 8 })).items)),
   ]);
   return {
     destination: dest as Destination,
     venues,
     trips: (trips.data ?? []) as TripCard[],
+    activities: activities as ActivityCard[],
     events: (events.data ?? []) as { id: string; title: string; slug: string; cover_url: string | null; starts_on: string; city: string }[],
   };
 }

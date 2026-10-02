@@ -19,6 +19,7 @@ export default async function MyTripsPage() {
       <TourismNav />
       <main className="mx-auto max-w-3xl px-4 pb-28 pt-8 sm:px-6">
         <h1 className="font-display text-3xl font-bold">Mes voyages</h1>
+        <nav className="mt-2 flex gap-4 text-sm"><Link className="text-primary-600 underline" href="/mes-activites">Mes activités</Link></nav>
         {bookings.length === 0 ? (
           <p className="mt-6 rounded-2xl bg-neutral-50 p-8 text-center text-neutral-600">
             Aucune réservation. <Link className="font-semibold text-primary-600 underline" href="/voyages/nationaux">Découvrir les voyages</Link>
