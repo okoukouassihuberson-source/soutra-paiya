@@ -22,6 +22,27 @@
 -- ----------------------------------------------------------------------------
 -- 1) Préférences
 -- ----------------------------------------------------------------------------
+-- Une ancienne table « notification_preferences » (préférences pro : colonnes
+-- new_reservation, payment_received…) peut déjà exister hors migrations. Elle
+-- est conservée sous un autre nom (rien n'est supprimé) pour laisser la place
+-- au modèle par catégorie/canal ci-dessous.
+do $$ begin
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'notification_preferences'
+                and column_name = 'new_reservation') then
+    if to_regclass('public.notification_preferences_legacy') is null then
+      alter table public.notification_preferences rename to notification_preferences_legacy;
+    end if;
+    if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                where n.nspname = 'public' and p.proname = 'get_my_notification_preferences'
+                  and p.pronargs = 0)
+       and not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                where n.nspname = 'public' and p.proname = 'get_my_notification_preferences_legacy') then
+      alter function public.get_my_notification_preferences() rename to get_my_notification_preferences_legacy;
+    end if;
+  end if;
+end $$;
+
 create table if not exists public.notification_preferences (
   user_id    uuid not null references public.profiles(id) on delete cascade,
   category   text not null check (category in ('bookings','payments','reminders','updates','moderation','promotions')),
