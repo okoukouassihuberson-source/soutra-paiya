@@ -17,22 +17,22 @@ export function TourismNav() {
     <>
       <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <Link href="/" className="font-display text-lg font-bold">
+          <Link href="/" className="shrink-0 whitespace-nowrap font-display text-lg font-bold">
             Soutra<span className="text-primary-500">-Playce</span>
           </Link>
-          <nav aria-label="Navigation principale" className="hidden items-center gap-5 lg:flex">
+          <nav aria-label="Navigation principale" className="hidden items-center gap-4 xl:flex xl:gap-5">
             {LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className="text-sm font-medium text-neutral-600 hover:text-primary-600">{l.label}</Link>
+              <Link key={l.href} href={l.href} className="whitespace-nowrap text-sm font-medium text-neutral-600 hover:text-primary-600">{l.label}</Link>
             ))}
           </nav>
           <div className="flex items-center gap-3 text-sm">
-            <Link href="/organisateur" className="hidden font-medium text-neutral-600 hover:text-primary-600 lg:inline">Espace organisateur</Link>
-            <Link href="/mes-voyages" className="hidden font-medium text-neutral-600 hover:text-primary-600 sm:inline">Mes voyages</Link>
-            <Link href="/login" className="rounded-full bg-primary-500 px-4 py-2 font-semibold text-white hover:bg-primary-600">Mon compte</Link>
+            <Link href="/organisateur" className="hidden whitespace-nowrap font-medium text-neutral-600 hover:text-primary-600 2xl:inline">Organisateur</Link>
+            <Link href="/mes-voyages" className="hidden whitespace-nowrap font-medium text-neutral-600 hover:text-primary-600 xl:inline">Mes voyages</Link>
+            <Link href="/login" className="whitespace-nowrap rounded-full bg-primary-500 px-4 py-2 font-semibold text-white hover:bg-primary-600">Mon compte</Link>
           </div>
         </div>
       </header>
-      <nav aria-label="Navigation mobile" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-neutral-200 bg-white/95 text-[11px] backdrop-blur lg:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <nav aria-label="Navigation mobile" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-neutral-200 bg-white/95 text-[11px] backdrop-blur xl:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         {[
           ['/', '🏠', 'Accueil'], ['/explorer', '🧭', 'Explorer'], ['/voyages/nationaux', '🚌', 'Voyages'],
           ['/account', '❤️', 'Favoris'], ['/account', '👤', 'Compte'],

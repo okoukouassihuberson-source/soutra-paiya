@@ -104,3 +104,38 @@ export async function getDestination(slug: string) {
     events: (events.data ?? []) as { id: string; title: string; slug: string; cover_url: string | null; starts_on: string; city: string }[],
   };
 }
+
+// ─── Explorer : recherche avancée (RPC search_venues_explorer, migration 0086) ───
+
+export { EXPLORER_AMENITIES, EXPLORER_SORTS } from './explorer-options';
+
+export interface ExploreParams {
+  q?: string; city?: string; commune?: string; district?: string; categories?: string[];
+  minPrice?: number; maxPrice?: number; minRating?: number; amenities?: string[];
+  openNow?: boolean; onlinePayment?: boolean; checkIn?: string; checkOut?: string;
+  lat?: number; lng?: number; radiusKm?: number; sort?: string; limit?: number; offset?: number;
+}
+
+export interface ExploreVenue extends VenueCard {
+  commune: string | null; amenities: string[] | null; lat: number | null; lng: number | null;
+  distance_km: number | null; is_open_now: boolean | null; total_count: number;
+}
+
+export async function exploreVenues(p: ExploreParams): Promise<{ venues: ExploreVenue[]; total: number; error?: string }> {
+  const { data, error } = await db().rpc('search_venues_explorer', {
+    p_q: p.q || null, p_city: p.city || null, p_commune: p.commune || null, p_district: p.district || null,
+    p_categories: p.categories?.length ? p.categories : null,
+    p_min_price: p.minPrice ?? null, p_max_price: p.maxPrice ?? null, p_min_rating: p.minRating ?? null,
+    p_amenities: p.amenities?.length ? p.amenities : null,
+    p_open_now: !!p.openNow, p_online_payment: !!p.onlinePayment,
+    p_check_in: p.checkIn || null, p_check_out: p.checkOut || null,
+    p_lat: p.lat ?? null, p_lng: p.lng ?? null, p_radius_km: p.radiusKm ?? null,
+    p_sort: p.sort || 'rating', p_limit: p.limit ?? 24, p_offset: p.offset ?? 0,
+  });
+  if (error) {
+    console.error('[tourism] exploreVenues', error);
+    return { venues: [], total: 0, error: error.message };
+  }
+  const venues = (data ?? []) as ExploreVenue[];
+  return { venues, total: venues[0] ? Number(venues[0].total_count) : 0 };
+}

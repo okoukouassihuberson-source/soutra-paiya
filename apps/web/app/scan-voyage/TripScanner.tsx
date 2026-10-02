@@ -61,7 +61,7 @@ export function TripScanner() {
         <button onClick={() => { setRes(null); setMsg(null); setCam(true); }} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-white">📷 Scanner avec la caméra</button>
       )}
       <form onSubmit={(e) => { e.preventDefault(); validate(code); }} className="flex gap-2">
-        <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code du billet" className="flex-1 rounded-xl border-neutral-300" aria-label="Code du billet" />
+        <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code du billet" className="flex-1 rounded-xl border border-neutral-300" aria-label="Code du billet" />
         <button className="rounded-xl border px-4 font-semibold">Valider</button>
       </form>
       {msg && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{msg}</p>}

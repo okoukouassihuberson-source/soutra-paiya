@@ -64,10 +64,10 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
       <label className="block text-sm font-semibold">Participants
         <input type="number" min={1} max={Math.min(50, seatsLeft)} value={n}
                onChange={(e) => setN(Math.max(1, Math.min(Math.min(50, seatsLeft), Number(e.target.value) || 1)))}
-               className="mt-1 w-full rounded-xl border-neutral-300" />
+               className="mt-1 w-full rounded-xl border border-neutral-300" />
       </label>
       <label className="block text-sm font-semibold">Téléphone (optionnel)
-        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full rounded-xl border-neutral-300" />
+        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full rounded-xl border border-neutral-300" />
       </label>
       <div className="flex items-center justify-between border-t pt-3">
         <span className="text-sm text-neutral-600">Total</span>

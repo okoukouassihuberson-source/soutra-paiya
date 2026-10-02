@@ -28,7 +28,7 @@
 | Voyages groupés nationaux / internationaux | **ABSENT → AJOUTÉ** | |
 | Formules (Essentielle/Confort/Premium/VIP/custom) | **ABSENT → AJOUTÉ** | `trip_packages`. |
 | Circuits (jour par jour) | **ABSENT → AJOUTÉ** | `trips.is_circuit` + `trip_itineraries`. |
-| Recherche globale + filtres | **PARTIEL → COMPLÉTÉ (base)** | `/explorer` (texte, ville, catégorie, pagination). Filtres prix/note/équipements/distance/carte : phase 2. |
+| Recherche globale + filtres | **AJOUTÉ (phase 2)** | `/explorer` : ville, commune, quartier, catégorie, prix, note, 10 services, ouvert maintenant, paiement en ligne, disponibilité hôtelière (dates), distance (« Près de moi »), tri, pagination serveur, vue carte. « Région » : non modélisé (couvert par ville/commune). |
 | SEO (sitemap, robots, JSON-LD, OG) | **PARTIEL → COMPLÉTÉ** | `sitemap.xml`, `robots.txt`, JSON-LD `TouristTrip/TouristDestination`, métadonnées. |
 | Marketplace d'activités | **ABSENT** | phase 2. |
 | Multilingue FR/EN | **ABSENT** | phase 3 (i18n sur les nouvelles pages). |
@@ -60,8 +60,14 @@
 4. **Attribution du rôle** : bouton « → Organisateur » dans l'onglet Utilisateurs de l'admin (pas d'auto-inscription : volontaire, pour éviter l'escalade de rôle).
 5. Testé sur PostgreSQL 16 : soumission, verrouillage, annulation avec paiements refusée, accès aux voyageurs réservé à l'organisateur, RPC de réservation toujours fonctionnelles. Bug trouvé et corrigé en test : la colonne générée `duration_days` est NULL dans `NEW` pendant un trigger BEFORE.
 
+## 3 quinquies. Livré en phase 2 (recherche avancée + carte)
+1. **Migration `0086_explorer_search.sql`** : RPC `search_venues_explorer` (filtres, tri, pagination, `total_count`, distance PostGIS, disponibilité des chambres sur période, services via liste fermée de motifs — aucune expression régulière fournie par le client) + index trigramme sur nom/quartier. `security invoker` : la RLS de `venues` s'applique.
+2. **Web** : filtres en formulaire GET (état dans l'URL, partageable, sans JS hormis la géolocalisation), bascule Liste/Carte, carte Leaflet/OpenStreetMap avec fiche rapide (photo, note, prix, « Voir la fiche », « Itinéraire »), distance affichée sur les cartes. Les pages filtrées sont `noindex`.
+3. **Tests** : RPC sur PostgreSQL 16 + PostGIS (18 scénarios : services, injection, prix, note, catégories, casse, texte, distance, rayon, tris, disponibilité, dates/coordonnées invalides, pagination) ; 20 000 lieux : recherche texte 20 ms (index trigramme utilisé), recherche par distance 54 ms. Interface vérifiée dans Chromium sur une API simulée (mobile et desktop). Défauts trouvés et corrigés : champs sans bordure (classe `border` manquante, y compris dans les formulaires de réservation et de scan) et barre de navigation qui se cassait sur deux lignes.
+4. Limites : tuiles OpenStreetMap non vérifiables depuis le bac à sable ; la carte affiche au plus 100 résultats ; les « services » reposent sur les étiquettes saisies par les professionnels (texte libre).
+
 ## 4. Feuille de route
-- **Reste de la phase 2 (non fait)** : filtres avancés + carte (Leaflet) sur `/explorer` ; activités (table `activities` + réservation) ; écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
+- **Reste de la phase 2 (non fait)** : activités (table `activities` + réservation) ; écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
 - **Phase 3** : i18n FR/EN ; notifications voyages (rappel, solde à payer) + email ; promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions
