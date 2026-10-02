@@ -381,6 +381,25 @@ export const fr = {
     emptyTitle: 'Aucun revenu sur cette période', emptyBody: 'Les revenus apparaîtront ici dès que tu auras de nouvelles réservations honorées, billets vendus ou paiements reçus. Si l’historique est ancien, demande à l’équipe Soutra-Playce de lancer le backfill admin.',
     lastLines: '📋 {n} dernières lignes',
   },
+  acct: {
+    error: 'Erreur', cancel: 'Annuler', save: 'Enregistrer', delete: 'Supprimer',
+    pw: { title: 'Changer le mot de passe', doneTitle: 'Mot de passe modifié', doneBody: 'Ton nouveau mot de passe est actif.', fail: 'Modification impossible.', newLabel: 'Nouveau mot de passe', min8: '8 caractères minimum', min8Hint: '8 caractères minimum.', confirm: 'Confirme le mot de passe', retype: 'Retape le mot de passe', mismatch: 'Les mots de passe ne correspondent pas.' },
+    sos: { title: 'Mes contacts SOS', nameReq: 'Nom requis', nameReqBody: 'Indique le nom du contact.', phoneReq: 'Numéro requis', phoneReqBody: 'Indique un numéro de téléphone valide.', saveFail: 'Enregistrement impossible.', removeTitle: 'Supprimer', removeBody: 'Retirer ce contact SOS ?', removeFail: 'Suppression impossible.', info: 'Jusqu’à 3 proches alertés automatiquement en cas d’urgence (SOS).', contactN: 'Contact {n}', namePh: 'Nom du contact', phonePh: 'Numéro de téléphone', add: 'Ajouter un contact ({n})' },
+  },
+  searchAi: {
+    title: 'Recherche IA', subtitle: 'Demande ce que tu cherches en français', placeholder: 'Ex : restaurant romantique à Cocody', ask: 'Demander', ideas: 'Idées de recherches', understood: 'Compris', openNow: '🟢 Ouvert maintenant',
+    failed: 'La recherche IA a échoué. Réessaie dans un instant.', error: 'Erreur', noResults: 'Aucun résultat', noResultsBody: 'Affine ta recherche ou élargis le rayon. Soutra-Playce n’a pas encore tous les lieux référencés — tu peux en ajouter via le bouton « Signaler ».',
+    found_one: '{n} lieu trouvé', found_other: '{n} lieux trouvés',
+    suggestions: 'Restaurant romantique à Cocody ouvert ce soir|Piscine ouverte maintenant à moins de 10 minutes|Pharmacie de garde la plus proche|Maquis pas cher avec musique live|Hôtel avec piscine à Bassam|Boîte de nuit à Marcory',
+  },
+  promoKind: { discount: 'Réduction', happy_hour: 'Happy Hour', couple: 'Couple', group: 'Groupe', weekend: 'Week-end', student: 'Étudiant' },
+  trending: {
+    title: 'Ça bouge maintenant 🔥', subtitle: 'Le pouls de la ville en temps réel', tabTrending: 'Tendance', tabPromos: 'Promos', tabEvents: 'Événements', all: 'Toutes',
+    noTrendTitle: 'Aucune tendance pour l’instant', noTrendHint: 'Les venues qui prennent vie apparaîtront ici dès qu’il y aura de l’activité.', open: 'OUVERT', openShort: 'Ouvert', evt: 'EVT',
+    noPromo: 'Aucune promo active', noPromoKind: 'Aucune promo : {kind}', noPromoHint: 'Reviens plus tard, les établissements publient leurs promotions au fil de la journée.', noPromoKindHint: 'Essaie un autre type de promo ou reviens plus tard.',
+    until: 'Jusqu’au {date}', noEventTitle: 'Aucun événement en cours', noEventHint: 'Les soirées, concerts et grands événements apparaîtront ici quand ils démarrent.', live: 'EN COURS', soon: 'BIENTÔT', tbc: 'Lieu à confirmer',
+    untilTime: 'Jusqu’à {time}', startsAt: 'Démarre {when}', now: 'à l’instant', inMin: 'dans {n} min', inHours: 'dans {n} h',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

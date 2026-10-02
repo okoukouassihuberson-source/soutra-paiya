@@ -26,18 +26,11 @@ import {
   type ColorPalette,
 } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { searchNL, type NLIntent, type NLVenueResult } from '@/lib/search-nl';
 
-const SUGGESTIONS = [
-  'Restaurant romantique à Cocody ouvert ce soir',
-  "Piscine ouverte maintenant à moins de 10 minutes",
-  'Pharmacie de garde la plus proche',
-  'Maquis pas cher avec musique live',
-  'Hôtel avec piscine à Bassam',
-  'Boîte de nuit à Marcory',
-];
 
 /**
  * Recherche IA en langage naturel : l'utilisateur tape une phrase, Claude
@@ -54,6 +47,8 @@ const SUGGESTIONS = [
  *       - Empty state si 0 résultat
  */
 export default function SearchAI() {
+  const { t, tn } = useI18n();
+  const SUGGESTIONS = t('searchAi.suggestions').split('|');
   const router = useRouter();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -101,8 +96,8 @@ export default function SearchAI() {
       setResults(res.results);
     } catch (err: any) {
       console.error('[search-ai] error:', err);
-      const msg = err?.message ?? 'La recherche IA a échoué. Réessaie dans un instant.';
-      Alert.alert('Erreur', msg);
+      const msg = err?.message ?? t('searchAi.failed');
+      Alert.alert(t('searchAi.error'), msg);
       setInterpretation(null);
       setResults([]);
     } finally {
@@ -112,7 +107,7 @@ export default function SearchAI() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Recherche IA" subtitle="Demande ce que tu cherches en français" />
+      <ScreenHeader title={t('searchAi.title')} subtitle={t('searchAi.subtitle')} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -127,7 +122,7 @@ export default function SearchAI() {
               <TextInput
                 value={query}
                 onChangeText={setQuery}
-                placeholder="Ex : restaurant romantique à Cocody"
+                placeholder={t('searchAi.placeholder')}
                 placeholderTextColor={c.neutral[400]}
                 style={s.searchInput}
                 returnKeyType="search"
@@ -153,7 +148,7 @@ export default function SearchAI() {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={s.submitBtnText}>Demander</Text>
+                <Text style={s.submitBtnText}>{t('searchAi.ask')}</Text>
               )}
             </Pressable>
           </View>
@@ -161,7 +156,7 @@ export default function SearchAI() {
           {/* État avant recherche : suggestions */}
           {!searched && (
             <View style={s.suggestionsWrap}>
-              <Text style={s.sectionLabel}>Idées de recherches</Text>
+              <Text style={s.sectionLabel}>{t('searchAi.ideas')}</Text>
               {SUGGESTIONS.map((sug) => (
                 <Pressable
                   key={sug}
@@ -191,7 +186,7 @@ export default function SearchAI() {
             <View style={s.interpretationWrap}>
               <View style={s.interpretationHeader}>
                 <Ionicons name="sparkles" size={14} color={c.primary[600]} />
-                <Text style={s.interpretationTitle}>Compris</Text>
+                <Text style={s.interpretationTitle}>{t('searchAi.understood')}</Text>
               </View>
               <Text style={s.interpretationSummary}>{interpretation.summary}</Text>
               <View style={s.chipsRow}>
@@ -209,7 +204,7 @@ export default function SearchAI() {
                 )}
                 {interpretation.open_now && (
                   <View style={[s.chip, { backgroundColor: '#dcfce7' }]}>
-                    <Text style={[s.chipText, { color: '#16a34a' }]}>🟢 Ouvert maintenant</Text>
+                    <Text style={[s.chipText, { color: '#16a34a' }]}>{t('searchAi.openNow')}</Text>
                   </View>
                 )}
                 {interpretation.ambiance_keywords?.map((kw) => (
@@ -227,17 +222,15 @@ export default function SearchAI() {
                   <View style={s.emptyIcon}>
                     <Ionicons name="search-outline" size={36} color={c.primary[400]} />
                   </View>
-                  <Text style={s.emptyTitle}>Aucun résultat</Text>
+                  <Text style={s.emptyTitle}>{t('searchAi.noResults')}</Text>
                   <Text style={s.emptyText}>
-                    Affine ta recherche ou élargis le rayon. Soutra-Playce
-                    n'a pas encore tous les lieux référencés — tu peux en
-                    ajouter via le bouton « Signaler ».
+                    {t('searchAi.noResultsBody')}
                   </Text>
                 </View>
               ) : (
                 <>
                   <Text style={[s.sectionLabel, { marginTop: spacing.sm }]}>
-                    {results.length} lieu{results.length > 1 ? 'x' : ''} trouvé{results.length > 1 ? 's' : ''}
+                    {tn('searchAi.found', results.length)}
                   </Text>
                   {results.map((v) => <VenueCard key={v.id} venue={v} c={c} onPress={() => router.push({ pathname: '/venue/[id]', params: { id: v.id } })} />)}
                 </>

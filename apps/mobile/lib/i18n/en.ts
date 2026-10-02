@@ -379,4 +379,23 @@ export const en: Dict = {
     emptyTitle: 'No earnings in this period', emptyBody: 'Earnings will show up here as soon as you have new honoured bookings, tickets sold or payments received. If the history is old, ask the Soutra-Playce team to run the admin backfill.',
     lastLines: '📋 Last {n} lines',
   },
+  acct: {
+    error: 'Error', cancel: 'Cancel', save: 'Save', delete: 'Delete',
+    pw: { title: 'Change password', doneTitle: 'Password changed', doneBody: 'Your new password is active.', fail: 'Could not change it.', newLabel: 'New password', min8: 'At least 8 characters', min8Hint: 'At least 8 characters.', confirm: 'Confirm password', retype: 'Retype the password', mismatch: 'Passwords do not match.' },
+    sos: { title: 'My SOS contacts', nameReq: 'Name required', nameReqBody: 'Enter the contact’s name.', phoneReq: 'Number required', phoneReqBody: 'Enter a valid phone number.', saveFail: 'Could not save.', removeTitle: 'Delete', removeBody: 'Remove this SOS contact?', removeFail: 'Could not delete.', info: 'Up to 3 close ones are alerted automatically in an emergency (SOS).', contactN: 'Contact {n}', namePh: 'Contact name', phonePh: 'Phone number', add: 'Add a contact ({n})' },
+  },
+  searchAi: {
+    title: 'AI search', subtitle: 'Ask for what you want in plain words', placeholder: 'E.g. romantic restaurant in Cocody', ask: 'Ask', ideas: 'Search ideas', understood: 'Understood', openNow: '🟢 Open now',
+    failed: 'The AI search failed. Please try again in a moment.', error: 'Error', noResults: 'No results', noResultsBody: 'Refine your search or widen the radius. Soutra-Playce does not list every place yet — you can add one with the “Report” button.',
+    found_one: '{n} place found', found_other: '{n} places found',
+    suggestions: 'Romantic restaurant in Cocody open tonight|Pool open now within 10 minutes|Nearest duty pharmacy|Cheap maquis with live music|Hotel with a pool in Bassam|Nightclub in Marcory',
+  },
+  promoKind: { discount: 'Discount', happy_hour: 'Happy Hour', couple: 'Couple', group: 'Group', weekend: 'Weekend', student: 'Student' },
+  trending: {
+    title: 'What’s happening now 🔥', subtitle: 'The city’s pulse in real time', tabTrending: 'Trending', tabPromos: 'Deals', tabEvents: 'Events', all: 'All',
+    noTrendTitle: 'Nothing trending right now', noTrendHint: 'Venues coming to life will show up here as soon as there is activity.', open: 'OPEN', openShort: 'Open', evt: 'EVT',
+    noPromo: 'No active deals', noPromoKind: 'No deals: {kind}', noPromoHint: 'Come back later — venues post their deals throughout the day.', noPromoKindHint: 'Try another type of deal or come back later.',
+    until: 'Until {date}', noEventTitle: 'No events on right now', noEventHint: 'Parties, concerts and big events will appear here when they start.', live: 'LIVE', soon: 'SOON', tbc: 'Venue to be confirmed',
+    untilTime: 'Until {time}', startsAt: 'Starts {when}', now: 'right now', inMin: 'in {n} min', inHours: 'in {n} h',
+  },
 };
