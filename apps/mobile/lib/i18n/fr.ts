@@ -232,6 +232,40 @@ export const fr = {
     total: 'Total', amenities: 'Équipements', contact: 'Contact (optionnel)', name: 'Nom', phone: 'Téléphone', notes: 'Notes (ex: arrivée tardive vers 23h)', creating: 'Création…',
     book: 'Réserver · {amount}', payHint: 'Tu paieras ensuite depuis « Mes réservations ».', cancel: 'Annuler',
   },
+  discover: {
+    error: 'Erreur', loadFail: 'Chargement impossible.', actionFail: 'Action impossible.', inCity: 'Dans {city}', myCity: 'ma ville', allCities: 'Toutes villes', emptyTitle: 'Personne pour l’instant',
+    emptyInterests: 'Ajoute des centres d’intérêt pour rencontrer des gens.', emptyLater: 'Reviens plus tard ou élargis la recherche à toutes les villes.', editProfile: 'Modifier mon profil',
+    overlap_one: '✨ {n} intérêt en commun', overlap_other: '✨ {n} intérêts en commun', matchTitle: 'C’est un match !', matchSub: 'Toi et {name} vous êtes likés mutuellement.', thisPerson: 'cette personne',
+    later: 'Plus tard', talk: 'Lui parler', chatFail: 'Impossible d’ouvrir le chat.', title: 'Découverte', badYear: 'Année invalide', badYearBody: 'L’année de naissance doit être réaliste (13 ans minimum).',
+    incomplete: 'Profil incomplet', incompleteBody: 'Choisis au moins 1 centre d’intérêt pour apparaître dans la découverte.', saveFail: 'Sauvegarde impossible.', myProfile: 'Mon profil', save: 'Enregistrer',
+    visible: 'Apparaître dans la découverte', visibleHint: 'Ton profil sera visible par les autres utilisateurs.', bio: 'Bio (facultative)', bioPh: 'Parle un peu de toi…', birthYear: 'Année de naissance (facultative)',
+    iAm: 'Je suis', man: 'Homme', woman: 'Femme', other: 'Autre', lookingFor: 'Je cherche', men: 'Hommes', women: 'Femmes', everyone: 'Tout le monde', interests: 'Mes centres d’intérêt ({n})',
+  },
+  cart: {
+    error: 'Erreur', updateFail: 'Impossible de modifier', title: 'Mon panier', emptyTitle: 'Ton panier est vide', emptyBody: 'Explore les boutiques et ajoute des produits pour passer commande.', explore: 'Explorer',
+    unavailableTitle: 'Produits indisponibles', unavailableBody: 'Retire ou modifie les articles indisponibles avant de commander.', addressTitle: 'Adresse requise', addressBody: 'Indique une adresse de livraison.',
+    orderFail: 'Impossible de passer commande', confirmedTitle: 'Commande confirmée 🎉', confirmedBody: 'Numéro : {num}\nTu peux suivre l’état dans « Mes commandes ».', seeOrders: 'Voir mes commandes',
+    unavailable: '⚠ Indisponible', subtotal: 'Sous-total', method: 'Mode de récupération', pickup: 'Retrait', delivery: 'Livraison', address: 'Adresse de livraison *', addressPh: 'Rue, quartier, commune',
+    contactName: 'Nom à contacter', optional: 'Optionnel', phone: 'Téléphone', notes: 'Notes (optionnel)', notesPh: 'Instructions spéciales', ordering: 'Commande en cours…', order: 'Commander · {amount}',
+    footer: 'Paiement à la réception · L’intégration paiement en ligne arrive bientôt',
+  },
+  kyc: {
+    permTitle: 'Permission requise', permBody: 'Autorise l’accès aux photos pour ajouter ta pièce.', error: 'Erreur', unreadable: 'Image illisible. Réessaie avec une autre photo.',
+    nameReq: 'Nom requis', nameReqBody: 'Indique ton nom légal complet.', numReq: 'Numéro requis', numReqBody: 'Indique le numéro de ta pièce d’identité.', photoReq: 'Photo requise', photoReqBody: 'Ajoute une photo de ta pièce d’identité.',
+    uploadFail: 'Envoi du document impossible', uploadHint: 'Vérifie que le bucket Storage « kyc » existe (migration 0006). ', sendFail: 'Envoi impossible.', sentTitle: 'Demande envoyée',
+    sentBody: 'Ta vérification KYC est en cours d’examen. Tu seras notifié du résultat.', title: 'Vérification KYC', info: 'La vérification d’identité permet d’augmenter tes limites au-delà de 200 000 FCFA et de sécuriser ton compte.',
+    pendingTitle: '⏳ Demande en cours', pendingBody: 'Ta demande est en cours d’examen. Tu seras notifié du résultat.', verifiedTitle: '✓ Compte vérifié', verifiedBody: 'Ton identité a été validée. Tes limites sont relevées.',
+    rejectedTitle: '✗ Demande rejetée', rejectedBody: 'Vérifie tes informations et renvoie ta demande.', legalName: 'Nom légal complet', legalNamePh: 'Tel qu’inscrit sur ta pièce', idType: 'Type de pièce',
+    idNumber: 'Numéro de la pièce', idNumberPh: 'Numéro du document', photo: 'Photo de la pièce', change: 'Changer la photo', add: 'Ajouter une photo de ta pièce', submit: 'Envoyer ma demande',
+    id: { CNI: 'CNI', Passeport: 'Passeport', 'Permis de conduire': 'Permis de conduire' },
+  },
+  loyalty: {
+    lowTitle: 'Solde insuffisant', lowBody: 'Il te manque des points pour échanger « {label} ».', failTitle: 'Échange impossible', generic: 'Une erreur est survenue.', doneTitle: 'Échangé !',
+    doneBody: '« {label} » a été réservé. Un admin va le confirmer.', error: 'Erreur', title: 'Fidélité', subtitle: 'Tes points Soutra-Playce', balance: 'Solde de points', lifetime: '{n} pts gagnés depuis ton inscription',
+    last30: 'Sur 30 jours', gains_one: '{n} gain', gains_other: '{n} gains', rank: 'Classement', rankSub: 'sur tous les utilisateurs', missions: 'Missions', noMissions: 'Aucune mission active pour l’instant.',
+    done: 'Accomplie ✓', badges: 'Badges', noBadges: 'Aucun badge pour l’instant.', rewards: 'Récompenses', redeem: 'Échanger', leaderboard: 'Classement', history: 'Historique',
+    emptyTitle: 'Aucun point pour l’instant', emptyBody: 'Fais ton premier paiement marchand pour gagner tes premiers points.',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

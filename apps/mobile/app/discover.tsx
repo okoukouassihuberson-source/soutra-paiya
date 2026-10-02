@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
+import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth-context';
 import {
   INTEREST_SUGGESTIONS,
@@ -17,6 +18,7 @@ import {
 import { openDm } from '@/lib/chat';
 
 export default function Discover() {
+  const { t, tn } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function Discover() {
       }
     } catch (err: any) {
       console.error('[discover] load error:', err);
-      Alert.alert('Erreur', err?.message ?? 'Chargement impossible.');
+      Alert.alert(t('discover.error'), err?.message ?? t('discover.loadFail'));
     } finally {
       setLoading(false);
     }
@@ -68,7 +70,7 @@ export default function Discover() {
     } catch (err: any) {
       // Rollback : on remet la carte.
       setCandidates((prev) => [target, ...prev]);
-      Alert.alert('Erreur', err?.message ?? 'Action impossible.');
+      Alert.alert(t('discover.error'), err?.message ?? t('discover.actionFail'));
     } finally {
       setBusy(false);
     }
@@ -94,7 +96,7 @@ export default function Discover() {
         <Pressable onPress={() => setCityOnly((v) => !v)} style={[s.filterChip, cityOnly && s.filterChipActive]}>
           <Ionicons name="location-outline" size={14} color={cityOnly ? '#fff' : colors.primary[600]} />
           <Text style={[s.filterChipText, cityOnly && s.filterChipTextActive]}>
-            {cityOnly ? `Dans ${myProfile?.city || 'ma ville'}` : 'Toutes villes'}
+            {cityOnly ? t('discover.inCity', { city: myProfile?.city || t('discover.myCity') }) : t('discover.allCities')}
           </Text>
         </Pressable>
       </View>
@@ -102,14 +104,14 @@ export default function Discover() {
       {!card ? (
         <View style={s.center}>
           <Ionicons name="people-outline" size={64} color={colors.neutral[300]} />
-          <Text style={s.emptyTitle}>Personne pour l'instant</Text>
+          <Text style={s.emptyTitle}>{t('discover.emptyTitle')}</Text>
           <Text style={s.emptyText}>
             {myProfile?.interests.length === 0
-              ? 'Ajoute des centres d\'intérêt pour rencontrer des gens.'
-              : 'Reviens plus tard ou élargis la recherche à toutes les villes.'}
+              ? t('discover.emptyInterests')
+              : t('discover.emptyLater')}
           </Text>
           <Pressable onPress={() => setEditOpen(true)} style={s.emptyBtn}>
-            <Text style={s.emptyBtnText}>Modifier mon profil</Text>
+            <Text style={s.emptyBtnText}>{t('discover.editProfile')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -133,7 +135,7 @@ export default function Discover() {
               {card.bio ? <Text style={s.cardBio}>{card.bio}</Text> : null}
               {card.overlap_count > 0 && (
                 <Text style={s.overlap}>
-                  ✨ {card.overlap_count} intérêt{card.overlap_count > 1 ? 's' : ''} en commun
+                  {tn('discover.overlap', card.overlap_count)}
                 </Text>
               )}
               {card.interests.length > 0 && (
@@ -179,11 +181,11 @@ export default function Discover() {
         <View style={s.matchOverlay}>
           <View style={s.matchCard}>
             <Text style={s.matchEmoji}>🎉</Text>
-            <Text style={s.matchTitle}>C'est un match !</Text>
-            <Text style={s.matchSub}>Toi et {matchModal?.full_name || 'cette personne'} vous êtes likés mutuellement.</Text>
+            <Text style={s.matchTitle}>{t('discover.matchTitle')}</Text>
+            <Text style={s.matchSub}>{t('discover.matchSub', { name: matchModal?.full_name || t('discover.thisPerson') })}</Text>
             <View style={s.matchActions}>
               <Pressable onPress={() => setMatchModal(null)} style={[s.matchBtn, s.matchBtnSecondary]}>
-                <Text style={[s.matchBtnText, s.matchBtnSecondaryText]}>Plus tard</Text>
+                <Text style={[s.matchBtnText, s.matchBtnSecondaryText]}>{t('discover.later')}</Text>
               </Pressable>
               <Pressable
                 onPress={async () => {
@@ -194,12 +196,12 @@ export default function Discover() {
                     const chatId = await openDm(target.id);
                     router.push({ pathname: '/chat/[id]', params: { id: chatId } });
                   } catch (err: any) {
-                    Alert.alert('Erreur', err?.message ?? 'Impossible d\'ouvrir le chat.');
+                    Alert.alert(t('discover.error'), err?.message ?? t('discover.chatFail'));
                   }
                 }}
                 style={s.matchBtn}
               >
-                <Text style={s.matchBtnText}>Lui parler</Text>
+                <Text style={s.matchBtnText}>{t('discover.talk')}</Text>
               </Pressable>
             </View>
           </View>
@@ -210,10 +212,11 @@ export default function Discover() {
 }
 
 function Header({ onBack, onEdit, onMatches }: { onBack: () => void; onEdit: () => void; onMatches: () => void }) {
+  const { t } = useI18n();
   return (
     <View style={s.header}>
       <Pressable onPress={onBack} hitSlop={10}><Ionicons name="chevron-back" size={26} color={colors.dark} /></Pressable>
-      <Text style={s.headerTitle}>Découverte</Text>
+      <Text style={s.headerTitle}>{t('discover.title')}</Text>
       <View style={{ flexDirection: 'row', gap: spacing.md }}>
         <Pressable onPress={onMatches} hitSlop={10}><Ionicons name="heart-outline" size={24} color={colors.dark} /></Pressable>
         <Pressable onPress={onEdit} hitSlop={10}><Ionicons name="settings-outline" size={22} color={colors.dark} /></Pressable>
@@ -229,6 +232,7 @@ function ProfileEditor(props: {
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
+  const { t } = useI18n();
   const [interests, setInterests] = useState<string[]>([]);
   const [bio, setBio] = useState('');
   const [birthYear, setBirthYear] = useState('');
@@ -254,11 +258,11 @@ function ProfileEditor(props: {
   async function save() {
     const yr = birthYear.trim() ? parseInt(birthYear, 10) : null;
     if (yr !== null && (!Number.isFinite(yr) || yr < 1900 || yr > new Date().getFullYear() - 13)) {
-      Alert.alert('Année invalide', 'L\'année de naissance doit être réaliste (13 ans minimum).');
+      Alert.alert(t('discover.badYear'), t('discover.badYearBody'));
       return;
     }
     if (discoverable && interests.length === 0) {
-      Alert.alert('Profil incomplet', 'Choisis au moins 1 centre d\'intérêt pour apparaître dans la découverte.');
+      Alert.alert(t('discover.incomplete'), t('discover.incompleteBody'));
       return;
     }
     setSaving(true);
@@ -273,7 +277,7 @@ function ProfileEditor(props: {
       });
       await props.onSaved();
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Sauvegarde impossible.');
+      Alert.alert(t('discover.error'), err?.message ?? t('discover.saveFail'));
     } finally {
       setSaving(false);
     }
@@ -284,27 +288,27 @@ function ProfileEditor(props: {
       <SafeAreaView style={s.safe}>
         <View style={s.header}>
           <Pressable onPress={props.onClose} hitSlop={10}><Ionicons name="close" size={26} color={colors.dark} /></Pressable>
-          <Text style={s.headerTitle}>Mon profil</Text>
+          <Text style={s.headerTitle}>{t('discover.myProfile')}</Text>
           <Pressable onPress={save} disabled={saving} style={s.saveBtn}>
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.saveBtnText}>Enregistrer</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={s.saveBtnText}>{t('discover.save')}</Text>}
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }}>
           {/* Opt-in */}
           <View style={s.row}>
             <View style={{ flex: 1 }}>
-              <Text style={s.label}>Apparaître dans la découverte</Text>
-              <Text style={s.hint}>Ton profil sera visible par les autres utilisateurs.</Text>
+              <Text style={s.label}>{t('discover.visible')}</Text>
+              <Text style={s.hint}>{t('discover.visibleHint')}</Text>
             </View>
             <Switch value={discoverable} onValueChange={setDiscoverable} />
           </View>
 
           {/* Bio */}
-          <Text style={s.label}>Bio (facultative)</Text>
+          <Text style={s.label}>{t('discover.bio')}</Text>
           <TextInput
             value={bio}
             onChangeText={(v) => v.length <= 280 && setBio(v)}
-            placeholder="Parle un peu de toi…"
+            placeholder={t('discover.bioPh')}
             placeholderTextColor={colors.neutral[400]}
             multiline
             style={s.bio}
@@ -312,7 +316,7 @@ function ProfileEditor(props: {
           <Text style={s.counter}>{bio.length} / 280</Text>
 
           {/* Année de naissance */}
-          <Text style={s.label}>Année de naissance (facultative)</Text>
+          <Text style={s.label}>{t('discover.birthYear')}</Text>
           <TextInput
             value={birthYear}
             onChangeText={setBirthYear}
@@ -324,9 +328,9 @@ function ProfileEditor(props: {
           />
 
           {/* Genre */}
-          <Text style={s.label}>Je suis</Text>
+          <Text style={s.label}>{t('discover.iAm')}</Text>
           <View style={s.choiceRow}>
-            {([['m', 'Homme'], ['f', 'Femme'], ['x', 'Autre']] as const).map(([v, l]) => (
+            {([['m', t('discover.man')], ['f', t('discover.woman')], ['x', t('discover.other')]] as const).map(([v, l]) => (
               <Pressable key={v} onPress={() => setGender((g) => g === v ? null : v)} style={[s.choice, gender === v && s.choiceActive]}>
                 <Text style={[s.choiceText, gender === v && s.choiceTextActive]}>{l}</Text>
               </Pressable>
@@ -334,9 +338,9 @@ function ProfileEditor(props: {
           </View>
 
           {/* Looking for */}
-          <Text style={s.label}>Je cherche</Text>
+          <Text style={s.label}>{t('discover.lookingFor')}</Text>
           <View style={s.choiceRow}>
-            {([['m', 'Hommes'], ['f', 'Femmes'], ['any', 'Tout le monde']] as const).map(([v, l]) => (
+            {([['m', t('discover.men')], ['f', t('discover.women')], ['any', t('discover.everyone')]] as const).map(([v, l]) => (
               <Pressable key={v} onPress={() => setLookingFor((g) => g === v ? null : v)} style={[s.choice, lookingFor === v && s.choiceActive]}>
                 <Text style={[s.choiceText, lookingFor === v && s.choiceTextActive]}>{l}</Text>
               </Pressable>
@@ -344,7 +348,7 @@ function ProfileEditor(props: {
           </View>
 
           {/* Intérêts */}
-          <Text style={s.label}>Mes centres d'intérêt ({interests.length})</Text>
+          <Text style={s.label}>{t('discover.interests', { n: interests.length })}</Text>
           <View style={s.tags}>
             {INTEREST_SUGGESTIONS.map((t) => {
               const on = interests.includes(t);

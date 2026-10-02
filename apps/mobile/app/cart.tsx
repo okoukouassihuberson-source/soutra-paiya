@@ -10,6 +10,7 @@ import { typography, radius, spacing, formatXOF, type ColorPalette } from '@sout
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 
 /**
@@ -43,6 +44,7 @@ interface SubCart {
 }
 
 export default function CartScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const c = useColors();
@@ -80,7 +82,7 @@ export default function CartScreen() {
       p_qty: qty,
     });
     if (error) {
-      Alert.alert('Erreur', error.message || 'Impossible de modifier');
+      Alert.alert(t('cart.error'), error.message || t('cart.updateFail'));
       return;
     }
     load();
@@ -89,7 +91,7 @@ export default function CartScreen() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <ScreenHeader title="Mon panier" />
+        <ScreenHeader title={t('cart.title')} />
         <View style={s.center}><ActivityIndicator color={c.primary[500]} /></View>
       </SafeAreaView>
     );
@@ -97,7 +99,7 @@ export default function CartScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Mon panier" />
+      <ScreenHeader title={t('cart.title')} />
 
       <ScrollView
         contentContainerStyle={s.scrollContent}
@@ -106,16 +108,16 @@ export default function CartScreen() {
         {carts.length === 0 ? (
           <View style={s.empty}>
             <Ionicons name="bag-handle-outline" size={56} color={c.neutral[400]} />
-            <Text style={s.emptyTitle}>Ton panier est vide</Text>
+            <Text style={s.emptyTitle}>{t('cart.emptyTitle')}</Text>
             <Text style={s.emptyBody}>
-              Explore les boutiques et ajoute des produits pour passer commande.
+              {t('cart.emptyBody')}
             </Text>
             <Pressable
               onPress={() => router.push('/(tabs)/explore')}
               style={s.exploreBtn}
             >
               <Ionicons name="compass" size={18} color="#fff" />
-              <Text style={s.exploreBtnText}>Explorer</Text>
+              <Text style={s.exploreBtnText}>{t('cart.explore')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -148,6 +150,7 @@ function SubCartCard({
   onOrdered: () => void;
   router: ReturnType<typeof useRouter>;
 }) {
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [method, setMethod] = useState<'pickup' | 'delivery'>('pickup');
   const [address, setAddress] = useState('');
@@ -160,11 +163,11 @@ function SubCartCard({
 
   const handleOrder = useCallback(async () => {
     if (hasUnavailable) {
-      Alert.alert('Produits indisponibles', 'Retire ou modifie les articles indisponibles avant de commander.');
+      Alert.alert(t('cart.unavailableTitle'), t('cart.unavailableBody'));
       return;
     }
     if (method === 'delivery' && !address.trim()) {
-      Alert.alert('Adresse requise', 'Indique une adresse de livraison.');
+      Alert.alert(t('cart.addressTitle'), t('cart.addressBody'));
       return;
     }
     setOrdering(true);
@@ -179,15 +182,15 @@ function SubCartCard({
     });
     setOrdering(false);
     if (error) {
-      Alert.alert('Erreur', error.message || 'Impossible de passer commande');
+      Alert.alert(t('cart.error'), error.message || t('cart.orderFail'));
       return;
     }
     const orderNum = (data as any)?.order_number || '';
     Alert.alert(
-      'Commande confirmée 🎉',
-      `Numéro : ${orderNum}\nTu peux suivre l'état dans "Mes commandes".`,
+      t('cart.confirmedTitle'),
+      t('cart.confirmedBody', { num: orderNum }),
       [
-        { text: 'Voir mes commandes', onPress: () => router.push('/orders' as any) },
+        { text: t('cart.seeOrders'), onPress: () => router.push('/orders' as any) },
         { text: 'OK', onPress: () => onOrdered() },
       ],
     );
@@ -227,7 +230,7 @@ function SubCartCard({
               )}
               <Text style={s.itemPrice}>{formatXOF(it.unit_price_xof)} × {it.qty}</Text>
               {!it.available && (
-                <Text style={s.itemUnavailableText}>⚠ Indisponible</Text>
+                <Text style={s.itemUnavailableText}>{t('cart.unavailable')}</Text>
               )}
             </View>
             <View style={s.itemActions}>
@@ -251,36 +254,36 @@ function SubCartCard({
 
       {/* Subtotal */}
       <View style={s.subtotalRow}>
-        <Text style={s.subtotalLabel}>Sous-total</Text>
+        <Text style={s.subtotalLabel}>{t('cart.subtotal')}</Text>
         <Text style={s.subtotalValue}>{formatXOF(subcart.subtotal_xof)}</Text>
       </View>
 
       {/* Delivery method */}
-      <Text style={s.sectionLabel}>Mode de récupération</Text>
+      <Text style={s.sectionLabel}>{t('cart.method')}</Text>
       <View style={s.methodRow}>
         <Pressable
           onPress={() => setMethod('pickup')}
           style={[s.methodBtn, method === 'pickup' && s.methodBtnActive]}
         >
           <Ionicons name="storefront" size={16} color={method === 'pickup' ? '#fff' : c.dark} />
-          <Text style={[s.methodText, method === 'pickup' && s.methodTextActive]}>Retrait</Text>
+          <Text style={[s.methodText, method === 'pickup' && s.methodTextActive]}>{t('cart.pickup')}</Text>
         </Pressable>
         <Pressable
           onPress={() => setMethod('delivery')}
           style={[s.methodBtn, method === 'delivery' && s.methodBtnActive]}
         >
           <Ionicons name="bicycle" size={16} color={method === 'delivery' ? '#fff' : c.dark} />
-          <Text style={[s.methodText, method === 'delivery' && s.methodTextActive]}>Livraison</Text>
+          <Text style={[s.methodText, method === 'delivery' && s.methodTextActive]}>{t('cart.delivery')}</Text>
         </Pressable>
       </View>
 
       {method === 'delivery' && (
         <View style={s.field}>
-          <Text style={s.fieldLabel}>Adresse de livraison *</Text>
+          <Text style={s.fieldLabel}>{t('cart.address')}</Text>
           <TextInput
             value={address}
             onChangeText={setAddress}
-            placeholder="Rue, quartier, commune"
+            placeholder={t('cart.addressPh')}
             placeholderTextColor={c.neutral[400]}
             style={s.input}
             multiline
@@ -289,18 +292,18 @@ function SubCartCard({
       )}
 
       <View style={s.field}>
-        <Text style={s.fieldLabel}>Nom à contacter</Text>
+        <Text style={s.fieldLabel}>{t('cart.contactName')}</Text>
         <TextInput
           value={contactName}
           onChangeText={setContactName}
-          placeholder="Optionnel"
+          placeholder={t('cart.optional')}
           placeholderTextColor={c.neutral[400]}
           style={s.input}
         />
       </View>
 
       <View style={s.field}>
-        <Text style={s.fieldLabel}>Téléphone</Text>
+        <Text style={s.fieldLabel}>{t('cart.phone')}</Text>
         <TextInput
           value={contactPhone}
           onChangeText={setContactPhone}
@@ -312,11 +315,11 @@ function SubCartCard({
       </View>
 
       <View style={s.field}>
-        <Text style={s.fieldLabel}>Notes (optionnel)</Text>
+        <Text style={s.fieldLabel}>{t('cart.notes')}</Text>
         <TextInput
           value={notes}
           onChangeText={setNotes}
-          placeholder="Instructions spéciales"
+          placeholder={t('cart.notesPh')}
           placeholderTextColor={c.neutral[400]}
           style={s.input}
           multiline
@@ -334,12 +337,12 @@ function SubCartCard({
       >
         <Ionicons name="checkmark-circle" size={20} color="#fff" />
         <Text style={s.orderBtnText}>
-          {ordering ? 'Commande en cours…' : `Commander · ${formatXOF(subcart.subtotal_xof)}`}
+          {ordering ? t('cart.ordering') : t('cart.order', { amount: formatXOF(subcart.subtotal_xof) })}
         </Text>
       </Pressable>
 
       <Text style={s.paymentNote}>
-        Paiement à la réception · L&apos;intégration paiement en ligne arrive bientôt
+        {t('cart.footer')}
       </Text>
     </View>
   );
