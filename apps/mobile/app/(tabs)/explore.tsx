@@ -295,6 +295,22 @@ export default function Explore() {
           )}
         />
 
+        {/* V2 tourisme : accès rapide voyages, activités, promotions et mes réservations. */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+          {([
+            { label: 'Voyages', icon: 'bus-outline', href: '/voyages' },
+            { label: 'Activités', icon: 'compass-outline', href: '/activites' },
+            { label: 'Promotions', icon: 'pricetag-outline', href: '/promotions' },
+            { label: 'Mes voyages', icon: 'ticket-outline', href: '/tourism-bookings' },
+          ] as const).map((x) => (
+            <Pressable key={x.href} onPress={() => router.push(x.href)} accessibilityRole="button" accessibilityLabel={x.label}
+                       style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99, backgroundColor: palette.primary[500] }}>
+              <Ionicons name={x.icon} size={16} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 13 }}>{x.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
         <View style={s.searchBox}>
           <Ionicons name="search" size={18} color={palette.neutral[500]} />
           <TextInput

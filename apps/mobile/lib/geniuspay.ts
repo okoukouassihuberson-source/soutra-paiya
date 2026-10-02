@@ -127,3 +127,17 @@ export async function requestWithdrawal(
   );
   return { status: result?.status ?? 'pending', amountXof: params.amountXof };
 }
+
+// ============================================================================
+// V2 tourisme — voyages de groupe et activités (fonctions Edge dédiées).
+// Le serveur recalcule le montant (réduction comprise) : le mobile n'envoie que l'identifiant.
+// ============================================================================
+export type TripPayKind = 'deposit' | 'balance' | 'full';
+
+export function payForTrip(bookingId: string, kind: TripPayKind): Promise<PaymentResult> {
+  return payViaDedicatedFunction('geniuspay-pay-trip', { booking_id: bookingId, kind });
+}
+
+export function payForActivity(bookingId: string): Promise<PaymentResult> {
+  return payViaDedicatedFunction('geniuspay-pay-activity', { booking_id: bookingId });
+}

@@ -122,9 +122,16 @@
 5. **Tests** : 6 tests Deno sur les outils (filtres, assainissement, items, bornes) ; test de bout en bout de la fonction réelle contre de faux Supabase et Anthropic (401 sans/avec mauvais jeton, messages invalides, appel d'outil puis réponse avec fiches, panne moteur remboursée, boucle d'outils bornée à 5 appels dont le dernier sans outil, langue du prompt, plafond atteint → 429) ; limite d'usage testée sur PostgreSQL 16 ; `tsc` et tests i18n verts. **Non testé** : appel réel à l'API Anthropic, qualité des réponses, interface dans un navigateur.
 6. **Limites** : pas de mémoire entre sessions ; pas d'action (réserver, payer) ; réponses non vérifiées automatiquement (mention affichée) ; pas de modération des questions au-delà du refus hors-sujet du prompt.
 
+## 3 terdecies. Livré en phase 2 (application mobile)
+1. **Écrans Expo** (aucune modification des écrans existants, sauf une rangée de raccourcis ajoutée en haut de l'onglet Explorer) : `/voyages` (nationaux / internationaux), `/voyage/[slug]` (programme, formules, offres, réservation), `/activites`, `/activite/[slug]` (créneaux), `/promotions`, `/tourism-bookings` (mes voyages et activités : paiement, billet QR, annulation).
+2. **Même logique que le web** : `lib/tourism.ts` ne lit que les données publiées et n'écrit que par les RPC serveur (`create_trip_booking` / `create_activity_booking` avec `p_promo_code`, `cancel_*`) ; aperçu du prix via `preview_booking_price` (informatif, le serveur recalcule) ; paiement par `geniuspay-pay-trip` / `geniuspay-pay-activity` (page GeniusPay dans le navigateur intégré, puis `geniuspay-verify`) ; QR générés localement avec `react-native-qrcode-svg` (préfixes `soutra:trip:` / `soutra:act:`, lus par l'écran de scan organisateur).
+3. **Statuts** alignés sur la base : voyage « confirmé » = acompte payé (solde à régler), « payé » = totalité.
+4. **Vérifié** : `tsc` (mobile) sans erreur, web inchangé. **Non vérifié** : aucun lancement sur appareil ou émulateur, aucun test d'interface, aucun paiement réel — à recetter sur un build de développement avant publication.
+5. **Limites** : mobile en français uniquement (pas d'infrastructure i18n dans l'app) ; pas d'écran destinations ni de recherche / filtres avancés ; pas d'espace organisateur mobile (administration et partenaires restent sur le web) ; pas d'avis sur les activités depuis le mobile ; notifications push des rappels déjà gérées par `notify-dispatch` mais le routage vers ces écrans n'est pas branché.
+
 ## 4. Feuille de route
 - **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; notifications aux organisateurs (soumission, nouvelle réservation).
-- **Phase 3** : app mobile (onglets Voyages/Destinations).
+- **Reste** : recette sur appareil de l'application mobile ; écran destinations, avis et filtres sur mobile ; i18n mobile ; espace organisateur mobile ; relecture humaine des traductions anglaises ; limitation de débit des codes promo.
 
 ## 5. Déploiement / précautions
 - Déployer : `supabase db push` puis `supabase functions deploy geniuspay-pay-trip`. Appliquer 0082 puis 0083 (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.
