@@ -48,8 +48,13 @@
 4. **Web** : `/mes-voyages`, `/mes-voyages/[id]` (billet QR, paiements, reçus, acompte/solde, annulation), `/scan-voyage`.
 5. **Tests** : 0082+0083 exécutées sur PostgreSQL 16 (schéma Supabase simulé) : surbooking, falsification des compteurs, RLS, acompte → solde → payé, idempotence, double scan, expiration, annulation. Le webhook/GeniusPay réel n'a pas été testé (pas d'accès aux clés).
 
+## 3 ter. Livré en phase 2 (administration)
+1. **Migration `0084_admin_tourism.sql`** : `admin_moderate_trip` (publier / clore / annuler avec transitions contrôlées, commission, mise en avant À LA UNE / POPULAIRE / NOUVEAU / PROMOTION / COUP DE CŒUR / RECOMMANDÉ, trace dans `audit_events`) et `admin_tourism_stats` (voyages, réservations nationales/internationales, places vendues, CA encaissé, reste à encaisser, commissions estimées, encaissements par mois, top destinations). Réservées aux admins.
+2. **Admin** (`/admin?tab=trips` et `?tab=destinations`) : tableau de bord tourisme, création de voyages (programme et formules en saisie rapide), modération, création/mise à la une/masquage de destinations. Images par URL (pas encore d'upload).
+3. Testé sur PostgreSQL 16 (droits, transitions, valeurs invalides, statistiques, audit).
+
 ## 4. Feuille de route
-- **Reste de la phase 2 (non fait)** : filtres avancés + carte (Leaflet) sur `/explorer` ; activités (table `activities` + réservation) ; écran mobile des voyages ; admin CRUD destinations/voyages + modération + stats ; espace organisateur (création de voyages).
+- **Reste de la phase 2 (non fait)** : filtres avancés + carte (Leaflet) sur `/explorer` ; activités (table `activities` + réservation) ; écran mobile des voyages ; espace organisateur (création de ses voyages en brouillon : la RLS est prête, l'écran manque ; éditer/supprimer un voyage existant côté admin).
 - **Phase 3** : i18n FR/EN ; notifications voyages (rappel, solde à payer) + email ; promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions

@@ -9,6 +9,8 @@ import { formatXOF } from '@soutra/shared';
 import { ReportsTab } from './_components/ReportsTab';
 import { ClaimsTab } from './_components/ClaimsTab';
 import { SubmissionsTab } from './_components/SubmissionsTab';
+import { TripsTab } from './_components/TripsTab';
+import { DestinationsTab } from './_components/DestinationsTab';
 import { MonetizationTab } from './_components/MonetizationTab';
 import { ModerationTab } from './_components/ModerationTab';
 import { SubscriptionsTab } from './_components/SubscriptionsTab';
@@ -35,13 +37,15 @@ const VenueCategoryBar      = dynamic(() => import('./_components/AdminCharts').
 const RevenueByProviderBar  = dynamic(() => import('./_components/AdminCharts').then(m => m.RevenueByProviderBar),  { ssr: false, loading: ChartLoader });
 const UsersByCityBar        = dynamic(() => import('./_components/AdminCharts').then(m => m.UsersByCityBar),        { ssr: false, loading: ChartLoader });
 
-type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'moderation' | 'subscriptions' | 'subscribers' | 'loyalty' | 'wallets' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings';
+type Tab = 'overview' | 'analytics' | 'users' | 'venues' | 'moderation' | 'subscriptions' | 'subscribers' | 'loyalty' | 'wallets' | 'reports' | 'claims' | 'submissions' | 'monetization' | 'transactions' | 'reservations' | 'marketing' | 'security' | 'settings' | 'trips' | 'destinations';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Vue d\'ensemble', icon: <IcoGrid /> },
   { id: 'analytics', label: 'Analytics', icon: <IcoChart /> },
   { id: 'users', label: 'Utilisateurs', icon: <IcoUsers /> },
   { id: 'venues', label: 'Établissements', icon: <IcoBuilding /> },
+  { id: 'trips', label: 'Voyages', icon: <IcoCalendar /> },
+  { id: 'destinations', label: 'Destinations', icon: <IcoBuilding /> },
   { id: 'moderation', label: 'Modération Pro', icon: <IcoShield /> },
   { id: 'subscriptions', label: 'Abonnements', icon: <IcoCurrency /> },
   { id: 'subscribers', label: 'Abonnés', icon: <IcoUsers /> },
@@ -132,7 +136,7 @@ function AdminDashboard() {
   // bouton retour navigateur, deep-linking).
   const tabParam = searchParams?.get('tab');
   const tab: Tab = (
-    ['overview', 'analytics', 'users', 'venues', 'moderation', 'subscriptions', 'subscribers', 'loyalty', 'wallets', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings'] as const
+    ['overview', 'analytics', 'users', 'venues', 'moderation', 'subscriptions', 'subscribers', 'loyalty', 'wallets', 'reports', 'claims', 'submissions', 'monetization', 'transactions', 'reservations', 'marketing', 'security', 'settings', 'trips', 'destinations'] as const
   ).includes(tabParam as Tab) ? (tabParam as Tab) : 'overview';
   const setTab = useCallback((next: Tab) => {
     router.replace(`/admin?tab=${next}`, { scroll: false });
@@ -782,6 +786,8 @@ function AdminDashboard() {
 
           {/* ═══════════ REPORTS (signalements) ═══════════ */}
           {tab === 'reports' && <ReportsTab />}
+          {tab === 'trips' && !isModeratorOnly && <TripsTab />}
+          {tab === 'destinations' && !isModeratorOnly && <DestinationsTab />}
           {tab === 'claims' && <ClaimsTab />}
           {tab === 'submissions' && <SubmissionsTab />}
           {tab === 'monetization' && <MonetizationTab />}
