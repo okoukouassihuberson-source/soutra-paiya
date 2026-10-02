@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n, type TKey } from '@/lib/i18n';
 import {
   submitVenueReport,
   REPORT_KIND_LABELS,
@@ -45,6 +46,7 @@ const KINDS: ReportKind[] = ['closed', 'moved', 'duplicate', 'wrong_info', 'wron
  */
 export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [selected, setSelected] = useState<ReportKind | null>(null);
   const [details, setDetails] = useState('');
@@ -78,13 +80,13 @@ export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
       });
       if (!res.ok && res.reason === 'ALREADY_REPORTED') {
         Alert.alert(
-          'Déjà signalé',
-          `Tu as déjà signalé ${venueName} pour ce motif. L'équipe traite ton signalement.`,
+          t('report.already'),
+          t('report.alreadyBody', { name: venueName }),
         );
       } else {
         Alert.alert(
-          'Signalement envoyé ✓',
-          'Merci ! L\'équipe Soutra-Playce va vérifier l\'info et mettre à jour la fiche si besoin.',
+          t('report.sent'),
+          t('report.sentBody'),
         );
       }
       reset();
@@ -93,13 +95,13 @@ export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
       const code = err?.message ?? '';
       const msg =
         code === 'DUPLICATE_TARGET_REQUIRED'
-          ? "Indique l'identifiant du lieu original pour un signalement de doublon."
+          ? t('report.errDup')
           : code === 'SELF_DUPLICATE'
-            ? "Le lieu original ne peut pas être identique au lieu signalé."
+            ? t('report.errSelf')
             : code === 'NOT_AUTHENTICATED'
-              ? 'Connecte-toi pour signaler un problème.'
-              : code || "Impossible d'envoyer le signalement.";
-      Alert.alert('Erreur', msg);
+              ? t('report.errAuth')
+              : code || t('report.errSend');
+      Alert.alert(t('report.error'), msg);
       setSubmitting(false);
     }
   };
@@ -117,7 +119,7 @@ export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
 
           <View style={s.headerRow}>
             <Ionicons name="flag" size={20} color={c.danger} />
-            <Text style={s.title}>Signaler un problème</Text>
+            <Text style={s.title}>{t('report.title')}</Text>
             <Pressable hitSlop={10} onPress={close} style={s.closeBtn} disabled={submitting}>
               <Ionicons name="close" size={20} color={c.neutral[600]} />
             </Pressable>
@@ -128,7 +130,7 @@ export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
           </Text>
 
           <ScrollView contentContainerStyle={{ paddingBottom: spacing.lg }} keyboardShouldPersistTaps="handled">
-            <Text style={s.section}>Motif</Text>
+            <Text style={s.section}>{t('report.reason')}</Text>
             {KINDS.map((k) => {
               const meta = REPORT_KIND_LABELS[k];
               const active = selected === k;
@@ -140,8 +142,8 @@ export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
                 >
                   <Text style={s.kindEmoji}>{meta.icon}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.kindLabel, active && { color: c.primary[700] }]}>{meta.label}</Text>
-                    <Text style={s.kindDesc} numberOfLines={2}>{meta.description}</Text>
+                    <Text style={[s.kindLabel, active && { color: c.primary[700] }]}>{t(`report.kind.${k}` as TKey)}</Text>
+                    <Text style={s.kindDesc} numberOfLines={2}>{t(`report.kind.${k}D` as TKey)}</Text>
                   </View>
                   <View style={[s.radio, active && { borderColor: c.primary[500], backgroundColor: c.primary[500] }]}>
                     {active && <Ionicons name="checkmark" size={14} color="#fff" />}
@@ -152,12 +154,12 @@ export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
 
             {selected === 'duplicate' && (
               <View style={{ marginTop: spacing.md }}>
-                <Text style={s.section}>ID du lieu original (optionnel)</Text>
+                <Text style={s.section}>{t('report.original')}</Text>
                 <TextInput
                   style={s.input}
                   value={duplicateOf}
                   onChangeText={setDuplicateOf}
-                  placeholder="Colle ici l'UUID si tu le connais"
+                  placeholder={t('report.originalPh')}
                   placeholderTextColor={c.neutral[400]}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -166,12 +168,12 @@ export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
               </View>
             )}
 
-            <Text style={[s.section, { marginTop: spacing.md }]}>Détails (optionnel)</Text>
+            <Text style={[s.section, { marginTop: spacing.md }]}>{t('report.details')}</Text>
             <TextInput
               style={[s.input, s.inputMultiline]}
               value={details}
               onChangeText={(v) => setDetails(v.slice(0, 1000))}
-              placeholder="Précise le problème pour aider l'équipe…"
+              placeholder={t('report.detailsPh')}
               placeholderTextColor={c.neutral[400]}
               multiline
               numberOfLines={4}
@@ -194,7 +196,7 @@ export function ReportSheet({ visible, onClose, venueId, venueName }: Props) {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={[s.submitText, { color: canSubmit ? '#fff' : c.neutral[500] }]}>
-                Envoyer le signalement
+                {t('report.submit')}
               </Text>
             )}
           </Pressable>

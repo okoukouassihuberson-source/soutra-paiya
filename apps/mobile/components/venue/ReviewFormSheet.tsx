@@ -27,6 +27,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { decode } from 'base64-arraybuffer';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { StarRatingInput } from './StarRatingInput';
@@ -51,6 +52,7 @@ const MAX_PHOTOS = 5;
 
 export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingReview, onSubmitted }: Props) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const { user } = useAuth();
 
@@ -107,7 +109,7 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
     if (!user?.id) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission requise', "Autorise l'accès à tes photos pour joindre une image.");
+      Alert.alert(t('review.permTitle'), t('review.permBody'));
       return;
     }
     const r = await ImagePicker.launchImageLibraryAsync({
@@ -119,11 +121,11 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
     if (r.canceled || !r.assets[0]) return;
     const asset = r.assets[0];
     if (asset.fileSize && asset.fileSize > 8 * 1024 * 1024) {
-      Alert.alert('Image trop lourde', 'Choisis un fichier de moins de 8 Mo.');
+      Alert.alert(t('review.bigTitle'), t('review.bigBody'));
       return;
     }
     if (!asset.base64) {
-      Alert.alert('Erreur', 'Impossible de lire le fichier.');
+      Alert.alert(t('review.error'), t('review.readFail'));
       return;
     }
     try {
@@ -138,7 +140,7 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
       const url = supabase.storage.from('social-media').getPublicUrl(path).data.publicUrl;
       setPhotos((prev) => prev.map((p, i) => (i === slotIndex ? url : p)));
     } catch (err: any) {
-      Alert.alert('Erreur upload', err?.message ?? 'Réessaie.');
+      Alert.alert(t('review.uploadFail'), err?.message ?? t('review.retry'));
     } finally {
       setUploadingSlot(null);
     }
@@ -153,16 +155,16 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
 
   const errorMessage = (code: string) => {
     switch (code) {
-      case 'NOT_AUTHENTICATED': return 'Connecte-toi pour laisser un avis.';
-      case 'INVALID_RATING': return 'Sélectionne une note entre 1 et 5 étoiles.';
-      case 'TOO_MANY_PHOTOS': return `Maximum ${MAX_PHOTOS} photos.`;
+      case 'NOT_AUTHENTICATED': return t('review.errAuth');
+      case 'INVALID_RATING': return t('review.errRating');
+      case 'TOO_MANY_PHOTOS': return t('review.errPhotos', { n: MAX_PHOTOS });
       case 'INELIGIBLE_RESERVATION':
       case 'INELIGIBLE_BOOKING':
       case 'INELIGIBLE_ORDER':
-        return "Cette expérience n'est plus éligible à un avis.";
-      case 'ALREADY_REVIEWED': return 'Tu as déjà noté cette expérience.';
-      case 'NOT_FOUND_OR_FORBIDDEN': return 'Avis introuvable ou action non autorisée.';
-      default: return code || "Impossible d'envoyer l'avis.";
+        return t('review.errIneligible');
+      case 'ALREADY_REVIEWED': return t('review.errAlready');
+      case 'NOT_FOUND_OR_FORBIDDEN': return t('review.errForbidden');
+      default: return code || t('review.errSend');
     }
   };
 
@@ -172,7 +174,7 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
       const finalPhotos = photos.filter((p): p is string => !!p);
       if (isEdit && editingReview) {
         await updateReview(editingReview.id, { rating, body: body.trim() || undefined, photos: finalPhotos });
-        Alert.alert('Avis modifié ✓', 'Merci, ton avis a été mis à jour.');
+        Alert.alert(t('review.editedTitle'), t('review.editedBody'));
       } else if (selectedVisit) {
         await submitReview({
           venueId,
@@ -182,13 +184,13 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
           sourceType: selectedVisit.sourceType,
           sourceId: selectedVisit.sourceId,
         });
-        Alert.alert('Avis publié ✓', 'Merci pour ton retour !');
+        Alert.alert(t('review.publishedTitle'), t('review.publishedBody'));
       }
       onSubmitted?.();
       reset();
       onClose();
     } catch (err: any) {
-      Alert.alert('Erreur', errorMessage(err?.message ?? ''));
+      Alert.alert(t('review.error'), errorMessage(err?.message ?? ''));
       setSubmitting(false);
     }
   };
@@ -207,7 +209,7 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
 
           <View style={s.headerRow}>
             <Ionicons name="star" size={20} color={c.warning} />
-            <Text style={s.title}>{isEdit ? 'Modifier ton avis' : 'Laisser un avis'}</Text>
+            <Text style={s.title}>{isEdit ? t('review.editTitle') : t('review.newTitle')}</Text>
             <Pressable hitSlop={10} onPress={close} style={s.closeBtn} disabled={submitting}>
               <Ionicons name="close" size={20} color={c.neutral[600]} />
             </Pressable>
@@ -225,14 +227,14 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
             <View style={s.center}>
               <Ionicons name="information-circle-outline" size={36} color={c.neutral[400]} />
               <Text style={s.emptyText}>
-                Tu dois avoir vécu une expérience terminée dans cet établissement (réservation, séjour ou commande) pour laisser un avis.
+                {t('review.noExperience')}
               </Text>
             </View>
           )}
 
           {showVisitPicker && (
             <ScrollView contentContainerStyle={{ paddingBottom: spacing.lg }}>
-              <Text style={s.section}>Quelle expérience veux-tu noter ?</Text>
+              <Text style={s.section}>{t('review.which')}</Text>
               {visits.map((v) => (
                 <Pressable
                   key={`${v.sourceType}-${v.sourceId}`}
@@ -253,17 +255,17 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
                   <Text style={s.visitContext}>{selectedVisit.label}</Text>
                 )}
 
-                <Text style={s.section}>Ta note</Text>
+                <Text style={s.section}>{t('review.yourRating')}</Text>
                 <View style={{ marginBottom: spacing.md }}>
                   <StarRatingInput value={rating} onChange={setRating} size={36} disabled={submitting} />
                 </View>
 
-                <Text style={s.section}>Ton commentaire (optionnel)</Text>
+                <Text style={s.section}>{t('review.comment')}</Text>
                 <TextInput
                   style={[s.input, s.inputMultiline]}
                   value={body}
                   onChangeText={(v) => setBody(v.slice(0, 1000))}
-                  placeholder="Partage ton expérience…"
+                  placeholder={t('review.commentPh')}
                   placeholderTextColor={c.neutral[400]}
                   multiline
                   textAlignVertical="top"
@@ -271,7 +273,7 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
                 />
                 <Text style={s.counter}>{body.length} / 1000</Text>
 
-                <Text style={[s.section, { marginTop: spacing.md }]}>Photos (optionnel)</Text>
+                <Text style={[s.section, { marginTop: spacing.md }]}>{t('review.photos')}</Text>
                 <View style={s.photoGrid}>
                   {photos.map((url, i) => {
                     const isUp = uploadingSlot === i;
@@ -313,7 +315,7 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={[s.submitText, { color: canSubmit ? '#fff' : c.neutral[500] }]}>
-                    {isEdit ? 'Enregistrer' : 'Publier mon avis'}
+                    {isEdit ? t('review.save') : t('review.publish')}
                   </Text>
                 )}
               </Pressable>

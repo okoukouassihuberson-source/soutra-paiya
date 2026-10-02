@@ -3,6 +3,7 @@ import { View, Text, Pressable, Image, ScrollView, StyleSheet, Alert } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, formatRelativeDate, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { StarRatingInput } from './StarRatingInput';
 import { Lightbox, type MediaItem } from './Lightbox';
 import type { Review } from '@/lib/reviews';
@@ -17,6 +18,7 @@ interface Props {
 
 export function ReviewCard({ review, onToggleHelpful, onEdit, onDelete, onReport }: Props) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -26,9 +28,9 @@ export function ReviewCard({ review, onToggleHelpful, onEdit, onDelete, onReport
 
   const confirmDelete = () => {
     setMenuOpen(false);
-    Alert.alert('Supprimer ton avis ?', 'Cette action est définitive.', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Supprimer', style: 'destructive', onPress: () => onDelete?.(review.id) },
+    Alert.alert(t('reviewCard.deleteTitle'), t('reviewCard.deleteBody'), [
+      { text: t('reviewCard.cancel'), style: 'cancel' },
+      { text: t('reviewCard.delete'), style: 'destructive', onPress: () => onDelete?.(review.id) },
     ]);
   };
 
@@ -57,17 +59,17 @@ export function ReviewCard({ review, onToggleHelpful, onEdit, onDelete, onReport
             <>
               <Pressable style={s.menuItem} onPress={() => { setMenuOpen(false); onEdit?.(review); }}>
                 <Ionicons name="create-outline" size={16} color={c.dark} />
-                <Text style={s.menuItemText}>Modifier</Text>
+                <Text style={s.menuItemText}>{t('reviewCard.edit')}</Text>
               </Pressable>
               <Pressable style={s.menuItem} onPress={confirmDelete}>
                 <Ionicons name="trash-outline" size={16} color={c.danger} />
-                <Text style={[s.menuItemText, { color: c.danger }]}>Supprimer</Text>
+                <Text style={[s.menuItemText, { color: c.danger }]}>{t('reviewCard.delete')}</Text>
               </Pressable>
             </>
           ) : (
             <Pressable style={s.menuItem} onPress={() => { setMenuOpen(false); onReport?.(review.id); }}>
               <Ionicons name="flag-outline" size={16} color={c.neutral[600]} />
-              <Text style={s.menuItemText}>Signaler</Text>
+              <Text style={s.menuItemText}>{t('reviewCard.report')}</Text>
             </Pressable>
           )}
         </View>

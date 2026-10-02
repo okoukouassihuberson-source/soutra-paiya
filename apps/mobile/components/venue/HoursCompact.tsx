@@ -3,11 +3,12 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { HoursSheet } from './HoursSheet';
 import {
   computeOpenStatus,
   formatTimeFR,
-  DAY_LABELS,
+  dayLabel,
   type DayKey,
 } from './hoursHelpers';
 
@@ -29,18 +30,19 @@ interface Props {
  */
 export function HoursCompact({ hours }: Props) {
   const c = useColors();
+  const { t, locale } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [open, setOpen] = useState(false);
 
-  const status = useMemo(() => computeOpenStatus(hours), [hours]);
+  const status = useMemo(() => computeOpenStatus(hours), [hours, locale]);
 
-  const todayLabel = DAY_LABELS[status.todayKey];
+  const todayLabel = dayLabel(status.todayKey);
   const todayLine = status.todayOpen && status.todayClose
-    ? `Aujourd'hui · ${formatTimeFR(status.todayOpen)} – ${formatTimeFR(status.todayClose)}`
-    : `${todayLabel} · fermé`;
+    ? t('hours.todayLine', { open: formatTimeFR(status.todayOpen), close: formatTimeFR(status.todayClose) })
+    : t('hours.closedLine', { day: todayLabel });
 
   const statusBg = status.isClosingSoon ? '#F59E0B' : status.isOpen ? '#16A34A' : '#DC2626';
-  const statusLabel = status.isOpen ? 'Ouvert' : 'Fermé';
+  const statusLabel = status.isOpen ? t('hours.open') : t('hours.closed');
 
   return (
     <>
@@ -48,7 +50,7 @@ export function HoursCompact({ hours }: Props) {
         onPress={() => setOpen(true)}
         style={({ pressed }) => [s.card, pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}
         accessibilityRole="button"
-        accessibilityLabel={`Horaires : ${statusLabel}, ${status.hint}`}
+        accessibilityLabel={t('hours.aria', { status: statusLabel, hint: status.hint })}
       >
         <View style={s.header}>
           <View style={[s.statusDot, { backgroundColor: statusBg }]} />
@@ -60,7 +62,7 @@ export function HoursCompact({ hours }: Props) {
 
         <View style={s.footer}>
           <Ionicons name="time-outline" size={16} color={c.neutral[500]} />
-          <Text style={s.seeAll}>Voir tous les horaires</Text>
+          <Text style={s.seeAll}>{t('hours.seeAll')}</Text>
           <Ionicons name="chevron-forward" size={16} color={c.neutral[400]} style={{ marginLeft: 'auto' }} />
         </View>
       </Pressable>

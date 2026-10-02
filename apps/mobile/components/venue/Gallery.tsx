@@ -3,6 +3,7 @@ import { View, Text, Pressable, Image, StyleSheet, Dimensions } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { Lightbox, type MediaItem } from './Lightbox';
 import { VideoPreview } from './VideoPreview';
 
@@ -41,6 +42,7 @@ export function isVideoUrl(url: string | null | undefined): boolean {
 
 export function Gallery({ cover, gallery, videos }: Props) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
 
   // Construit la liste finale typée :
@@ -83,7 +85,7 @@ export function Gallery({ cover, gallery, videos }: Props) {
           onPress={() => setLightboxIndex(0)}
           style={({ pressed }) => [s.heroBox, pressed && { opacity: 0.92 }]}
           accessibilityRole="imagebutton"
-          accessibilityLabel="Voir les médias en plein écran"
+          accessibilityLabel={t('gallery.fullscreen')}
         >
           {hero.kind === 'image' ? (
             <Image source={{ uri: hero.url }} style={s.heroImg} />
@@ -129,7 +131,7 @@ export function Gallery({ cover, gallery, videos }: Props) {
                   {showRemaining && (
                     <View style={s.thumbOverlay}>
                       <Text style={s.thumbOverlayText}>+{remaining}</Text>
-                      <Text style={s.thumbOverlaySub}>médias</Text>
+                      <Text style={s.thumbOverlaySub}>{t('gallery.media')}</Text>
                     </View>
                   )}
                 </Pressable>

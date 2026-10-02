@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n, type TKey } from '@/lib/i18n';
 import {
   submitReviewReport,
   REVIEW_REPORT_KIND_LABELS,
@@ -32,6 +33,7 @@ const KINDS: ReviewReportKind[] = ['spam', 'offensive', 'fake', 'irrelevant', 'o
 /** Bottom sheet "Signaler un avis" — calque ReportSheet.tsx (venues). */
 export function ReviewReportSheet({ visible, onClose, reviewId }: Props) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const [selected, setSelected] = useState<ReviewReportKind | null>(null);
   const [details, setDetails] = useState('');
@@ -57,16 +59,16 @@ export function ReviewReportSheet({ visible, onClose, reviewId }: Props) {
       setSubmitting(true);
       const res = await submitReviewReport({ reviewId, kind: selected, details: details.trim() || undefined });
       if (!res.ok && res.reason === 'ALREADY_REPORTED') {
-        Alert.alert('Déjà signalé', "Tu as déjà signalé cet avis. L'équipe traite ton signalement.");
+        Alert.alert(t('reviewReport.already'), t('reviewReport.alreadyBody'));
       } else {
-        Alert.alert('Signalement envoyé ✓', "Merci ! L'équipe Soutra-Playce va examiner cet avis.");
+        Alert.alert(t('reviewReport.sent'), t('reviewReport.sentBody'));
       }
       reset();
       onClose();
     } catch (err: any) {
       const code = err?.message ?? '';
-      const msg = code === 'NOT_AUTHENTICATED' ? 'Connecte-toi pour signaler un avis.' : code || "Impossible d'envoyer le signalement.";
-      Alert.alert('Erreur', msg);
+      const msg = code === 'NOT_AUTHENTICATED' ? t('reviewReport.errAuth') : code || t('reviewReport.errSend');
+      Alert.alert(t('reviewReport.error'), msg);
       setSubmitting(false);
     }
   };
@@ -74,21 +76,21 @@ export function ReviewReportSheet({ visible, onClose, reviewId }: Props) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={close}>
       <KeyboardAvoidingView style={s.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Fermer" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel={t('hours.close')} />
 
         <View style={s.sheet}>
           <View style={s.handle} />
 
           <View style={s.headerRow}>
             <Ionicons name="flag" size={20} color={c.danger} />
-            <Text style={s.title}>Signaler cet avis</Text>
+            <Text style={s.title}>{t('reviewReport.title')}</Text>
             <Pressable hitSlop={10} onPress={close} style={s.closeBtn} disabled={submitting}>
               <Ionicons name="close" size={20} color={c.neutral[600]} />
             </Pressable>
           </View>
 
           <ScrollView contentContainerStyle={{ paddingBottom: spacing.lg }} keyboardShouldPersistTaps="handled">
-            <Text style={s.section}>Motif</Text>
+            <Text style={s.section}>{t('reviewReport.reason')}</Text>
             {KINDS.map((k) => {
               const meta = REVIEW_REPORT_KIND_LABELS[k];
               const active = selected === k;
@@ -100,8 +102,8 @@ export function ReviewReportSheet({ visible, onClose, reviewId }: Props) {
                 >
                   <Text style={s.kindEmoji}>{meta.icon}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.kindLabel, active && { color: c.primary[700] }]}>{meta.label}</Text>
-                    <Text style={s.kindDesc} numberOfLines={2}>{meta.description}</Text>
+                    <Text style={[s.kindLabel, active && { color: c.primary[700] }]}>{t(`reviewReport.kind.${k}` as TKey)}</Text>
+                    <Text style={s.kindDesc} numberOfLines={2}>{t(`reviewReport.kind.${k}D` as TKey)}</Text>
                   </View>
                   <View style={[s.radio, active && { borderColor: c.primary[500], backgroundColor: c.primary[500] }]}>
                     {active && <Ionicons name="checkmark" size={14} color="#fff" />}
@@ -110,12 +112,12 @@ export function ReviewReportSheet({ visible, onClose, reviewId }: Props) {
               );
             })}
 
-            <Text style={[s.section, { marginTop: spacing.md }]}>Détails (optionnel)</Text>
+            <Text style={[s.section, { marginTop: spacing.md }]}>{t('reviewReport.details')}</Text>
             <TextInput
               style={[s.input, s.inputMultiline]}
               value={details}
               onChangeText={(v) => setDetails(v.slice(0, 1000))}
-              placeholder="Précise le problème pour aider l'équipe…"
+              placeholder={t('reviewReport.detailsPh')}
               placeholderTextColor={c.neutral[400]}
               multiline
               numberOfLines={4}

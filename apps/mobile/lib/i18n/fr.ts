@@ -162,6 +162,45 @@ export const fr = {
     legal: 'Informations légales', entity: 'Nom de l’entité (SARL, SAS…) *', entityPh: 'Ex : Maquis Le Baobab SARL', role: 'Ton rôle', rolePh: 'Gérant, propriétaire, etc.',
     phone: 'Téléphone à rappeler *', notes: 'Notes (optionnel)', notesPh: 'Précise tout ce qui aide à valider la demande…', submit: 'Envoyer la demande',
   },
+  report: {
+    already: 'Déjà signalé', alreadyBody: 'Tu as déjà signalé {name} pour ce motif. L’équipe traite ton signalement.', sent: 'Signalement envoyé ✓',
+    sentBody: 'Merci ! L’équipe Soutra-Playce va vérifier l’info et mettre à jour la fiche si besoin.', error: 'Erreur', errDup: 'Indique l’identifiant du lieu original pour un signalement de doublon.',
+    errSelf: 'Le lieu original ne peut pas être identique au lieu signalé.', errAuth: 'Connecte-toi pour signaler un problème.', errSend: 'Impossible d’envoyer le signalement.',
+    title: 'Signaler un problème', reason: 'Motif', original: 'ID du lieu original (optionnel)', originalPh: 'Colle ici l’UUID si tu le connais', details: 'Détails (optionnel)',
+    detailsPh: 'Précise le problème pour aider l’équipe…', submit: 'Envoyer le signalement',
+    kind: {
+      closed: 'Fermé définitivement', closedD: 'L’établissement n’existe plus.', moved: 'A déménagé', movedD: 'Le lieu a changé d’adresse.', duplicate: 'Doublon', duplicateD: 'Cette fiche existe déjà sous un autre nom.',
+      wrong_info: 'Info erronée', wrong_infoD: 'Horaires, numéro ou adresse incorrects.', wrong_price: 'Prix incorrect', wrong_priceD: 'Le prix affiché ne correspond pas à la réalité.',
+      inappropriate: 'Contenu inapproprié', inappropriateD: 'Photos, description ou autres contenus inappropriés.', other: 'Autre', otherD: 'Autre problème — précise dans le champ détail.',
+    },
+  },
+  review: {
+    permTitle: 'Permission requise', permBody: 'Autorise l’accès à tes photos pour joindre une image.', bigTitle: 'Image trop lourde', bigBody: 'Choisis un fichier de moins de 8 Mo.',
+    error: 'Erreur', readFail: 'Impossible de lire le fichier.', uploadFail: 'Erreur upload', retry: 'Réessaie.', errAuth: 'Connecte-toi pour laisser un avis.',
+    errRating: 'Sélectionne une note entre 1 et 5 étoiles.', errPhotos: 'Maximum {n} photos.', errIneligible: 'Cette expérience n’est plus éligible à un avis.',
+    errAlready: 'Tu as déjà noté cette expérience.', errForbidden: 'Avis introuvable ou action non autorisée.', errSend: 'Impossible d’envoyer l’avis.',
+    editedTitle: 'Avis modifié ✓', editedBody: 'Merci, ton avis a été mis à jour.', publishedTitle: 'Avis publié ✓', publishedBody: 'Merci pour ton retour !',
+    editTitle: 'Modifier ton avis', newTitle: 'Laisser un avis', noExperience: 'Tu dois avoir vécu une expérience terminée dans cet établissement (réservation, séjour ou commande) pour laisser un avis.',
+    which: 'Quelle expérience veux-tu noter ?', yourRating: 'Ta note', comment: 'Ton commentaire (optionnel)', commentPh: 'Partage ton expérience…', photos: 'Photos (optionnel)',
+    save: 'Enregistrer', publish: 'Publier mon avis',
+    sortRecent: 'Récents', sortHelpful: 'Utiles', sortHigh: 'Note ↑', sortLow: 'Note ↓', deleteFail: 'Impossible de supprimer l’avis.', section: 'Avis', manage: 'Gérer mon avis',
+    leave: 'Laisser un avis', none: 'Aucun avis pour l’instant. Sois le premier à en laisser un !', more: 'Voir plus d’avis',
+  },
+  hours: {
+    day: { mon: 'Lundi', tue: 'Mardi', wed: 'Mercredi', thu: 'Jeudi', fri: 'Vendredi', sat: 'Samedi', sun: 'Dimanche' },
+    short: { mon: 'Lun', tue: 'Mar', wed: 'Mer', thu: 'Jeu', fri: 'Ven', sat: 'Sam', sun: 'Dim' },
+    closedToday: 'Fermé aujourd’hui', closesSoon: 'Ferme bientôt ({time})', closesAt: 'Ferme à {time}', opensAt: 'Ouvre à {time}', todayLine: 'Aujourd’hui · {open} – {close}', closedLine: '{day} · fermé',
+    open: 'Ouvert', closed: 'Fermé', aria: 'Horaires : {status}, {hint}', seeAll: 'Voir tous les horaires', title: 'Horaires d’ouverture', close: 'Fermer',
+  },
+  gallery: { fullscreen: 'Voir les médias en plein écran', media: 'médias' },
+  reviewCard: { deleteTitle: 'Supprimer ton avis ?', deleteBody: 'Cette action est définitive.', cancel: 'Annuler', delete: 'Supprimer', edit: 'Modifier', report: 'Signaler' },
+  reviewReport: {
+    already: 'Déjà signalé', alreadyBody: 'Tu as déjà signalé cet avis. L’équipe traite ton signalement.', sent: 'Signalement envoyé ✓', sentBody: 'Merci ! L’équipe Soutra-Playce va examiner cet avis.',
+    kind: { spam: 'Spam', spamD: 'Publicité ou contenu non pertinent.', offensive: 'Contenu offensant', offensiveD: 'Langage insultant ou déplacé.', fake: 'Faux avis', fakeD: 'Cet avis ne semble pas authentique.', irrelevant: 'Hors sujet', irrelevantD: 'Ne concerne pas cet établissement.', other: 'Autre', otherD: 'Autre raison — précise dans le champ détail.' },
+    errAuth: 'Connecte-toi pour signaler un avis.', errSend: 'Impossible d’envoyer le signalement.',
+    error: 'Erreur', title: 'Signaler cet avis', reason: 'Motif', details: 'Détails (optionnel)', detailsPh: 'Précise le problème pour aider l’équipe…',
+  },
+  similar: { title: 'Établissements similaires' },
 } as const;
 
 export type Dict = Widen<typeof fr>;
