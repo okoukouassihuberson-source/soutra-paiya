@@ -26,6 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { decode } from 'base64-arraybuffer';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n, type TKey } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { submitVenueClaim } from '@/lib/venue-claims';
@@ -42,19 +43,20 @@ type DocSlot = 'id' | 'business' | 'proof';
 
 interface SlotMeta {
   key: DocSlot;
-  label: string;
-  hint: string;
+  label: TKey;
+  hint: TKey;
   required: boolean;
 }
 
 const SLOTS: SlotMeta[] = [
-  { key: 'id',       label: 'Pièce d\'identité',     hint: 'CNI, passeport ou permis recto',        required: true  },
-  { key: 'business', label: 'Justificatif d\'activité', hint: 'Registre de commerce, facture, etc.', required: true  },
-  { key: 'proof',    label: 'Preuve complémentaire', hint: 'Photo de la devanture (optionnel)',    required: false },
+  { key: 'id',       label: 'claim.idLabel',    hint: 'claim.idHint',    required: true  },
+  { key: 'business', label: 'claim.bizLabel',   hint: 'claim.bizHint',   required: true  },
+  { key: 'proof',    label: 'claim.proofLabel', hint: 'claim.proofHint', required: false },
 ];
 
 export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }: Props) {
   const c = useColors();
+  const { t } = useI18n();
   const s = useMemo(() => makeStyles(c), [c]);
   const { user } = useAuth();
 
@@ -86,12 +88,12 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
 
   const pickDoc = async (slot: DocSlot) => {
     if (!user?.id) {
-      Alert.alert('Connexion requise', 'Connecte-toi pour revendiquer cet établissement.');
+      Alert.alert(t('claim.loginTitle'), t('claim.loginBody'));
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permission requise', 'Autorise l\'accès à tes photos pour joindre le document.');
+      Alert.alert(t('claim.permTitle'), t('claim.permBody'));
       return;
     }
     const r = await ImagePicker.launchImageLibraryAsync({
@@ -103,11 +105,11 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
     if (r.canceled || !r.assets[0]) return;
     const asset = r.assets[0];
     if (asset.fileSize && asset.fileSize > 8 * 1024 * 1024) {
-      Alert.alert('Image trop lourde', 'Choisis un fichier de moins de 8 Mo.');
+      Alert.alert(t('claim.bigTitle'), t('claim.bigBody'));
       return;
     }
     if (!asset.base64) {
-      Alert.alert('Erreur', 'Impossible de lire le fichier.');
+      Alert.alert(t('claim.error'), t('claim.readFail'));
       return;
     }
 
@@ -126,7 +128,7 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
       const url = supabase.storage.from('social-media').getPublicUrl(path).data.publicUrl;
       setDocs((prev) => ({ ...prev, [slot]: url }));
     } catch (err: any) {
-      Alert.alert('Erreur upload', err?.message ?? 'Réessaie.');
+      Alert.alert(t('claim.uploadFail'), err?.message ?? t('claim.retry'));
     } finally {
       setUploadingSlot(null);
     }
@@ -154,13 +156,13 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
         notes: notes.trim() || undefined,
       });
       if (!res.ok && res.reason === 'ALREADY_OWNER') {
-        Alert.alert('Déjà propriétaire', 'Tu possèdes déjà cet établissement.');
+        Alert.alert(t('claim.alreadyOwnerTitle'), t('claim.alreadyOwnerBody'));
       } else if (!res.ok && res.reason === 'ALREADY_PENDING') {
-        Alert.alert('Demande en cours', 'Tu as déjà une demande en cours pour ce lieu.');
+        Alert.alert(t('claim.pendingTitle'), t('claim.pendingBody'));
       } else {
         Alert.alert(
-          'Demande envoyée ✓',
-          'L\'équipe Soutra-Playce va vérifier ton dossier sous 24-48 h. Tu seras notifié.',
+          t('claim.sentTitle'),
+          t('claim.sentBody'),
         );
         onSubmitted?.();
       }
@@ -169,11 +171,11 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
     } catch (err: any) {
       const code = err?.message ?? '';
       const msg =
-        code === 'NOT_AUTHENTICATED' ? 'Connecte-toi pour revendiquer un établissement.'
-        : code === 'VENUE_NOT_ACTIVE' ? 'Ce lieu n\'est pas activé.'
-        : code === 'VENUE_NOT_FOUND' ? 'Lieu introuvable.'
-        : code || 'Impossible d\'envoyer la demande.';
-      Alert.alert('Erreur', msg);
+        code === 'NOT_AUTHENTICATED' ? t('claim.errAuth')
+        : code === 'VENUE_NOT_ACTIVE' ? t('claim.errInactive')
+        : code === 'VENUE_NOT_FOUND' ? t('claim.errNotFound')
+        : code || t('claim.errSend');
+      Alert.alert(t('claim.error'), msg);
       setSubmitting(false);
     }
   };
@@ -191,7 +193,7 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
 
           <View style={s.headerRow}>
             <Ionicons name="shield-checkmark" size={20} color={c.primary[600]} />
-            <Text style={s.title}>Revendiquer ce lieu</Text>
+            <Text style={s.title}>{t('claim.title')}</Text>
             <Pressable hitSlop={10} onPress={close} style={s.closeBtn} disabled={submitting}>
               <Ionicons name="close" size={20} color={c.neutral[600]} />
             </Pressable>
@@ -202,12 +204,12 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
           <View style={s.banner}>
             <Ionicons name="information-circle" size={18} color={c.primary[600]} />
             <Text style={s.bannerText}>
-              Une fois validé, tu pourras gérer la fiche, les promos, les réservations et les analytics depuis l'espace Pro.
+              {t('claim.banner')}
             </Text>
           </View>
 
           <ScrollView contentContainerStyle={{ paddingBottom: spacing.lg }} keyboardShouldPersistTaps="handled">
-            <Text style={s.section}>Documents KYC</Text>
+            <Text style={s.section}>{t('claim.docs')}</Text>
             {SLOTS.map((slot) => {
               const url = docs[slot.key];
               const isUp = uploadingSlot === slot.key;
@@ -215,9 +217,9 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
                 <View key={slot.key} style={s.docRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={s.docLabel}>
-                      {slot.label}{slot.required && <Text style={{ color: c.danger }}> *</Text>}
+                      {t(slot.label)}{slot.required && <Text style={{ color: c.danger }}> *</Text>}
                     </Text>
-                    <Text style={s.docHint}>{slot.hint}</Text>
+                    <Text style={s.docHint}>{t(slot.hint)}</Text>
                   </View>
                   {url ? (
                     <View style={s.docPreviewWrap}>
@@ -242,7 +244,7 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
                       ) : (
                         <>
                           <Ionicons name="cloud-upload-outline" size={18} color={c.primary[600]} />
-                          <Text style={s.docBtnText}>Joindre</Text>
+                          <Text style={s.docBtnText}>{t('claim.attach')}</Text>
                         </>
                       )}
                     </Pressable>
@@ -251,29 +253,29 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
               );
             })}
 
-            <Text style={[s.section, { marginTop: spacing.lg }]}>Informations légales</Text>
+            <Text style={[s.section, { marginTop: spacing.lg }]}>{t('claim.legal')}</Text>
 
-            <Text style={s.label}>Nom de l'entité (SARL, SAS…) *</Text>
+            <Text style={s.label}>{t('claim.entity')}</Text>
             <TextInput
               style={s.input}
               value={businessName}
               onChangeText={setBusinessName}
-              placeholder="Ex : Maquis Le Baobab SARL"
+              placeholder={t('claim.entityPh')}
               placeholderTextColor={c.neutral[400]}
               editable={!submitting}
             />
 
-            <Text style={[s.label, { marginTop: spacing.sm }]}>Ton rôle</Text>
+            <Text style={[s.label, { marginTop: spacing.sm }]}>{t('claim.role')}</Text>
             <TextInput
               style={s.input}
               value={businessRole}
               onChangeText={setBusinessRole}
-              placeholder="Gérant, propriétaire, etc."
+              placeholder={t('claim.rolePh')}
               placeholderTextColor={c.neutral[400]}
               editable={!submitting}
             />
 
-            <Text style={[s.label, { marginTop: spacing.sm }]}>Téléphone à rappeler *</Text>
+            <Text style={[s.label, { marginTop: spacing.sm }]}>{t('claim.phone')}</Text>
             <TextInput
               style={s.input}
               value={contactPhone}
@@ -284,12 +286,12 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
               editable={!submitting}
             />
 
-            <Text style={[s.label, { marginTop: spacing.sm }]}>Notes (optionnel)</Text>
+            <Text style={[s.label, { marginTop: spacing.sm }]}>{t('claim.notes')}</Text>
             <TextInput
               style={[s.input, s.inputMultiline]}
               value={notes}
               onChangeText={(v) => setNotes(v.slice(0, 2000))}
-              placeholder="Précise tout ce qui aide à valider la demande…"
+              placeholder={t('claim.notesPh')}
               placeholderTextColor={c.neutral[400]}
               multiline
               textAlignVertical="top"
@@ -311,7 +313,7 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={[s.submitText, { color: canSubmit ? '#fff' : c.neutral[500] }]}>
-                Envoyer la demande
+                {t('claim.submit')}
               </Text>
             )}
           </Pressable>

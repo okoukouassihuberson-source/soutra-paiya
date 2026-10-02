@@ -133,6 +133,35 @@ export const fr = {
     },
     kycStatus: { verified: 'Vérifié', pending: 'En cours', rejected: 'Rejeté', none: 'Non vérifié' },
   },
+  explore: {
+    chipAll: 'Tout', chipMaquis: 'Maquis', chipRestaurants: 'Restaurants', chipParty: 'Soirée', chipCafes: 'Cafés', chipHotels: 'Hôtels', chipSport: 'Sport',
+    loadFail: 'Impossible de charger les lieux. Vérifiez votre connexion.', error: 'Erreur', nearbyFail: 'Recherche par proximité indisponible.',
+    locDenied: 'Localisation refusée', locDeniedBody: 'Active la localisation dans les réglages du téléphone pour utiliser « Près de moi ».',
+    locTitle: 'Localisation', locFail: 'Impossible d’obtenir ta position. Réessaie en extérieur.', count: '{n} lieux à découvrir près de toi',
+    trendingLabel: 'Ça bouge maintenant', eventsLabel: 'Événements', notifTitle: 'Notifications', notifNone: 'Aucune nouvelle notification.', addVenue: 'Ajouter un lieu',
+    searchPlaceholder: 'Rechercher un lieu, un quartier…', aiSearch: 'Recherche IA', nearMe: 'Près de moi', nearMeRadius: 'Près de moi ({km} km)',
+    venues_one: '{n} lieu', venues_other: '{n} lieux', openNow: 'Ouvert maintenant', topPopular: 'Top populaires', loading: 'Chargement…', emptyTitle: 'Aucun lieu trouvé', emptyFilter: 'Essaie un autre filtre ou élargis le rayon.',
+    emptyNone: 'Aucun établissement actif pour l’instant — reviens bientôt.', resetFilters: 'Réinitialiser les filtres', trending: 'Tendance', open: 'Ouvert', closed: 'Fermé',
+    cat: { maquis: 'Maquis', restaurant: 'Restaurant', club: 'Club', cafe: 'Café', hotel: 'Hôtel', sport: 'Sport', event_space: 'Espace événementiel' },
+  },
+  venue: {
+    loginRequired: 'Connexion requise', loginFav: 'Connecte-toi pour gérer tes favoris.', error: 'Erreur', favFail: 'Action sur les favoris impossible. Réessaie.',
+    share: 'Découvre {name} sur Soutra-Playce : {url}', notFound: 'Lieu non trouvé', report: 'Signaler un problème', claimAria: 'Revendiquer cet établissement',
+    claimTitle: 'Êtes-vous le propriétaire ?', claimSub: 'Revendiquez cet établissement pour gérer la fiche.', directions: 'Itinéraire', call: 'Appeler', whatsapp: 'WhatsApp',
+    tour360: 'Visite virtuelle 360°', tour360Sub: 'Explore l’établissement en immersion', amenities: 'Équipements', bookRoom: '🛏️  Réserver une chambre', menu: '📋  Menu', bookTable: 'Réserver une table',
+  },
+  claim: {
+    idLabel: 'Pièce d’identité', idHint: 'CNI, passeport ou permis recto', bizLabel: 'Justificatif d’activité', bizHint: 'Registre de commerce, facture, etc.',
+    proofLabel: 'Preuve complémentaire', proofHint: 'Photo de la devanture (optionnel)',
+    loginTitle: 'Connexion requise', loginBody: 'Connecte-toi pour revendiquer cet établissement.', permTitle: 'Permission requise', permBody: 'Autorise l’accès à tes photos pour joindre le document.',
+    bigTitle: 'Image trop lourde', bigBody: 'Choisis un fichier de moins de 8 Mo.', error: 'Erreur', readFail: 'Impossible de lire le fichier.', uploadFail: 'Erreur upload', retry: 'Réessaie.',
+    alreadyOwnerTitle: 'Déjà propriétaire', alreadyOwnerBody: 'Tu possèdes déjà cet établissement.', pendingTitle: 'Demande en cours', pendingBody: 'Tu as déjà une demande en cours pour ce lieu.',
+    sentTitle: 'Demande envoyée ✓', sentBody: 'L’équipe Soutra-Playce va vérifier ton dossier sous 24-48 h. Tu seras notifié.',
+    errAuth: 'Connecte-toi pour revendiquer un établissement.', errInactive: 'Ce lieu n’est pas activé.', errNotFound: 'Lieu introuvable.', errSend: 'Impossible d’envoyer la demande.',
+    title: 'Revendiquer ce lieu', banner: 'Une fois validé, tu pourras gérer la fiche, les promos, les réservations et les analytics depuis l’espace Pro.', docs: 'Documents KYC', attach: 'Joindre',
+    legal: 'Informations légales', entity: 'Nom de l’entité (SARL, SAS…) *', entityPh: 'Ex : Maquis Le Baobab SARL', role: 'Ton rôle', rolePh: 'Gérant, propriétaire, etc.',
+    phone: 'Téléphone à rappeler *', notes: 'Notes (optionnel)', notesPh: 'Précise tout ce qui aide à valider la demande…', submit: 'Envoyer la demande',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;
