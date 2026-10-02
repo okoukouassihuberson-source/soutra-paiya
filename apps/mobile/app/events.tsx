@@ -10,6 +10,7 @@ import { typography, radius, spacing, formatXOF, type ColorPalette } from '@sout
 import { supabase } from '@/lib/supabase';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useI18n } from '@/lib/i18n';
 
 interface DiscoveryEvent {
   event_id: string;
@@ -27,6 +28,7 @@ interface DiscoveryEvent {
 }
 
 export default function EventsScreen() {
+  const { t, intl } = useI18n();
   const router = useRouter();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -59,22 +61,22 @@ export default function EventsScreen() {
   };
 
   const priceLabel = (e: DiscoveryEvent): string => {
-    if (e.is_free || e.min_price_xof == null) return 'Entrée libre';
+    if (e.is_free || e.min_price_xof == null) return t('eventsList.free');
     if (e.min_price_xof === e.max_price_xof) return formatXOF(e.min_price_xof);
-    return `À partir de ${formatXOF(e.min_price_xof)}`;
+    return t('eventsList.from', { amount: formatXOF(e.min_price_xof) });
   };
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Événements" subtitle="Concerts, soirées, sorties à venir" />
+      <ScreenHeader title={t('eventsList.title')} subtitle={t('eventsList.subtitle')} />
 
       {loading ? (
         <ActivityIndicator size="large" color={c.primary[500]} style={s.center} />
       ) : events.length === 0 ? (
         <View style={s.center}>
           <Ionicons name="calendar-outline" size={40} color={c.neutral[300]} />
-          <Text style={s.emptyTitle}>Aucun événement publié</Text>
-          <Text style={s.emptyText}>Reviens bientôt pour découvrir les prochaines sorties.</Text>
+          <Text style={s.emptyTitle}>{t('eventsList.empty')}</Text>
+          <Text style={s.emptyText}>{t('eventsList.emptyBody')}</Text>
         </View>
       ) : (
         <ScrollView
@@ -97,14 +99,14 @@ export default function EventsScreen() {
                   )}
                   {soldOut && (
                     <View style={s.soldOutBadge}>
-                      <Text style={s.soldOutText}>COMPLET</Text>
+                      <Text style={s.soldOutText}>{t('eventsList.soldOut')}</Text>
                     </View>
                   )}
                 </View>
                 <View style={s.body}>
                   <Text style={s.title} numberOfLines={2}>{e.title}</Text>
                   <Text style={s.meta} numberOfLines={1}>
-                    {formatEventDate(e.starts_at)} · {e.venue_name ?? e.city ?? 'Lieu à confirmer'}
+                    {formatEventDate(e.starts_at, intl)} · {e.venue_name ?? e.city ?? t('eventsList.tbc')}
                   </Text>
                   <Text style={s.price}>{priceLabel(e)}</Text>
                 </View>
@@ -117,9 +119,9 @@ export default function EventsScreen() {
   );
 }
 
-function formatEventDate(iso: string): string {
+function formatEventDate(iso: string, intl: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString(intl, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 function makeStyles(c: ColorPalette) {

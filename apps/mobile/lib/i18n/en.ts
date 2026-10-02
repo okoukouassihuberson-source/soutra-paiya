@@ -398,4 +398,13 @@ export const en: Dict = {
     until: 'Until {date}', noEventTitle: 'No events on right now', noEventHint: 'Parties, concerts and big events will appear here when they start.', live: 'LIVE', soon: 'SOON', tbc: 'Venue to be confirmed',
     untilTime: 'Until {time}', startsAt: 'Starts {when}', now: 'right now', inMin: 'in {n} min', inHours: 'in {n} h',
   },
+  ago: { now: 'just now', min: '{n} min ago', h: '{n} h ago', d: '{n} d ago', minS: '{n} min', hS: '{n} h', dS: '{n} d' },
+  social: {
+    subtitle: 'Trends, posts & matches', feedFail: 'Could not load the feed.', loginTitle: 'Sign-in required', loginBody: 'Sign in to like a post.', actionFail: 'Action failed.', delTitle: 'Delete this post?', delBody: 'This cannot be undone.',
+    cancel: 'Cancel', delete: 'Delete', delFail: 'Could not delete.', error: 'Error', emptyTitle: 'The feed is still empty', emptyBody: 'Be the first to share an outing, an event or a favourite.', publish: 'Publish a post',
+    matchesTitle: 'My matches', matchesEmpty: 'No matches yet', matchesEmptyBody: 'When you and someone else like each other, it shows up here.', loadFail: 'Could not load.', openChatFail: 'Could not open the conversation.', anonymous: 'Anonymous', defaultCity: 'Abidjan',
+    chatsTitle: 'Messages', chatsEmpty: 'No conversations yet', chatsEmptyBody: 'Open a chat from your matches or by tapping a profile.',
+  },
+  eventsList: { title: 'Events', subtitle: 'Concerts, parties, upcoming outings', empty: 'No published events', emptyBody: 'Check back soon to discover the next outings.', free: 'Free entry', from: 'From {amount}', soldOut: 'SOLD OUT', tbc: 'Venue to be confirmed' },
+  globalSearch: { title: 'Search', placeholder: 'Contact, transaction, place…', hint: 'Type at least 2 characters to search your contacts, transactions and places.', none: 'No results for “{query}”.', contacts: 'Contacts', transactions: 'Transactions', venues: 'Places' },
 };

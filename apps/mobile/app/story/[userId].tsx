@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '@soutra/shared';
 import { listUserStories, markStoryViewed, deleteStory, type StoryItem } from '@/lib/stories';
+import { timeAgo } from '@/lib/time-ago';
 
 const STORY_DURATION_MS = 5000;
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -158,13 +159,7 @@ export default function StoryViewer() {
 }
 
 function relativeTime(iso: string): string {
-  const d = new Date(iso);
-  const diff = Math.max(0, Date.now() - d.getTime());
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'à l\'instant';
-  if (m < 60) return `il y a ${m} min`;
-  const h = Math.floor(m / 60);
-  return `il y a ${h} h`;
+  return timeAgo(iso, { prefix: true, until: 'hours' });
 }
 
 const s = StyleSheet.create({

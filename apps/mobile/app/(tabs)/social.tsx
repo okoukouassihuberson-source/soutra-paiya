@@ -12,8 +12,11 @@ import { StoriesStrip } from '@/components/StoriesStrip';
 import { CommentsSheet } from '@/components/CommentsSheet';
 import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
+import { timeAgo } from '@/lib/time-ago';
+import { useI18n } from '@/lib/i18n';
 
 export default function Social() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const c = useColors();
@@ -30,7 +33,7 @@ export default function Social() {
       setPosts(data);
     } catch (err: any) {
       console.error('[social] load feed error:', err);
-      Alert.alert('Erreur', err?.message ?? 'Impossible de charger le fil.');
+      Alert.alert(t('social.error'), err?.message ?? t('social.feedFail'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -61,7 +64,7 @@ export default function Social() {
 
   async function handleLike(p: Post) {
     if (!user?.id) {
-      Alert.alert('Connexion requise', 'Connecte-toi pour aimer un post.');
+      Alert.alert(t('social.loginTitle'), t('social.loginBody'));
       return;
     }
     if (busyLike === p.id) return;
@@ -78,22 +81,22 @@ export default function Social() {
       setPosts((prev) => prev.map((x) =>
         x.id === p.id ? { ...x, liked_by_me: wasLiked, like_count: Math.max(0, x.like_count + (wasLiked ? 1 : -1)) } : x
       ));
-      Alert.alert('Erreur', err?.message ?? 'Action impossible.');
+      Alert.alert(t('social.error'), err?.message ?? t('social.actionFail'));
     } finally {
       setBusyLike(null);
     }
   }
 
   async function handleDelete(p: Post) {
-    Alert.alert('Supprimer ce post ?', 'Cette action est définitive.', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('social.delTitle'), t('social.delBody'), [
+      { text: t('social.cancel'), style: 'cancel' },
       {
-        text: 'Supprimer', style: 'destructive', onPress: async () => {
+        text: t('social.delete'), style: 'destructive', onPress: async () => {
           try {
             await deletePost(p.id);
             setPosts((prev) => prev.filter((x) => x.id !== p.id));
           } catch (err: any) {
-            Alert.alert('Erreur', err?.message ?? 'Suppression impossible.');
+            Alert.alert(t('social.error'), err?.message ?? t('social.delFail'));
           }
         },
       },
@@ -103,7 +106,7 @@ export default function Social() {
   return (
     <SafeAreaView style={s.safe}>
       <TabHeader
-        subtitle="Tendances, posts & matchs"
+        subtitle={t('social.subtitle')}
         trailing={(
           <View style={s.headerActions}>
             <Pressable onPress={() => router.push('/chats')} style={s.iconBtn} hitSlop={6}>
@@ -132,14 +135,14 @@ export default function Social() {
             <View style={s.emptyIconWrap}>
               <Ionicons name="chatbubbles" size={48} color={c.primary[400]} />
             </View>
-            <Text style={s.emptyTitle}>Le fil est encore vide</Text>
-            <Text style={s.emptyText}>Sois le premier à partager une sortie, un événement ou un coup de cœur.</Text>
+            <Text style={s.emptyTitle}>{t('social.emptyTitle')}</Text>
+            <Text style={s.emptyText}>{t('social.emptyBody')}</Text>
             <Pressable
               onPress={() => router.push('/post-create')}
               style={({ pressed }) => [s.emptyBtn, pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] }]}
             >
               <Ionicons name="add" size={18} color="#fff" />
-              <Text style={s.emptyBtnText}>Publier un post</Text>
+              <Text style={s.emptyBtnText}>{t('social.publish')}</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -253,16 +256,7 @@ function PostSkeleton({ c }: { c: ColorPalette }) {
 }
 
 function relativeTime(iso: string): string {
-  const d = new Date(iso);
-  const diff = Math.max(0, Date.now() - d.getTime());
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'à l\'instant';
-  if (m < 60) return `il y a ${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const days = Math.floor(h / 24);
-  if (days < 7) return `il y a ${days} j`;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return timeAgo(iso, { prefix: true, until: 'days' });
 }
 
 function makeStyles(c: ColorPalette) {

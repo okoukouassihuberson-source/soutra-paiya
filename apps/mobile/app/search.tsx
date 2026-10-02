@@ -7,6 +7,8 @@ import { typography, radius, spacing, formatXOF, type ColorPalette } from '@sout
 import { supabase } from '@/lib/supabase';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { useColors } from '@/lib/theme';
+import { timeAgo } from '@/lib/time-ago';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * /search — recherche universelle v1 (RPC search_my_universe, migration 0071).
@@ -40,6 +42,7 @@ interface VenueResult {
 }
 
 export default function SearchScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
@@ -92,7 +95,7 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Recherche" />
+      <ScreenHeader title={t('globalSearch.title')} />
 
       <View style={s.searchBox}>
         <Ionicons name="search" size={18} color={c.neutral[500]} />
@@ -100,7 +103,7 @@ export default function SearchScreen() {
           style={s.searchInput}
           value={query}
           onChangeText={setQuery}
-          placeholder="Contact, transaction, lieu…"
+          placeholder={t('globalSearch.placeholder')}
           placeholderTextColor={c.neutral[400]}
           autoFocus
           returnKeyType="search"
@@ -110,15 +113,15 @@ export default function SearchScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: spacing['2xl'] }} keyboardShouldPersistTaps="handled">
         {!hasQuery && (
-          <Text style={s.hint}>Tape au moins 2 caractères pour chercher parmi tes contacts, tes transactions et les lieux.</Text>
+          <Text style={s.hint}>{t('globalSearch.hint')}</Text>
         )}
 
         {hasQuery && !loading && !hasResults && (
-          <Text style={s.hint}>Aucun résultat pour « {query} ».</Text>
+          <Text style={s.hint}>{t('globalSearch.none', { query })}</Text>
         )}
 
         {contacts.length > 0 && (
-          <Section title="Contacts">
+          <Section title={t('globalSearch.contacts')}>
             {contacts.map((ctc) => (
               <Pressable
                 key={ctc.phone}
@@ -139,7 +142,7 @@ export default function SearchScreen() {
         )}
 
         {transactions.length > 0 && (
-          <Section title="Transactions">
+          <Section title={t('globalSearch.transactions')}>
             {transactions.map((tx) => (
               <View key={tx.id} style={s.row}>
                 <View style={s.rowIcon}>
@@ -158,7 +161,7 @@ export default function SearchScreen() {
         )}
 
         {venues.length > 0 && (
-          <Section title="Lieux">
+          <Section title={t('globalSearch.venues')}>
             {venues.map((v) => (
               <Pressable key={v.id} style={s.row} onPress={() => router.push(`/venue/${v.id}` as any)}>
                 <View style={s.rowIcon}>
@@ -190,16 +193,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function relativeDate(iso: string): string {
-  const d = new Date(iso);
-  const now = Date.now();
-  const m = Math.floor((now - d.getTime()) / 60000);
-  if (m < 1) return "à l'instant";
-  if (m < 60) return `il y a ${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const days = Math.floor(h / 24);
-  if (days < 7) return `il y a ${days} j`;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return timeAgo(iso, { prefix: true, until: 'days' });
 }
 
 function makeStyles(c: ColorPalette) {

@@ -7,8 +7,11 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { listChats, type ChatListItem } from '@/lib/chat';
+import { timeAgo } from '@/lib/time-ago';
+import { useI18n } from '@/lib/i18n';
 
 export default function Chats() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const [chats, setChats] = useState<ChatListItem[]>([]);
@@ -20,7 +23,7 @@ export default function Chats() {
       const data = await listChats();
       setChats(data);
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Chargement impossible.');
+      Alert.alert(t('social.error'), err?.message ?? t('social.loadFail'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -45,7 +48,7 @@ export default function Chats() {
     <SafeAreaView style={s.safe}>
       <View style={s.header}>
         <Pressable onPress={() => router.back()} hitSlop={10}><Ionicons name="chevron-back" size={26} color={colors.dark} /></Pressable>
-        <Text style={s.title}>Messages</Text>
+        <Text style={s.title}>{t('social.chatsTitle')}</Text>
         <View style={{ width: 26 }} />
       </View>
 
@@ -54,8 +57,8 @@ export default function Chats() {
       ) : chats.length === 0 ? (
         <View style={s.center}>
           <Ionicons name="chatbubbles-outline" size={64} color={colors.neutral[300]} />
-          <Text style={s.emptyTitle}>Pas encore de conversation</Text>
-          <Text style={s.emptyText}>Ouvre un chat depuis tes matchs ou en cliquant sur un profil.</Text>
+          <Text style={s.emptyTitle}>{t('social.chatsEmpty')}</Text>
+          <Text style={s.emptyText}>{t('social.chatsEmptyBody')}</Text>
         </View>
       ) : (
         <ScrollView
@@ -102,16 +105,7 @@ export default function Chats() {
 }
 
 function relativeTime(iso: string): string {
-  const d = new Date(iso);
-  const diff = Math.max(0, Date.now() - d.getTime());
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'à l\'instant';
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} h`;
-  const days = Math.floor(h / 24);
-  if (days < 7) return `${days} j`;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return timeAgo(iso, { prefix: false, until: 'days' });
 }
 
 const s = StyleSheet.create({

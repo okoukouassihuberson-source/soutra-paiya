@@ -6,6 +6,7 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { listComments, createComment, deleteComment, type Comment } from '@/lib/comments';
+import { timeAgo } from '@/lib/time-ago';
 
 type Props = {
   postId: string | null;
@@ -166,15 +167,7 @@ export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props
 }
 
 function relativeTime(iso: string): string {
-  const d = new Date(iso);
-  const diff = Math.max(0, Date.now() - d.getTime());
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'à l\'instant';
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} h`;
-  const days = Math.floor(h / 24);
-  return `${days} j`;
+  return timeAgo(iso, { prefix: false, until: 'daysOnly' });
 }
 
 const s = StyleSheet.create({

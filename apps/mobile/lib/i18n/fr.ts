@@ -400,6 +400,15 @@ export const fr = {
     until: 'Jusqu’au {date}', noEventTitle: 'Aucun événement en cours', noEventHint: 'Les soirées, concerts et grands événements apparaîtront ici quand ils démarrent.', live: 'EN COURS', soon: 'BIENTÔT', tbc: 'Lieu à confirmer',
     untilTime: 'Jusqu’à {time}', startsAt: 'Démarre {when}', now: 'à l’instant', inMin: 'dans {n} min', inHours: 'dans {n} h',
   },
+  ago: { now: 'à l’instant', min: 'il y a {n} min', h: 'il y a {n} h', d: 'il y a {n} j', minS: '{n} min', hS: '{n} h', dS: '{n} j' },
+  social: {
+    subtitle: 'Tendances, posts & matchs', feedFail: 'Impossible de charger le fil.', loginTitle: 'Connexion requise', loginBody: 'Connecte-toi pour aimer un post.', actionFail: 'Action impossible.', delTitle: 'Supprimer ce post ?', delBody: 'Cette action est définitive.',
+    cancel: 'Annuler', delete: 'Supprimer', delFail: 'Suppression impossible.', error: 'Erreur', emptyTitle: 'Le fil est encore vide', emptyBody: 'Sois le premier à partager une sortie, un événement ou un coup de cœur.', publish: 'Publier un post',
+    matchesTitle: 'Mes matchs', matchesEmpty: 'Pas encore de match', matchesEmptyBody: 'Quand toi et quelqu’un d’autre vous likez mutuellement, ça apparaît ici.', loadFail: 'Chargement impossible.', openChatFail: 'Impossible d’ouvrir la conversation.', anonymous: 'Anonyme', defaultCity: 'Abidjan',
+    chatsTitle: 'Messages', chatsEmpty: 'Pas encore de conversation', chatsEmptyBody: 'Ouvre un chat depuis tes matchs ou en cliquant sur un profil.',
+  },
+  eventsList: { title: 'Événements', subtitle: 'Concerts, soirées, sorties à venir', empty: 'Aucun événement publié', emptyBody: 'Reviens bientôt pour découvrir les prochaines sorties.', free: 'Entrée libre', from: 'À partir de {amount}', soldOut: 'COMPLET', tbc: 'Lieu à confirmer' },
+  globalSearch: { title: 'Recherche', placeholder: 'Contact, transaction, lieu…', hint: 'Tape au moins 2 caractères pour chercher parmi tes contacts, tes transactions et les lieux.', none: 'Aucun résultat pour « {query} ».', contacts: 'Contacts', transactions: 'Transactions', venues: 'Lieux' },
 } as const;
 
 export type Dict = Widen<typeof fr>;
