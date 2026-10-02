@@ -13,6 +13,7 @@ export function TourismNav() {
     { href: '/activites', label: t('nav.activities') },
     { href: '/destinations', label: t('nav.destinations') },
     { href: '/promotions', label: t('nav.promotions') },
+    { href: '/assistant', label: t('nav.assistant') },
     { href: '/voyages/nationaux', label: t('nav.tripsNational') },
     { href: '/voyages/internationaux', label: t('nav.tripsInternational') },
     { href: '/explorer?cat=evenements', label: t('nav.events') },

@@ -114,9 +114,17 @@
 3. **Tests** : politiques de stockage testées sur PostgreSQL 16 avec un schéma `storage` simulé (dossier propre accepté ; dossier d'autrui, autre bucket, racine, simple utilisateur et anonyme refusés) ; `tsc` et `next build` verts. **Non testé** : envoi réel vers Supabase Storage et redimensionnement dans un navigateur.
 4. **Limites** : pas de suppression des anciens fichiers quand une image est remplacée (fichiers orphelins) ; pas de modération du contenu des images ; la fiche établissement (`/pro`) garde son propre bucket `venue-media`.
 
+## 3 duodecies. Livré en phase 2 (assistant voyage IA)
+1. **Edge Function `tourism-assistant`** (nouvelle ; le `chatbot` existant n'est pas modifié) : JWT requis ; Claude avec **4 outils en lecture seule** — voyages, activités, destination (+ prochains voyages), promotions publiques — exécutés avec le client de l'utilisateur (donc sous RLS : uniquement les données publiées). Boucle bornée à 4 tours d'outils puis conclusion forcée (`tool_choice: none`). Réponse dans la langue de l'interface (FR / EN).
+2. **Garde-fous** : le modèle ne peut ni réserver ni payer ; les **fiches affichées sous la réponse viennent des résultats d'outils**, pas du texte généré (pas de lien inventé) ; les textes rédigés par des partenaires sont présentés au modèle comme des données non fiables (injection de prompt), tronqués ; termes de recherche assainis (jokers et séparateurs PostgREST) ; historique et longueur bornés.
+3. **Coût maîtrisé** : migration `0094_assistant_usage.sql` — plafond quotidien par utilisateur (30 par défaut, `ASSISTANT_DAILY_LIMIT`), décompte atomique, **question remboursée si le moteur échoue**. Secrets : `ANTHROPIC_API_KEY` (obligatoire), `ANTHROPIC_MODEL` (défaut `claude-haiku-4-5`).
+4. **Interface** : page `/assistant` (connexion requise, FR/EN, suggestions, fiches cliquables, questions restantes, avertissement), lien dans le menu.
+5. **Tests** : 6 tests Deno sur les outils (filtres, assainissement, items, bornes) ; test de bout en bout de la fonction réelle contre de faux Supabase et Anthropic (401 sans/avec mauvais jeton, messages invalides, appel d'outil puis réponse avec fiches, panne moteur remboursée, boucle d'outils bornée à 5 appels dont le dernier sans outil, langue du prompt, plafond atteint → 429) ; limite d'usage testée sur PostgreSQL 16 ; `tsc` et tests i18n verts. **Non testé** : appel réel à l'API Anthropic, qualité des réponses, interface dans un navigateur.
+6. **Limites** : pas de mémoire entre sessions ; pas d'action (réserver, payer) ; réponses non vérifiées automatiquement (mention affichée) ; pas de modération des questions au-delà du refus hors-sujet du prompt.
+
 ## 4. Feuille de route
 - **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; notifications aux organisateurs (soumission, nouvelle réservation).
-- **Phase 3** : assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
+- **Phase 3** : app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions
 - Déployer : `supabase db push` puis `supabase functions deploy geniuspay-pay-trip`. Appliquer 0082 puis 0083 (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.
