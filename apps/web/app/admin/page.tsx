@@ -725,6 +725,7 @@ function AdminDashboard() {
                     <span key="d" className="text-xs text-neutral-500">{fmtDate(u.created_at)}</span>,
                     <ActionGroup key="a" loading={actionLoading === u.id} actions={[
                       u.kyc_status !== 'verified' && { label: 'Vérifier KYC', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => updateProfile(u.id, { kyc_status: 'verified' }) },
+                      u.role === 'user' && { label: '→ Organisateur', cls: 'text-purple-400 hover:bg-purple-900/30', fn: () => updateProfile(u.id, { role: 'organizer' }) },
                       u.role !== 'admin' && { label: '→ Admin', cls: 'text-amber-400 hover:bg-amber-900/30', fn: () => updateProfile(u.id, { role: 'admin' }) },
                       u.role !== 'user' && u.role !== 'admin' && { label: '→ User', cls: 'text-neutral-400 hover:bg-neutral-800', fn: () => updateProfile(u.id, { role: 'user' }) },
                       !u.is_super_admin && !u.is_banned && { label: 'Bannir', cls: 'text-red-400 hover:bg-red-900/30', fn: () => setBanTarget(u) },

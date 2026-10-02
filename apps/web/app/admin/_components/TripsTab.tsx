@@ -1,14 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { slugify, formatXOF, formatTripDates, HIGHLIGHT_LABELS, CONTINENTS, type TripHighlight } from '@soutra/shared';
+import { formatXOF, formatTripDates, HIGHLIGHT_LABELS, type TripHighlight } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
+import { TripEditor } from '@/components/tourism/TripEditor';
 
 type Status = 'draft' | 'published' | 'full' | 'closed' | 'cancelled';
 interface TripRow {
   id: string; slug: string; title: string; scope: 'national' | 'international'; status: Status;
   country: string; city: string | null; starts_on: string; ends_on: string; base_price_xof: number;
-  seats_total: number; seats_booked: number; commission_pct: number | null; highlight: TripHighlight | null;
+  seats_total: number; seats_booked: number; commission_pct: number | null; highlight: TripHighlight | null; submitted_at: string | null;
 }
 interface Stats {
   trips_published: number; trips_draft: number; trips_national: number; trips_international: number;
@@ -33,6 +34,7 @@ export function TripsTab() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -40,7 +42,7 @@ export function TripsTab() {
     const [{ data: s }, { data: t, error: e }] = await Promise.all([
       sb.rpc('admin_tourism_stats'),
       (() => {
-        let q = sb.from('trips').select('id, slug, title, scope, status, country, city, starts_on, ends_on, base_price_xof, seats_total, seats_booked, commission_pct, highlight')
+        let q = sb.from('trips').select('id, slug, title, scope, status, country, city, starts_on, ends_on, base_price_xof, seats_total, seats_booked, commission_pct, highlight, submitted_at')
           .order('starts_on', { ascending: false }).limit(200);
         if (filter !== 'all') q = q.eq('status', filter);
         return q;
@@ -48,7 +50,10 @@ export function TripsTab() {
     ]);
     if (e) console.error('[admin-trips]', e);
     setStats((s as Stats) ?? null);
-    setRows((t as TripRow[]) ?? []);
+    const list = (t as TripRow[]) ?? [];
+    // Brouillons soumis à validation en tête de file.
+    if (filter === 'draft') list.sort((a, b) => Number(!!b.submitted_at) - Number(!!a.submitted_at));
+    setRows(list);
     setLoading(false);
   }, [sb, filter]);
 
@@ -96,7 +101,8 @@ export function TripsTab() {
         </button>
       </div>
 
-      {showForm && <TripForm onCreated={() => { setShowForm(false); setFilter('draft'); load(); }} />}
+      {showForm && <TripEditor onSaved={() => { setShowForm(false); setFilter('draft'); load(); }} onCancel={() => setShowForm(false)} />}
+      {editing && <TripEditor tripId={editing} onSaved={() => { setEditing(null); load(); }} onCancel={() => setEditing(null)} />}
       {error && <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
 
       {loading ? <p className="p-8 text-center text-neutral-500">Chargement…</p> : rows.length === 0 ? (
@@ -108,6 +114,7 @@ export function TripsTab() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_TONE[t.status]}`}>{STATUS_LABEL[t.status]}</span>
+                  {t.status === 'draft' && t.submitted_at && <span className="ml-2 rounded-full bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-300">Soumis à validation</span>}
                   <span className="ml-2 text-[10px] font-semibold uppercase text-neutral-500">{t.scope === 'national' ? '🇨🇮 National' : '🌍 International'}</span>
                   <p className="mt-1 font-display text-base font-bold text-white">{t.title}</p>
                   <p className="text-xs text-neutral-500">{[t.city, t.country].filter(Boolean).join(', ')} · {formatTripDates(t.starts_on, t.ends_on)}</p>
@@ -125,6 +132,7 @@ export function TripsTab() {
                     <option value="">Aucune mise en avant</option>
                     {(Object.keys(HIGHLIGHT_LABELS) as TripHighlight[]).map((h) => <option key={h} value={h}>{HIGHLIGHT_LABELS[h]}</option>)}
                   </select>
+                  <Btn busy={false} tone="neutral" onClick={() => { setShowForm(false); setEditing(t.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Modifier</Btn>
                   {(t.status === 'draft' || t.status === 'closed') && <Btn busy={busy === t.id} tone="emerald" onClick={() => moderate(t.id, { p_status: 'published' })}>Publier</Btn>}
                   {(t.status === 'published' || t.status === 'full') && <Btn busy={busy === t.id} tone="neutral" onClick={() => moderate(t.id, { p_status: 'closed' })}>Clore</Btn>}
                   {t.status !== 'cancelled' && <Btn busy={busy === t.id} tone="red" onClick={() => moderate(t.id, { p_status: 'cancelled' }, `Annuler « ${t.title} » ? Les voyageurs déjà payés devront être remboursés manuellement.`)}>Annuler</Btn>}
@@ -136,115 +144,6 @@ export function TripsTab() {
         </ul>
       )}
     </div>
-  );
-}
-
-function TripForm({ onCreated }: { onCreated: () => void }) {
-  const sb = supabaseBrowser() as any;
-  const [scope, setScope] = useState<'national' | 'international'>('national');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    const g = (k: string) => String(f.get(k) ?? '').trim();
-    const list = (k: string) => g(k).split(/\n|,/).map((x) => x.trim()).filter(Boolean);
-    setBusy(true); setErr(null);
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) { setErr('Session expirée.'); setBusy(false); return; }
-
-    const national = scope === 'national';
-    const { data: trip, error } = await sb.from('trips').insert({
-      slug: `${slugify(g('title')).slice(0, 60)}-${Math.random().toString(36).slice(2, 6)}`,
-      organizer_id: user.id, scope, title: g('title'), summary: g('summary') || null, description: g('description') || null,
-      country: national ? "Côte d'Ivoire" : g('country'), country_code: national ? 'CI' : g('country_code').toUpperCase(),
-      continent: national ? null : g('continent') || null, city: g('city') || null, cover_url: g('cover_url') || null,
-      starts_on: g('starts_on'), ends_on: g('ends_on'), base_price_xof: Number(g('base_price_xof')), deposit_pct: Number(g('deposit_pct') || 100),
-      seats_total: Number(g('seats_total')), departure_point: g('departure_point') || null,
-      departure_time: g('departure_time') || null, return_time: g('return_time') || null,
-      transport: g('transport') || null, lodging: g('lodging') || null, meals: g('meals') || null,
-      flight_info: g('flight_info') || null, hotel_info: g('hotel_info') || null, visa_info: g('visa_info') || null, insurance_info: g('insurance_info') || null,
-      activities: list('activities'), inclusions: list('inclusions'), exclusions: list('exclusions'),
-      conditions: g('conditions') || null, contact_phone: g('contact_phone') || null, contact_whatsapp: g('contact_whatsapp') || null,
-      is_circuit: f.get('is_circuit') === 'on', status: 'draft',
-    }).select('id').single();
-    if (error || !trip) { setErr(error?.message || 'Création impossible'); setBusy(false); return; }
-
-    // Programme : une ligne par jour « Titre : étape 1, étape 2 »
-    const days = g('days').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => {
-      const [title, stops = ''] = l.split(':');
-      return { trip_id: trip.id, day_number: i + 1, title: title.trim(), stops: stops.split(',').map((s) => s.trim()).filter(Boolean) };
-    });
-    // Formules : une ligne par formule « Nom | prix | inclus 1, inclus 2 »
-    const packages = g('packages').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => {
-      const [name, price, inc = ''] = l.split('|').map((x) => x.trim());
-      const code = (['essentielle', 'confort', 'premium', 'vip'] as const).find((c) => name.toLowerCase().includes(c)) ?? 'custom';
-      return { trip_id: trip.id, code, name, price_xof: Number(price), position: i, includes: inc.split(',').map((s) => s.trim()).filter(Boolean) };
-    });
-    const results = await Promise.all([
-      days.length ? sb.from('trip_itineraries').insert(days) : Promise.resolve({}),
-      packages.length ? sb.from('trip_packages').insert(packages) : Promise.resolve({}),
-    ]);
-    const sub = results.find((r: any) => r?.error);
-    setBusy(false);
-    if (sub) { setErr(`Voyage créé en brouillon, mais programme/formules refusés : ${(sub as any).error.message}`); return; }
-    onCreated();
-  }
-
-  const lbl = 'block text-xs font-semibold text-neutral-400';
-  return (
-    <form onSubmit={submit} className="space-y-4 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-5">
-      <div className="flex gap-2">
-        {(['national', 'international'] as const).map((s) => (
-          <button type="button" key={s} onClick={() => setScope(s)}
-            className={`rounded-full border px-4 py-1.5 text-xs font-bold ${scope === s ? 'border-primary-500 bg-primary-500/15 text-primary-400' : 'border-neutral-800 text-neutral-400'}`}>
-            {s === 'national' ? '🇨🇮 National' : '🌍 International'}
-          </button>
-        ))}
-        <label className="ml-auto flex items-center gap-2 text-xs text-neutral-300"><input type="checkbox" name="is_circuit" /> Circuit multi-destinations</label>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className={`${lbl} sm:col-span-2`}>Titre *<input name="title" required maxLength={200} className={input} /></label>
-        <label className={`${lbl} sm:col-span-2`}>Résumé<input name="summary" maxLength={500} className={input} /></label>
-        <label className={lbl}>Ville / destination<input name="city" className={input} /></label>
-        <label className={lbl}>Image de couverture (URL)<input name="cover_url" type="url" className={input} /></label>
-        {scope === 'international' && (<>
-          <label className={lbl}>Pays *<input name="country" required className={input} /></label>
-          <label className={lbl}>Code pays (2 lettres) *<input name="country_code" required pattern="[A-Za-z]{2}" maxLength={2} className={input} /></label>
-          <label className={lbl}>Continent *<select name="continent" required className={input}>{CONTINENTS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></label>
-        </>)}
-        <label className={lbl}>Début *<input name="starts_on" type="date" required className={input} /></label>
-        <label className={lbl}>Fin *<input name="ends_on" type="date" required className={input} /></label>
-        <label className={lbl}>Prix de base (XOF) *<input name="base_price_xof" type="number" min={0} required className={input} /></label>
-        <label className={lbl}>Places *<input name="seats_total" type="number" min={1} required className={input} /></label>
-        <label className={lbl}>Acompte (% du total, 100 = pas d'acompte)<input name="deposit_pct" type="number" min={10} max={100} defaultValue={100} className={input} /></label>
-        <label className={lbl}>Point de départ<input name="departure_point" className={input} /></label>
-        <label className={lbl}>Heure de départ<input name="departure_time" type="time" className={input} /></label>
-        <label className={lbl}>Heure de retour<input name="return_time" type="time" className={input} /></label>
-        <label className={lbl}>Transport<input name="transport" className={input} /></label>
-        <label className={lbl}>Hébergement<input name="lodging" className={input} /></label>
-        <label className={lbl}>Repas<input name="meals" className={input} /></label>
-        {scope === 'international' && (<>
-          <label className={lbl}>Vol<input name="flight_info" className={input} /></label>
-          <label className={lbl}>Hôtel<input name="hotel_info" className={input} /></label>
-          <label className={lbl}>Visa<input name="visa_info" className={input} /></label>
-          <label className={lbl}>Assurance<input name="insurance_info" className={input} /></label>
-        </>)}
-        <label className={`${lbl} sm:col-span-2`}>Description<textarea name="description" rows={3} className={input} /></label>
-        <label className={lbl}>Activités (séparées par virgule ou ligne)<textarea name="activities" rows={2} className={input} /></label>
-        <label className={lbl}>Inclus<textarea name="inclusions" rows={2} className={input} /></label>
-        <label className={lbl}>Non inclus<textarea name="exclusions" rows={2} className={input} /></label>
-        <label className={lbl}>Conditions<textarea name="conditions" rows={2} className={input} /></label>
-        <label className={`${lbl} sm:col-span-2`}>Programme (une ligne par jour : « Titre : étape 1, étape 2 »)<textarea name="days" rows={3} className={input} placeholder="Abidjan → Grand-Bassam : Abidjan, Grand-Bassam" /></label>
-        <label className={`${lbl} sm:col-span-2`}>Formules (une ligne : « Nom | prix XOF | inclus 1, inclus 2 »)<textarea name="packages" rows={3} className={input} placeholder="Formule Confort | 65000 | Transport, Hébergement" /></label>
-        <label className={lbl}>Téléphone contact<input name="contact_phone" className={input} /></label>
-        <label className={lbl}>WhatsApp contact<input name="contact_whatsapp" className={input} /></label>
-      </div>
-      {err && <p role="alert" className="text-sm text-red-400">{err}</p>}
-      <p className="text-xs text-neutral-500">Le voyage est créé en brouillon ; publiez-le ensuite depuis la liste.</p>
-      <button disabled={busy} className="rounded-lg bg-primary-500 px-5 py-2 text-sm font-bold text-white disabled:opacity-60">{busy ? 'Création…' : 'Créer le brouillon'}</button>
-    </form>
   );
 }
 

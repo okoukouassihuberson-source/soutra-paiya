@@ -53,8 +53,15 @@
 2. **Admin** (`/admin?tab=trips` et `?tab=destinations`) : tableau de bord tourisme, création de voyages (programme et formules en saisie rapide), modération, création/mise à la une/masquage de destinations. Images par URL (pas encore d'upload).
 3. Testé sur PostgreSQL 16 (droits, transitions, valeurs invalides, statistiques, audit).
 
+## 3 quater. Livré en phase 2 (espace organisateur)
+1. **Migration `0085_organizer_space.sql`** : `submit_trip_for_review` (couverture et contact requis, trace d'audit), garde `trips` durci (un voyage publié est verrouillé pour son organisateur : seules « clore les ventes » et, sans paiement encaissé, « annuler » sont permises ; modifier un brouillon soumis le retire de la file), `get_organizer_dashboard`, `get_organizer_trip_bookings`.
+2. **`/organisateur`** : chiffres (réservations, places vendues, encaissé, reste à encaisser), création/modification de brouillons, soumission à validation, clôture des ventes, liste des voyageurs par voyage, accès au scan de billets. Réservé aux rôles organisateur / propriétaire / guide / admin.
+3. **Éditeur de voyage partagé** (`components/tourism/TripEditor.tsx`) : également utilisé dans l'admin (bouton « Modifier », qui lève la limite « pas de modification » de la section précédente). Brouillons soumis affichés en tête de file admin.
+4. **Attribution du rôle** : bouton « → Organisateur » dans l'onglet Utilisateurs de l'admin (pas d'auto-inscription : volontaire, pour éviter l'escalade de rôle).
+5. Testé sur PostgreSQL 16 : soumission, verrouillage, annulation avec paiements refusée, accès aux voyageurs réservé à l'organisateur, RPC de réservation toujours fonctionnelles. Bug trouvé et corrigé en test : la colonne générée `duration_days` est NULL dans `NEW` pendant un trigger BEFORE.
+
 ## 4. Feuille de route
-- **Reste de la phase 2 (non fait)** : filtres avancés + carte (Leaflet) sur `/explorer` ; activités (table `activities` + réservation) ; écran mobile des voyages ; espace organisateur (création de ses voyages en brouillon : la RLS est prête, l'écran manque ; éditer/supprimer un voyage existant côté admin).
+- **Reste de la phase 2 (non fait)** : filtres avancés + carte (Leaflet) sur `/explorer` ; activités (table `activities` + réservation) ; écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
 - **Phase 3** : i18n FR/EN ; notifications voyages (rappel, solde à payer) + email ; promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions
