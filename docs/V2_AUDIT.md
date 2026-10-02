@@ -16,7 +16,7 @@
 | Événements + billets QR + scan | **EXISTE** | `events`, `tickets`, RPC 0077, mobile `scan.tsx`. |
 | Avis, modération, note moyenne, signalement | **EXISTE** | migration 0076 (photos d'avis à vérifier). |
 | Favoris | **EXISTE** | table `favorites`, mobile `favorites.tsx`. |
-| Notifications internes + push | **EXISTE** | 0079/0080, `send-push`, `push_tokens`. Email/WhatsApp : **ABSENT**. |
+| Notifications internes + push | **EXISTE → COMPLÉTÉ (phase 2)** | 0079/0080, `send-push`, `push_tokens` conservés. Ajout : préférences par canal, file d'envoi multicanal, déclencheurs voyages/activités, rappels, email, push navigateur, centre de notifications web (§3 septies). WhatsApp/SMS : architecture prête, fournisseur à brancher. |
 | Codes promo | **EXISTE** | `promo_codes` (0015/0038). Offres flash/early booking/groupe : **ABSENT**. |
 | Abonnements pros, monétisation, mise en avant | **EXISTE/PARTIEL** | `subscriptions`, `monetization_*`. Commission configurable par catégorie : à compléter. |
 | Fidélité, Splits, Wallet, Social | **EXISTE** | hors périmètre tourisme, **conservés**. |
@@ -74,9 +74,18 @@
 5. **Tests** : 17 scénarios sur PostgreSQL 16 (droits, verrouillage, surbooking, expiration, paiement idempotent, scan, avis, modération, liste publique). Interface vérifiée dans Chromium sur une API simulée (liste, fiche, choix de créneau, total, invitation à se connecter).
 6. Limites : avis sans photos (champ non prévu pour l'instant) ; images d'activités par URL ; paiement GeniusPay non testé de bout en bout (pas de clés) ; paiement intégral uniquement (pas d'acompte) ; pas encore de notifications ; scan mobile natif non fait.
 
+## 3 septies. Livré en phase 2 (notifications)
+1. **Migrations `0088` + `0089`** (0088 ne contient que l'ajout des valeurs d'enum `tourism` et `promotion`, car PostgreSQL interdit de les utiliser dans la même transaction) : `notification_preferences` (6 catégories × canaux in_app / push / webpush / email / sms / whatsapp), `notification_outbox` (file avec reprise : 5 tentatives, attente exponentielle, verrou périmé repris après 10 min), `web_push_subscriptions`, `notify_user()` (point d'entrée unique, respecte les préférences et n'enfile un canal que s'il a une destination), déclencheurs, `send_tourism_reminders()` (idempotent), planification pg_cron/pg_net toutes les 15 min (comme 0050).
+2. **Événements couverts** : nouvelle réservation, paiement confirmé / reçu, solde à payer (à l'acompte, puis rappels J-7 et J-2), annulation, réservation expirée, rappel de départ (J-3, J-1), rappel d'activité (24 h, 3 h), paiement à finaliser, modification d'un voyage (dates, lieu, heures) ou d'un créneau, voyage / activité annulé, voyage ou activité à valider (admins), publié (organisateur), nouvel avis, nouveau partenaire (admins) et activation du compte partenaire. « Promotion » : catégorie et canal prêts, aucun émetteur (pas de module de promotions encore).
+3. **Edge Function `notify-dispatch`** (+ adaptateurs `_shared/notify.ts`) : push Expo (jetons invalides nettoyés), push navigateur VAPID, email Resend (HTML échappé, liens internes uniquement), SMS/WhatsApp « skipped ». Variables : `RESEND_API_KEY`, `RESEND_FROM`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `SITE_URL`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (voir `.env.example`).
+4. **Web** : cloche avec compteur dans la navigation, `/notifications` (liste, non lues, tout marquer comme lu, pagination), `/notifications/preferences` (matrice catégories × canaux, activation du push navigateur), gestionnaires `push` et `notificationclick` dans le service worker.
+5. **Correctif de déploiement** (0082 et 0087) : le rôle `guide` était comparé en littéral dans une politique juste après son ajout à l'enum, ce que PostgreSQL refuse dans une transaction (`supabase db push`). Les politiques comparent désormais `role::text`. Toutes les migrations 0082-0089 ont été rejouées en transaction unique.
+6. **Tests** : 30+ scénarios SQL sur PostgreSQL 16 (événements, préférences, canaux, rappels et idempotence, file, reprise, sécurité : un client ne peut ni émettre, ni lire la file) ; 7 tests Deno (échappement HTML, liens sûrs, appels Resend et Expo simulés, nettoyage des jetons, contrôle d'accès) ; interface vérifiée dans Chromium avec une session simulée. **Non testés** : envoi réel (Resend, Expo, VAPID), le cron pg_cron/pg_net, et la réception d'un push dans un navigateur.
+7. Limites : les notifications mobiles existantes (réservations de table, commandes…) gardent leur circuit `send-push` ; l'application mobile n'affiche pas encore ces nouveaux types ; pas de temps réel (rafraîchissement toutes les 60 s) ; pas de vue d'administration de la file d'envoi.
+
 ## 4. Feuille de route
 - **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; upload d'images (aujourd'hui par URL) ; notifications aux organisateurs (soumission, nouvelle réservation).
-- **Phase 3** : i18n FR/EN ; notifications voyages (rappel, solde à payer) + email ; promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
+- **Phase 3** : i18n FR/EN ; promotions (early booking, groupe) ; commissions configurables ; assistant IA branché sur `trips`/`destinations` (données uniquement) ; app mobile (onglets Voyages/Destinations).
 
 ## 5. Déploiement / précautions
 - Déployer : `supabase db push` puis `supabase functions deploy geniuspay-pay-trip`. Appliquer 0082 puis 0083 (testée uniquement par relecture statique ici : **à exécuter d'abord sur un environnement de préproduction**). Régénérer les types : `pnpm db:types`.

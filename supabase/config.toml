@@ -53,3 +53,9 @@ verify_jwt = false
 # avec Authorization = Bearer <service_role_key>, vérifié dans le code.
 [functions.paystack-renew-subscriptions]
 verify_jwt = false
+
+# Envoi des notifications en attente (migration 0089) : push Expo, push navigateur,
+# email. Appelée par pg_cron/cron externe toutes les 15 min avec
+# Authorization = Bearer <service_role_key>, vérifié dans le code.
+[functions.notify-dispatch]
+verify_jwt = false

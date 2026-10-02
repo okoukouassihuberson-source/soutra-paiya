@@ -235,7 +235,7 @@ create policy trips_organizer_insert on public.trips
     organizer_id = auth.uid()
     and status = 'draft'
     and exists (select 1 from public.profiles p
-                where p.id = auth.uid() and p.role in ('organizer','venue_owner','guide','admin'))
+                where p.id = auth.uid() and p.role::text in ('organizer','venue_owner','guide','admin'))
   );
 drop policy if exists trips_organizer_update on public.trips;
 create policy trips_organizer_update on public.trips

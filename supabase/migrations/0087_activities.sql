@@ -179,7 +179,7 @@ drop policy if exists activities_insert on public.activities;
 create policy activities_insert on public.activities for insert to authenticated
   with check (organizer_id = auth.uid() and status = 'draft'
     and exists (select 1 from public.profiles p where p.id = auth.uid()
-                and p.role in ('organizer','venue_owner','guide','admin')));
+                and p.role::text in ('organizer','venue_owner','guide','admin')));
 drop policy if exists activities_update on public.activities;
 create policy activities_update on public.activities for update to authenticated
   using (organizer_id = auth.uid() or public.is_admin())

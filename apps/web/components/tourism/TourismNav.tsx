@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { NotificationBell } from './NotificationBell';
 
 const LINKS = [
   { href: '/explorer', label: 'Explorer' },
@@ -25,7 +26,8 @@ export function TourismNav() {
               <Link key={l.href} href={l.href} className="whitespace-nowrap text-sm font-medium text-neutral-600 hover:text-primary-600">{l.label}</Link>
             ))}
           </nav>
-          <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-2 text-sm">
+            <NotificationBell />
             <Link href="/organisateur" className="hidden whitespace-nowrap font-medium text-neutral-600 hover:text-primary-600 2xl:inline">Organisateur</Link>
             <Link href="/mes-voyages" className="hidden whitespace-nowrap font-medium text-neutral-600 hover:text-primary-600 xl:inline">Mes voyages</Link>
             <Link href="/login" className="whitespace-nowrap rounded-full bg-primary-500 px-4 py-2 font-semibold text-white hover:bg-primary-600">Mon compte</Link>
