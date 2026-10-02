@@ -366,7 +366,7 @@ function BookingDetailModal({
             )}
 
             <Pressable onPress={onClose} style={s.closeBtn}>
-              <Text style={s.closeBtnText}>Fermer</Text>
+              <Text style={s.closeBtnText}>{t('common.close')}</Text>
             </Pressable>
           </ScrollView>
         </View>

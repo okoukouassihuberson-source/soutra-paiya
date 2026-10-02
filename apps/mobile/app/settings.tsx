@@ -57,7 +57,7 @@ export default function Settings() {
 
   const toggleBiometric = async (value: boolean) => {
     if (value && !hasPin) {
-      Alert.alert('Code PIN requis', "Définis d'abord un code PIN de paiement.");
+      Alert.alert(t('settingsScreen.pinReqTitle'), t('settingsScreen.pinReqBody'));
       return;
     }
     setBioEnabled(value);
@@ -65,9 +65,9 @@ export default function Settings() {
   };
 
   const confirmSignOut = () => {
-    Alert.alert('Déconnexion', 'Veux-tu te déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: () => signOut() },
+    Alert.alert(t('settingsScreen.signOutTitle'), t('settingsScreen.signOutBody'), [
+      { text: t('settingsScreen.cancel'), style: 'cancel' },
+      { text: t('settingsScreen.signOut'), style: 'destructive', onPress: () => signOut() },
     ]);
   };
 
@@ -77,7 +77,7 @@ export default function Settings() {
         <Pressable hitSlop={10} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </Pressable>
-        <Text style={s.headerTitle}>Paramètres</Text>
+        <Text style={s.headerTitle}>{t('settingsScreen.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -89,7 +89,7 @@ export default function Settings() {
             </Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.profileName}>{fullName || 'Mon compte'}</Text>
+            <Text style={s.profileName}>{fullName || t('settingsScreen.myAccount')}</Text>
             <Text style={s.profilePhone}>{phone}</Text>
           </View>
         </View>
@@ -107,38 +107,38 @@ export default function Settings() {
           {locale === 'en' && <Text style={[s.rowHint, { padding: spacing.md }]}>{t('lang.hint')}</Text>}
         </View>
 
-        <Text style={s.section}>Compte</Text>
+        <Text style={s.section}>{t('settingsScreen.account')}</Text>
         <View style={s.group}>
           <Row
             icon="person-outline"
-            label="Mon profil"
+            label={t('settingsScreen.profile')}
             onPress={() => router.push('/profile-edit')}
           />
           <Row
             icon="shield-checkmark-outline"
-            label="Vérification d'identité (KYC)"
+            label={t('settingsScreen.kyc')}
             onPress={() => router.push('/kyc')}
             last
           />
         </View>
 
-        <Text style={s.section}>Sécurité</Text>
+        <Text style={s.section}>{t('settingsScreen.security')}</Text>
         <View style={s.group}>
           <Row
             icon="keypad-outline"
-            label="Code PIN de paiement"
-            value={hasPin ? 'Activé' : 'Non défini'}
+            label={t('settingsScreen.pin')}
+            value={hasPin ? t('settingsScreen.pinOn') : t('settingsScreen.pinOff')}
             onPress={() => router.push('/security-pin')}
           />
           <View style={s.row}>
             <Ionicons name="finger-print-outline" size={22} color={colors.neutral[600]} />
             <View style={{ flex: 1 }}>
-              <Text style={s.rowLabel}>Déverrouillage biométrique</Text>
+              <Text style={s.rowLabel}>{t('settingsScreen.bio')}</Text>
               {!bioAvailable && (
-                <Text style={s.rowHint}>Non disponible sur cet appareil</Text>
+                <Text style={s.rowHint}>{t('settingsScreen.bioNA')}</Text>
               )}
               {bioAvailable && !hasPin && (
-                <Text style={s.rowHint}>Définis d'abord un code PIN</Text>
+                <Text style={s.rowHint}>{t('settingsScreen.bioNeedPin')}</Text>
               )}
             </View>
             <Switch
@@ -150,7 +150,7 @@ export default function Settings() {
           </View>
           <Row
             icon="lock-closed-outline"
-            label="Changer le mot de passe"
+            label={t('settingsScreen.changePw')}
             onPress={() => router.push('/change-password')}
             last
           />
@@ -163,7 +163,7 @@ export default function Settings() {
           >
             <Ionicons name="log-out-outline" size={22} color={colors.danger} />
             <Text style={[s.rowLabel, { color: colors.danger, flex: 1 }]}>
-              Se déconnecter
+              {t('settingsScreen.signOut')}
             </Text>
           </Pressable>
         </View>

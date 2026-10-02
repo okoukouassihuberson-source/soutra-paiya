@@ -7,7 +7,7 @@ type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> };
 export const fr = {
   lang: { title: 'Langue / Language', fr: 'Français', en: 'English', hint: 'L’anglais est partiel : les écrans non traduits restent en français.' },
   tabs: { explore: 'Explorer', tickets: 'Billets', wallet: 'Soutra-Pay', social: 'Social', profile: 'Moi' },
-  common: { loading: 'Chargement…', errorRetry: 'Impossible de charger. Tirez pour réessayer.', retry: 'Réessayer' },
+  common: { loading: 'Chargement…', errorRetry: 'Impossible de charger. Tirez pour réessayer.', retry: 'Réessayer', close: 'Fermer' },
   home: { trips: 'Voyages', activities: 'Activités', destinations: 'Destinations', promotions: 'Promotions', myTrips: 'Mes voyages' },
   settings: { title: 'Paramètres', language: 'Langue' },
   cat: {
@@ -458,6 +458,10 @@ export const fr = {
     reservation: 'Réservation', order: 'Commande', booking: 'Séjour hôtel', event: 'Billet événement', docTitle: 'Ticket Soutra-Playce — {kind}', code: 'Code de validation',
     hint: 'Présente ce ticket (écran ou papier) au personnel du lieu. Le QR est scanné pour valider l’entrée / la remise.', date: 'Date', status: 'Statut', total: 'Total', footer: 'Ticket émis par Soutra-Playce · ID {id}', support: 'En cas de problème : support@soutra-paiya.com',
     share: 'Ticket Soutra-Playce', done: 'PDF généré', web: 'Ouvre le fichier depuis ton navigateur.', saved: 'Fichier sauvegardé : {uri}', error: 'Erreur', fail: 'Impossible de générer le ticket PDF.',
+  },
+  settingsScreen: {
+    title: 'Paramètres', pinReqTitle: 'Code PIN requis', pinReqBody: 'Définis d’abord un code PIN de paiement.', signOutTitle: 'Déconnexion', signOutBody: 'Veux-tu te déconnecter ?', cancel: 'Annuler', signOut: 'Se déconnecter', myAccount: 'Mon compte',
+    account: 'Compte', profile: 'Mon profil', kyc: 'Vérification d’identité (KYC)', security: 'Sécurité', pin: 'Code PIN de paiement', pinOn: 'Activé', pinOff: 'Non défini', bio: 'Déverrouillage biométrique', bioNA: 'Non disponible sur cet appareil', bioNeedPin: 'Définis d’abord un code PIN', changePw: 'Changer le mot de passe',
   },
 } as const;
 

@@ -328,7 +328,7 @@ export default function ReservationForm() {
               onPress={() => setShowDatePicker(true)}
             >
               <Ionicons name="calendar" size={20} color={colors.primary[500]} />
-              <Text style={s.inputText}>{selectedDate.toLocaleDateString('fr-FR')}</Text>
+              <Text style={s.inputText}>{selectedDate.toLocaleDateString(intl)}</Text>
             </Pressable>
             {showDatePicker && (
               <DateTimePicker
@@ -349,7 +349,7 @@ export default function ReservationForm() {
             >
               <Ionicons name="time" size={20} color={colors.primary[500]} />
               <Text style={s.inputText}>
-                {selectedTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                {selectedTime.toLocaleTimeString(intl, { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </Pressable>
             {showTimePicker && (

@@ -5,7 +5,7 @@ import type { Dict } from './fr';
 export const en: Dict = {
   lang: { title: 'Language', fr: 'Français', en: 'English', hint: 'English is partial: screens that are not translated yet stay in French.' },
   tabs: { explore: 'Explore', tickets: 'Tickets', wallet: 'Soutra-Pay', social: 'Social', profile: 'Me' },
-  common: { loading: 'Loading…', errorRetry: 'Unable to load. Pull to retry.', retry: 'Retry' },
+  common: { loading: 'Loading…', errorRetry: 'Unable to load. Pull to retry.', retry: 'Retry', close: 'Close' },
   home: { trips: 'Trips', activities: 'Activities', destinations: 'Destinations', promotions: 'Deals', myTrips: 'My trips' },
   settings: { title: 'Settings', language: 'Language' },
   cat: {
@@ -456,5 +456,9 @@ export const en: Dict = {
     reservation: 'Booking', order: 'Order', booking: 'Hotel stay', event: 'Event ticket', docTitle: 'Soutra-Playce ticket — {kind}', code: 'Validation code',
     hint: 'Show this ticket (screen or paper) to the venue staff. The QR code is scanned to validate entry / pickup.', date: 'Date', status: 'Status', total: 'Total', footer: 'Ticket issued by Soutra-Playce · ID {id}', support: 'Need help: support@soutra-paiya.com',
     share: 'Soutra-Playce ticket', done: 'PDF generated', web: 'Open the file from your browser.', saved: 'File saved: {uri}', error: 'Error', fail: 'Could not generate the ticket PDF.',
+  },
+  settingsScreen: {
+    title: 'Settings', pinReqTitle: 'PIN required', pinReqBody: 'Set a payment PIN first.', signOutTitle: 'Sign out', signOutBody: 'Do you want to sign out?', cancel: 'Cancel', signOut: 'Sign out', myAccount: 'My account',
+    account: 'Account', profile: 'My profile', kyc: 'Identity verification (KYC)', security: 'Security', pin: 'Payment PIN', pinOn: 'On', pinOff: 'Not set', bio: 'Biometric unlock', bioNA: 'Not available on this device', bioNeedPin: 'Set a PIN first', changePw: 'Change password',
   },
 };

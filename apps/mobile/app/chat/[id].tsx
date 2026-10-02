@@ -7,7 +7,7 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { listMessages, sendMessage, markChatRead, type ChatMessage } from '@/lib/chat';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, intlLocale } from '@/lib/i18n';
 
 export default function ChatScreen() {
   const { t } = useI18n();
@@ -158,8 +158,8 @@ function formatTime(iso: string): string {
   const d = new Date(iso);
   const today = new Date();
   const sameDay = d.toDateString() === today.toDateString();
-  if (sameDay) return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  if (sameDay) return d.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 const s = StyleSheet.create({

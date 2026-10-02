@@ -418,7 +418,7 @@ function LoyaltyTeaser({
       </View>
       <View style={{ flex: 1 }}>
         <Text style={s.loyaltyTeaserLabel}>{t('wallet.loyalty')}</Text>
-        <Text style={s.loyaltyTeaserAmount}>{stats.balance.toLocaleString('fr-FR')} pts</Text>
+        <Text style={s.loyaltyTeaserAmount}>{stats.balance.toLocaleString(intlLocale())} pts</Text>
         {stats.levelLabel && (
           <Text style={s.loyaltyTeaserSub}>
             Niveau {stats.levelEmoji} {stats.levelLabel}

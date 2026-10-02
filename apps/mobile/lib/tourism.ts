@@ -5,7 +5,7 @@
 // ============================================================================
 import type { Activity, ActivitySlot, Destination, Trip, TripItineraryDay, TripPackage, TripScope } from '@soutra/shared';
 import { supabase } from './supabase';
-import { tr, type TKey } from './i18n';
+import { tr, intlLocale, type TKey } from './i18n';
 
 const db = supabase as any;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -100,7 +100,7 @@ export async function listOffersForTarget(kind: 'trip' | 'activity', target: str
   return (data ?? []) as Offer[];
 }
 export const offerValueLabel = (o: Pick<Offer, 'discount_type' | 'discount_value'>) =>
-  o.discount_type === 'percent' ? tr('offer.percentOff', { n: o.discount_value }) : tr('offer.fixedOff', { n: new Intl.NumberFormat('fr-FR').format(o.discount_value) });
+  o.discount_type === 'percent' ? tr('offer.percentOff', { n: o.discount_value }) : tr('offer.fixedOff', { n: new Intl.NumberFormat(intlLocale()).format(o.discount_value) });
 
 const PROMO_CODES = ['PROMO_NOT_FOUND', 'PROMO_NOT_APPLICABLE', 'PROMO_INACTIVE', 'PROMO_NOT_STARTED', 'PROMO_EXPIRED', 'PROMO_PARTICIPANTS', 'PROMO_TOO_LATE', 'PROMO_TOO_EARLY', 'PROMO_RATE_LIMITED', 'PROMO_EXHAUSTED', 'PROMO_ALREADY_USED', 'NOT_AUTHENTICATED'];
 /** Message localisé d'un code d'erreur promo (`PROMO_*`), ou le message générique. */
