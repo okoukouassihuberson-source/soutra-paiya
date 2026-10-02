@@ -131,7 +131,7 @@
 5. **Limites** : mobile en français uniquement (pas d'infrastructure i18n dans l'app) ; pas d'écran destinations ni de recherche / filtres avancés ; pas d'espace organisateur mobile (administration et partenaires restent sur le web) ; pas d'avis sur les activités depuis le mobile ; notifications push des rappels déjà gérées par `notify-dispatch` mais le routage vers ces écrans n'est pas branché.
 
 ## 4. Feuille de route
-- **Reste de la phase 2 (non fait)** : écran mobile des voyages ; suppression d'un voyage côté admin ; notifications aux organisateurs (soumission, nouvelle réservation).
+- **Reste de la phase 2 (non fait)** : suppression d'un voyage côté admin (aujourd'hui : archivage via le statut).
 - **Reste** : recette sur appareil de l'application mobile ; écran destinations, avis et filtres sur mobile ; i18n mobile ; espace organisateur mobile ; relecture humaine des traductions anglaises.
 
 ## 5. Déploiement / précautions
