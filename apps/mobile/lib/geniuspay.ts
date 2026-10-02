@@ -5,6 +5,7 @@
 // ============================================================================
 import * as WebBrowser from 'expo-web-browser';
 import { invokeEdge } from './edge';
+import { tr } from '@/lib/i18n';
 
 // Deep link de retour : GeniusPay y redirige (via la page web
 // /geniuspay/callback), ce qui referme automatiquement le navigateur in-app.
@@ -39,7 +40,7 @@ export async function payWithGeniuspay(
   });
 
   if (!init?.checkout_url || !init?.reference) {
-    throw new Error('Réponse invalide du serveur de paiement');
+    throw new Error(tr('sys.payInvalid'));
   }
 
   // Ouvre la page GeniusPay. Le navigateur se referme automatiquement quand
@@ -75,7 +76,7 @@ async function payViaDedicatedFunction(
   }>(functionName, body);
 
   if (!init?.checkout_url || !init?.reference) {
-    throw new Error('Réponse invalide du serveur de paiement');
+    throw new Error(tr('sys.payInvalid'));
   }
 
   await WebBrowser.openAuthSessionAsync(init.checkout_url, RETURN_URL);

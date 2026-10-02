@@ -2,6 +2,7 @@
 // Appel des Edge Functions Supabase, avec remontée du message d'erreur serveur.
 // ============================================================================
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 // Appelle une Edge Function et, en cas d'erreur HTTP, fait remonter le message
 // renvoyé par le serveur dans le corps de la réponse ({ error: "..." }).
@@ -11,7 +12,7 @@ export async function invokeEdge<T = any>(
 ): Promise<T> {
   const { data, error } = await supabase.functions.invoke<T>(name, { body });
   if (error) {
-    let message = error.message || 'Erreur réseau';
+    let message = error.message || tr('sys.network');
     const ctx = (error as any).context;
     if (ctx && typeof ctx.json === 'function') {
       try {

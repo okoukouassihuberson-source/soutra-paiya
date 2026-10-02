@@ -439,4 +439,22 @@ export const en: Dict = {
     subtitle: 'Soutra Intelligent Assistant', tryIt: 'Try', placeholder: 'Speak or type… (e.g. SIA open my wallet)', suggestions: 'SIA, open my wallet|SIA, show me the hotels|SIA, show my loyalty|How do I top up my wallet?', opening: 'Opening {label} for you.',
     route: { wallet: 'Wallet', loyalty: 'Loyalty', explore: 'Explore', tickets: 'My tickets', profile: 'Profile', settings: 'Settings', send: 'Send', requests: 'Requests', scan: 'Scan QR', recharge: 'Top up', withdraw: 'Withdraw', splits: 'Split Bill', orders: 'My orders', hotelBookings: 'My stays', trending: 'Trending', favorites: 'Favourites' },
   },
+  claimStatus: { label: 'Claim: {status}', pending: 'Pending', reviewing: 'Under review', approved: 'Approved', rejected: 'Rejected', cancelled: 'Cancelled' },
+  submissionStatus: { pending: 'Pending', reviewing: 'Under review', approved: 'Approved', rejected: 'Rejected', duplicate: 'Duplicate' },
+  sys: {
+    destination: 'Destination', mapUnavailTitle: 'Directions unavailable', mapUnavailBody: 'No maps app is installed on this phone.', badNumber: 'Invalid number', badPhoneBody: 'The phone number is empty or invalid.', callUnavailTitle: 'Call unavailable', callUnavailBody: 'Could not open the dialler on this phone.',
+    badWaBody: 'The WhatsApp number is empty.', waUnavailTitle: 'WhatsApp unavailable', waUnavailBody: 'Could not open WhatsApp on this phone.',
+    permTitle: 'Permission required', permCover: 'Allow access to your photos to choose a cover.', permCoverCam: 'Allow the camera to take a cover photo.', permAvatar: 'Allow access to your photos to choose an avatar.', permAvatarCam: 'Allow the camera to take an avatar.',
+    bigTitle: 'Image too large', big8: 'Choose an image under 8 MB.', big5: 'Choose an image under 5 MB.', error: 'Error', readFail: 'Could not read the image. Try again.',
+    msgTooLong: 'Message too long (4000 characters max).', sessionExpired: 'Session expired.', commentTooLong: 'Comment too long (1000 characters max).', payInvalid: 'Invalid response from the payment server', network: 'Network error',
+    reqNoAccount: 'No Soutra-Playce account with this number', reqSelf: 'You cannot request money from yourself', splitNotRegistered: 'Number not registered on Soutra-Playce: {phone}', splitFail: 'Could not create the split', splitSelf: 'You cannot include yourself as a participant', splitInvalid: 'Invalid amount',
+    pushEmulator: 'Emulator — push notifications need a real phone.', pushDenied: 'Permission denied.', pushExpoGo: 'Expo Go no longer supports native push notifications. Run a dev build.', pushNoToken: 'Could not get the push token.', pushEmpty: 'Empty token.', pushChannel: 'Notifications',
+    bioPrompt: 'Confirm your identity', bioCancel: 'Use PIN',
+    pdfShare: 'Soutra-Playce revenue report', pdfDone: 'PDF generated', pdfSaved: 'File saved: {uri}', pdfNoShare: 'Sharing is not available on this device.', pdfErrTitle: 'PDF error', pdfFail: 'Could not generate the PDF.',
+  },
+  ticketPdf: {
+    reservation: 'Booking', order: 'Order', booking: 'Hotel stay', event: 'Event ticket', docTitle: 'Soutra-Playce ticket — {kind}', code: 'Validation code',
+    hint: 'Show this ticket (screen or paper) to the venue staff. The QR code is scanned to validate entry / pickup.', date: 'Date', status: 'Status', total: 'Total', footer: 'Ticket issued by Soutra-Playce · ID {id}', support: 'Need help: support@soutra-paiya.com',
+    share: 'Soutra-Playce ticket', done: 'PDF generated', web: 'Open the file from your browser.', saved: 'File saved: {uri}', error: 'Error', fail: 'Could not generate the ticket PDF.',
+  },
 };

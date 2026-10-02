@@ -11,6 +11,7 @@
  */
 
 import { Platform, Linking, Alert } from 'react-native';
+import { tr } from '@/lib/i18n';
 
 export type DirectionsTarget = {
   lat: number;
@@ -30,7 +31,7 @@ async function tryOpen(url: string): Promise<boolean> {
 }
 
 export async function openDirections({ lat, lng, label }: DirectionsTarget): Promise<void> {
-  const safeLabel = (label || 'Destination').replace(/[^\w\s.\-,'éèêëàâäîïôöùûüç]/gi, '').slice(0, 60);
+  const safeLabel = (label || tr('sys.destination')).replace(/[^\w\s.\-,'éèêëàâäîïôöùûüç]/gi, '').slice(0, 60);
 
   if (Platform.OS === 'ios') {
     // 1) Apple Maps avec destination directe.
@@ -49,7 +50,7 @@ export async function openDirections({ lat, lng, label }: DirectionsTarget): Pro
   // Fonctionne sur n'importe quel device avec un navigateur.
   if (await tryOpen(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`)) return;
 
-  Alert.alert('Itinéraire indisponible', 'Aucune application de cartographie installée sur ce téléphone.');
+  Alert.alert(tr('sys.mapUnavailTitle'), tr('sys.mapUnavailBody'));
 }
 
 /**
@@ -58,11 +59,11 @@ export async function openDirections({ lat, lng, label }: DirectionsTarget): Pro
 export async function dialPhone(phone: string): Promise<void> {
   const cleaned = phone.replace(/[^\d+]/g, '');
   if (!cleaned) {
-    Alert.alert('Numéro invalide', 'Le numéro de téléphone est vide ou invalide.');
+    Alert.alert(tr('sys.badNumber'), tr('sys.badPhoneBody'));
     return;
   }
   if (!(await tryOpen(`tel:${cleaned}`))) {
-    Alert.alert('Appel indisponible', 'Impossible d\'ouvrir le composeur sur ce téléphone.');
+    Alert.alert(tr('sys.callUnavailTitle'), tr('sys.callUnavailBody'));
   }
 }
 
@@ -73,12 +74,12 @@ export async function dialPhone(phone: string): Promise<void> {
 export async function openWhatsApp(phone: string, message?: string): Promise<void> {
   const cleaned = phone.replace(/[^\d]/g, ''); // wa.me veut le numéro SANS « + »
   if (!cleaned) {
-    Alert.alert('Numéro invalide', 'Le numéro WhatsApp est vide.');
+    Alert.alert(tr('sys.badNumber'), tr('sys.badWaBody'));
     return;
   }
   const qs = message ? `?text=${encodeURIComponent(message)}` : '';
   // Scheme app dédié si installé, sinon page web (qui propose d'installer / d'ouvrir).
   if (await tryOpen(`whatsapp://send?phone=${cleaned}${message ? `&text=${encodeURIComponent(message)}` : ''}`)) return;
   if (await tryOpen(`https://wa.me/${cleaned}${qs}`)) return;
-  Alert.alert('WhatsApp indisponible', 'Impossible d\'ouvrir WhatsApp sur ce téléphone.');
+  Alert.alert(tr('sys.waUnavailTitle'), tr('sys.waUnavailBody'));
 }

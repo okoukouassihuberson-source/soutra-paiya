@@ -17,6 +17,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 // Comportement par défaut : on affiche la notif même si l'app est ouverte
 // (bannière + son), au lieu de la masquer comme c'est le défaut Expo.
@@ -34,7 +35,7 @@ let lastRegisteredToken: string | null = null;
 
 export async function registerForPush(): Promise<{ ok: boolean; reason?: string; token?: string }> {
   if (!Device.isDevice) {
-    return { ok: false, reason: 'Émulateur — les push notifications nécessitent un vrai téléphone.' };
+    return { ok: false, reason: tr('sys.pushEmulator') };
   }
 
   // Demande permission (idempotent : retourne 'granted' si déjà accordée).
@@ -45,13 +46,13 @@ export async function registerForPush(): Promise<{ ok: boolean; reason?: string;
     status = req.status;
   }
   if (status !== 'granted') {
-    return { ok: false, reason: 'Permission refusée.' };
+    return { ok: false, reason: tr('sys.pushDenied') };
   }
 
   // Android : canal de notif obligatoire pour les notifs avec son.
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Notifications',
+      name: tr('sys.pushChannel'),
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF6A1A',
@@ -71,13 +72,13 @@ export async function registerForPush(): Promise<{ ok: boolean; reason?: string;
   } catch (err: unknown) {
     const msg = (err instanceof Error ? err.message : String(err)) || '';
     if (/Expo Go/i.test(msg)) {
-      return { ok: false, reason: 'Expo Go ne supporte plus les push notifications natives. Lance un dev build.' };
+      return { ok: false, reason: tr('sys.pushExpoGo') };
     }
-    return { ok: false, reason: msg || 'Impossible d\'obtenir le token push.' };
+    return { ok: false, reason: msg || tr('sys.pushNoToken') };
   }
 
   const token = tokenData.data;
-  if (!token) return { ok: false, reason: 'Token vide.' };
+  if (!token) return { ok: false, reason: tr('sys.pushEmpty') };
 
   // Enregistre côté serveur (SECURITY DEFINER, attaché au caller).
   const { error } = await (supabase as any).rpc('register_push_token', {

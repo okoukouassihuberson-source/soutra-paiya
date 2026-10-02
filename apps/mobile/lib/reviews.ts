@@ -3,6 +3,7 @@
 // vote "utile", signalement.
 // ============================================================================
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 export type ReviewSourceType = 'reservation' | 'room_booking' | 'order';
 export type ReviewSort = 'recent' | 'helpful' | 'rating_high' | 'rating_low';
@@ -161,12 +162,12 @@ export async function toggleReviewHelpful(reviewId: string): Promise<{ voted: bo
 
 export type ReviewReportKind = 'spam' | 'offensive' | 'fake' | 'irrelevant' | 'other';
 
-export const REVIEW_REPORT_KIND_LABELS: Record<ReviewReportKind, { label: string; icon: string; description: string }> = {
-  spam:        { label: 'Spam',                  icon: '🚫', description: "Publicité ou contenu non pertinent." },
-  offensive:   { label: 'Contenu offensant',     icon: '⚠️', description: 'Langage insultant ou déplacé.' },
-  fake:        { label: 'Faux avis',             icon: '🎭', description: "Cet avis ne semble pas authentique." },
-  irrelevant:  { label: 'Hors sujet',            icon: '📝', description: "Ne concerne pas cet établissement." },
-  other:       { label: 'Autre',                 icon: '📌', description: 'Autre raison — précise dans le champ détail.' },
+export const REVIEW_REPORT_KIND_LABELS: Record<ReviewReportKind, { readonly label: string; icon: string; readonly description: string }> = {
+  spam:        { get label() { return tr('reviewReport.kind.spam'); },                  icon: '🚫', get description() { return tr('reviewReport.kind.spamD'); } },
+  offensive:   { get label() { return tr('reviewReport.kind.offensive'); },     icon: '⚠️', get description() { return tr('reviewReport.kind.offensiveD'); } },
+  fake:        { get label() { return tr('reviewReport.kind.fake'); },             icon: '🎭', get description() { return tr('reviewReport.kind.fakeD'); } },
+  irrelevant:  { get label() { return tr('reviewReport.kind.irrelevant'); },            icon: '📝', get description() { return tr('reviewReport.kind.irrelevantD'); } },
+  other:       { get label() { return tr('reviewReport.kind.other'); },                 icon: '📌', get description() { return tr('reviewReport.kind.otherD'); } },
 };
 
 export interface SubmitReportResult {

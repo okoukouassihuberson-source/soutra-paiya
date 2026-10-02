@@ -441,6 +441,24 @@ export const fr = {
     subtitle: 'Soutra Intelligent Assistant', tryIt: 'Essaie', placeholder: 'Parle ou tape… (ex : SIA ouvre mon wallet)', suggestions: 'SIA, ouvre mon wallet|SIA, montre les hôtels|SIA, affiche ma fidélité|Comment recharger mon wallet ?', opening: 'J’ouvre {label} pour toi.',
     route: { wallet: 'Wallet', loyalty: 'Fidélité', explore: 'Explorer', tickets: 'Mes tickets', profile: 'Profil', settings: 'Paramètres', send: 'Envoyer', requests: 'Demandes', scan: 'Scanner QR', recharge: 'Recharger', withdraw: 'Retrait', splits: 'Split Bill', orders: 'Mes commandes', hotelBookings: 'Mes nuits', trending: 'Tendances', favorites: 'Favoris' },
   },
+  claimStatus: { label: 'Revendication : {status}', pending: 'En attente', reviewing: 'En revue', approved: 'Approuvée', rejected: 'Refusée', cancelled: 'Annulée' },
+  submissionStatus: { pending: 'En attente', reviewing: 'En examen', approved: 'Approuvée', rejected: 'Refusée', duplicate: 'Doublon' },
+  sys: {
+    destination: 'Destination', mapUnavailTitle: 'Itinéraire indisponible', mapUnavailBody: 'Aucune application de cartographie installée sur ce téléphone.', badNumber: 'Numéro invalide', badPhoneBody: 'Le numéro de téléphone est vide ou invalide.', callUnavailTitle: 'Appel indisponible', callUnavailBody: 'Impossible d’ouvrir le composeur sur ce téléphone.',
+    badWaBody: 'Le numéro WhatsApp est vide.', waUnavailTitle: 'WhatsApp indisponible', waUnavailBody: 'Impossible d’ouvrir WhatsApp sur ce téléphone.',
+    permTitle: 'Permission requise', permCover: 'Autorise l’accès à tes photos pour choisir une couverture.', permCoverCam: 'Autorise la caméra pour prendre une couverture.', permAvatar: 'Autorise l’accès à tes photos pour choisir un avatar.', permAvatarCam: 'Autorise la caméra pour prendre un avatar.',
+    bigTitle: 'Image trop lourde', big8: 'Choisis une image de moins de 8 Mo.', big5: 'Choisis une image de moins de 5 Mo.', error: 'Erreur', readFail: 'Impossible de lire l’image. Réessaie.',
+    msgTooLong: 'Message trop long (4000 caractères max).', sessionExpired: 'Session expirée.', commentTooLong: 'Commentaire trop long (1000 caractères max).', payInvalid: 'Réponse invalide du serveur de paiement', network: 'Erreur réseau',
+    reqNoAccount: 'Aucun compte Soutra-Playce avec ce numéro', reqSelf: 'Tu ne peux pas te demander de l’argent à toi-même', splitNotRegistered: 'Numéro non inscrit sur Soutra-Playce : {phone}', splitFail: 'Création du partage impossible', splitSelf: 'Tu ne peux pas t’inclure comme participant', splitInvalid: 'Montant invalide',
+    pushEmulator: 'Émulateur — les push notifications nécessitent un vrai téléphone.', pushDenied: 'Permission refusée.', pushExpoGo: 'Expo Go ne supporte plus les push notifications natives. Lance un dev build.', pushNoToken: 'Impossible d’obtenir le token push.', pushEmpty: 'Token vide.', pushChannel: 'Notifications',
+    bioPrompt: 'Confirme ton identité', bioCancel: 'Utiliser le PIN',
+    pdfShare: 'Rapport de revenus Soutra-Playce', pdfDone: 'PDF généré', pdfSaved: 'Fichier enregistré : {uri}', pdfNoShare: 'Le partage n’est pas disponible sur cet appareil.', pdfErrTitle: 'Erreur PDF', pdfFail: 'Impossible de générer le PDF.',
+  },
+  ticketPdf: {
+    reservation: 'Réservation', order: 'Commande', booking: 'Séjour hôtel', event: 'Billet événement', docTitle: 'Ticket Soutra-Playce — {kind}', code: 'Code de validation',
+    hint: 'Présente ce ticket (écran ou papier) au personnel du lieu. Le QR est scanné pour valider l’entrée / la remise.', date: 'Date', status: 'Statut', total: 'Total', footer: 'Ticket émis par Soutra-Playce · ID {id}', support: 'En cas de problème : support@soutra-paiya.com',
+    share: 'Ticket Soutra-Playce', done: 'PDF généré', web: 'Ouvre le fichier depuis ton navigateur.', saved: 'Fichier sauvegardé : {uri}', error: 'Erreur', fail: 'Impossible de générer le ticket PDF.',
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

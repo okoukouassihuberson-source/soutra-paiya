@@ -14,13 +14,14 @@ import { decode } from 'base64-arraybuffer';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 const COVER_MAX_BYTES = 8 * 1024 * 1024;
 
 export async function pickCoverFromGallery(): Promise<ImagePicker.ImagePickerAsset | null> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert('Permission requise', 'Autorise l\'accès à tes photos pour choisir une couverture.');
+    Alert.alert(tr('sys.permTitle'), tr('sys.permCover'));
     return null;
   }
   const r = await ImagePicker.launchImageLibraryAsync({
@@ -37,7 +38,7 @@ export async function pickCoverFromGallery(): Promise<ImagePicker.ImagePickerAss
 export async function pickCoverFromCamera(): Promise<ImagePicker.ImagePickerAsset | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert('Permission requise', 'Autorise la caméra pour prendre une couverture.');
+    Alert.alert(tr('sys.permTitle'), tr('sys.permCoverCam'));
     return null;
   }
   const r = await ImagePicker.launchCameraAsync({
@@ -53,11 +54,11 @@ export async function pickCoverFromCamera(): Promise<ImagePicker.ImagePickerAsse
 
 function validateOrAlert(asset: ImagePicker.ImagePickerAsset): ImagePicker.ImagePickerAsset | null {
   if (asset.fileSize && asset.fileSize > COVER_MAX_BYTES) {
-    Alert.alert('Image trop lourde', 'Choisis une image de moins de 8 Mo.');
+    Alert.alert(tr('sys.bigTitle'), tr('sys.big8'));
     return null;
   }
   if (!asset.base64) {
-    Alert.alert('Erreur', 'Impossible de lire l\'image. Réessaie.');
+    Alert.alert(tr('sys.error'), tr('sys.readFail'));
     return null;
   }
   return asset;

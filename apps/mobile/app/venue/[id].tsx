@@ -365,7 +365,7 @@ export default function VenueDetail() {
             <View style={[s.claimBadge, { borderColor: CLAIM_STATUS_META[myClaimStatus].color }]}>
               <Text style={{ fontSize: 14 }}>{CLAIM_STATUS_META[myClaimStatus].icon}</Text>
               <Text style={[s.claimBadgeText, { color: CLAIM_STATUS_META[myClaimStatus].color }]}>
-                Revendication : {CLAIM_STATUS_META[myClaimStatus].label}
+                {t('claimStatus.label', { status: CLAIM_STATUS_META[myClaimStatus].label })}
               </Text>
             </View>
           )}

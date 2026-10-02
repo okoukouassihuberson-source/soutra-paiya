@@ -3,6 +3,7 @@
  */
 
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 export type Comment = {
   id: string;
@@ -35,7 +36,7 @@ export async function listComments(postId: string): Promise<Comment[]> {
 export async function createComment(input: { postId: string; userId: string; body: string }): Promise<Comment> {
   const body = input.body.trim();
   if (!body) throw new Error('Commentaire vide.');
-  if (body.length > 1000) throw new Error('Commentaire trop long (1000 caractères max).');
+  if (body.length > 1000) throw new Error(tr('sys.commentTooLong'));
 
   const { data, error } = await (supabase as any)
     .from('post_comments')
