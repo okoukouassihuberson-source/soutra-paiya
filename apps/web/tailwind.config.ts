@@ -15,6 +15,7 @@ const config: Config = {
         warning: colors.warning,
         success: colors.success,
         neutral: colors.neutral,
+        night: '#101828',
       },
       fontFamily: {
         display: typography.fontFamily.display.split(',').map(s => s.trim()),

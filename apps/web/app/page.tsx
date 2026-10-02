@@ -3,7 +3,8 @@ import { LandingNavbar } from '@/components/marketing/LandingNavbar';
 import { PaymentLogo } from '@/components/marketing/PaymentLogo';
 import { HomeTourism } from '@/components/tourism/HomeTourism';
 import { EstablishmentLink } from '@/components/marketing/EstablishmentLink';
-import { LanguageSwitcher } from '@/components/tourism/LanguageSwitcher';
+import { SiteFooter } from '@/components/home/SiteFooter';
+import { MobileDock } from '@/components/home/MobileDock';
 import { getI18n } from '@/lib/i18n/server';
 
 export const revalidate = 120;
@@ -11,7 +12,7 @@ export const revalidate = 120;
 export default function HomePage() {
   const { locale, t, lp } = getI18n();
   return (
-    <main className="overflow-x-hidden">
+    <main className="overflow-x-hidden pb-[76px] xl:pb-0">
       <LandingNavbar />
 
       {/* V2 : portail touristique (hero recherche, catégories, destinations, voyages) */}
@@ -104,7 +105,7 @@ export default function HomePage() {
                 sub: 'Orange, MTN, Moov, Wave, Visa, Mastercard',
                 bg: 'from-primary-500/10 to-primary-400/5',
                 ring: 'ring-primary-500/20',
-                iconBg: 'bg-primary-500/15 text-primary-600',
+                iconBg: 'bg-primary-500/15 text-primary-700',
                 Icon: GuaranteeIconPhone,
               },
               {
@@ -146,7 +147,7 @@ export default function HomePage() {
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-600">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-700">
               <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
               Simple comme bonjour
             </span>
@@ -196,7 +197,7 @@ export default function HomePage() {
       <section id="features" className="relative overflow-hidden bg-white py-20 sm:py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-600">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary-500/20 bg-primary-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-700">
               <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
               Fonctionnalités
             </span>
@@ -334,182 +335,6 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════ */}
-      {/*  PREMIUM PLANS — teaser vers /subscribe                */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <section id="premium" className="relative overflow-hidden bg-dark py-16 text-white sm:py-20 lg:py-32">
-        {/* Glow gradients (premium look) */}
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-1/4 left-1/2 h-[700px] w-[1100px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary-500/20 via-purple-500/15 to-amber-500/10 blur-[140px]" />
-          <div className="absolute -bottom-32 right-0 h-[400px] w-[400px] rounded-full bg-purple-500/15 blur-[120px]" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary-500/30 bg-primary-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-400">
-              <span className="h-1.5 w-1.5 animate-glow-pulse rounded-full bg-primary-500" />
-              Soutra Premium
-            </span>
-            <h2 className="mt-4 font-display text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-              Choisis ton{' '}
-              <span className="bg-gradient-to-r from-primary-400 via-purple-400 to-amber-400 bg-clip-text text-transparent">
-                expérience
-              </span>
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-neutral-300 sm:text-lg">
-              Programme de fidélité inclus, accès VVIP, concierge dédié.
-              Trois formules pour transformer chaque sortie en récompense.
-            </p>
-          </div>
-
-          {/* Teaser cards : Standard / Pro recommandé / Soutra Premium */}
-          <div className="mt-12 grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3">
-            {/* Standard */}
-            <article className="group rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/[0.05]">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500/15 text-primary-400">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-                </svg>
-              </div>
-              <h3 className="mt-4 font-display text-xl font-black tracking-tight">Standard</h3>
-              <p className="mt-1 text-sm text-neutral-400">Pour profiter au quotidien</p>
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="font-display text-3xl font-black tracking-tight">2 000</span>
-                <span className="text-sm text-neutral-500">FCFA / mois</span>
-              </div>
-              <ul className="mt-5 space-y-2 text-sm text-neutral-300">
-                <li className="flex items-start gap-2"><Check />Notifications prioritaires</li>
-                <li className="flex items-start gap-2"><Check />Alertes personnalisées</li>
-                <li className="flex items-start gap-2"><Check />Offres exclusives</li>
-              </ul>
-            </article>
-
-            {/* Pro — RECOMMANDÉ (scale + dégradé bleu→violet) */}
-            <article className="group relative rounded-3xl border border-blue-500/40 bg-gradient-to-br from-blue-500/15 via-purple-500/10 to-purple-500/15 p-6 ring-2 ring-blue-500/30 backdrop-blur-xl transition md:-mt-4 md:scale-105 hover:border-blue-500/60">
-              <div className="absolute -top-px left-1/2 -translate-x-1/2 rounded-b-2xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-1 text-[11px] font-black uppercase tracking-wider text-white shadow-lg">
-                🔥 Recommandé
-              </div>
-              <div className="mt-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
-              </div>
-              <h3 className="mt-4 font-display text-xl font-black tracking-tight">Pro</h3>
-              <p className="mt-1 text-sm text-blue-300">Meilleur rapport qualité/prix</p>
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text font-display text-3xl font-black tracking-tight text-transparent">5 000</span>
-                <span className="text-sm text-neutral-400">FCFA / mois</span>
-              </div>
-              <ul className="mt-5 space-y-2 text-sm text-neutral-200">
-                <li className="flex items-start gap-2"><Check tone="blue" />Sans publicité</li>
-                <li className="flex items-start gap-2"><Check tone="blue" />Concierge IA Sia illimité</li>
-                <li className="flex items-start gap-2"><Check tone="blue" />Support prioritaire</li>
-              </ul>
-            </article>
-
-            {/* Soutra Premium — PRESTIGE (noir → or luxe) */}
-            <article className="group relative rounded-3xl border border-amber-500/40 bg-gradient-to-br from-black via-neutral-950 to-black p-6 shadow-2xl shadow-amber-500/10 transition hover:border-amber-500/60">
-              <div className="absolute -top-px left-1/2 -translate-x-1/2 rounded-b-2xl bg-gradient-to-r from-amber-500 to-amber-300 px-4 py-1 text-[11px] font-black uppercase tracking-wider text-neutral-900 shadow-lg">
-                👑 Prestige
-              </div>
-              <div className="mt-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-neutral-900">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M2 19l3-12 5 4 4-7 5 7 5-4-3 12H2z" />
-                  <line x1="2" y1="22" x2="22" y2="22" />
-                </svg>
-              </div>
-              <h3 className="mt-4 bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text font-display text-xl font-black tracking-tight text-transparent">
-                Soutra Premium
-              </h3>
-              <p className="mt-1 text-sm text-amber-400/80">L&apos;élite Soutra-Playce</p>
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text font-display text-3xl font-black tracking-tight text-transparent">30 000</span>
-                <span className="text-sm text-neutral-400">FCFA / mois</span>
-              </div>
-              <ul className="mt-5 space-y-2 text-sm text-neutral-200">
-                <li className="flex items-start gap-2"><Check tone="gold" />Accès VVIP + Réservations prioritaires</li>
-                <li className="flex items-start gap-2"><Check tone="gold" />Concierge humain dédié</li>
-                <li className="flex items-start gap-2"><Check tone="gold" />Invitations privées exclusives</li>
-              </ul>
-            </article>
-          </div>
-
-          {/* CTA principal */}
-          <div className="mt-12 flex flex-col items-center gap-4 text-center">
-            <Link
-              href="/subscribe"
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary-500 via-purple-500 to-amber-500 px-8 py-4 font-display text-base font-bold text-white shadow-2xl shadow-primary-500/30 transition hover:scale-[1.02] hover:shadow-primary-500/50 sm:text-lg"
-            >
-              Voir tous les abonnements
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1">
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </Link>
-            <p className="text-xs text-neutral-500">
-              Paiement sécurisé · Orange Money · MTN · Wave · Visa · Mastercard
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/*  TESTIMONIALS                                          */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-light via-white to-light py-20 sm:py-24 lg:py-32">
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-32 left-1/3 h-72 w-72 rounded-full bg-amber-400/8 blur-3xl" />
-          <div className="absolute -bottom-32 right-1/3 h-72 w-72 rounded-full bg-primary-400/8 blur-3xl" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-              Témoignages
-            </span>
-            <h2 className="mt-5 font-display text-3xl font-bold text-dark sm:text-4xl lg:text-5xl">
-              Ils sortent avec <span className="bg-gradient-to-r from-primary-500 to-amber-500 bg-clip-text text-transparent">Soutra</span>
-            </h2>
-            <div className="mt-5 flex items-center justify-center gap-2 text-amber-500">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <IconStar key={i} className="h-5 w-5" />
-              ))}
-              <span className="ml-1 text-sm font-bold text-neutral-700">4.8/5</span>
-              <span className="text-sm text-neutral-500">· 2 400+ avis</span>
-            </div>
-          </div>
-
-          <div className="mt-16 grid gap-6 md:grid-cols-3">
-            <TestimonialCard
-              quote="Depuis que j'utilise Soutra, je découvre des maquis que je connaissais même pas. Et le split bill entre potes, c'est un game changer."
-              name="Aminata K."
-              role="Étudiante, Cocody"
-              initials="AK"
-              avatarBg="bg-gradient-to-br from-primary-400 to-primary-600"
-              ringClass="ring-primary-500/20"
-            />
-            <TestimonialCard
-              quote="Je réserve mon resto en 30 secondes. Plus besoin d'appeler. Et si le lieu annule, je suis remboursé direct."
-              name="Jean-Marc D."
-              role="Cadre, Plateau"
-              initials="JD"
-              avatarBg="bg-gradient-to-br from-emerald-400 to-teal-600"
-              ringClass="ring-emerald-500/20"
-            />
-            <TestimonialCard
-              quote="Orange Money, Wave, MTN — je paie comme je veux. Et le QR code au maquis c'est trop simple."
-              name="Fatou B."
-              role="Entrepreneuse, Marcory"
-              initials="FB"
-              avatarBg="bg-gradient-to-br from-amber-400 to-orange-600"
-              ringClass="ring-amber-500/20"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════ */}
       {/*  B2B PRO                                               */}
       {/* ═══════════════════════════════════════════════════════ */}
       <section className="bg-dark py-16 text-white sm:py-20 lg:py-32">
@@ -533,7 +358,7 @@ export default function HomePage() {
               </div>
               <div className="mt-8">
                 <EstablishmentLink
-                  className="group inline-flex items-center gap-2 rounded-full bg-secondary-500 px-8 py-4 font-semibold text-white shadow-lg shadow-secondary-500/25 transition-all duration-300 hover:bg-secondary-600 hover:shadow-secondary-500/40"
+                  className="group inline-flex items-center gap-2 rounded-full bg-secondary-500 px-8 py-4 font-semibold text-night shadow-lg shadow-secondary-500/25 transition-all duration-300 hover:bg-secondary-400 hover:shadow-secondary-500/40"
                 >
                   Ouvrir mon dashboard
                   <ArrowIcon className="transition-transform duration-300 group-hover:translate-x-1" />
@@ -547,7 +372,7 @@ export default function HomePage() {
                 <div className="h-3 w-3 rounded-full bg-danger" />
                 <div className="h-3 w-3 rounded-full bg-warning" />
                 <div className="h-3 w-3 rounded-full bg-success" />
-                <span className="ml-2 text-xs text-neutral-600">
+                <span className="ml-2 text-xs text-neutral-400">
                   dashboard.soutra-paiya.com
                 </span>
               </div>
@@ -562,191 +387,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/*  FINAL CTA                                             */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      <section
-        id="download"
-        className="relative overflow-hidden bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 py-24 text-white lg:py-32"
-      >
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-40 top-0 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-warning/20 blur-3xl" />
-        </div>
-
-        <div className="relative mx-auto max-w-3xl px-6 text-center">
-          <h2 className="font-display text-3xl font-bold sm:text-5xl">
-            Prêt à sortir
-            <br />
-            sans galère ?
-          </h2>
-          <p className="mx-auto mt-6 max-w-lg text-lg text-white/80">
-            Rejoins les milliers d&apos;Abidjanais qui réservent et paient en
-            toute simplicité.
-          </p>
-
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a
-              href="#"
-              className="inline-flex items-center gap-3 rounded-2xl bg-black px-6 py-4 font-medium text-white transition hover:bg-neutral-900"
-            >
-              <IconApple />
-              <div className="text-left">
-                <div className="text-[10px] uppercase tracking-wide opacity-60">
-                  Télécharger sur
-                </div>
-                <div className="text-base font-semibold">App Store</div>
-              </div>
-            </a>
-            <a
-              href="#"
-              className="inline-flex items-center gap-3 rounded-2xl bg-black px-6 py-4 font-medium text-white transition hover:bg-neutral-900"
-            >
-              <IconPlayStore />
-              <div className="text-left">
-                <div className="text-[10px] uppercase tracking-wide opacity-60">
-                  Disponible sur
-                </div>
-                <div className="text-base font-semibold">Google Play</div>
-              </div>
-            </a>
-          </div>
-        </div>
-      </section>
-
         </>
       )}
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/*  FOOTER                                                */}
-      {/* ═══════════════════════════════════════════════════════ */}
-      {locale === 'fr' ? (
-      <footer className="bg-dark py-12 text-neutral-400 sm:py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-8 sm:gap-10 md:grid-cols-4 md:gap-12">
-            <div className="col-span-2 md:col-span-1">
-              <span className="font-display text-xl font-bold">
-                <span className="text-white">Soutra</span>
-                <span className="text-primary-400">-Playce</span>
-              </span>
-              <p className="mt-4 text-sm leading-relaxed text-neutral-500">
-                Conçu à Abidjan, pour la Côte d&apos;Ivoire.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-300">
-                Produit
-              </h4>
-              <ul className="space-y-3 text-sm">
-                <li>
-                  <a href="#features" className="transition hover:text-white">
-                    Fonctionnalités
-                  </a>
-                </li>
-                <li>
-                  <a href="#how" className="transition hover:text-white">
-                    Comment ça marche
-                  </a>
-                </li>
-                <li>
-                  <Link href="/subscribe" className="transition hover:text-white">
-                    Abonnements Premium
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/loyalty" className="transition hover:text-white">
-                    Programme de fidélité
-                  </Link>
-                </li>
-                <li>
-                  <a href="#download" className="transition hover:text-white">
-                    Télécharger
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-300">
-                Entreprise
-              </h4>
-              <ul className="space-y-3 text-sm">
-                <li>
-                  <EstablishmentLink className="transition hover:text-white">
-                    Espace Pro
-                  </EstablishmentLink>
-                </li>
-                <li>
-                  <a href="#" className="transition hover:text-white">
-                    À propos
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="transition hover:text-white">
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-neutral-300">
-                Légal
-              </h4>
-              <ul className="space-y-3 text-sm">
-                <li>
-                  <a href="#" className="transition hover:text-white">
-                    Conditions d&apos;utilisation
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="transition hover:text-white">
-                    Politique de confidentialité
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="transition hover:text-white">
-                    CGV
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-neutral-800 pt-8 text-sm md:flex-row">
-            <span>© {new Date().getFullYear()} Soutra-Playce. Tous droits réservés.</span>
-            <div className="flex gap-6">
-              <a href="#" className="transition hover:text-white">
-                Instagram
-              </a>
-              <a href="#" className="transition hover:text-white">
-                Twitter
-              </a>
-              <a href="#" className="transition hover:text-white">
-                LinkedIn
-              </a>
-            </div>
-          </div>
+      {/* ── CTA final ───────────────────────────────────────────── */}
+      <section aria-labelledby="final-cta" className="relative isolate overflow-hidden bg-gradient-to-br from-night via-[#1a2540] to-night py-16 text-white sm:py-24">
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute -left-32 top-0 h-72 w-72 rounded-full bg-primary-500/25 blur-3xl" />
+          <div className="absolute -bottom-32 -right-32 h-72 w-72 rounded-full bg-primary-500/15 blur-3xl" />
         </div>
-      </footer>
-      ) : (
-      <footer className="bg-dark py-10 text-neutral-400">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 text-center sm:px-6">
-          <p className="font-display text-lg font-bold text-white">Soutra<span className="text-primary-400">-Playce</span></p>
-          <p className="max-w-md text-sm">{t('home.footerTagline')}</p>
-          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" aria-label="Footer">
-            <Link href={lp('/explorer')} className="hover:text-white">{t('nav.explore')}</Link>
-            <Link href={lp('/destinations')} className="hover:text-white">{t('nav.destinations')}</Link>
-            <Link href={lp('/activites')} className="hover:text-white">{t('nav.activities')}</Link>
-            <Link href={lp('/voyages/nationaux')} className="hover:text-white">{t('nav.tripsNational')}</Link>
-            <Link href={lp('/voyages/internationaux')} className="hover:text-white">{t('nav.tripsInternational')}</Link>
-            <Link href={lp('/organisateur')} className="hover:text-white">{t('home.footerPartner')}</Link>
-          </nav>
-          <LanguageSwitcher tone="dark" />
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+          <h2 id="final-cta" className="font-display text-3xl font-extrabold leading-tight sm:text-5xl">{t('home2.finalTitle')}</h2>
+          <p className="mx-auto mt-4 max-w-lg text-lg text-white/85">{t('home2.finalSub')}</p>
+          <Link href={lp('/explorer')} className="mt-8 inline-flex min-h-[52px] items-center justify-center rounded-full bg-primary-500 px-9 py-3.5 text-base font-bold text-night shadow-xl shadow-primary-500/30 transition hover:bg-primary-400 active:scale-[0.98]">
+            {t('home2.finalCta')}
+          </Link>
         </div>
-      </footer>
-      )}
+      </section>
+
+      <SiteFooter />
+      <MobileDock />
     </main>
   );
 }
@@ -759,7 +419,7 @@ function HeroStat({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center sm:text-left">
       <div className="font-display text-2xl font-bold text-white">{value}</div>
-      <div className="text-xs text-neutral-500">{label}</div>
+      <div className="text-xs text-neutral-400">{label}</div>
     </div>
   );
 }
@@ -767,7 +427,7 @@ function HeroStat({ value, label }: { value: string; label: string }) {
 const STEP_ACCENTS = {
   primary: {
     iconBg: 'bg-gradient-to-br from-primary-50 to-primary-100',
-    iconColor: 'text-primary-600',
+    iconColor: 'text-primary-700',
     badgeBg: 'bg-gradient-to-br from-primary-500 to-primary-600',
     glow: 'shadow-primary-500/20 group-hover:shadow-primary-500/40',
     ringHover: 'group-hover:ring-primary-500/20',
@@ -888,7 +548,7 @@ function DashStat({
 }) {
   return (
     <div className="rounded-2xl bg-neutral-800/50 p-5">
-      <div className="text-xs text-neutral-500">{label}</div>
+      <div className="text-xs text-neutral-400">{label}</div>
       <div className="mt-2 flex items-baseline gap-1">
         {prefix && <span className="text-warning">{prefix}</span>}
         <span className="font-display text-2xl font-bold text-white">{value}</span>

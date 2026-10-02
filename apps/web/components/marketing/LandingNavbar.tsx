@@ -9,32 +9,17 @@ import { LanguageSwitcher } from '@/components/tourism/LanguageSwitcher';
 import { useI18n } from '@/lib/i18n/client';
 
 /**
- * Navbar marketing — fixed-top sur dark hero, burger menu mobile.
- *
- * Comportements :
- *   • shadow/bg renforcé après scroll (>30px) pour rester lisible sur sections claires
- *   • menu mobile s'ouvre en panel plein écran, ferme à la navigation ou tap backdrop
- *   • lock du scroll body quand le menu mobile est ouvert
- *   • bouton « Installer » apparaît sur mobile si l'app n'est pas déjà en standalone
- *     (l'install PWA effectif est piloté par <PWAInstallPrompt> dans le layout)
+ * En-tête de la page d'accueil : 1 logo, 5 liens, langue, connexion, 1 CTA.
+ * Transparent sur le hero, il devient blanc translucide + plus compact après 24 px de scroll.
  */
 export function LandingNavbar() {
   const { t, lp, locale } = useI18n();
-  const fr = locale === 'fr';  // sections marketing (fintech, offres Pro) : français uniquement
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  // Détection auth côté client : permet de basculer « Se connecter » →
-  // « Mon compte » dans la navbar dès qu'une session existe. SSR safe :
-  // l'état initial est `null` (= inconnu), on rend rien tant qu'on n'a pas
-  // de réponse pour éviter le flash.
   const [authed, setAuthed] = useState<boolean | null>(null);
-  // Cible du lien « Espace Pro » : /admin pour un admin déjà connecté (sinon
-  // il se retrouve renvoyé sur le dashboard Pro au lieu de l'admin quand il
-  // revient sur la vitrine sans s'être déconnecté), /pro sinon.
-  const [proHref, setProHref] = useState('/pro');
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 30);
+    const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -43,29 +28,9 @@ export function LandingNavbar() {
   useEffect(() => {
     let cancelled = false;
     const sb = supabaseBrowser();
-
-    async function resolveProHref(userId?: string) {
-      if (!userId) { if (!cancelled) setProHref('/pro'); return; }
-      const { data: profile } = await (sb as any)
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      if (!cancelled) setProHref(profile?.role === 'admin' ? '/admin' : '/pro');
-    }
-
-    sb.auth.getSession().then(({ data }) => {
-      if (!cancelled) setAuthed(!!data.session);
-      resolveProHref(data.session?.user?.id);
-    });
-    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
-      setAuthed(!!session);
-      resolveProHref(session?.user?.id);
-    });
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
+    sb.auth.getSession().then(({ data }) => { if (!cancelled) setAuthed(!!data.session); });
+    const { data: sub } = sb.auth.onAuthStateChange((_e, session) => setAuthed(!!session));
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, []);
 
   useEffect(() => {
@@ -74,198 +39,75 @@ export function LandingNavbar() {
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      document.removeEventListener('keydown', onKey);
-    };
+    return () => { document.body.style.overflow = prev; document.removeEventListener('keydown', onKey); };
   }, [open]);
+
+  const links = [
+    { href: lp('/explorer'), label: t('nav.explore') },
+    { href: lp('/destinations'), label: t('nav.destinations') },
+    { href: lp('/activites'), label: t('nav.activities') },
+    { href: lp('/voyages/nationaux'), label: t('nav.trips') },
+    ...(locale === 'fr' ? [{ href: '#how', label: t('home2.nav.how') }] : []), // section marketing disponible en français
+  ];
+  const light = scrolled || open; // texte sombre sur fond clair
+  const account = authed
+    ? { href: lp('/account'), label: t('nav.myAccount') }
+    : { href: lp('/login'), label: t('home2.nav.signIn') };
 
   return (
     <>
-      <nav
+      <header
         className={cn(
-          'fixed inset-x-0 top-0 z-50 border-b backdrop-blur-2xl transition-all duration-200',
-          scrolled
-            ? 'border-white/[0.08] bg-dark/90 shadow-xl shadow-black/30'
-            : 'border-white/[0.06] bg-dark/70',
+          'fixed inset-x-0 top-0 z-50 transition-all duration-300',
+          scrolled ? 'border-b border-neutral-200/70 bg-white/85 shadow-sm backdrop-blur-xl' : 'border-b border-transparent bg-transparent',
         )}
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
-          <Link
-            href="/"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 font-display text-lg font-bold tracking-tight sm:text-xl"
-          >
-            <BrandMark size="xs" />
-            <span>
-              <span className="text-white">Soutra</span>
-              <span className="text-primary-400">-Playce</span>
-            </span>
+        <div className={cn('mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 transition-all duration-300 sm:px-6 lg:px-8', scrolled ? 'h-14' : 'h-16 lg:h-[72px]')}>
+          <Link href={lp('/')} onClick={() => setOpen(false)} className="flex min-h-[44px] shrink-0 items-center gap-2 font-display text-lg font-extrabold tracking-tight">
+            <BrandMark size="xs" decorative />
+            <span className={light ? 'text-night' : 'text-white'}>Soutra<span className="text-primary-500">-Playce</span></span>
           </Link>
 
-          <div className="hidden items-center gap-8 md:flex">
-            <Link href={lp('/explorer')} className="text-sm text-neutral-400 transition hover:text-white">
-              {t('nav.explore')}
-            </Link>
-            <Link href={lp('/activites')} className="text-sm text-neutral-400 transition hover:text-white">
-              {t('nav.activities')}
-            </Link>
-            <Link href={lp('/destinations')} className="text-sm text-neutral-400 transition hover:text-white">
-              {t('nav.destinations')}
-            </Link>
-            <Link href={lp('/voyages/nationaux')} className="text-sm text-neutral-400 transition hover:text-white">
-              {t('nav.tripsNational')}
-            </Link>
-            <Link href={lp('/voyages/internationaux')} className="text-sm text-neutral-400 transition hover:text-white">
-              {t('nav.tripsInternational')}
-            </Link>
-            {fr && (
-              <>
-            <a href="#how" className="text-sm text-neutral-400 transition hover:text-white">
-              Comment ça marche
-            </a>
-            <a href="#features" className="text-sm text-neutral-400 transition hover:text-white">
-              Fonctionnalités
-            </a>
-            <Link href="/loyalty" className="text-sm text-neutral-400 transition hover:text-white">
-              Fidélité
-            </Link>
-            <Link
-              href="/subscribe"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-400 transition hover:text-primary-300"
-            >
-              Premium
-              <span className="rounded-full bg-gradient-to-r from-amber-500/20 to-amber-300/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300 ring-1 ring-amber-500/30">
-                Nouveau
-              </span>
-            </Link>
-            <Link href={proHref} className="text-sm text-neutral-400 transition hover:text-white">
-              Espace Pro
-            </Link>
-              </>
-            )}
-          </div>
+          <nav aria-label={t('nav.main')} className="hidden items-center gap-1 xl:flex">
+            {links.map((l) => (
+              <a key={l.href} href={l.href}
+                className={cn('relative whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium transition-colors after:absolute after:inset-x-3.5 after:bottom-1 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-primary-500 after:transition-transform hover:after:scale-x-100 motion-reduce:after:transition-none',
+                  light ? 'text-neutral-700 hover:text-night' : 'text-white/85 hover:text-white')}>
+                {l.label}
+              </a>
+            ))}
+          </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageSwitcher tone="dark" className="hidden sm:inline-flex" />
-            {authed ? (
-              <Link
-                href="/account"
-                className="hidden items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white sm:inline-flex"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                {t('nav.myAccount')}
-              </Link>
-            ) : (
-              <Link
-                href="/login"
-                className="hidden rounded-lg px-4 py-2 text-sm font-medium text-neutral-300 transition hover:bg-white/5 hover:text-white sm:block"
-              >
-                {t('common.signIn')}
-              </Link>
-            )}
-            {fr && <a
-              href="#download"
-              className="hidden rounded-full bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-600 hover:shadow-primary-500/40 sm:inline-flex"
-            >
-              Télécharger
-            </a>}
-
-            {/* Burger mobile */}
-            <button
-              type="button"
-              aria-label={open ? t('menu.close') : t('menu.open')}
-              aria-expanded={open}
-              aria-controls="landing-mobile-menu"
-              onClick={() => setOpen((v) => !v)}
-              className="-mr-1 inline-flex h-10 w-10 items-center justify-center rounded-lg text-neutral-300 transition hover:bg-white/5 hover:text-white md:hidden"
-            >
-              {open ? (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-              )}
+            <LanguageSwitcher tone={light ? 'light' : 'dark'} className="hidden sm:inline-flex" />
+            <Link href={account.href} className={cn('hidden whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold transition-colors sm:inline-flex', light ? 'text-neutral-700 hover:bg-neutral-100' : 'text-white hover:bg-white/10')}>
+              {account.label}
+            </Link>
+            <Link href={lp('/explorer')} className="hidden min-h-[40px] items-center whitespace-nowrap rounded-full bg-primary-500 px-5 text-sm font-bold text-night shadow-md shadow-primary-500/25 transition hover:bg-primary-400 active:scale-[0.97] sm:inline-flex">
+              {t('home2.nav.explore')}
+            </Link>
+            <button type="button" aria-label={open ? t('home2.nav.close') : t('home2.nav.menu')} aria-expanded={open} aria-controls="home-menu" onClick={() => setOpen((v) => !v)}
+              className={cn('-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-full transition xl:hidden', light ? 'text-night hover:bg-neutral-100' : 'text-white hover:bg-white/10')}>
+              <svg aria-hidden width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                {open ? <path d="M18 6 6 18M6 6l12 12" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+              </svg>
             </button>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Mobile panel — slide-down depuis sous la navbar */}
       {open && (
-        <div
-          id="landing-mobile-menu"
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-40 md:hidden"
-        >
-          <button
-            type="button"
-            aria-label={t('menu.close')}
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 animate-sheet-fade bg-black/60 backdrop-blur-sm"
-          />
-          <nav
-            className="absolute inset-x-0 top-0 animate-sheet-slide-up rounded-b-3xl border-b border-white/10 bg-dark/95 px-6 pb-8 pt-20 shadow-2xl"
-            style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 76px)' }}
-          >
+        <div id="home-menu" role="dialog" aria-modal="true" aria-label={t('home2.nav.menu')} className="fixed inset-0 z-40 xl:hidden">
+          <button type="button" aria-label={t('home2.nav.close')} onClick={() => setOpen(false)} className="absolute inset-0 animate-sheet-fade bg-night/60 backdrop-blur-sm" />
+          <nav className="absolute inset-x-0 top-0 animate-sheet-slide-up rounded-b-3xl bg-white px-5 pb-6 shadow-2xl" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 72px)' }}>
             <ul className="space-y-1">
-              {[
-                { href: lp('/explorer'), label: t('nav.explore'), accent: false },
-                { href: lp('/activites'), label: t('nav.activities'), accent: false },
-                { href: lp('/destinations'), label: t('nav.destinations'), accent: false },
-                { href: lp('/voyages/nationaux'), label: t('nav.tripsNational'), accent: false },
-                { href: lp('/voyages/internationaux'), label: t('nav.tripsInternational'), accent: false },
-                ...(fr ? [
-                  { href: '#how', label: 'Comment ça marche', accent: false },
-                  { href: '#features', label: 'Fonctionnalités', accent: false },
-                  { href: '/loyalty', label: 'Fidélité', accent: false },
-                  { href: '/subscribe', label: 'Premium', accent: true },
-                  { href: proHref, label: 'Espace Pro', accent: false },
-                ] : []),
-                authed
-                  ? { href: '/account', label: t('nav.myAccount'), accent: false }
-                  : { href: '/login', label: t('common.signIn'), accent: false },
-              ].map((item) => (
-                <li key={item.href}>
-                  <a
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className={
-                      item.accent
-                        ? 'flex items-center justify-between rounded-xl bg-gradient-to-r from-primary-500/10 via-purple-500/5 to-amber-500/10 px-4 py-3 text-base font-bold text-primary-300 ring-1 ring-primary-500/20 transition hover:from-primary-500/15'
-                        : 'block rounded-xl px-4 py-3 text-base font-semibold text-neutral-200 transition hover:bg-white/5 hover:text-white'
-                    }
-                  >
-                    {item.label}
-                    {item.accent && (
-                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-300 ring-1 ring-amber-500/30">
-                        Nouveau
-                      </span>
-                    )}
-                  </a>
-                </li>
+              {links.map((l) => (
+                <li key={l.href}><a href={l.href} onClick={() => setOpen(false)} className="block rounded-xl px-4 py-3.5 text-base font-semibold text-night hover:bg-neutral-100">{l.label}</a></li>
               ))}
-              <li className="flex justify-center pt-3 sm:hidden"><LanguageSwitcher tone="dark" /></li>
-              {fr && <li className="pt-3">
-                <a
-                  href="#download"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-primary-500/30"
-                >
-                  Télécharger l&apos;app
-                </a>
-              </li>}
+              <li><Link href={account.href} onClick={() => setOpen(false)} className="block rounded-xl px-4 py-3.5 text-base font-semibold text-night hover:bg-neutral-100">{account.label}</Link></li>
+              <li className="flex justify-center pt-3 sm:hidden"><LanguageSwitcher /></li>
+              <li className="pt-2"><Link href={lp('/explorer')} onClick={() => setOpen(false)} className="flex min-h-[48px] items-center justify-center rounded-full bg-primary-500 px-6 py-3 font-bold text-night">{t('home2.nav.explore')}</Link></li>
             </ul>
           </nav>
         </div>

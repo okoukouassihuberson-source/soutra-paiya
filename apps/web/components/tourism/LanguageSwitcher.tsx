@@ -27,7 +27,7 @@ export function LanguageSwitcher({ className = '', tone = 'light' }: { className
       {ENABLED_LOCALES.map((l) => (
         <a key={l} href={localePath(path, l) + suffix} hrefLang={l} lang={l} onClick={() => remember(l)}
           aria-current={l === locale ? 'true' : undefined} title={LOCALES[l].label}
-          className={`px-2.5 py-1.5 ${l === locale ? 'bg-primary-500 text-white' : tone === 'dark' ? 'text-white/80 hover:bg-white/10' : 'text-neutral-600 hover:bg-neutral-100'}`}>
+          className={`flex min-h-[36px] items-center px-3 ${l === locale ? 'bg-primary-500 text-night' : tone === 'dark' ? 'text-white/80 hover:bg-white/10' : 'text-neutral-600 hover:bg-neutral-100'}`}>
           {LOCALES[l].short}
         </a>
       ))}

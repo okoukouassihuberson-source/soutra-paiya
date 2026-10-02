@@ -10,10 +10,10 @@ interface Msg { role: 'user' | 'assistant'; content: string; items?: Item[]; err
 
 const PATH = { trip: '/voyages', activity: '/activites', destination: '/destinations' } as const;
 
-export function AssistantChat() {
+export function AssistantChat({ initialText = '' }: { initialText?: string }) {
   const { t, lp, locale, fmtXOF } = useI18n();
   const [msgs, setMsgs] = useState<Msg[]>([]);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
   const [busy, setBusy] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const end = useRef<HTMLDivElement>(null);

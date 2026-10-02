@@ -13,6 +13,10 @@ export async function TripListing({ scope, continent }: { scope: TripScope; cont
     <>
       <TourismNav />
       <main className="mx-auto max-w-7xl px-4 pb-28 pt-8 sm:px-6 lg:px-8">
+        <div role="group" aria-label={t('nav.trips')} className="mb-4 inline-flex rounded-full border border-neutral-200 bg-white p-1 text-sm font-semibold">
+          <Link href={lp('/voyages/nationaux')} aria-current={national ? 'page' : undefined} className={`rounded-full px-4 py-2 ${national ? 'bg-night text-white' : 'text-neutral-600 hover:text-night'}`}>{t('nav.tripsNational')}</Link>
+          <Link href={lp('/voyages/internationaux')} aria-current={!national ? 'page' : undefined} className={`rounded-full px-4 py-2 ${!national ? 'bg-night text-white' : 'text-neutral-600 hover:text-night'}`}>{t('nav.tripsInternational')}</Link>
+        </div>
         <h1 className="font-display text-3xl font-bold text-dark">
           {national ? t('trips.nationalTitle') : t('trips.internationalTitle')}
         </h1>
