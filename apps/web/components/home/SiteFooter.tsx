@@ -9,8 +9,6 @@ const OPTIONAL = {
   contact: process.env.NEXT_PUBLIC_CONTACT_EMAIL ? `mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL}` : '',
   ios: process.env.NEXT_PUBLIC_APP_STORE_URL ?? '',
   android: process.env.NEXT_PUBLIC_PLAY_STORE_URL ?? '',
-  terms: process.env.NEXT_PUBLIC_TERMS_URL ?? '',
-  privacy: process.env.NEXT_PUBLIC_PRIVACY_URL ?? '',
   instagram: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM ?? '',
   facebook: process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK ?? '',
   x: process.env.NEXT_PUBLIC_SOCIAL_X ?? '',
@@ -21,7 +19,7 @@ export function SiteFooter() {
   const { t, lp, locale } = getI18n();
   const a = 'inline-flex min-h-[32px] items-center text-sm text-neutral-400 transition hover:text-white';
   const social = ([['Instagram', OPTIONAL.instagram], ['Facebook', OPTIONAL.facebook], ['X', OPTIONAL.x], ['TikTok', OPTIONAL.tiktok]] as const).filter(([, u]) => u);
-  const legal = ([[t('home2.footer.terms'), OPTIONAL.terms], [t('home2.footer.privacy'), OPTIONAL.privacy]] as const).filter(([, u]) => u);
+  const legal = [[t('home2.footer.terms'), lp('/cgu')], [t('home2.footer.privacy'), lp('/confidentialite')], [t('home2.footer.about'), lp('/a-propos')]] as const;
   const col = 'text-xs font-bold uppercase tracking-[0.14em] text-neutral-300';
   return (
     <footer className="bg-night pb-8 pt-14 text-neutral-400">
@@ -67,7 +65,7 @@ export function SiteFooter() {
               {locale === 'fr' && <li><a className={a} href="/#how">{t('home2.footer.how')}</a></li>}
               <li><Link className={a} href={lp('/loyalty')}>{t('home2.loyaltyBadge')}</Link></li>
               {OPTIONAL.contact && <li><a className={a} href={OPTIONAL.contact}>{t('home2.footer.contact')}</a></li>}
-              {legal.map(([label, url]) => <li key={label}><a className={a} href={url}>{label}</a></li>)}
+              {legal.map(([label, url]) => <li key={label}><Link className={a} href={url}>{label}</Link></li>)}
             </ul>
             {social.length > 0 && (
               <div className="mt-4">
