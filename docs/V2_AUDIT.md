@@ -145,3 +145,8 @@
 
 ## 5. Déploiement / précautions
 Voir **`docs/RECETTE_V2.md`** : ordre de déploiement (migrations 0082 → 0095, fonctions Edge, secrets), vérifications en base, scénarios de recette par rôle et critères de mise en production. Ne jamais exécuter `seed-dev-tourism.sql` en production.
+
+## Espace organisateur mobile (v1)
+Écrans : `/organizer` (tableau de bord voyages + activités, KPI, commission, voyageurs/participants avec appel, soumission, pause, clôture des ventes), `/organizer-trip` et `/organizer-activity` (brouillons : création / modification, photos vers le bucket `tourism-media`), `/organizer-slots` (génération de créneaux, fermeture, suppression), `/organizer-scan` (validation des billets par caméra ou saisie). Entrée : onglet Profil → section Pro, visible pour les rôles `organizer`, `venue_owner`, `guide`, `admin`.
+Aucune règle métier dupliquée : mêmes RPC et politiques RLS que le web (`lib/organizer.ts`) ; logique pure testée (`pnpm --filter @soutra/mobile test:organizer`).
+**Non inclus dans la v1** : gestion des offres/promotions, traductions éditoriales (les `i18n` existantes sont conservées à l'enregistrement), publication directe (reste validée par l'équipe), test sur appareil réel.

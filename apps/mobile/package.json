@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test:i18n": "node --import tsx --test lib/i18n/i18n.test.ts",
+    "test:organizer": "node --import tsx --test lib/organizer-core.test.ts",
     "i18n:todo": "node scripts/i18n-todo.mjs"
   },
   "dependencies": {
