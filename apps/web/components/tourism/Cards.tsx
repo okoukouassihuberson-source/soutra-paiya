@@ -46,7 +46,8 @@ export function TripCardView({ trip }: { trip: TripCard }) {
 export function VenueCardView({ venue }: { venue: VenueCard }) {
   const i = getI18n();
   return (
-    <Link href={`/v/${venue.slug}`} className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl">
+    <div className="relative h-full">
+    <Link href={`/v/${venue.slug}`} className="group block h-full overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl">
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
         <Cover src={venue.cover_url} alt={venue.name} />
         <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold">{categoryEmoji(venue.category as any)} {i.tdyn('venueCat', venue.category, venue.category)}</span>
@@ -60,6 +61,8 @@ export function VenueCardView({ venue }: { venue: VenueCard }) {
         </div>
       </div>
     </Link>
+    <CompareToggle kind="venue" slug={venue.slug} title={venue.name} />
+    </div>
   );
 }
 

@@ -165,3 +165,20 @@ export async function listTripsBySlugs(slugs: string[]): Promise<Trip[]> {
   const rows = (data ?? []) as Trip[];
   return wanted.map((s) => rows.find((r) => r.slug === s)).filter((r): r is Trip => !!r);
 }
+
+export interface CompareVenue extends VenueCard {
+  slug: string; commune: string | null; phone: string | null; whatsapp: string | null; website: string | null;
+  amenities: string[] | null; opening_hours: Record<string, [string, string]> | null;
+}
+
+/** Établissements actifs pour la comparaison, dans l'ordre demandé (3 max). */
+export async function listVenuesBySlugs(slugs: string[]): Promise<CompareVenue[]> {
+  const wanted = slugs.slice(0, 3);
+  if (wanted.length === 0) return [];
+  const { data, error } = await db().from('venues')
+    .select(`${VENUE_CARD_COLS}, commune, phone, whatsapp, website, amenities, opening_hours`)
+    .in('slug', wanted).eq('status', 'active');
+  if (error) console.error('[tourism] listVenuesBySlugs', error);
+  const rows = (data ?? []) as CompareVenue[];
+  return wanted.map((s) => rows.find((r) => r.slug === s)).filter((r): r is CompareVenue => !!r);
+}
