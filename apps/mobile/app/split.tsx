@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/lib/i18n';
+import { fetchPublicProfiles } from '@/lib/profile-names';
 
 interface SplitRequest {
   id: string;
@@ -54,14 +55,19 @@ export default function SplitDetail() {
       const { data, error } = await (supabase as any)
         .from('bill_splits')
         .select(
-          'id, title, total_xof, created_at, payment_requests(id, payer_id, amount_xof, status, payer:profiles!payer_id(full_name))',
+          'id, title, total_xof, created_at, payment_requests(id, payer_id, amount_xof, status)',
         )
         .eq('id', id)
         .maybeSingle();
       if (error) {
         console.error('[split] load:', error);
       } else {
-        setSplit(data as Split | null);
+        const sp = data as Split | null;
+        if (sp?.payment_requests?.length) {
+          const names = await fetchPublicProfiles(sp.payment_requests.map((r) => r.payer_id));
+          sp.payment_requests = sp.payment_requests.map((r) => ({ ...r, payer: names.get(r.payer_id) ?? null }));
+        }
+        setSplit(sp);
       }
     } catch (err) {
       console.error('[split] unexpected:', err);

@@ -10,6 +10,7 @@ import { TabHeader } from '@/components/TabHeader';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors } from '@/lib/theme';
 import { useI18n, tr, trn, intlLocale, type TKey } from '@/lib/i18n';
+import { fetchPublicProfiles } from '@/lib/profile-names';
 
 export default function Wallet() {
   const { user } = useAuth();
@@ -217,9 +218,7 @@ function TransactionHistory({
           .from('transactions')
           .select(`
             id, type, amount_xof, status, created_at, description,
-            user_id, counterparty_id,
-            sender:user_id(full_name, phone),
-            counterparty:counterparty_id(full_name, phone)
+            user_id, counterparty_id
           `)
           .or(`user_id.eq.${userId},counterparty_id.eq.${userId}`)
           // Cashback déprécié (migration 0069) : l'historique reste en base
@@ -229,7 +228,17 @@ function TransactionHistory({
           .limit(15);
         if (!mounted) return;
         if (error) { console.error('[wallet] tx error:', error); setTxs([]); }
-        else { setTxs((data as unknown as Transaction[]) ?? []); }
+        else {
+          // Noms des contreparties via la vue publique (la table profiles n'est plus lisible par les autres).
+          const rows = (data as unknown as Transaction[]) ?? [];
+          const names = await fetchPublicProfiles(rows.flatMap((r) => [r.user_id, r.counterparty_id]));
+          const party = (id: string | null): PartyProfile | null => {
+            const p = id ? names.get(id) : undefined;
+            return p ? { full_name: p.full_name, phone: null } : null;
+          };
+          if (!mounted) return;
+          setTxs(rows.map((r) => ({ ...r, sender: party(r.user_id), counterparty: party(r.counterparty_id) })));
+        }
       } catch (err) {
         console.error('[wallet] tx unexpected:', err);
         if (mounted) setTxs([]);

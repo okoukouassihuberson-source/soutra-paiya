@@ -11,7 +11,7 @@ export type Comment = {
   user_id: string;
   body: string;
   created_at: string;
-  author?: { id: string; full_name: string | null; phone: string | null; avatar_url: string | null };
+  author?: { id: string; full_name: string | null; avatar_url: string | null };
 };
 
 export async function listComments(postId: string): Promise<Comment[]> {
@@ -25,8 +25,8 @@ export async function listComments(postId: string): Promise<Comment[]> {
 
   const userIds = [...new Set(comments.map((c: Comment) => c.user_id))];
   const { data: profiles } = await (supabase as any)
-    .from('profiles')
-    .select('id, full_name, phone, avatar_url')
+    .from('public_profiles')
+    .select('id, full_name, avatar_url')
     .in('id', userIds);
   const byId = new Map((profiles || []).map((p: any) => [p.id, p]));
 
@@ -47,8 +47,8 @@ export async function createComment(input: { postId: string; userId: string; bod
 
   // Charge le profil auteur pour l'affichage immédiat.
   const { data: prof } = await (supabase as any)
-    .from('profiles')
-    .select('id, full_name, phone, avatar_url')
+    .from('public_profiles')
+    .select('id, full_name, avatar_url')
     .eq('id', input.userId)
     .single();
 

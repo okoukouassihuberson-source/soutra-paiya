@@ -12,6 +12,7 @@ import { hasPaymentPin } from '@/lib/security';
 import { PinPrompt } from '@/components/PinPrompt';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Skeleton } from '@/components/Skeleton';
+import { fetchPublicProfiles } from '@/lib/profile-names';
 
 interface Req {
   id: string;
@@ -54,13 +55,17 @@ export default function Requests() {
       const { data, error } = await (supabase as any)
         .from('payment_requests')
         .select(
-          'id, requester_id, payer_id, amount_xof, note, status, created_at, requester:profiles!requester_id(full_name), payer:profiles!payer_id(full_name)',
+          'id, requester_id, payer_id, amount_xof, note, status, created_at',
         )
         .or(`requester_id.eq.${userId},payer_id.eq.${userId}`)
         .order('created_at', { ascending: false })
         .limit(50);
       if (error) console.error('[requests] load:', error);
-      else setReqs((data as Req[]) ?? []);
+      else {
+        const rows = (data as Req[]) ?? [];
+        const names = await fetchPublicProfiles(rows.flatMap((r) => [r.requester_id, r.payer_id]));
+        setReqs(rows.map((r) => ({ ...r, requester: names.get(r.requester_id) ?? null, payer: names.get(r.payer_id) ?? null })));
+      }
     } catch (err) {
       console.error('[requests] unexpected:', err);
     } finally {

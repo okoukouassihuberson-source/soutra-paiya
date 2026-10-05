@@ -170,11 +170,11 @@ export default function Social() {
                   {p.author?.avatar_url ? (
                     <Image source={{ uri: p.author.avatar_url }} style={s.avatarImg} />
                   ) : (
-                    <Text style={s.avatarTxt}>{(p.author?.full_name || p.author?.phone || '?').charAt(0).toUpperCase()}</Text>
+                    <Text style={s.avatarTxt}>{(p.author?.full_name || '?').charAt(0).toUpperCase()}</Text>
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.author}>{p.author?.full_name || p.author?.phone || 'Anonyme'}</Text>
+                  <Text style={s.author}>{p.author?.full_name || 'Anonyme'}</Text>
                   <Text style={s.time}>{relativeTime(p.created_at)}</Text>
                 </View>
                 {p.user_id === user?.id && (

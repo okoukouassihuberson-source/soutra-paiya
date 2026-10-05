@@ -329,7 +329,8 @@ function ProDashboard() {
     const rows = (data || []) as any[];
     if (rows.length > 0) {
       const userIds = [...new Set(rows.map((r: any) => r.user_id))];
-      const { data: profiles } = await (supabase as any).from('profiles').select('id, full_name, phone').in('id', userIds);
+      // RPC (migration 0098) : coordonnées des seuls clients de CE gérant ; `profiles` n'est plus lisible directement.
+      const { data: profiles } = await (supabase as any).rpc('reservation_contacts', { p_user_ids: userIds });
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       setReservations(rows.map((r: any) => { const p = map.get(r.user_id) as any; return { ...r, status: r.status as ResStatus, customer_name: p?.full_name || null, customer_phone: p?.phone || null }; }));
     } else { setReservations([]); }

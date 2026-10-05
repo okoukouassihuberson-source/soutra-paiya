@@ -21,7 +21,7 @@ export type Post = {
   comment_count: number;
   created_at: string;
   // Joints côté client (lookup profiles + post_likes).
-  author?: { id: string; full_name: string | null; phone: string | null; avatar_url: string | null };
+  author?: { id: string; full_name: string | null; avatar_url: string | null };
   liked_by_me?: boolean;
 };
 
@@ -42,8 +42,8 @@ export async function listFeed(opts?: { before?: string; userIdForLikes?: string
 
   const userIds = [...new Set(posts.map((p: Post) => p.user_id))];
   const { data: profiles } = await (supabase as any)
-    .from('profiles')
-    .select('id, full_name, phone, avatar_url')
+    .from('public_profiles')
+    .select('id, full_name, avatar_url')
     .in('id', userIds);
   const byId = new Map((profiles || []).map((p: any) => [p.id, p]));
 

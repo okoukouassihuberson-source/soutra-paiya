@@ -16,13 +16,12 @@ export async function lookupRecipient(
   phone: string,
 ): Promise<{ id: string; name: string } | null> {
   // Supabase Auth stocke le numéro sans le « + » — on interroge les 2 formats.
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, full_name')
-    .in('phone', [phone, phone.replace(/^\+/, '')])
-    .maybeSingle();
-  if (error || !data) return null;
-  const row = data as { id: string; full_name: string | null };
+  // RPC (migration 0098) : la table profiles n'est plus lisible par les autres utilisateurs.
+  const { data, error } = await (supabase as any).rpc('find_profile_by_phone', {
+    p_phones: [phone, phone.replace(/^\+/, '')],
+  });
+  const row = (Array.isArray(data) ? data[0] : data) as { id: string; full_name: string | null } | undefined;
+  if (error || !row) return null;
   return { id: row.id, name: row.full_name || phone };
 }
 

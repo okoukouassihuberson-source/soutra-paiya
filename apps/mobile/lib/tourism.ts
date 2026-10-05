@@ -7,6 +7,7 @@ import type { Activity, ActivitySlot, Destination, Trip, TripItineraryDay, TripP
 import { supabase } from './supabase';
 import { tr, intlLocale, type TKey } from './i18n';
 import { cachedQuery } from './query-cache';
+import { fetchPublicProfiles } from './profile-names';
 
 const db = supabase as any;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -67,12 +68,13 @@ export async function getActivity(slug: string): Promise<{ activity: Activity; s
   const [{ data: slots }, { data: reviews }] = await Promise.all([
     db.from('activity_slots').select('*').eq('activity_id', activity.id).eq('status', 'open')
       .gt('starts_at', new Date(Date.now() + 3600_000).toISOString()).order('starts_at').limit(40),
-    db.from('activity_reviews').select('id, rating, comment, created_at, profiles(full_name)')
+    db.from('activity_reviews').select('id, rating, comment, created_at, user_id')
       .eq('activity_id', activity.id).eq('status', 'published').order('created_at', { ascending: false }).limit(20),
   ]);
+  const names = await fetchPublicProfiles((reviews ?? []).map((r: any) => r.user_id));
   return {
     activity: activity as Activity, slots: (slots ?? []) as ActivitySlot[],
-    reviews: (reviews ?? []).map((r: any) => ({ id: r.id, rating: r.rating, comment: r.comment, created_at: r.created_at, author: r.profiles?.full_name ?? null })),
+    reviews: (reviews ?? []).map((r: any) => ({ id: r.id, rating: r.rating, comment: r.comment, created_at: r.created_at, author: names.get(r.user_id)?.full_name ?? null })),
   };
 }
 

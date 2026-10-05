@@ -69,12 +69,16 @@ Méthode : lecture des migrations, pas d'accès à la base de production. Les ta
 
 **RLS — vérifié OK** : les 85 tables ont la RLS activée (les 16 signalées par une première analyse l'activent bien dans 0022, 0041, 0050, 0082, 0087) ; aucune policy d'écriture en `using (true)` ; aucune fonction `security definer` sans `search_path` ; les 7 tables sans policy (`payment_pins`, `push_tokens`, `notification_outbox`…) ne sont lues par aucun client, donc « tout refusé sauf service_role » est le comportement voulu ; wallets/transactions n'ont plus de policy d'écriture client.
 
-**RLS — point à traiter (NON corrigé volontairement)** : `profiles_select_public` (`using (true)`, 0001) rend **toute la table `profiles` lisible, y compris sans connexion** avec la clé anon : `phone`, `email`, `kyc_id_number`, `kyc_id_type`, `kyc_doc_url`, `role`. Les PIN ont été déplacés dans `payment_pins` (privé), mais les données KYC et téléphones restent exposées.
-Pourquoi pas corrigé ici : un `revoke select (colonnes)` fait échouer tout `select('*')` sur `profiles`, et l'app lit ces colonnes pour l'utilisateur lui-même (`kyc.tsx`) et pour l'admin web. Correctif proposé, à faire avec une base de test :
-1. vue `public_profiles (id, full_name, avatar_url, bio, city)` pour l'affichage des auteurs, avis, etc. ;
-2. policy `select` limitée à `id = auth.uid() or is_admin() or is_moderator()` sur `profiles` ;
-3. RPC `security definer` pour la recherche par téléphone (déjà couverte par `search_my_universe`) ;
-4. migrer les requêtes de l'app qui joignent `profiles` (`author:user_id(...)`, wallet, chat) vers la vue.
+**RLS `profiles` — corrigé dans `0098_profiles_rls.sql` (à appliquer EN DERNIER)** : `profiles_select_public` (`using (true)`) rendait toute la table lisible sans connexion (téléphone, e-mail, KYC, rôle). Désormais :
+- `profiles` n'est lisible que par soi-même, les admins et les modérateurs (`anon` : rien) ;
+- vues `public_profiles` (nom, avatar, bio, ville…) et `discoverable_profiles` (profils ayant activé la découverte) pour tout ce qui est public ;
+- RPC `find_profile_by_phone` (envoi P2P) et `reservation_contacts` (un gérant ne voit que les coordonnées de SES clients) ;
+- `discover_profiles`, `list_my_matches`, `list_my_chats`, `list_active_stories`, `get_event_detail` lisent les vues (restent `security invoker`, pas d'élévation de privilège) ;
+- clients adaptés : plus de jointure `profiles(...)` (avis, demandes d'argent, splits, transactions) ni de lecture directe des autres profils ; le téléphone n'est plus affiché comme nom de repli (fil social, commentaires, chat, stories).
+
+Testé : sur un Postgres 16 avec schéma factice (tables, `auth.uid()`, rôles anon/authenticated) — un utilisateur ne voit que sa ligne dans `profiles` mais les 4 noms dans `public_profiles`, ne peut pas lire le téléphone d'un autre, `discover_profiles` renvoie les profils découvrables, un gérant voit les coordonnées de son client et pas celles d'un inconnu, l'admin voit tout, `anon` ne voit rien dans `profiles` et ne peut pas appeler les RPC. **NON TESTÉ** : sur la vraie base (les 5 fonctions et les tables hors historique de migrations), ni via PostgREST/l'app.
+
+**Ordre de déploiement obligatoire** : (1) déployer le web (Vercel) et publier l'app mobile ; (2) appliquer `0097` puis `0098`. Les anciennes versions de l'app afficheraient des noms vides (auteurs, destinataires, avis) dès que 0098 est appliquée. Retour arrière : `create policy "profiles_select_public" on public.profiles for select using (true);`.
 
 Contrôle à lancer sur la base réelle (SQL editor Supabase) :
 ```sql

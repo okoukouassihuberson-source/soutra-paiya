@@ -49,11 +49,8 @@ export default async function ReservationTicketPage({
   if (!resa) notFound();
 
   // Fetch le nom du user pour personnaliser le ticket
-  const { data: profile } = await (sb as any)
-    .from('profiles')
-    .select('full_name, phone, email')
-    .eq('id', resa.user_id)
-    .maybeSingle();
+  const { data: contacts } = await (sb as any).rpc('reservation_contacts', { p_user_ids: [resa.user_id] });
+  const profile = Array.isArray(contacts) ? (contacts[0] ?? null) : null;
 
   return <TicketView resa={resa} profile={profile} />;
 }

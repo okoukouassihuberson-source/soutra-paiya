@@ -128,12 +128,12 @@ export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props
                       {c.author?.avatar_url ? (
                         <Image source={{ uri: c.author.avatar_url }} style={s.avatarImg} />
                       ) : (
-                        <Text style={s.avatarTxt}>{(c.author?.full_name || c.author?.phone || '?').charAt(0).toUpperCase()}</Text>
+                        <Text style={s.avatarTxt}>{(c.author?.full_name || '?').charAt(0).toUpperCase()}</Text>
                       )}
                     </View>
                     <View style={{ flex: 1 }}>
                       <View style={s.rowTop}>
-                        <Text style={s.author}>{c.author?.full_name || c.author?.phone || 'Anonyme'}</Text>
+                        <Text style={s.author}>{c.author?.full_name || 'Anonyme'}</Text>
                         <Text style={s.time}>{relativeTime(c.created_at)}</Text>
                       </View>
                       <Text style={s.body}>{c.body}</Text>

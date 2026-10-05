@@ -35,11 +35,11 @@ export default function ChatScreen() {
       const otherId = (members || []).map((m: any) => m.user_id).find((uid: string) => uid !== user?.id);
       if (otherId) {
         const { data: prof } = await (supabase as any)
-          .from('profiles')
-          .select('id, full_name, phone, avatar_url')
+          .from('public_profiles')
+          .select('id, full_name, avatar_url')
           .eq('id', otherId)
           .single();
-        setOther({ id: otherId, name: prof?.full_name || prof?.phone || 'Inconnu', avatar: prof?.avatar_url || null });
+        setOther({ id: otherId, name: prof?.full_name || 'Inconnu', avatar: prof?.avatar_url || null });
       }
       setMessages(msgs);
       // Marque comme lu après chargement.
