@@ -1,5 +1,6 @@
 'use client';
 
+import { MoreMenu } from './MoreMenu';
 import { useCallback, useEffect, useState } from 'react';
 import { formatXOF, HIGHLIGHT_LABELS, activityCategoryEmoji, activityCategoryLabel, type TripHighlight } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
@@ -18,7 +19,7 @@ interface Overview {
 
 const LABEL: Record<Status, string> = { draft: 'Brouillon', published: 'Publiée', paused: 'En pause', archived: 'Archivée' };
 const TONE: Record<Status, string> = {
-  draft: 'bg-amber-500/15 text-amber-700', published: 'bg-emerald-500/15 text-emerald-700',
+  draft: 'bg-amber-500/15 text-amber-800', published: 'bg-emerald-500/15 text-emerald-700',
   paused: 'bg-neutral-500/15 text-neutral-700', archived: 'bg-red-500/15 text-red-700',
 };
 
@@ -126,23 +127,29 @@ export function ActivitiesTab() {
                 <p className="text-xs text-neutral-600">{activityCategoryEmoji(a.category)} {activityCategoryLabel(a.category)} · {a.city ?? '—'} · {formatXOF(a.price_xof)}{a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <label className="text-[10px] text-neutral-600">Commission %
-                  <input type="number" min={0} max={100} step="0.5" defaultValue={a.commission_pct ?? ''} placeholder="0"
-                    onBlur={(e) => { const v = e.target.value; if (v !== '' && Number(v) !== a.commission_pct) moderate(a.id, { p_commission_pct: Number(v) }); }}
-                    className="ml-1 w-16 rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs text-dark" />
-                </label>
-                <select value={a.highlight ?? ''} aria-label="Mise en avant"
-                  onChange={(e) => e.target.value ? moderate(a.id, { p_highlight: e.target.value }) : moderate(a.id, { p_clear_highlight: true })}
-                  className="rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs text-dark">
-                  <option value="">Aucune mise en avant</option>
-                  {(Object.keys(HIGHLIGHT_LABELS) as TripHighlight[]).map((h) => <option key={h} value={h}>{HIGHLIGHT_LABELS[h]}</option>)}
-                </select>
                 <button onClick={() => { setEditing(a.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-900">Modifier</button>
                 {(a.status === 'draft' || a.status === 'paused') && <button onClick={() => moderate(a.id, { p_status: 'published' })} className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white">Publier</button>}
                 {a.status === 'published' && <button onClick={() => moderate(a.id, { p_status: 'paused' })} className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-900">Pause</button>}
-                {a.status !== 'archived' && <button onClick={() => moderate(a.id, { p_status: 'archived' }, `Archiver « ${a.title} » ? Elle ne sera plus réservable.`)} className="rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-700">Archiver</button>}
-                <button onClick={() => remove(a)} className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-700">Supprimer</button>
                 {a.status === 'published' && <a href={`/activites/${a.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-700 underline">Voir</a>}
+                <MoreMenu>
+                  <label className="block text-xs font-semibold text-neutral-700">Commission (%)
+                    <input type="number" min={0} max={100} step="0.5" defaultValue={a.commission_pct ?? ''} placeholder="Taux par défaut"
+                      onBlur={(e) => { const v = e.target.value; if (v !== '' && Number(v) !== a.commission_pct) moderate(a.id, { p_commission_pct: Number(v) }); }}
+                      className="mt-1 w-full rounded border border-neutral-200 bg-neutral-50 px-2 py-1.5 text-sm font-normal text-dark" />
+                  </label>
+                  <label className="block text-xs font-semibold text-neutral-700">Mise en avant
+                    <select value={a.highlight ?? ''}
+                      onChange={(e) => e.target.value ? moderate(a.id, { p_highlight: e.target.value }) : moderate(a.id, { p_clear_highlight: true })}
+                      className="mt-1 w-full rounded border border-neutral-200 bg-neutral-50 px-2 py-1.5 text-sm font-normal text-dark">
+                      <option value="">Aucune</option>
+                      {(Object.keys(HIGHLIGHT_LABELS) as TripHighlight[]).map((h) => <option key={h} value={h}>{HIGHLIGHT_LABELS[h]}</option>)}
+                    </select>
+                  </label>
+                  <div className="flex gap-2 border-t border-neutral-200 pt-3">
+                    {a.status !== 'archived' && <button onClick={() => moderate(a.id, { p_status: 'archived' }, `Archiver « ${a.title} » ? Elle ne sera plus réservable.`)} className="rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-700">Archiver</button>}
+                    <button onClick={() => remove(a)} className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-700">Supprimer</button>
+                  </div>
+                </MoreMenu>
               </div>
             </div>
           </li>))}</ul>

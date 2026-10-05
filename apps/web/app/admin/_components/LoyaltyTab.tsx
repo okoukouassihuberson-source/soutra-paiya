@@ -62,6 +62,10 @@ interface Reward {
   active: boolean;
 }
 
+// Texte : classes thématiques (contraste AA en clair et en sombre) ; les couleurs ci-dessous servent aux graphiques.
+const LEVEL_TEXT: Record<string, string> = {
+  bronze: 'text-amber-800', silver: 'text-neutral-700', gold: 'text-amber-800', platinum: 'text-blue-700', diamond: 'text-blue-700',
+};
 const LEVEL_COLORS: Record<string, string> = {
   bronze: '#B87333',
   silver: '#9CA3AF',
@@ -246,7 +250,7 @@ export function LoyaltyTab() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{u.full_name || '— (sans nom)'}</p>
-                  <p className="font-mono text-[11px]" style={{ color: LEVEL_COLORS[u.level_code] ?? '#737373' }}>
+                  <p className={`font-mono text-[11px] font-semibold ${LEVEL_TEXT[u.level_code] ?? 'text-neutral-700'}`}>
                     {u.level_code}
                   </p>
                 </div>
@@ -271,7 +275,7 @@ export function LoyaltyTab() {
             Aucun mouvement enregistré.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">

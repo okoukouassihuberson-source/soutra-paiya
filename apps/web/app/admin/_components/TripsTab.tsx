@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { formatXOF, formatTripDates, HIGHLIGHT_LABELS, type TripHighlight } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
+import { MoreMenu } from './MoreMenu';
 import { TripEditor } from '@/components/tourism/TripEditor';
 
 type Status = 'draft' | 'published' | 'full' | 'closed' | 'cancelled';
@@ -21,7 +22,7 @@ interface Stats {
 
 const STATUS_LABEL: Record<Status, string> = { draft: 'Brouillon', published: 'Publié', full: 'Complet', closed: 'Clos', cancelled: 'Annulé' };
 const STATUS_TONE: Record<Status, string> = {
-  draft: 'bg-amber-500/15 text-amber-700', published: 'bg-emerald-500/15 text-emerald-700', full: 'bg-blue-500/15 text-blue-700',
+  draft: 'bg-amber-500/15 text-amber-800', published: 'bg-emerald-500/15 text-emerald-700', full: 'bg-blue-500/15 text-blue-700',
   closed: 'bg-neutral-500/15 text-neutral-700', cancelled: 'bg-red-500/15 text-red-700',
 };
 const input = 'w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-dark placeholder:text-neutral-600';
@@ -130,23 +131,29 @@ export function TripsTab() {
                   <p className="text-xs text-neutral-700">{formatXOF(t.base_price_xof)} · {t.seats_booked}/{t.seats_total} places</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="text-[10px] text-neutral-600">Commission %
-                    <input type="number" min={0} max={100} step="0.5" defaultValue={t.commission_pct ?? ''} placeholder="0"
-                      onBlur={(e) => { const v = e.target.value; if (v !== '' && Number(v) !== t.commission_pct) moderate(t.id, { p_commission_pct: Number(v) }); }}
-                      className="ml-1 w-16 rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs text-dark" />
-                  </label>
-                  <select value={t.highlight ?? ''} aria-label="Mise en avant"
-                    onChange={(e) => e.target.value ? moderate(t.id, { p_highlight: e.target.value }) : moderate(t.id, { p_clear_highlight: true })}
-                    className="rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs text-dark">
-                    <option value="">Aucune mise en avant</option>
-                    {(Object.keys(HIGHLIGHT_LABELS) as TripHighlight[]).map((h) => <option key={h} value={h}>{HIGHLIGHT_LABELS[h]}</option>)}
-                  </select>
                   <Btn busy={false} tone="neutral" onClick={() => { setShowForm(false); setEditing(t.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Modifier</Btn>
                   {(t.status === 'draft' || t.status === 'closed') && <Btn busy={busy === t.id} tone="emerald" onClick={() => moderate(t.id, { p_status: 'published' })}>Publier</Btn>}
                   {(t.status === 'published' || t.status === 'full') && <Btn busy={busy === t.id} tone="neutral" onClick={() => moderate(t.id, { p_status: 'closed' })}>Clore</Btn>}
-                  {t.status !== 'cancelled' && <Btn busy={busy === t.id} tone="red" onClick={() => moderate(t.id, { p_status: 'cancelled' }, `Annuler « ${t.title} » ? Les voyageurs déjà payés devront être remboursés manuellement.`)}>Annuler</Btn>}
-                  <Btn busy={busy === t.id} tone="red" onClick={() => remove(t)}>Supprimer</Btn>
                   {(t.status === 'published' || t.status === 'full') && <a href={`/voyages/${t.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-700 underline">Voir</a>}
+                  <MoreMenu>
+                    <label className="block text-xs font-semibold text-neutral-700">Commission (%)
+                      <input type="number" min={0} max={100} step="0.5" defaultValue={t.commission_pct ?? ''} placeholder="Taux par défaut"
+                        onBlur={(e) => { const v = e.target.value; if (v !== '' && Number(v) !== t.commission_pct) moderate(t.id, { p_commission_pct: Number(v) }); }}
+                        className="mt-1 w-full rounded border border-neutral-200 bg-neutral-50 px-2 py-1.5 text-sm font-normal text-dark" />
+                    </label>
+                    <label className="block text-xs font-semibold text-neutral-700">Mise en avant
+                      <select value={t.highlight ?? ''}
+                        onChange={(e) => e.target.value ? moderate(t.id, { p_highlight: e.target.value }) : moderate(t.id, { p_clear_highlight: true })}
+                        className="mt-1 w-full rounded border border-neutral-200 bg-neutral-50 px-2 py-1.5 text-sm font-normal text-dark">
+                        <option value="">Aucune</option>
+                        {(Object.keys(HIGHLIGHT_LABELS) as TripHighlight[]).map((h) => <option key={h} value={h}>{HIGHLIGHT_LABELS[h]}</option>)}
+                      </select>
+                    </label>
+                    <div className="flex gap-2 border-t border-neutral-200 pt-3">
+                      {t.status !== 'cancelled' && <Btn busy={busy === t.id} tone="red" onClick={() => moderate(t.id, { p_status: 'cancelled' }, `Annuler « ${t.title} » ? Les voyageurs déjà payés devront être remboursés manuellement.`)}>Annuler</Btn>}
+                      <Btn busy={busy === t.id} tone="red" onClick={() => remove(t)}>Supprimer</Btn>
+                    </div>
+                  </MoreMenu>
                 </div>
               </div>
             </li>

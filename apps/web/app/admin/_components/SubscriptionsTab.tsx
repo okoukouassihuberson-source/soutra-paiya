@@ -325,7 +325,7 @@ export function SubscriptionsTab() {
             </p>
           )}
         </div>
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
@@ -382,7 +382,7 @@ export function SubscriptionsTab() {
             Aucun événement enregistré pour l&apos;instant.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
@@ -456,7 +456,7 @@ function Funnel({ funnel }: { funnel: Stats['funnel'] }) {
                 {conv !== null && (
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                     conv >= 50 ? 'bg-emerald-500/15 text-emerald-700'
-                    : conv >= 20 ? 'bg-amber-500/15 text-amber-700'
+                    : conv >= 20 ? 'bg-amber-500/15 text-amber-800'
                     : 'bg-red-500/15 text-red-700'
                   }`}>
                     →{conv}%

@@ -858,7 +858,7 @@ function AdminDashboard() {
               {promos.length > 0 && (
                 <div className="mt-6 rounded-2xl border border-neutral-200 bg-white">
                   <div className="border-b border-neutral-200 px-6 py-4"><h3 className="text-sm font-semibold text-neutral-700">Codes promos actifs</h3></div>
-                  <div className="overflow-x-auto">
+                  <div tabIndex={0} className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead><tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                         <th className="px-6 py-3">Code</th><th className="px-6 py-3">Remise</th><th className="px-6 py-3">Cible</th><th className="px-6 py-3">Créé le</th><th className="px-6 py-3">Actions</th>
@@ -952,7 +952,7 @@ function AdminDashboard() {
                   <div className="border-b border-neutral-200 px-6 py-4">
                     <h3 className="text-sm font-semibold text-neutral-700">Transactions suspectes (échouées ou {'>'} 500 000 FCFA)</h3>
                   </div>
-                  <div className="overflow-x-auto">
+                  <div tabIndex={0} className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead><tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                         <th className="px-6 py-3">Date</th><th className="px-6 py-3">Type</th><th className="px-6 py-3">Montant</th><th className="px-6 py-3">Provider</th><th className="px-6 py-3">Statut</th><th className="px-6 py-3">Raison</th>
@@ -980,7 +980,7 @@ function AdminDashboard() {
                 {auditLogs.length === 0 ? (
                   <div className="py-12 text-center text-neutral-600">Aucun événement d'audit enregistré</div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div tabIndex={0} className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead><tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                         <th className="px-6 py-3">Date</th><th className="px-6 py-3">Action</th><th className="px-6 py-3">Détails</th><th className="px-6 py-3">IP</th>
@@ -1177,7 +1177,7 @@ function AdminTable({ searchPlaceholder, search, onSearch, filterValue, onFilter
       {rows.length === 0 ? (
         <div className="py-16 text-center text-neutral-600">Aucun résultat</div>
       ) : (
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">{headers.map((h) => <th key={h} className="px-6 py-3">{h}</th>)}</tr></thead>
             <tbody>{rows.map((r) => <tr key={r.key} className="border-b border-neutral-100 transition hover:bg-neutral-100">{r.cells.map((cell, i) => <td key={i} className="px-6 py-3.5">{cell}</td>)}</tr>)}</tbody>
@@ -1318,7 +1318,7 @@ function ScoreCluster({
 
 function ScoreDot({ value, label }: { value?: number; label: string }) {
   const v = value ?? 0;
-  const bg = v >= 70 ? 'bg-emerald-500/15 text-emerald-700' : v >= 40 ? 'bg-amber-500/15 text-amber-700' : 'bg-neutral-200 text-neutral-700';
+  const bg = v >= 70 ? 'bg-emerald-500/15 text-emerald-700' : v >= 40 ? 'bg-amber-500/15 text-amber-800' : 'bg-neutral-200 text-neutral-700';
   return (
     <span className={`inline-flex h-5 w-5 items-center justify-center rounded text-[9px] font-bold ${bg}`} title={`${label} : ${v}/100`}>
       {label}

@@ -48,7 +48,7 @@ interface FlagRow {
 const SEVERITY_META: Record<FlagSeverity, { label: string; tone: string }> = {
   critical: { label: 'Critique', tone: 'bg-red-500/15 text-red-700 border-red-500/30' },
   high:     { label: 'Élevé',    tone: 'bg-orange-500/15 text-orange-700 border-orange-500/30' },
-  medium:   { label: 'Moyen',    tone: 'bg-amber-500/15 text-amber-700 border-amber-500/30' },
+  medium:   { label: 'Moyen',    tone: 'bg-amber-500/15 text-amber-800 border-amber-500/30' },
   low:      { label: 'Faible',   tone: 'bg-blue-500/15 text-blue-700 border-blue-500/30' },
   info:     { label: 'Info',     tone: 'bg-neutral-500/15 text-neutral-800 border-neutral-500/30' },
 };

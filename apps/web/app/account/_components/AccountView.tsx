@@ -92,13 +92,13 @@ const PLAN_STYLES: Record<PlanCode, { ribbon: string; text: string; accent: stri
 const STATUS_META: Record<Subscription['status'], { label: string; tone: string }> = {
   active:    { label: 'Actif',       tone: 'bg-emerald-500/15 text-emerald-700 ' },
   trialing:  { label: 'Période d\'essai', tone: 'bg-blue-500/15 text-blue-700 ' },
-  past_due:  { label: 'Paiement échoué', tone: 'bg-amber-500/15 text-amber-700 ' },
+  past_due:  { label: 'Paiement échoué', tone: 'bg-amber-500/15 text-amber-800 ' },
   cancelled: { label: 'Résilié',     tone: 'bg-neutral-500/15 text-neutral-600 ' },
   expired:   { label: 'Expiré',      tone: 'bg-red-500/15 text-red-700 ' },
 };
 
 const TX_STATUS: Record<Transaction['status'], { label: string; tone: string }> = {
-  pending:  { label: 'En cours', tone: 'bg-amber-500/15 text-amber-700 ' },
+  pending:  { label: 'En cours', tone: 'bg-amber-500/15 text-amber-800 ' },
   success:  { label: 'Payée',    tone: 'bg-emerald-500/15 text-emerald-700 ' },
   failed:   { label: 'Échouée',  tone: 'bg-red-500/15 text-red-700 ' },
   reversed: { label: 'Remboursée', tone: 'bg-purple-500/15 text-purple-700 ' },
@@ -620,7 +620,7 @@ export function AccountView({
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold ${ profile?.kyc_status === 'verified'
                       ? 'bg-emerald-500/15 text-emerald-700 '
                       : profile?.kyc_status === 'pending'
-                      ? 'bg-amber-500/15 text-amber-700 '
+                      ? 'bg-amber-500/15 text-amber-800 '
                       : profile?.kyc_status === 'rejected'
                       ? 'bg-red-500/15 text-red-700 '
                       : 'bg-neutral-500/15 text-neutral-600 '

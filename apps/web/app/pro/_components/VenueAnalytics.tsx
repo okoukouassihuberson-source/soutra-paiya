@@ -174,7 +174,7 @@ export function VenueAnalytics({ venueId, venueName }: { venueId: string | null;
             {data.daily.length === 0 || maxDaily === 0 ? (
               <p className="py-10 text-center text-xs text-neutral-600">Aucune activité sur la période.</p>
             ) : (
-              <div className="flex h-[160px] items-end gap-[3px] overflow-x-auto pb-1">
+              <div tabIndex={0} aria-label="Évolution quotidienne" className="flex h-[160px] items-end gap-[3px] overflow-x-auto pb-1">
                 {data.daily.map((d) => {
                   const hView = (d.views / maxDaily) * 140;
                   const hClick = (d.clicks / maxDaily) * 140;

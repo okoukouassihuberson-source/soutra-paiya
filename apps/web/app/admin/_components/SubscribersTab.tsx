@@ -57,7 +57,7 @@ const PLAN_COLORS: Record<PlanCode, string> = {
 const STATUS_META: Record<NonNullable<Subscriber['status']>, { label: string; tone: string }> = {
   active:    { label: 'Actif',         tone: 'bg-emerald-500/15 text-emerald-700' },
   trialing:  { label: 'Essai',         tone: 'bg-blue-500/15 text-blue-700' },
-  past_due:  { label: 'Paiement KO',   tone: 'bg-amber-500/15 text-amber-700' },
+  past_due:  { label: 'Paiement KO',   tone: 'bg-amber-500/15 text-amber-800' },
   cancelled: { label: 'Résilié',       tone: 'bg-neutral-500/15 text-neutral-700' },
   expired:   { label: 'Expiré',        tone: 'bg-red-500/15 text-red-700' },
 };
@@ -242,7 +242,7 @@ export function SubscribersTab() {
             Aucun abonné ne correspond aux filtres.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div tabIndex={0} className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-200 text-left text-[10px] font-semibold uppercase tracking-wider text-neutral-600">

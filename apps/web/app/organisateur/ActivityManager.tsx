@@ -18,7 +18,7 @@ interface BookingRow {
 }
 
 const STATUS: Record<Status, { label: string; tone: string }> = {
-  draft: { label: 'Brouillon', tone: 'bg-amber-500/15 text-amber-700' },
+  draft: { label: 'Brouillon', tone: 'bg-amber-500/15 text-amber-800' },
   published: { label: 'Publiée', tone: 'bg-emerald-500/15 text-emerald-700' },
   paused: { label: 'En pause', tone: 'bg-neutral-500/15 text-neutral-700' },
   archived: { label: 'Archivée', tone: 'bg-red-500/15 text-red-700' },

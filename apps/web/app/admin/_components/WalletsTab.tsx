@@ -71,7 +71,7 @@ export function WalletsTab() {
       )}
 
       <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
-        <div className="overflow-x-auto">
+        <div tabIndex={0} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
