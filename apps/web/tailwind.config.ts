@@ -8,6 +8,8 @@ const neutralVars = Object.fromEntries(
 );
 
 const config: Config = {
+  // Le variant `dark:` suit le thème choisi (bascule + préférence système), pas seulement le système.
+  darkMode: ['selector', "html[data-theme='dark']"],
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
     extend: {

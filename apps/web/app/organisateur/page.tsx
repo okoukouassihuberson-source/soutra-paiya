@@ -35,7 +35,7 @@ export default async function OrganizerPage() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <Link href="/" className="text-xs text-neutral-500 hover:text-neutral-300">← Soutra-Playce</Link>
+            <Link href="/" className="text-xs text-neutral-400 hover:text-neutral-200">← Soutra-Playce</Link>
             <h1 className="font-display text-2xl font-bold">Espace organisateur</h1>
             {profile?.full_name && <p className="text-sm text-neutral-400">{profile.full_name}</p>}
           </div>
