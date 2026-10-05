@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ScrollView, View, Text, Pressable, StyleSheet, RefreshControl,
+  FlatList, ScrollView, View, Text, Pressable, StyleSheet, RefreshControl,
   ActivityIndicator, Image, Modal, Alert,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -100,28 +100,31 @@ export default function HotelBookingsScreen() {
         subtitle={tn('hotelBk.count', bookings.length)}
       />
 
-      <ScrollView
+      <FlatList
+        data={bookings}
+        keyExtractor={(x) => x.booking_id}
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
-      >
-        {bookings.length === 0 ? (
-          <View style={s.empty}>
-            <Ionicons name="bed-outline" size={56} color={c.neutral[400]} />
-            <Text style={s.emptyTitle}>{t('hotelBk.emptyTitle')}</Text>
-            <Text style={s.emptyBody}>
-              {t('hotelBk.emptyBody')}
-            </Text>
-            <Pressable onPress={() => router.push('/(tabs)/explore')} style={s.cta}>
-              <Ionicons name="compass" size={18} color="#fff" />
-              <Text style={s.ctaText}>{t('hotelBk.explore')}</Text>
-            </Pressable>
-          </View>
-        ) : (
-          bookings.map((b) => (
-            <BookingCard key={b.booking_id} c={c} booking={b} onPress={() => setSelected(b)} />
-          ))
+        initialNumToRender={8}
+        windowSize={7}
+        removeClippedSubviews
+        ListEmptyComponent={(
+        <View style={s.empty}>
+          <Ionicons name="bed-outline" size={56} color={c.neutral[400]} />
+          <Text style={s.emptyTitle}>{t('hotelBk.emptyTitle')}</Text>
+          <Text style={s.emptyBody}>
+            {t('hotelBk.emptyBody')}
+          </Text>
+          <Pressable onPress={() => router.push('/(tabs)/explore')} style={s.cta}>
+            <Ionicons name="compass" size={18} color="#fff" />
+            <Text style={s.ctaText}>{t('hotelBk.explore')}</Text>
+          </Pressable>
+        </View>
         )}
-      </ScrollView>
+        renderItem={({ item: x }) => (
+          <BookingCard c={c} booking={x} onPress={() => setSelected(x)} />
+        )}
+      />
 
       <BookingDetailModal booking={selected} onClose={() => setSelected(null)} onChanged={load} />
     </SafeAreaView>

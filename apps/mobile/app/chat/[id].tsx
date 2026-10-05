@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Image, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +19,7 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
-  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollRef = useRef<FlatList<any> | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -113,26 +113,27 @@ export default function ChatScreen() {
         {loading ? (
           <View style={s.center}><ActivityIndicator size="large" color={colors.primary[500]} /></View>
         ) : (
-          <ScrollView
+          <FlatList
             ref={scrollRef}
+            data={messages}
+            keyExtractor={(m) => m.id}
             contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
+            initialNumToRender={20}
+            windowSize={9}
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
-          >
-            {messages.length === 0 && (
-              <Text style={s.emptyText}>{t('chatRoom.empty')}</Text>
-            )}
-            {messages.map((m) => {
+            ListEmptyComponent={<Text style={s.emptyText}>{t('chatRoom.empty')}</Text>}
+            renderItem={({ item: m }) => {
               const mine = m.sender_id === user?.id;
               return (
-                <View key={m.id} style={[s.bubbleRow, mine && s.bubbleRowMine]}>
+                <View style={[s.bubbleRow, mine && s.bubbleRowMine]}>
                   <View style={[s.bubble, mine ? s.bubbleMine : s.bubbleOther]}>
                     {m.body && <Text style={[s.bubbleText, mine && s.bubbleTextMine]}>{m.body}</Text>}
                     <Text style={[s.bubbleTime, mine && s.bubbleTimeMine]}>{formatTime(m.created_at)}</Text>
                   </View>
                 </View>
               );
-            })}
-          </ScrollView>
+            }}
+          />
         )}
 
         <View style={s.composer}>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView,
+  FlatList, Pressable, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -147,18 +148,23 @@ export default function Social() {
           </View>
         </ScrollView>
       ) : (
-        <ScrollView
+        <FlatList
+          data={posts}
+          keyExtractor={(p) => p.id}
           contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
+          ListHeaderComponent={<StoriesStrip />}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
+          windowSize={7}
+          removeClippedSubviews
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={() => { setRefreshing(true); load(); }}
             />
           }
-        >
-          <StoriesStrip />
-          {posts.map((p) => (
-            <View key={p.id} style={s.card}>
+          renderItem={({ item: p }) => (
+            <View style={s.card}>
               <View style={s.cardHeader}>
                 <View style={s.avatar}>
                   {p.author?.avatar_url ? (
@@ -212,8 +218,8 @@ export default function Social() {
                 </Pressable>
               </View>
             </View>
-          ))}
-        </ScrollView>
+          )}
+        />
       )}
 
       {/* Bottom sheet partagé pour tous les posts */}

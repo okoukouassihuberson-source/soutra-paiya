@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import {
-  ScrollView,
+  FlatList,
   View,
   Text,
   Pressable,
@@ -80,7 +80,9 @@ export default function Splits() {
       {loading ? (
         <ActivityIndicator size="large" color={colors.primary[500]} style={{ flex: 1 }} />
       ) : (
-        <ScrollView
+        <FlatList
+          data={splits}
+          keyExtractor={(sp) => sp.id}
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['2xl'] }}
           refreshControl={
             <RefreshControl
@@ -91,21 +93,24 @@ export default function Splits() {
               }}
             />
           }
-        >
+          initialNumToRender={8}
+          windowSize={7}
+          removeClippedSubviews
+          ListHeaderComponent={(
           <Pressable style={s.newBtn} onPress={() => router.push('/split-create')}>
             <Ionicons name="add" size={20} color="#fff" />
             <Text style={s.newBtnText}>{t('splitView.newSplit')}</Text>
           </Pressable>
-
-          {splits.length === 0 ? (
+          )}
+          ListEmptyComponent={(
             <View style={s.empty}>
               <Text style={s.emptyText}>{t('splitView.none')}</Text>
               <Text style={s.emptyHint}>
                 {t('splitView.noneBody')}
               </Text>
             </View>
-          ) : (
-            splits.map((sp) => {
+          )}
+          renderItem={({ item: sp }) => {
               const reqs = sp.payment_requests ?? [];
               const paid = reqs.filter((r) => r.status === 'accepted').length;
               return (
@@ -125,9 +130,8 @@ export default function Splits() {
                   <Ionicons name="chevron-forward" size={20} color={colors.neutral[400]} />
                 </Pressable>
               );
-            })
-          )}
-        </ScrollView>
+          }}
+        />
       )}
     </SafeAreaView>
   );
