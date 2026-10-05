@@ -818,4 +818,5 @@ export const en: Dict = {
     "clear": "Clear",
     "kind": { "trip": "Trip", "activity": "Activity" },
   },
+  "theme": { "toDark": "Switch to dark mode", "toLight": "Switch to light mode" },
 };

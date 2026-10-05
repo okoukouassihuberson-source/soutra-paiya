@@ -3,6 +3,7 @@ import { getI18n } from '@/lib/i18n/server';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileDock } from '@/components/home/MobileDock';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { CommandPalette } from '@/components/search/CommandPalette';
 import { AssistantDock } from './AssistantDock';
 
@@ -31,6 +32,7 @@ export function TourismNav() {
           </nav>
           <div className="flex items-center gap-2 text-sm">
             <CommandPalette />
+            <ThemeToggle className="max-[359px]:hidden" />
             <LanguageSwitcher />
             <NotificationBell />
             <Link href={lp('/organisateur')} className="hidden whitespace-nowrap font-medium text-neutral-600 hover:text-primary-700 2xl:inline">{t('nav.organizer')}</Link>

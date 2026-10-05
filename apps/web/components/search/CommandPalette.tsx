@@ -101,7 +101,7 @@ export function CommandPalette() {
         className="inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-600 transition hover:border-primary-400 hover:text-primary-700">
         <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
         <span className="hidden lg:inline">{t('pal.open')}</span>
-        <kbd className="hidden rounded border border-neutral-300 bg-neutral-50 px-1.5 py-0.5 font-sans text-[11px] text-neutral-600 lg:inline">{t('pal.shortcut')}</kbd>
+        <kbd className="hidden whitespace-nowrap rounded border border-neutral-300 bg-neutral-50 px-1.5 py-0.5 font-sans text-[11px] text-neutral-600 lg:inline">{t('pal.shortcut')}</kbd>
       </button>
 
       {open && (

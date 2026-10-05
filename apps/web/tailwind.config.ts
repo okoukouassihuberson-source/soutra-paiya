@@ -1,6 +1,12 @@
 import type { Config } from 'tailwindcss';
 import { colors, typography, radius } from '@soutra/shared';
 
+// Échelle neutre, texte principal et fond : pilotés par des variables CSS (app/globals.css)
+// pour que le mode sombre s'applique sans toucher aux composants. Source des valeurs : theme/tokens.ts.
+const neutralVars = Object.fromEntries(
+  Object.keys(colors.neutral).map((k) => [k, `rgb(var(--n-${k}) / <alpha-value>)`]),
+);
+
 const config: Config = {
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
@@ -9,12 +15,12 @@ const config: Config = {
         primary: colors.primary,
         secondary: colors.secondary,
         accent: colors.accent,
-        dark: colors.dark,
-        light: colors.light,
+        dark: 'rgb(var(--c-dark) / <alpha-value>)',
+        light: 'rgb(var(--c-light) / <alpha-value>)',
         danger: colors.danger,
         warning: colors.warning,
         success: colors.success,
-        neutral: colors.neutral,
+        neutral: neutralVars,
         night: '#101828',
       },
       fontFamily: {

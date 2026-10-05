@@ -28,3 +28,12 @@ Périmètre : page d'accueil `apps/web` (FR + `/en`), en-tête, barre mobile, pi
 
 ## Vérifications faites (Chromium, faux Supabase)
 9 largeurs (320 → 1920) × FR/EN : aucun débordement horizontal, aucune erreur console ; axe-core (WCAG 2.2 AA + bonnes pratiques) : 0 violation sur `/`, `/en`, `/voyages/nationaux` ; `prefers-reduced-motion` : diaporama figé, contenus visibles ; scripts e2e existants (réservation + promo, offres organisateur) toujours verts. Non vérifié : rendu avec de vraies photos, performance réseau mobile réelle (Lighthouse), lecteurs d'écran réels.
+
+
+## Mode sombre (web)
+
+- Thème posé sur `<html data-theme="light|dark">` par un script inline (`app/layout.tsx`) : choix mémorisé (`localStorage soutra.theme`), sinon préférence du système. Bascule : `components/ThemeToggle.tsx`.
+- Les échelles Tailwind `neutral`, `dark` (texte) et `light` (fond) lisent des variables CSS (`app/globals.css`, valeurs = `packages/shared/src/theme/tokens.ts`). Écrire `text-neutral-600`, `bg-white`, `border-neutral-200`… suffit : le sombre s'applique seul.
+- Les sections volontairement sombres (`.bg-night`) restaurent les valeurs claires pour leur contenu (boutons blancs, etc.).
+- Pastilles d'état (`bg-red-50`, `text-emerald-700`…), cartes Leaflet et champs natifs ont des surcharges dédiées en fin de `globals.css`. Ne pas utiliser de couleur hexadécimale en dur dans un composant.
+- Contrôle : axe-core (WCAG AA) en clair et en sombre.

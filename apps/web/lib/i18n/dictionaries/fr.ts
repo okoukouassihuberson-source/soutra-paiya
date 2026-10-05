@@ -820,6 +820,7 @@ export const fr = {
     "clear": "Effacer",
     "kind": { "trip": "Voyage", "activity": "Activité" },
   },
+  "theme": { "toDark": "Passer en mode sombre", "toLight": "Passer en mode clair" },
 } as const;
 
 export type Dict = Widen<typeof fr>;

@@ -34,3 +34,65 @@
 }
 /* Focus clavier visible partout (WCAG 2.2 AA) */
 :where(a, button, input, select, textarea, summary):focus-visible { outline: 2px solid #FF6B1A; outline-offset: 2px; }
+
+/* ═════════════════ Thèmes clair / sombre ═════════════════════════════════
+   Les échelles `neutral`, `dark` (texte) et `light` (fond) de Tailwind lisent ces variables
+   (tailwind.config.ts). Valeurs = packages/shared/src/theme/tokens.ts (colors / colorsDark).
+   Le thème est posé sur <html data-theme="light|dark"> par le script de app/layout.tsx.
+   Les sections sombres en permanence (.bg-night) restaurent les valeurs claires pour leur
+   contenu : boutons blancs, textes « night »… s'y comportent comme en mode clair. */
+:root {
+  --n-50: 248 250 252; --n-100: 241 245 249; --n-200: 226 232 240; --n-300: 203 213 225; --n-400: 148 163 184;
+  --n-500: 100 116 139; --n-600: 71 85 105; --n-700: 51 65 85; --n-800: 30 41 59; --n-900: 15 23 42;
+  --c-dark: 26 29 46; --c-light: 250 247 242; --surface: 255 255 255; --c-night-text: 16 24 40;
+  color-scheme: light;
+}
+html[data-theme='dark'] {
+  --n-50: 15 23 42; --n-100: 30 41 59; --n-200: 51 65 85; --n-300: 71 85 105; --n-400: 100 116 139;
+  --n-500: 148 163 184; --n-600: 203 213 225; --n-700: 226 232 240; --n-800: 241 245 249; --n-900: 248 250 252;
+  --c-dark: 245 245 247; --c-light: 14 17 22; --surface: 22 28 40; --c-night-text: 241 245 249;
+  color-scheme: dark;
+}
+html[data-theme='dark'] .bg-night {
+  --n-50: 248 250 252; --n-100: 241 245 249; --n-200: 226 232 240; --n-300: 203 213 225; --n-400: 148 163 184;
+  --n-500: 100 116 139; --n-600: 71 85 105; --n-700: 51 65 85; --n-800: 30 41 59; --n-900: 15 23 42;
+  --c-dark: 26 29 46; --surface: 255 255 255; --c-night-text: 16 24 40;
+}
+html[data-theme='dark'] .bg-white { background-color: rgb(var(--surface) / var(--tw-bg-opacity, 1)); }
+html[data-theme='dark'] .bg-white\/80 { background-color: rgb(var(--surface) / .8); }
+html[data-theme='dark'] .bg-white\/85 { background-color: rgb(var(--surface) / .85); }
+html[data-theme='dark'] .bg-white\/90 { background-color: rgb(var(--surface) / .9); }
+html[data-theme='dark'] .bg-white\/95 { background-color: rgb(var(--surface) / .95); }
+html[data-theme='dark'] .from-white { --tw-gradient-from: rgb(var(--surface)) var(--tw-gradient-from-position); --tw-gradient-to: rgb(var(--surface) / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html[data-theme='dark'] .via-white { --tw-gradient-to: rgb(var(--surface) / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), rgb(var(--surface)) var(--tw-gradient-via-position), var(--tw-gradient-to); }
+html[data-theme='dark'] .to-white { --tw-gradient-to: rgb(var(--surface)) var(--tw-gradient-to-position); }
+html[data-theme='dark'] .ring-white { --tw-ring-color: rgb(var(--surface)); }
+html[data-theme='dark'] .text-night:not([class*='bg-primary']) { color: rgb(var(--c-night-text)); }
+html[data-theme='dark'] .bg-dark { background-color: #334155; }
+/* Pastilles d'état (fonds pastel → teintes translucides, textes foncés → clairs) */
+html[data-theme='dark'] :is(.bg-red-50, .bg-red-100) { background-color: rgb(239 68 68 / .14); }
+html[data-theme='dark'] :is(.bg-amber-50, .bg-amber-100) { background-color: rgb(245 158 11 / .14); }
+html[data-theme='dark'] :is(.bg-emerald-50, .bg-emerald-100) { background-color: rgb(16 185 129 / .14); }
+html[data-theme='dark'] :is(.bg-blue-50, .bg-blue-100) { background-color: rgb(59 130 246 / .14); }
+html[data-theme='dark'] :is(.bg-purple-50, .bg-purple-100) { background-color: rgb(168 85 247 / .14); }
+html[data-theme='dark'] :is(.bg-primary-50, .bg-primary-100) { background-color: rgb(255 107 26 / .14); }
+html[data-theme='dark'] :is(.text-red-600, .text-red-700, .text-red-800) { color: #fca5a5; }
+html[data-theme='dark'] :is(.text-amber-600, .text-amber-700, .text-amber-800, .text-amber-900) { color: #fcd34d; }
+html[data-theme='dark'] :is(.text-emerald-600, .text-emerald-700, .text-emerald-800) { color: #6ee7b7; }
+html[data-theme='dark'] :is(.text-blue-600, .text-blue-700) { color: #93c5fd; }
+html[data-theme='dark'] :is(.text-purple-600, .text-purple-700) { color: #d8b4fe; }
+html[data-theme='dark'] :is(.text-primary-600, .text-primary-700, .text-primary-800) { color: #ffa366; }
+html[data-theme='dark'] :is(.text-danger) { color: #fca5a5; }
+html[data-theme='dark'] :is(.border-red-200, .border-red-300) { border-color: rgb(239 68 68 / .4); }
+html[data-theme='dark'] :is(.border-amber-200) { border-color: rgb(245 158 11 / .4); }
+html[data-theme='dark'] :is(.border-emerald-200) { border-color: rgb(16 185 129 / .4); }
+html[data-theme='dark'] :is(.border-blue-200) { border-color: rgb(59 130 246 / .4); }
+html[data-theme='dark'] :is(.border-primary-200, .border-primary-300) { border-color: rgb(255 107 26 / .5); }
+/* Champs natifs, carte (tuiles OSM assombries), images légèrement atténuées */
+html[data-theme='dark'] :is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range']) { background-color: rgb(var(--surface)); color: rgb(var(--c-dark)); }
+html[data-theme='dark'] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.95) contrast(.9); }
+html[data-theme='dark'] .leaflet-container { background: #1b2230; }
+html[data-theme='dark'] img { filter: brightness(.92); }
+html[data-theme='dark'] .leaflet-popup-content-wrapper img, html[data-theme='dark'] [role='dialog'] img { filter: none; }
+html[data-theme='dark'] .leaflet-control-attribution { background: rgb(var(--surface) / .8) !important; color: rgb(var(--n-600)); }
+html[data-theme='dark'] .leaflet-control-attribution a { color: #7dd3fc; }
