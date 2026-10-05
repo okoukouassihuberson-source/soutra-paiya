@@ -71,7 +71,7 @@ export function ActivityBooking({ slots, basePrice, maxGroup, minAge }: {
                 return (
                   <label key={s.id} className="cursor-pointer">
                     <input type="radio" name="slot" className="peer sr-only" checked={slotId === s.id} onChange={() => { setSlotId(s.id); setN(1); }} />
-                    <span className="inline-block rounded-xl border border-neutral-300 px-3 py-2 text-sm peer-checked:border-primary-500 peer-checked:bg-primary-500 peer-checked:text-white peer-focus-visible:ring-2">
+                    <span className="inline-block rounded-xl border border-neutral-300 px-3 py-2 text-sm peer-checked:border-primary-500 peer-checked:bg-primary-500 peer-checked:text-night peer-focus-visible:ring-2">
                       {new Date(s.starts_at).toLocaleTimeString(intl, { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' })}
                       <span className="ml-1 text-xs opacity-80">· {t('act.seatsAbbr', { n: rest })}</span>
                     </span>
@@ -91,7 +91,7 @@ export function ActivityBooking({ slots, basePrice, maxGroup, minAge }: {
       </label>
       <PromoField value={code} onChange={setCode} preview={preview} />
       <PriceSummary preview={preview} fallback={unit * n} label={slot ? slotFmt(slot.starts_at) : ''} />
-      <button disabled={busy || !slot} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-white hover:bg-primary-600 disabled:opacity-60">{busy ? t('act.booking') : t('act.book')}</button>
+      <button disabled={busy || !slot} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-night hover:bg-primary-400 disabled:opacity-60">{busy ? t('act.booking') : t('act.book')}</button>
       {msg && (msg.text === 'login'
         ? <p className="text-sm text-danger">{t('booking.loginPrompt')}<Link className="underline" href="/login">{t('common.signIn')}</Link></p>
         : <p role="status" className={`text-sm ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</p>)}

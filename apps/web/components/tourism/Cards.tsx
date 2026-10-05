@@ -20,7 +20,7 @@ export function TripCardView({ trip }: { trip: TripCard }) {
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
         <Cover src={trip.cover_url} alt={title} />
         {trip.highlight && (
-          <span className="absolute left-3 top-3 rounded-full bg-primary-500 px-3 py-1 text-xs font-bold text-white">{i.t(`highlight.${trip.highlight}` as 'highlight.a_la_une')}</span>
+          <span className="absolute left-3 top-3 rounded-full bg-primary-500 px-3 py-1 text-xs font-bold text-night">{i.t(`highlight.${trip.highlight}` as 'highlight.a_la_une')}</span>
         )}
         <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">{i.t('common.days', { n: trip.duration_days })}</span>
       </div>
@@ -29,7 +29,7 @@ export function TripCardView({ trip }: { trip: TripCard }) {
         <h3 className="font-display text-lg font-bold leading-snug text-dark">{title}</h3>
         <p className="text-sm text-neutral-600">{formatTripDates(trip.starts_on, trip.ends_on, i.intl)}</p>
         <div className="flex items-end justify-between pt-1">
-          <p className="text-lg font-bold text-primary-600"><span className="text-xs font-normal text-neutral-500">{i.t('common.from')} </span>{i.fmtXOF(trip.base_price_xof)}</p>
+          <p className="text-lg font-bold text-primary-700"><span className="text-xs font-normal text-neutral-500">{i.t('common.from')} </span>{i.fmtXOF(trip.base_price_xof)}</p>
           <p className={`text-xs font-semibold ${left <= 5 ? 'text-danger' : 'text-neutral-500'}`}>
             {left === 0 ? i.t('cards.full') : i.tn('cards.seatsLeft', left)}
           </p>
@@ -51,7 +51,7 @@ export function VenueCardView({ venue }: { venue: VenueCard }) {
         <h3 className="font-display text-base font-bold text-dark">{venue.name}</h3>
         <p className="text-sm text-neutral-600">{[venue.district, venue.city].filter(Boolean).join(', ')}</p>
         <div className="flex items-center justify-between text-sm">
-          <span className="font-semibold text-amber-600">{(venue.rating_count ?? 0) > 0 ? `★ ${Number(venue.rating_avg).toFixed(1)} (${venue.rating_count})` : i.t('common.new')}</span>
+          <span className="font-semibold text-amber-700">{(venue.rating_count ?? 0) > 0 ? `★ ${Number(venue.rating_avg).toFixed(1)} (${venue.rating_count})` : i.t('common.new')}</span>
           {venue.avg_price_xof ? <span className="text-neutral-700">~ {i.fmtXOF(venue.avg_price_xof)}</span> : null}
         </div>
       </div>
@@ -83,7 +83,7 @@ export function ActivityCardView({ activity }: { activity: ActivityCard }) {
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
         <Cover src={activity.cover_url} alt={title} />
         <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold">{activityCategoryEmoji(activity.category)} {i.tdyn('actCat', activity.category, activity.category)}</span>
-        {activity.highlight && <span className="absolute right-3 top-3 rounded-full bg-primary-500 px-3 py-1 text-xs font-bold text-white">{i.tdyn('highlight', activity.highlight as TripHighlight, '')}</span>}
+        {activity.highlight && <span className="absolute right-3 top-3 rounded-full bg-primary-500 px-3 py-1 text-xs font-bold text-night">{i.tdyn('highlight', activity.highlight as TripHighlight, '')}</span>}
         <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">{i.fmtDuration(activity.duration_minutes)}</span>
       </div>
       <div className="space-y-1 p-4">
@@ -91,8 +91,8 @@ export function ActivityCardView({ activity }: { activity: ActivityCard }) {
         <h3 className="font-display text-base font-bold leading-snug text-dark">{title}</h3>
         {activity.next_slot_at && <p className="text-xs text-neutral-600">{i.t('cards.nextDeparture', { date: new Date(activity.next_slot_at).toLocaleString(i.intl, { weekday: 'short', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' }) })}</p>}
         <div className="flex items-end justify-between pt-1">
-          <p className="text-lg font-bold text-primary-600"><span className="text-xs font-normal text-neutral-500">{i.t('common.from')} </span>{i.fmtXOF(activity.price_xof)}</p>
-          <span className="text-sm font-semibold text-amber-600">{activity.rating_count > 0 ? `★ ${Number(activity.rating_avg).toFixed(1)} (${activity.rating_count})` : i.t('common.new')}</span>
+          <p className="text-lg font-bold text-primary-700"><span className="text-xs font-normal text-neutral-500">{i.t('common.from')} </span>{i.fmtXOF(activity.price_xof)}</p>
+          <span className="text-sm font-semibold text-amber-700">{activity.rating_count > 0 ? `★ ${Number(activity.rating_avg).toFixed(1)} (${activity.rating_count})` : i.t('common.new')}</span>
         </div>
       </div>
     </Link>

@@ -70,7 +70,7 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
       </label>
       <PromoField value={code} onChange={setCode} preview={preview} />
       <PriceSummary preview={preview} fallback={unit * n} label={t('booking.total')} />
-      <button disabled={busy} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-white hover:bg-primary-600 disabled:opacity-60">
+      <button disabled={busy} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-night hover:bg-primary-400 disabled:opacity-60">
         {busy ? t('booking.booking') : cta}
       </button>
       {msg && (msg.text === 'login'

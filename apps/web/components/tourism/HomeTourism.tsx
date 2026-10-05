@@ -186,7 +186,7 @@ export async function HomeTourism() {
                       <Stars value={r.rating} />
                       <blockquote className="mt-3 flex-1 text-[15px] leading-relaxed text-neutral-800">« {r.comment} »</blockquote>
                       <figcaption className="mt-4 text-sm"><span className="font-bold text-night">{r.author}</span>
-                        <Link href={lp(`/activites/${r.slug}`)} className="block text-neutral-600 hover:text-primary-600">{t('home2.proofOn', { title: r.title })}</Link>
+                        <Link href={lp(`/activites/${r.slug}`)} className="block text-neutral-600 hover:text-primary-700">{t('home2.proofOn', { title: r.title })}</Link>
                       </figcaption>
                     </figure>
                   </Reveal>

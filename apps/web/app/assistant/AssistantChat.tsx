@@ -10,7 +10,11 @@ interface Msg { role: 'user' | 'assistant'; content: string; items?: Item[]; err
 
 const PATH = { trip: '/voyages', activity: '/activites', destination: '/destinations' } as const;
 
-export function AssistantChat({ initialText = '' }: { initialText?: string }) {
+/**
+ * `compact` : version panneau latéral (AssistantDock) — pas de titre, zone de messages défilante,
+ * champ de saisie en bas. `context` : page consultée, transmise à l'assistant avec la 1re question.
+ */
+export function AssistantChat({ initialText = '', compact = false, context = '' }: { initialText?: string; compact?: boolean; context?: string }) {
   const { t, lp, locale, fmtXOF } = useI18n();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState(initialText);
@@ -24,8 +28,10 @@ export function AssistantChat({ initialText = '' }: { initialText?: string }) {
     if (!question || busy) return;
     const history: Msg[] = [...msgs, { role: 'user', content: question }];
     setMsgs(history); setText(''); setBusy(true);
+    const sent = history.filter((m) => !m.error).map(({ role, content }) => ({ role, content }));
+    if (context && sent[0]?.role === 'user') sent[0] = { ...sent[0], content: `[${context}]\n${sent[0].content}`.slice(0, 600) };
     const { data, error } = await (supabaseBrowser() as any).functions.invoke('tourism-assistant', {
-      body: { locale, messages: history.filter((m) => !m.error).map(({ role, content }) => ({ role, content })) },
+      body: { locale, messages: sent },
     });
     setBusy(false);
     if (error || !data?.reply) {
@@ -41,9 +47,11 @@ export function AssistantChat({ initialText = '' }: { initialText?: string }) {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="font-display text-3xl font-bold">✨ {t('assistant.title')}</h1>
-      <p className="text-neutral-600">{t('assistant.intro')}</p>
+    <div className={compact ? 'flex h-full min-h-0 flex-col' : 'space-y-4'}>
+      {!compact && <h1 className="font-display text-3xl font-bold">✨ {t('assistant.title')}</h1>}
+      {!compact && <p className="text-neutral-600">{t('assistant.intro')}</p>}
+      <div className={compact ? 'min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-3' : 'contents'}>
+      {compact && <p className="text-sm text-neutral-600">{t('assistant.intro')}</p>}
 
       {msgs.length === 0 && (
         <div>
@@ -80,13 +88,14 @@ export function AssistantChat({ initialText = '' }: { initialText?: string }) {
         {busy && <li className="text-sm text-neutral-500">{t('assistant.thinking')}</li>}
       </ol>
       <div ref={end} />
+      </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="sticky bottom-20 flex gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg">
+      <form onSubmit={(e) => { e.preventDefault(); send(text); }} className={compact ? 'm-3 flex gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-sm' : 'sticky bottom-20 flex gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg'}>
         <input value={text} onChange={(e) => setText(e.target.value)} maxLength={500} placeholder={t('assistant.placeholder')} aria-label={t('assistant.placeholder')}
                className="min-w-0 flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-sm" />
         <button disabled={busy || !text.trim()} className="whitespace-nowrap rounded-xl bg-primary-500 px-4 text-sm font-semibold text-white disabled:opacity-50">{t('assistant.send')}</button>
       </form>
-      <p className="text-xs text-neutral-500">{t('assistant.disclaimer')}{remaining !== null && ` · ${t('assistant.remaining', { n: remaining })}`}</p>
+      <p className={compact ? 'px-4 pb-3 text-xs text-neutral-600' : 'text-xs text-neutral-500'}>{t('assistant.disclaimer')}{remaining !== null && ` · ${t('assistant.remaining', { n: remaining })}`}</p>
     </div>
   );
 }

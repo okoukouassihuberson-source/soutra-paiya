@@ -195,7 +195,7 @@ export function TripEditor({ tripId, onSaved, onCancel }: { tripId?: string; onS
       </div>
       {err && <p role="alert" className="text-sm text-red-400">{err}</p>}
       <div className="flex items-center gap-3">
-        <button disabled={busy} className="rounded-lg bg-primary-500 px-5 py-2 text-sm font-bold text-white disabled:opacity-60">{busy ? 'Enregistrement…' : tripId ? 'Enregistrer' : 'Créer le brouillon'}</button>
+        <button disabled={busy} className="rounded-lg bg-primary-500 px-5 py-2 text-sm font-bold text-night disabled:opacity-60">{busy ? 'Enregistrement…' : tripId ? 'Enregistrer' : 'Créer le brouillon'}</button>
         {onCancel && <button type="button" onClick={onCancel} className="text-sm text-neutral-400 underline">Annuler</button>}
         <p className="text-xs text-neutral-500">{tripId ? 'Un brouillon modifié doit être soumis de nouveau.' : 'Créé en brouillon : à soumettre ensuite pour validation.'}</p>
       </div>

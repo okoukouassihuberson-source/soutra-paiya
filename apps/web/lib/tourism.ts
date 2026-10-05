@@ -8,10 +8,10 @@ import { listActivities, type ActivityCard } from './activities';
 const db = () => supabaseServer() as any;
 
 const TRIP_CARD_COLS =
-  'id, slug, scope, title, summary, country, country_code, continent, city, cover_url, starts_on, ends_on, duration_days, base_price_xof, seats_total, seats_booked, highlight, is_circuit, status, transport, lodging, meals, i18n';
+  'id, slug, scope, destination_id, title, summary, country, country_code, continent, city, cover_url, starts_on, ends_on, duration_days, base_price_xof, seats_total, seats_booked, highlight, is_circuit, status, transport, lodging, meals, i18n';
 
 export type TripCard = Pick<Trip,
-  'id' | 'slug' | 'scope' | 'title' | 'summary' | 'country' | 'country_code' | 'continent' | 'city' | 'cover_url' |
+  'id' | 'slug' | 'scope' | 'destination_id' | 'title' | 'summary' | 'country' | 'country_code' | 'continent' | 'city' | 'cover_url' |
   'starts_on' | 'ends_on' | 'duration_days' | 'base_price_xof' | 'seats_total' | 'seats_booked' | 'highlight' |
   'is_circuit' | 'status' | 'transport' | 'lodging' | 'meals' | 'i18n'>;
 
@@ -142,4 +142,16 @@ export async function exploreVenues(p: ExploreParams): Promise<{ venues: Explore
   }
   const venues = (data ?? []) as ExploreVenue[];
   return { venues, total: venues[0] ? Number(venues[0].total_count) : 0 };
+}
+
+/** Coordonnées des destinations d'une liste de voyages (les voyages n'ont pas de GPS propre). */
+export async function tripPins(trips: TripCard[]): Promise<Map<string, { lat: number; lng: number }>> {
+  const ids = [...new Set(trips.map((t) => t.destination_id).filter(Boolean))] as string[];
+  const out = new Map<string, { lat: number; lng: number }>();
+  if (ids.length === 0) return out;
+  const { data } = await db().from('destinations').select('id, latitude, longitude').in('id', ids);
+  for (const d of (data ?? []) as { id: string; latitude: number | null; longitude: number | null }[]) {
+    if (d.latitude != null && d.longitude != null) out.set(d.id, { lat: d.latitude, lng: d.longitude });
+  }
+  return out;
 }

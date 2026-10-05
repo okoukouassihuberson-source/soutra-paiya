@@ -44,7 +44,7 @@ export function PromoField({ value, onChange, preview }: {
                autoComplete="off" maxLength={40}
                className="w-full rounded-xl border border-neutral-300 px-3 py-2 uppercase" />
         <button type="button" onClick={() => onChange(draft.trim())}
-                className="whitespace-nowrap rounded-xl border border-primary-500 px-4 text-sm font-semibold text-primary-600 hover:bg-primary-50">
+                className="whitespace-nowrap rounded-xl border border-primary-500 px-4 text-sm font-semibold text-primary-700 hover:bg-primary-50">
           {t('promo.apply')}
         </button>
       </div>
@@ -74,7 +74,7 @@ export function PriceSummary({ preview, fallback, label }: { preview: PricePrevi
       )}
       <div className="mt-1 flex items-center justify-between">
         <span className="text-sm text-neutral-600">{label}</span>
-        <span className="text-xl font-bold text-primary-600">{fmtXOF(preview ? preview.total_xof : fallback)}</span>
+        <span className="text-xl font-bold text-primary-700">{fmtXOF(preview ? preview.total_xof : fallback)}</span>
       </div>
     </div>
   );
