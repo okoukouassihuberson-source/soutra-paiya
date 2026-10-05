@@ -58,6 +58,6 @@ NON TESTÉ — nécessite exécution dans l'environnement du projet :
 - démarrage sur appareil (le crash est-il résolu ?), navigation, auth, réseau coupé/lent, cycle de vie, images, uploads ;
 - `npx expo-doctor`, `eas build` (development, preview, production) ;
 - index et RLS Supabase ; `select('*')` restants (lib/organizer.ts ×2, lib/tourism.ts ×5, lignes uniques, laissés volontairement) ;
-- `ScrollView` conservés : tickets, wallet, trending, search (sections hétérogènes).
+- `ScrollView` conservés volontairement : wallet (15 transactions max), trending (20 à 50 éléments), search (résultats groupés plafonnés) ; tickets est passé en FlatList.
 
 À faire côté utilisateur : reconstruire le dev client, envoyer les lignes `[DIAG]` si le crash persiste, redéployer Vercel, appliquer la migration 0096. Retirer les logs `[DIAG]` de `index.js` une fois le crash réglé.
