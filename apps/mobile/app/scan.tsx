@@ -62,15 +62,6 @@ function Scan() {
   const myPhone = user?.phone ? `+${user.phone.replace(/^\+/, '')}` : '';
 
   useEffect(() => {
-    console.log('[QR Scanner] Screen mounted, mode =', mode);
-    return () => {
-      console.log('[QR Scanner] Screen unmounted');
-    };
-    // log au premier mount uniquement
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     let mounted = true;
     (async () => {
       if (!user?.id) return;
@@ -97,13 +88,10 @@ function Scan() {
   const handleScan = (result: { data: string }) => {
     if (scanned) return;
     setScanned(true);
-    console.log('[QR Scanner] QR Detected');
-    console.log('[QR Scanner] QR Data:', result?.data?.slice(0, 200));
 
     try {
       const qr = parsePaymentQr(result.data);
       if (!qr) {
-        console.log('[QR Scanner] QR rejected: unrecognized format');
         Alert.alert(
           t('scan.unrecTitle'),
           t('scan.unrecBody'),
@@ -115,7 +103,6 @@ function Scan() {
         return;
       }
       if (qr.phone === myPhone) {
-        console.log('[QR Scanner] QR rejected: self-payment');
         Alert.alert(t('scan.ownTitle'), t('scan.ownBody'), [
           { text: t('scan.ok'), onPress: () => setScanned(false) },
         ]);
@@ -123,7 +110,6 @@ function Scan() {
       }
 
       // QR valide : on ouvre l'écran Envoyer pré-rempli.
-      console.log('[QR Scanner] Navigation Success → /send with phone', qr.phone);
       router.replace({
         pathname: '/send',
         params: {
@@ -142,7 +128,6 @@ function Scan() {
   };
 
   const switchMode = (m: Mode) => {
-    console.log('[QR Scanner] switch mode →', m);
     setScanned(false);
     setMode(m);
   };
@@ -212,7 +197,6 @@ function ScanArea({
         <Pressable
           style={s.permBtn}
           onPress={() => {
-            console.log('[QR Scanner] Requesting camera permission');
             try {
               requestPermission();
             } catch (err) {
