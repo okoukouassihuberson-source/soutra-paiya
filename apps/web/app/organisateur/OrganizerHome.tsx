@@ -11,7 +11,7 @@ import { OffersManager } from '@/components/tourism/OffersManager';
 export function OrganizerHome() {
   const [tab, setTab] = useState<'trips' | 'activities' | 'offers' | 'stats'>('trips');
   const btn = (t: 'trips' | 'activities' | 'offers' | 'stats') =>
-    `rounded-full px-5 py-2 text-sm font-bold ${tab === t ? 'bg-primary-500 text-night' : 'border border-neutral-700 text-neutral-300'}`;
+    `rounded-full px-5 py-2 text-sm font-bold ${tab === t ? 'bg-primary-500 text-night' : 'border border-neutral-300 text-neutral-800'}`;
   return (
     <div className="space-y-6">
       <MyCommission />

@@ -36,7 +36,7 @@ export function Topbar({ appLabel, homeHref, user, actions, onMenuClick }: Props
           <div className="truncate text-sm font-extrabold tracking-tight text-dark">
             Soutra-Playce
           </div>
-          <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+          <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
             {appLabel}
           </div>
         </div>

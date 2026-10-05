@@ -134,7 +134,7 @@ export function HotelBookingsTab({ venueId }: { venueId: string }) {
 
       <div>
         <h2 className="font-display text-2xl font-bold text-neutral-900">Réservations chambres</h2>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-neutral-600">
           {bookings.length} réservation{bookings.length > 1 ? 's' : ''} ·{' '}
           {counts.confirmed + counts.checked_in} actif{counts.confirmed + counts.checked_in > 1 ? 's' : ''}
         </p>
@@ -157,12 +157,12 @@ export function HotelBookingsTab({ venueId }: { venueId: string }) {
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
           Chargement…
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
-          <p className="text-sm text-neutral-500">Aucune réservation dans ce filtre.</p>
+          <p className="text-sm text-neutral-600">Aucune réservation dans ce filtre.</p>
         </div>
       ) : (
         <ul className="space-y-3">
@@ -188,9 +188,9 @@ export function HotelBookingsTab({ venueId }: { venueId: string }) {
                     </div>
                     <p className="mt-1.5 text-sm font-semibold text-neutral-900">
                       {b.contact_name || 'Client'}
-                      {b.contact_phone && <span className="ml-1 font-mono text-xs text-neutral-500">· {b.contact_phone}</span>}
+                      {b.contact_phone && <span className="ml-1 font-mono text-xs text-neutral-600">· {b.contact_phone}</span>}
                     </p>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-neutral-600">
                       {formatDate(b.check_in_date)} → {formatDate(b.check_out_date)} ·{' '}
                       {b.nights_count} nuit{b.nights_count > 1 ? 's' : ''} ·{' '}
                       {b.guests_count} pers.
@@ -198,7 +198,7 @@ export function HotelBookingsTab({ venueId }: { venueId: string }) {
                   </div>
                   <div className="text-right">
                     <p className="font-mono font-bold text-neutral-900">{formatXOF(b.total_xof)}</p>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`mt-1 ml-auto text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`mt-1 ml-auto text-neutral-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
                   </div>
@@ -257,7 +257,7 @@ export function HotelBookingsTab({ venueId }: { venueId: string }) {
                         <button
                           onClick={() => handleStatusChange(b.id, next.next)}
                           disabled={actionLoading === b.id}
-                          className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-50"
+                          className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
                         >
                           → {next.label}
                         </button>
@@ -266,7 +266,7 @@ export function HotelBookingsTab({ venueId }: { venueId: string }) {
                         <button
                           onClick={() => handleCancel(b.id)}
                           disabled={actionLoading === b.id}
-                          className="rounded-full border border-red-300 bg-white px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                          className="rounded-full border border-red-300 bg-white px-4 py-2 text-xs font-bold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                         >
                           Annuler
                         </button>
@@ -286,7 +286,7 @@ export function HotelBookingsTab({ venueId }: { venueId: string }) {
 function DetailCard({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className={`rounded-xl p-3 ${highlight ? 'bg-primary-50 border border-primary-200' : 'bg-white border border-neutral-200'}`}>
-      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">{label}</p>
       <p className={`mt-1 text-sm font-bold ${highlight ? 'text-primary-700' : 'text-neutral-900'}`}>{value}</p>
     </div>
   );

@@ -108,7 +108,7 @@ export function LoyaltyTab() {
 
   if (loading && !stats) {
     return (
-      <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">
+      <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
         Chargement des analytics fidélité…
       </div>
     );
@@ -117,8 +117,8 @@ export function LoyaltyTab() {
   if (error) {
     return (
       <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-center">
-        <p className="text-sm font-medium text-red-400">Erreur : {error}</p>
-        <p className="mt-2 text-xs text-neutral-500">
+        <p className="text-sm font-medium text-red-700">Erreur : {error}</p>
+        <p className="mt-2 text-xs text-neutral-600">
           La migration 0068 (moteur de fidélité) est-elle appliquée ?
         </p>
       </div>
@@ -133,7 +133,7 @@ export function LoyaltyTab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-display text-lg font-bold">Analytics Fidélité</p>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-neutral-600">
             Fenêtre : {stats.window_days} jours · généré {formatRelativeTime(stats.generated_at)}
           </p>
         </div>
@@ -144,8 +144,8 @@ export function LoyaltyTab() {
               onClick={() => setWindowDays(d)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 windowDays === d
-                  ? 'border-primary-500 bg-primary-500/15 text-primary-400'
-                  : 'border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700'
+                  ? 'border-primary-500 bg-primary-500/15 text-primary-700'
+                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400'
               }`}
             >
               {d} jours
@@ -194,9 +194,9 @@ export function LoyaltyTab() {
                     <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#737373' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#737373' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+                <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
                 <Tooltip content={<DarkTooltip formatter={(v: number) => `${v.toLocaleString('fr-FR')} pts`} />} />
                 <Area
                   type="monotone" dataKey="points" name="Points"
@@ -211,9 +211,9 @@ export function LoyaltyTab() {
           {stats.by_level.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={stats.by_level.map((l) => ({ name: l.label, count: l.count, code: l.level_code }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#737373' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#737373' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+                <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
                 <Tooltip content={<DarkTooltip />} />
                 <Bar dataKey="count" name="Comptes" radius={[6, 6, 0, 0]} fill="#f59e0b" />
               </BarChart>
@@ -223,24 +223,24 @@ export function LoyaltyTab() {
       </div>
 
       {/* ═══════════ TOP USERS LEADERBOARD ═══════════ */}
-      <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
-        <div className="border-b border-neutral-800/50 px-6 py-4">
-          <h3 className="text-sm font-semibold text-neutral-400">Top 10 utilisateurs</h3>
-          <p className="mt-0.5 text-xs text-neutral-500">Classement par cumul de points lifetime</p>
+      <div className="rounded-2xl border border-neutral-200 bg-white">
+        <div className="border-b border-neutral-200 px-6 py-4">
+          <h3 className="text-sm font-semibold text-neutral-700">Top 10 utilisateurs</h3>
+          <p className="mt-0.5 text-xs text-neutral-600">Classement par cumul de points lifetime</p>
         </div>
         {stats.top_users.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-neutral-500">
+          <div className="px-6 py-12 text-center text-sm text-neutral-600">
             Aucun utilisateur fidélité pour l&apos;instant.
           </div>
         ) : (
-          <ul className="divide-y divide-neutral-800/50">
+          <ul className="divide-y divide-neutral-200">
             {stats.top_users.map((u, i) => (
               <li key={i} className="flex flex-wrap items-center gap-3 px-6 py-3.5">
                 <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                  i === 0 ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/40' :
-                  i === 1 ? 'bg-neutral-400/20 text-neutral-300 ring-1 ring-neutral-500/40' :
-                  i === 2 ? 'bg-orange-500/20 text-orange-400 ring-1 ring-orange-500/40' :
-                  'bg-neutral-800 text-neutral-500'
+                  i === 0 ? 'bg-amber-500/20 text-amber-700 ring-1 ring-amber-500/40' :
+                  i === 1 ? 'bg-neutral-400/20 text-neutral-800 ring-1 ring-neutral-500/40' :
+                  i === 2 ? 'bg-orange-500/20 text-orange-700 ring-1 ring-orange-500/40' :
+                  'bg-neutral-100 text-neutral-600'
                 }`}>
                   {i + 1}
                 </span>
@@ -250,7 +250,7 @@ export function LoyaltyTab() {
                     {u.level_code}
                   </p>
                 </div>
-                <p className="font-mono text-sm font-bold text-amber-400">
+                <p className="font-mono text-sm font-bold text-amber-700">
                   {u.points_lifetime.toLocaleString('fr-FR')} pts
                 </p>
               </li>
@@ -260,21 +260,21 @@ export function LoyaltyTab() {
       </div>
 
       {/* ═══════════ DERNIERS MOUVEMENTS ═══════════ */}
-      <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
-        <div className="border-b border-neutral-800/50 px-6 py-4">
-          <h3 className="text-sm font-semibold text-neutral-400">
+      <div className="rounded-2xl border border-neutral-200 bg-white">
+        <div className="border-b border-neutral-200 px-6 py-4">
+          <h3 className="text-sm font-semibold text-neutral-700">
             Derniers mouvements ({stats.recent_transactions.length})
           </h3>
         </div>
         {stats.recent_transactions.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-neutral-500">
+          <div className="px-6 py-12 text-center text-sm text-neutral-600">
             Aucun mouvement enregistré.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-800/50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                <tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                   <th className="px-6 py-3">Date</th>
                   <th className="px-6 py-3">Type</th>
                   <th className="px-6 py-3">Description</th>
@@ -283,11 +283,11 @@ export function LoyaltyTab() {
               </thead>
               <tbody>
                 {stats.recent_transactions.map((r) => (
-                  <tr key={r.id} className="border-b border-neutral-800/30 transition hover:bg-neutral-800/20">
-                    <td className="px-6 py-3 text-xs text-neutral-400">{formatRelativeTime(r.created_at)}</td>
+                  <tr key={r.id} className="border-b border-neutral-100 transition hover:bg-neutral-100">
+                    <td className="px-6 py-3 text-xs text-neutral-700">{formatRelativeTime(r.created_at)}</td>
                     <td className="px-6 py-3 text-xs">{KIND_LABEL[r.kind]}</td>
                     <td className="px-6 py-3 text-sm">{r.description || '—'}</td>
-                    <td className={`px-6 py-3 text-right font-mono text-sm font-bold ${r.points >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <td className={`px-6 py-3 text-right font-mono text-sm font-bold ${r.points >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                       {r.points >= 0 ? '+' : ''}{r.points.toLocaleString('fr-FR')}
                     </td>
                   </tr>
@@ -350,26 +350,26 @@ function RewardsManager() {
   }, [sb, form, load]);
 
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
-      <div className="border-b border-neutral-800/50 px-6 py-4">
-        <h3 className="text-sm font-semibold text-neutral-400">Catalogue de récompenses</h3>
-        <p className="mt-0.5 text-xs text-neutral-500">Activable/désactivable — visible sur /loyalty et dans l&apos;app</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white">
+      <div className="border-b border-neutral-200 px-6 py-4">
+        <h3 className="text-sm font-semibold text-neutral-700">Catalogue de récompenses</h3>
+        <p className="mt-0.5 text-xs text-neutral-600">Activable/désactivable — visible sur /loyalty et dans l&apos;app</p>
       </div>
 
       {loading ? (
-        <div className="px-6 py-8 text-center text-sm text-neutral-500">Chargement…</div>
+        <div className="px-6 py-8 text-center text-sm text-neutral-600">Chargement…</div>
       ) : (
-        <ul className="divide-y divide-neutral-800/50">
+        <ul className="divide-y divide-neutral-200">
           {rewards.map((r) => (
             <li key={r.code} className="flex flex-wrap items-center gap-3 px-6 py-3.5">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">{r.label}</p>
-                <p className="text-xs text-neutral-500">{r.points_cost.toLocaleString('fr-FR')} pts{r.stock != null && <> · stock {r.stock}</>}</p>
+                <p className="text-xs text-neutral-600">{r.points_cost.toLocaleString('fr-FR')} pts{r.stock != null && <> · stock {r.stock}</>}</p>
               </div>
               <button
                 onClick={() => toggleActive(r.code, !r.active)}
                 className={`rounded-full px-3 py-1 text-xs font-bold transition ${
-                  r.active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-neutral-800 text-neutral-500'
+                  r.active ? 'bg-emerald-500/15 text-emerald-700' : 'bg-neutral-100 text-neutral-600'
                 }`}
               >
                 {r.active ? 'Actif' : 'Inactif'}
@@ -379,39 +379,39 @@ function RewardsManager() {
         </ul>
       )}
 
-      <div className="border-t border-neutral-800/50 p-6">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-500">Nouvelle récompense</p>
+      <div className="border-t border-neutral-200 p-6">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-600">Nouvelle récompense</p>
         <div className="grid gap-2 sm:grid-cols-4">
           <input
             placeholder="code (unique)"
             value={form.code}
             onChange={(e) => setForm({ ...form, code: e.target.value })}
-            className="rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm"
+            className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm"
           />
           <input
             placeholder="Libellé"
             value={form.label}
             onChange={(e) => setForm({ ...form, label: e.target.value })}
-            className="rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm sm:col-span-2"
+            className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm sm:col-span-2"
           />
           <input
             type="number"
             placeholder="Coût en pts"
             value={form.points_cost}
             onChange={(e) => setForm({ ...form, points_cost: Number(e.target.value) })}
-            className="rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm"
+            className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm"
           />
         </div>
         <input
           placeholder="Description (optionnel)"
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
-          className="mt-2 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm"
+          className="mt-2 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm"
         />
         <button
           onClick={handleCreate}
           disabled={creating || !form.code || !form.label}
-          className="mt-3 rounded-full bg-primary-500 px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-40"
+          className="mt-3 rounded-full bg-primary-500 px-4 py-2 text-xs font-bold text-night transition hover:opacity-90 disabled:opacity-40"
         >
           {creating ? 'Création…' : 'Ajouter au catalogue'}
         </button>
@@ -426,8 +426,8 @@ function RewardsManager() {
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-      <h3 className="mb-4 text-sm font-semibold text-neutral-400">{title}</h3>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+      <h3 className="mb-4 text-sm font-semibold text-neutral-700">{title}</h3>
       {children}
     </div>
   );
@@ -444,8 +444,8 @@ function EmptyChart({ label = 'Aucune donnée' }: { label?: string }) {
 function DarkTooltip({ active, payload, label, formatter }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 shadow-2xl">
-      {label && <p className="mb-1 text-xs text-neutral-500">{label}</p>}
+    <div className="rounded-xl border border-neutral-300 bg-white px-4 py-3 shadow-2xl">
+      {label && <p className="mb-1 text-xs text-neutral-600">{label}</p>}
       {payload.map((p: any, i: number) => (
         <p key={i} className="text-sm font-medium" style={{ color: p.color || p.payload?.fill }}>
           {p.name}: {formatter ? formatter(p.value) : p.value.toLocaleString('fr-FR')}
@@ -464,19 +464,19 @@ function KpiCard({
   color: 'blue' | 'emerald' | 'amber' | 'red' | 'purple';
 }) {
   const map = {
-    blue:    { bg: 'bg-blue-500/10',    text: 'text-blue-400',    ring: 'ring-blue-500/20' },
-    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', ring: 'ring-emerald-500/20' },
-    amber:   { bg: 'bg-amber-500/10',   text: 'text-amber-400',   ring: 'ring-amber-500/20' },
-    red:     { bg: 'bg-red-500/10',     text: 'text-red-400',     ring: 'ring-red-500/20' },
-    purple:  { bg: 'bg-purple-500/10',  text: 'text-purple-400',  ring: 'ring-purple-500/20' },
+    blue:    { bg: 'bg-blue-500/10',    text: 'text-blue-700',    ring: 'ring-blue-500/20' },
+    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-700', ring: 'ring-emerald-500/20' },
+    amber:   { bg: 'bg-amber-500/10',   text: 'text-amber-700',   ring: 'ring-amber-500/20' },
+    red:     { bg: 'bg-red-500/10',     text: 'text-red-700',     ring: 'ring-red-500/20' },
+    purple:  { bg: 'bg-purple-500/10',  text: 'text-purple-700',  ring: 'ring-purple-500/20' },
   } as const;
   const c = map[color];
 
   return (
-    <div className="group rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4 transition-all hover:border-neutral-700/50 sm:p-5">
+    <div className="group rounded-2xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-400 sm:p-5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[11px] font-medium text-neutral-500 sm:text-xs">{label}</p>
+          <p className="truncate text-[11px] font-medium text-neutral-600 sm:text-xs">{label}</p>
           <p className="mt-1 truncate font-display text-lg font-bold tracking-tight sm:mt-1.5 sm:text-2xl">
             {value}
           </p>

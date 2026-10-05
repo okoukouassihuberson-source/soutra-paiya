@@ -41,15 +41,15 @@ export function ModerationTab() {
       {/* Bandeau d'en-tête */}
       <div className="mb-6 rounded-2xl border border-primary-500/20 bg-primary-500/5 p-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500/15 text-primary-400">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-500/15 text-primary-700">
             <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
           <div>
-            <h2 className="font-display text-lg font-bold text-white">Modération Pro</h2>
-            <p className="mt-0.5 text-sm text-neutral-400">
+            <h2 className="font-display text-lg font-bold text-dark">Modération Pro</h2>
+            <p className="mt-0.5 text-sm text-neutral-700">
               Valider les utilisateurs Pro et les contenus communautaires. Toute action est journalisée.
             </p>
           </div>
@@ -66,20 +66,20 @@ export function ModerationTab() {
               onClick={() => setSubTab(s.id)}
               className={`rounded-2xl border px-4 py-3 text-left transition ${
                 isActive
-                  ? 'border-primary-500/50 bg-primary-500/10 text-white'
-                  : 'border-neutral-800/50 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                  ? 'border-primary-500/50 bg-primary-500/10 text-dark'
+                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400 hover:text-neutral-900'
               }`}
             >
               <div className="text-sm font-semibold">{s.label}</div>
-              <div className="mt-0.5 text-[11px] text-neutral-500 line-clamp-2">{s.desc}</div>
+              <div className="mt-0.5 text-[11px] text-neutral-600 line-clamp-2">{s.desc}</div>
             </button>
           );
         })}
       </div>
 
       {/* Description du sous-onglet actif */}
-      <p className="mb-3 text-xs text-neutral-500">
-        <strong className="text-neutral-300">{active.label} :</strong> {active.desc}
+      <p className="mb-3 text-xs text-neutral-600">
+        <strong className="text-neutral-800">{active.label} :</strong> {active.desc}
       </p>
 
       {/* Contenu du sous-onglet */}

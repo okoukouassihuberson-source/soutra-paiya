@@ -104,14 +104,14 @@ export function HotelRoomsTab({ venueId }: { venueId: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl font-bold text-neutral-900">Mes chambres</h2>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-neutral-600">
             {rooms.length} chambre{rooms.length > 1 ? 's' : ''} ·{' '}
             {rooms.filter((r) => r.status === 'active').length} disponible{rooms.filter((r) => r.status === 'active').length > 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={() => setCreating(true)}
-          className="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary-500/30 transition hover:bg-primary-600 active:scale-[0.98]"
+          className="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-bold text-night shadow-lg shadow-primary-500/30 transition hover:bg-primary-400 active:scale-[0.98]"
         >
           + Ajouter une chambre
         </button>
@@ -119,13 +119,13 @@ export function HotelRoomsTab({ venueId }: { venueId: string }) {
 
       <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
         {loading ? (
-          <div className="p-12 text-center text-neutral-500">Chargement…</div>
+          <div className="p-12 text-center text-neutral-600">Chargement…</div>
         ) : rooms.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-sm text-neutral-500">Aucune chambre publiée.</p>
+            <p className="text-sm text-neutral-600">Aucune chambre publiée.</p>
             <button
               onClick={() => setCreating(true)}
-              className="mt-4 rounded-full bg-primary-500 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-primary-600"
+              className="mt-4 rounded-full bg-primary-500 px-5 py-2.5 text-sm font-bold text-night shadow-md transition hover:bg-primary-400"
             >
               Créer ma première chambre
             </button>
@@ -134,7 +134,7 @@ export function HotelRoomsTab({ venueId }: { venueId: string }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-200 bg-neutral-50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                <tr className="border-b border-neutral-200 bg-neutral-50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                   <th className="px-4 py-3">Chambre</th>
                   <th className="px-4 py-3">Type</th>
                   <th className="px-4 py-3 text-right">Capacité</th>
@@ -152,12 +152,12 @@ export function HotelRoomsTab({ venueId }: { venueId: string }) {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={r.photos[0]} alt={r.name} className="h-10 w-10 rounded-lg object-cover" />
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-100 text-neutral-400">🛏️</div>
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600">🛏️</div>
                         )}
                         <div>
                           <p className="font-semibold text-neutral-900">{r.name}</p>
                           {r.amenities.length > 0 && (
-                            <p className="text-[10px] text-neutral-500">{r.amenities.slice(0, 3).join(' · ')}{r.amenities.length > 3 ? ` +${r.amenities.length - 3}` : ''}</p>
+                            <p className="text-[10px] text-neutral-600">{r.amenities.slice(0, 3).join(' · ')}{r.amenities.length > 3 ? ` +${r.amenities.length - 3}` : ''}</p>
                           )}
                         </div>
                       </div>
@@ -186,7 +186,7 @@ export function HotelRoomsTab({ venueId }: { venueId: string }) {
                         </button>
                         <button
                           onClick={() => handleDelete(r)}
-                          className="rounded-lg px-2.5 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                          className="rounded-lg px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50"
                         >
                           Suppr
                         </button>
@@ -304,7 +304,7 @@ function RoomFormModal({
             <h3 className="font-display text-xl font-bold text-neutral-900">
               {room ? 'Modifier la chambre' : 'Nouvelle chambre'}
             </h3>
-            <button type="button" onClick={onClose} className="rounded-full p-2 text-neutral-500 hover:bg-neutral-100">
+            <button type="button" onClick={onClose} className="rounded-full p-2 text-neutral-600 hover:bg-neutral-100">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -367,7 +367,7 @@ function RoomFormModal({
               className="w-full rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm focus:border-primary-500 focus:outline-none"
               placeholder="https://…"
             />
-            <p className="mt-1 text-[11px] text-neutral-500">
+            <p className="mt-1 text-[11px] text-neutral-600">
               Upload Supabase Storage à venir. Pour l&apos;instant, copier-coller l&apos;URL.
             </p>
           </Field>
@@ -383,7 +383,7 @@ function RoomFormModal({
                   <button
                     type="button"
                     onClick={() => removeAmenity(a)}
-                    className="ml-0.5 hover:text-red-600"
+                    className="ml-0.5 hover:text-red-700"
                   >×</button>
                 </span>
               ))}
@@ -440,7 +440,7 @@ function RoomFormModal({
           </button>
           <button
             type="submit" disabled={saving}
-            className="rounded-2xl bg-primary-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary-500/30 transition hover:bg-primary-600 disabled:opacity-50"
+            className="rounded-2xl bg-primary-500 px-6 py-3 text-sm font-bold text-night shadow-lg shadow-primary-500/30 transition hover:bg-primary-400 disabled:opacity-50"
           >
             {saving ? 'Enregistrement…' : room ? 'Enregistrer' : 'Créer la chambre'}
           </button>

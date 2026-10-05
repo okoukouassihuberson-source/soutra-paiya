@@ -187,7 +187,7 @@ export function VenuePayoutPanel({ venueId }: VenuePayoutPanelProps) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Payouts gérant</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Payouts gérant</p>
       </div>
 
       {/* Balance card */}
@@ -207,7 +207,7 @@ export function VenuePayoutPanel({ venueId }: VenuePayoutPanelProps) {
           <button
             onClick={openModal}
             disabled={!ownerKycVerified || payable < MIN_XOF || loading}
-            className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+            className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
             title={
               !ownerKycVerified
                 ? 'KYC requis pour retirer'
@@ -235,14 +235,14 @@ export function VenuePayoutPanel({ venueId }: VenuePayoutPanelProps) {
           <h3 className="font-display text-base font-bold text-dark">Historique des retraits</h3>
         </div>
         {history.length === 0 ? (
-          <div className="py-10 text-center text-sm text-neutral-400">
+          <div className="py-10 text-center text-sm text-neutral-600">
             {loading ? 'Chargement…' : 'Aucun retrait pour le moment'}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-100 text-left text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                <tr className="border-b border-neutral-100 text-left text-xs font-semibold uppercase tracking-wider text-neutral-600">
                   <th className="px-6 py-3">Date</th>
                   <th className="px-6 py-3">Montant</th>
                   <th className="px-6 py-3">Opérateur</th>
@@ -255,7 +255,7 @@ export function VenuePayoutPanel({ venueId }: VenuePayoutPanelProps) {
                   const meta = STATUS_META[p.status] ?? STATUS_META.pending;
                   return (
                     <tr key={p.id} className="border-b border-neutral-50 hover:bg-neutral-50/50">
-                      <td className="px-6 py-3 text-xs text-neutral-500">{formatDateTime(p.requested_at)}</td>
+                      <td className="px-6 py-3 text-xs text-neutral-600">{formatDateTime(p.requested_at)}</td>
                       <td className="px-6 py-3 font-mono font-medium">{formatXOF(p.amount_xof)}</td>
                       <td className="px-6 py-3 text-xs uppercase">{p.provider}</td>
                       <td className="px-6 py-3 font-mono text-xs text-neutral-600">{p.phone}</td>
@@ -264,7 +264,7 @@ export function VenuePayoutPanel({ venueId }: VenuePayoutPanelProps) {
                           {meta.label}
                         </span>
                         {p.failure_reason && (
-                          <p className="mt-1 max-w-[280px] truncate text-[10px] text-red-600" title={p.failure_reason}>
+                          <p className="mt-1 max-w-[280px] truncate text-[10px] text-red-700" title={p.failure_reason}>
                             {p.failure_reason}
                           </p>
                         )}
@@ -290,7 +290,7 @@ export function VenuePayoutPanel({ venueId }: VenuePayoutPanelProps) {
               <button
                 onClick={() => setModalOpen(false)}
                 disabled={submitting}
-                className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100"
+                className="rounded-full p-1 text-neutral-600 hover:bg-neutral-100"
                 aria-label="Fermer"
               >
                 ✕
@@ -317,7 +317,7 @@ export function VenuePayoutPanel({ venueId }: VenuePayoutPanelProps) {
                 }`}
               />
               {amount.length > 0 && !amountValid && (
-                <p className="mt-1 text-xs text-red-600">
+                <p className="mt-1 text-xs text-red-700">
                   {amountNum > payable
                     ? `Solde payable insuffisant (${formatXOF(payable)}).`
                     : amountNum > MAX_XOF
@@ -368,7 +368,7 @@ export function VenuePayoutPanel({ venueId }: VenuePayoutPanelProps) {
                 }`}
               />
               {phone.length > 4 && !phoneValid && (
-                <p className="mt-1 text-xs text-red-600">Format attendu : +225 suivi de 10 chiffres.</p>
+                <p className="mt-1 text-xs text-red-700">Format attendu : +225 suivi de 10 chiffres.</p>
               )}
             </label>
 
@@ -390,7 +390,7 @@ export function VenuePayoutPanel({ venueId }: VenuePayoutPanelProps) {
               <button
                 onClick={submitPayout}
                 disabled={!canSubmit}
-                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
+                className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
               >
                 {submitting
                   ? 'Envoi en cours…'

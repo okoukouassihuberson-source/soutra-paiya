@@ -140,15 +140,15 @@ function CallbackInner() {
   }, [searchParams, router, sb]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-neutral-50 px-6 text-center dark:bg-neutral-950">
-      <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-8 shadow-xl dark:border-neutral-800 dark:bg-neutral-900">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-neutral-50 px-6 text-center ">
+      <div className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white p-8 shadow-xl ">
         {stage === 'verifying' && (
           <>
             <div className="mx-auto mb-5 h-12 w-12 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500" />
-            <h1 className="font-display text-xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="font-display text-xl font-bold text-neutral-900 ">
               Vérification du paiement…
             </h1>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-2 text-sm text-neutral-600 ">
               Activation de ton abonnement en cours.
             </p>
           </>
@@ -159,10 +159,10 @@ function CallbackInner() {
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-3xl text-emerald-500">
               ✓
             </div>
-            <h1 className="font-display text-xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="font-display text-xl font-bold text-neutral-900 ">
               Paiement confirmé
             </h1>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-2 text-sm text-neutral-600 ">
               Retour à l&apos;application en cours…
             </p>
           </>
@@ -173,10 +173,10 @@ function CallbackInner() {
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/15 text-3xl text-red-500">
               ✗
             </div>
-            <h1 className="font-display text-xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="font-display text-xl font-bold text-neutral-900 ">
               Paiement non confirmé
             </h1>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-2 text-sm text-neutral-600 ">
               La transaction n&apos;a pas été validée. Tu peux réessayer.
             </p>
           </>
@@ -187,10 +187,10 @@ function CallbackInner() {
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary-500/15 text-3xl text-primary-500">
               ✓
             </div>
-            <h1 className="font-display text-xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="font-display text-xl font-bold text-neutral-900 ">
               Paiement terminé
             </h1>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-2 text-sm text-neutral-600 ">
               Tu peux retourner dans l&apos;application Soutra-Paiya. Si rien ne
               se passe, touche le bouton ci-dessous.
             </p>

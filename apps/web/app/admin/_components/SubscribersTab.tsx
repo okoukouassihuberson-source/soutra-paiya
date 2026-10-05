@@ -55,11 +55,11 @@ const PLAN_COLORS: Record<PlanCode, string> = {
 };
 
 const STATUS_META: Record<NonNullable<Subscriber['status']>, { label: string; tone: string }> = {
-  active:    { label: 'Actif',         tone: 'bg-emerald-500/15 text-emerald-400' },
-  trialing:  { label: 'Essai',         tone: 'bg-blue-500/15 text-blue-400' },
-  past_due:  { label: 'Paiement KO',   tone: 'bg-amber-500/15 text-amber-400' },
-  cancelled: { label: 'Résilié',       tone: 'bg-neutral-500/15 text-neutral-400' },
-  expired:   { label: 'Expiré',        tone: 'bg-red-500/15 text-red-400' },
+  active:    { label: 'Actif',         tone: 'bg-emerald-500/15 text-emerald-700' },
+  trialing:  { label: 'Essai',         tone: 'bg-blue-500/15 text-blue-700' },
+  past_due:  { label: 'Paiement KO',   tone: 'bg-amber-500/15 text-amber-700' },
+  cancelled: { label: 'Résilié',       tone: 'bg-neutral-500/15 text-neutral-700' },
+  expired:   { label: 'Expiré',        tone: 'bg-red-500/15 text-red-700' },
 };
 
 const PAGE_SIZE = 50;
@@ -159,8 +159,8 @@ export function SubscribersTab() {
   if (error) {
     return (
       <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-center">
-        <p className="text-sm font-medium text-red-400">Erreur : {error}</p>
-        <p className="mt-2 text-xs text-neutral-500">
+        <p className="text-sm font-medium text-red-700">Erreur : {error}</p>
+        <p className="mt-2 text-xs text-neutral-600">
           La migration 0054 (admin_list_subscribers) est-elle appliquée ?
         </p>
       </div>
@@ -173,24 +173,24 @@ export function SubscribersTab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-display text-lg font-bold">Tous les abonnés</p>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-neutral-600">
             {data ? `${data.total_count.toLocaleString('fr-FR')} utilisateurs` : '…'}
           </p>
         </div>
         <button
           onClick={exportCsv}
           disabled={!data?.rows.length}
-          className="rounded-full border border-neutral-800 bg-neutral-900/50 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:border-primary-500/40 hover:text-primary-400 disabled:opacity-50"
+          className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800 transition hover:border-primary-500/40 hover:text-primary-700 disabled:opacity-50"
         >
           ⤓ Exporter CSV (page)
         </button>
       </div>
 
-      <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
+      <div className="rounded-2xl border border-neutral-200 bg-white p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr,auto,auto]">
           {/* Search */}
           <div className="relative">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600">
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -199,14 +199,14 @@ export function SubscribersTab() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher par nom, téléphone, email…"
-              className="w-full rounded-xl border border-neutral-800 bg-neutral-950 py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-neutral-500 focus:border-primary-500 focus:outline-none"
+              className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-2.5 pl-9 pr-4 text-sm text-dark placeholder:text-neutral-600 focus:border-primary-500 focus:outline-none"
             />
           </div>
           {/* Status filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2.5 text-sm text-white focus:border-primary-500 focus:outline-none"
+            className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none"
           >
             <option value="all">Tous les statuts</option>
             <option value="active">Actif</option>
@@ -219,7 +219,7 @@ export function SubscribersTab() {
           <select
             value={planFilter}
             onChange={(e) => setPlanFilter(e.target.value as any)}
-            className="rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2.5 text-sm text-white focus:border-primary-500 focus:outline-none"
+            className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none"
           >
             <option value="all">Tous les plans</option>
             <option value="free">Free</option>
@@ -232,20 +232,20 @@ export function SubscribersTab() {
       </div>
 
       {/* ═══════════ TABLE ═══════════ */}
-      <div className="overflow-hidden rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
+      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
         {loading && !data ? (
-          <div className="p-12 text-center text-sm text-neutral-500">
+          <div className="p-12 text-center text-sm text-neutral-600">
             Chargement…
           </div>
         ) : !data || data.rows.length === 0 ? (
-          <div className="p-12 text-center text-sm text-neutral-500">
+          <div className="p-12 text-center text-sm text-neutral-600">
             Aucun abonné ne correspond aux filtres.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-800/50 text-left text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                <tr className="border-b border-neutral-200 text-left text-[10px] font-semibold uppercase tracking-wider text-neutral-600">
                   <th className="px-4 py-3">Utilisateur</th>
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3">Statut</th>
@@ -259,10 +259,10 @@ export function SubscribersTab() {
               </thead>
               <tbody>
                 {data.rows.map((s) => (
-                  <tr key={s.user_id} className="border-b border-neutral-800/30 transition hover:bg-neutral-800/20">
+                  <tr key={s.user_id} className="border-b border-neutral-100 transition hover:bg-neutral-100">
                     <td className="px-4 py-3">
                       <p className="text-sm font-semibold">{s.full_name || '— (sans nom)'}</p>
-                      <p className="font-mono text-[10px] text-neutral-500">
+                      <p className="font-mono text-[10px] text-neutral-600">
                         {s.phone || '—'}
                         {s.email && <> · {s.email}</>}
                       </p>
@@ -273,7 +273,7 @@ export function SubscribersTab() {
                           <span className="h-2 w-2 rounded-full" style={{ background: PLAN_COLORS[s.plan_code] }} />
                           <span className="text-xs font-semibold">{s.plan_display_name}</span>
                           {s.billing_period && (
-                            <span className="text-[10px] text-neutral-500">
+                            <span className="text-[10px] text-neutral-600">
                               · {s.billing_period === 'monthly' ? '/mois' : '/an'}
                             </span>
                           )}
@@ -295,39 +295,39 @@ export function SubscribersTab() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`font-mono text-sm ${s.mrr_xof > 0 ? 'font-bold text-emerald-400' : 'text-neutral-600'}`}>
+                      <span className={`font-mono text-sm ${s.mrr_xof > 0 ? 'font-bold text-emerald-700' : 'text-neutral-600'}`}>
                         {s.mrr_xof > 0 ? formatXOF(s.mrr_xof) : '—'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="font-mono text-sm font-semibold">{formatXOF(s.total_paid_xof)}</span>
-                      <p className="text-[10px] text-neutral-500">{s.payment_count} paiement{s.payment_count > 1 ? 's' : ''}</p>
+                      <p className="text-[10px] text-neutral-600">{s.payment_count} paiement{s.payment_count > 1 ? 's' : ''}</p>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <span className="font-mono text-sm text-emerald-400">{formatXOF(s.cashback_received_xof)}</span>
-                      <p className="text-[10px] text-neutral-500">{s.cashback_count} crédit{s.cashback_count > 1 ? 's' : ''}</p>
+                      <span className="font-mono text-sm text-emerald-700">{formatXOF(s.cashback_received_xof)}</span>
+                      <p className="text-[10px] text-neutral-600">{s.cashback_count} crédit{s.cashback_count > 1 ? 's' : ''}</p>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className={`font-mono text-sm font-bold ${
-                        s.ltv_xof > 0 ? 'text-white' : s.ltv_xof < 0 ? 'text-red-400' : 'text-neutral-500'
+                        s.ltv_xof > 0 ? 'text-dark' : s.ltv_xof < 0 ? 'text-red-700' : 'text-neutral-600'
                       }`}>
                         {formatXOF(s.ltv_xof)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-neutral-400">
+                    <td className="px-4 py-3 text-xs text-neutral-700">
                       {s.current_period_end ? formatDate(s.current_period_end) : '—'}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {s.auto_renew == null ? (
                         <span className="text-xs text-neutral-600">—</span>
                       ) : s.auto_renew ? (
-                        <span className="inline-flex items-center justify-center text-emerald-400" title={s.last_card_brand && s.last_card_last4 ? `${s.last_card_brand} •••• ${s.last_card_last4}` : 'Activé'}>
+                        <span className="inline-flex items-center justify-center text-emerald-700" title={s.last_card_brand && s.last_card_last4 ? `${s.last_card_brand} •••• ${s.last_card_last4}` : 'Activé'}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center justify-center text-neutral-500" title="Désactivé">
+                        <span className="inline-flex items-center justify-center text-neutral-600" title="Désactivé">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18" />
                             <line x1="6" y1="6" x2="18" y2="18" />
@@ -346,21 +346,21 @@ export function SubscribersTab() {
       {/* ═══════════ PAGINATION ═══════════ */}
       {data && data.total_count > PAGE_SIZE && (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-neutral-600">
             Page {page + 1} / {totalPages} · {data.rows.length} sur {data.total_count.toLocaleString('fr-FR')} affichés
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0 || loading}
-              className="rounded-full border border-neutral-800 bg-neutral-900/50 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:border-primary-500/40 disabled:opacity-40"
+              className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800 transition hover:border-primary-500/40 disabled:opacity-40"
             >
               ← Précédent
             </button>
             <button
               onClick={() => setPage((p) => p + 1)}
               disabled={(page + 1) * PAGE_SIZE >= data.total_count || loading}
-              className="rounded-full border border-neutral-800 bg-neutral-900/50 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition hover:border-primary-500/40 disabled:opacity-40"
+              className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-800 transition hover:border-primary-500/40 disabled:opacity-40"
             >
               Suivant →
             </button>

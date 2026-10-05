@@ -53,12 +53,12 @@ interface EventRow {
 }
 
 const KIND_META: Record<string, { label: string; emoji: string; tone: string }> = {
-  reservation_commission_pct:   { label: 'Commission réservation',  emoji: '🍽️', tone: 'text-blue-600' },
-  reservation_commission_fixed: { label: 'Commission résa (fixe)',  emoji: '🍽️', tone: 'text-blue-600' },
-  service_fee_pct:              { label: 'Frais de service',        emoji: '💼', tone: 'text-purple-600' },
-  service_fee_fixed:            { label: 'Frais de service (fixe)', emoji: '💼', tone: 'text-purple-600' },
-  payment_commission:           { label: 'Commission paiement',     emoji: '💳', tone: 'text-emerald-600' },
-  subscription_commission:      { label: 'Commission abonnement',   emoji: '📅', tone: 'text-amber-600' },
+  reservation_commission_pct:   { label: 'Commission réservation',  emoji: '🍽️', tone: 'text-blue-700' },
+  reservation_commission_fixed: { label: 'Commission résa (fixe)',  emoji: '🍽️', tone: 'text-blue-700' },
+  service_fee_pct:              { label: 'Frais de service',        emoji: '💼', tone: 'text-purple-700' },
+  service_fee_fixed:            { label: 'Frais de service (fixe)', emoji: '💼', tone: 'text-purple-700' },
+  payment_commission:           { label: 'Commission paiement',     emoji: '💳', tone: 'text-emerald-700' },
+  subscription_commission:      { label: 'Commission abonnement',   emoji: '📅', tone: 'text-amber-700' },
   ticket_commission:            { label: 'Commission billetterie',  emoji: '🎟️', tone: 'text-fuchsia-600' },
   marketplace_commission:       { label: 'Commission marketplace',  emoji: '🛍️', tone: 'text-rose-600' },
   affiliation_commission:       { label: 'Commission affiliation',  emoji: '🤝', tone: 'text-cyan-600' },
@@ -192,7 +192,7 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
 
   if (!venueId) {
     return (
-      <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
+      <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-600">
         Sélectionne un établissement pour voir tes revenus.
       </div>
     );
@@ -202,7 +202,7 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
     <div className="space-y-6">
       {/* Period filter + export PDF */}
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Revenus Soutra-Playce</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-600">Revenus Soutra-Playce</p>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {PERIODS.map((p) => (
             <button
@@ -210,7 +210,7 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
               onClick={() => setPeriod(p.id)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 period === p.id
-                  ? 'border-primary-500 bg-primary-500 text-white'
+                  ? 'border-primary-500 bg-primary-500 text-night'
                   : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300'
               }`}
             >
@@ -304,13 +304,13 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
                     />
                   </div>
                   {timeline.length <= 14 && (
-                    <span className="text-[8px] text-neutral-400">{r.day.slice(5)}</span>
+                    <span className="text-[8px] text-neutral-600">{r.day.slice(5)}</span>
                   )}
                 </div>
               );
             })}
           </div>
-          <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-neutral-500">
+          <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-neutral-600">
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-200" /> Brut</span>
             <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Net (après commission)</span>
           </div>
@@ -331,7 +331,7 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-neutral-800">{meta.emoji} {meta.label}</span>
                     <span className={`ml-2 font-mono font-bold ${meta.tone}`}>
-                      {formatXOF(b.total_xof)} <span className="text-neutral-400">({b.event_count})</span>
+                      {formatXOF(b.total_xof)} <span className="text-neutral-600">({b.event_count})</span>
                     </span>
                   </div>
                   <div className="mt-1 h-2 overflow-hidden rounded-full bg-neutral-100">
@@ -366,13 +366,13 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
             <h3 className="font-display text-base font-bold text-dark">
               📋 Détail des {events.length} dernières lignes de commission
             </h3>
-            <span className="text-xs text-neutral-500">{showEvents ? 'Masquer' : 'Afficher'}</span>
+            <span className="text-xs text-neutral-600">{showEvents ? 'Masquer' : 'Afficher'}</span>
           </button>
           {showEvents && (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-neutral-100 text-left font-semibold uppercase tracking-wider text-neutral-400">
+                  <tr className="border-b border-neutral-100 text-left font-semibold uppercase tracking-wider text-neutral-600">
                     <th className="px-6 py-3">Date</th>
                     <th className="px-6 py-3">Type</th>
                     <th className="px-6 py-3">Montant</th>
@@ -390,13 +390,13 @@ export function ProRevenueDashboard({ venueId, venue }: ProRevenueDashboardProps
                         : '—';
                     return (
                       <tr key={e.id} className="border-b border-neutral-50 hover:bg-neutral-50/50">
-                        <td className="px-6 py-2 font-mono text-neutral-500">
+                        <td className="px-6 py-2 font-mono text-neutral-600">
                           {new Date(e.ts).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                         </td>
                         <td className="px-6 py-2"><span className={meta.tone}>{meta.emoji} {meta.label}</span></td>
                         <td className="px-6 py-2 font-mono font-semibold text-neutral-800">{formatXOF(e.amount_xof)}</td>
-                        <td className="px-6 py-2 text-neutral-500">{e.rule_name || '—'}</td>
-                        <td className="px-6 py-2 text-neutral-500">{link}</td>
+                        <td className="px-6 py-2 text-neutral-600">{e.rule_name || '—'}</td>
+                        <td className="px-6 py-2 text-neutral-600">{link}</td>
                       </tr>
                     );
                   })}
@@ -423,13 +423,13 @@ function ProKpi({ label, value, sub, emoji, tone, loading }: {
   return (
     <div className={`rounded-2xl border ${map[tone]} p-4`}>
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-medium uppercase tracking-wide opacity-70">{label}</p>
+        <p className="text-[11px] font-medium uppercase tracking-wide">{label}</p>
         <span className="text-lg">{emoji}</span>
       </div>
       <p className="mt-1 font-display text-xl font-bold sm:text-2xl">
         {loading ? '…' : value}
       </p>
-      {sub && <p className="text-[10px] opacity-60">{sub}</p>}
+      {sub && <p className="text-[10px]">{sub}</p>}
     </div>
   );
 }

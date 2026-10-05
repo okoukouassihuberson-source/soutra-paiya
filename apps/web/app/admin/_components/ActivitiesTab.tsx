@@ -18,8 +18,8 @@ interface Overview {
 
 const LABEL: Record<Status, string> = { draft: 'Brouillon', published: 'Publiée', paused: 'En pause', archived: 'Archivée' };
 const TONE: Record<Status, string> = {
-  draft: 'bg-amber-500/15 text-amber-400', published: 'bg-emerald-500/15 text-emerald-400',
-  paused: 'bg-neutral-500/15 text-neutral-400', archived: 'bg-red-500/15 text-red-400',
+  draft: 'bg-amber-500/15 text-amber-700', published: 'bg-emerald-500/15 text-emerald-700',
+  paused: 'bg-neutral-500/15 text-neutral-700', archived: 'bg-red-500/15 text-red-700',
 };
 
 export function ActivitiesTab() {
@@ -77,27 +77,27 @@ export function ActivitiesTab() {
         </div>
       )}
       {ov && ov.by_category.length > 0 && (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
-          <h3 className="mb-3 text-sm font-bold text-white">Revenus par catégorie</h3>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+          <h3 className="mb-3 text-sm font-bold text-dark">Revenus par catégorie</h3>
           <ul className="space-y-2">{ov.by_category.map((c) => {
             const max = Math.max(1, ...ov.by_category.map((x) => x.revenue_xof));
             return (<li key={c.category}>
-              <div className="flex justify-between text-xs text-neutral-300"><span>{activityCategoryEmoji(c.category)} {activityCategoryLabel(c.category)}</span><span className="text-neutral-500">{c.bookings} rés. · {formatXOF(c.revenue_xof)}</span></div>
-              <div className="mt-1 h-2 rounded bg-neutral-800"><div className="h-2 rounded bg-primary-500" style={{ width: `${Math.max(3, (c.revenue_xof / max) * 100)}%` }} /></div>
+              <div className="flex justify-between text-xs text-neutral-800"><span>{activityCategoryEmoji(c.category)} {activityCategoryLabel(c.category)}</span><span className="text-neutral-600">{c.bookings} rés. · {formatXOF(c.revenue_xof)}</span></div>
+              <div className="mt-1 h-2 rounded bg-neutral-100"><div className="h-2 rounded bg-primary-500" style={{ width: `${Math.max(3, (c.revenue_xof / max) * 100)}%` }} /></div>
             </li>);
           })}</ul>
         </div>
       )}
       {ov && ov.reported_reviews.length > 0 && (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
-          <h3 className="mb-3 text-sm font-bold text-amber-300">Avis signalés ({ov.reported_reviews.length})</h3>
+          <h3 className="mb-3 text-sm font-bold text-amber-700">Avis signalés ({ov.reported_reviews.length})</h3>
           <ul className="space-y-3">{ov.reported_reviews.map((r) => (
-            <li key={r.id} className="rounded-xl bg-neutral-950/60 p-3 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2"><b className="text-white">{r.activity}</b><span className="text-amber-400">{'★'.repeat(r.rating)} · {r.reports} signalement(s) · {r.status === 'hidden' ? 'masqué' : 'visible'}</span></div>
-              {r.comment && <p className="mt-1 text-neutral-300">{r.comment}</p>}
+            <li key={r.id} className="rounded-xl bg-neutral-50 p-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2"><b className="text-dark">{r.activity}</b><span className="text-amber-700">{'★'.repeat(r.rating)} · {r.reports} signalement(s) · {r.status === 'hidden' ? 'masqué' : 'visible'}</span></div>
+              {r.comment && <p className="mt-1 text-neutral-800">{r.comment}</p>}
               <div className="mt-2 flex gap-3 text-xs">
-                {r.status === 'published' ? <button onClick={() => moderateReview(r.id, 'hidden')} className="font-bold text-red-400 underline">Masquer</button>
-                  : <button onClick={() => moderateReview(r.id, 'published')} className="font-bold text-emerald-400 underline">Rétablir</button>}
+                {r.status === 'published' ? <button onClick={() => moderateReview(r.id, 'hidden')} className="font-bold text-red-700 underline">Masquer</button>
+                  : <button onClick={() => moderateReview(r.id, 'published')} className="font-bold text-emerald-700 underline">Rétablir</button>}
               </div>
             </li>))}</ul>
         </div>
@@ -105,44 +105,44 @@ export function ActivitiesTab() {
 
       <div className="flex flex-wrap items-center gap-2">
         {(['draft', 'published', 'paused', 'archived', 'all'] as const).map((s) => (
-          <button key={s} onClick={() => setFilter(s)} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${filter === s ? 'border-primary-500 bg-primary-500/15 text-primary-400' : 'border-neutral-800 bg-neutral-900/50 text-neutral-400'}`}>
+          <button key={s} onClick={() => setFilter(s)} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${filter === s ? 'border-primary-500 bg-primary-500/15 text-primary-700' : 'border-neutral-200 bg-white text-neutral-700'}`}>
             {s === 'all' ? 'Toutes' : LABEL[s]}
           </button>
         ))}
       </div>
       {editing && <ActivityEditor activityId={editing} onSaved={() => { setEditing(null); load(); }} onCancel={() => setEditing(null)} />}
-      {error && <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-red-700">{error}</p>}
 
-      {loading ? <p className="p-8 text-center text-neutral-500">Chargement…</p> : rows.length === 0 ? (
-        <p className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-10 text-center text-sm text-neutral-400">Aucune activité pour ce filtre.</p>
+      {loading ? <p className="p-8 text-center text-neutral-600">Chargement…</p> : rows.length === 0 ? (
+        <p className="rounded-2xl border border-neutral-200 bg-white p-10 text-center text-sm text-neutral-700">Aucune activité pour ce filtre.</p>
       ) : (
         <ul className="space-y-3">{rows.map((a) => (
-          <li key={a.id} className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
+          <li key={a.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${TONE[a.status]}`}>{LABEL[a.status]}</span>
-                {a.status === 'draft' && a.submitted_at && <span className="ml-2 rounded-full bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-300">Soumise à validation</span>}
-                <p className="mt-1 font-display text-base font-bold text-white">{a.title}</p>
-                <p className="text-xs text-neutral-500">{activityCategoryEmoji(a.category)} {activityCategoryLabel(a.category)} · {a.city ?? '—'} · {formatXOF(a.price_xof)}{a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}</p>
+                {a.status === 'draft' && a.submitted_at && <span className="ml-2 rounded-full bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-700">Soumise à validation</span>}
+                <p className="mt-1 font-display text-base font-bold text-dark">{a.title}</p>
+                <p className="text-xs text-neutral-600">{activityCategoryEmoji(a.category)} {activityCategoryLabel(a.category)} · {a.city ?? '—'} · {formatXOF(a.price_xof)}{a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <label className="text-[10px] text-neutral-500">Commission %
+                <label className="text-[10px] text-neutral-600">Commission %
                   <input type="number" min={0} max={100} step="0.5" defaultValue={a.commission_pct ?? ''} placeholder="0"
                     onBlur={(e) => { const v = e.target.value; if (v !== '' && Number(v) !== a.commission_pct) moderate(a.id, { p_commission_pct: Number(v) }); }}
-                    className="ml-1 w-16 rounded border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs text-white" />
+                    className="ml-1 w-16 rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs text-dark" />
                 </label>
                 <select value={a.highlight ?? ''} aria-label="Mise en avant"
                   onChange={(e) => e.target.value ? moderate(a.id, { p_highlight: e.target.value }) : moderate(a.id, { p_clear_highlight: true })}
-                  className="rounded border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs text-white">
+                  className="rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs text-dark">
                   <option value="">Aucune mise en avant</option>
                   {(Object.keys(HIGHLIGHT_LABELS) as TripHighlight[]).map((h) => <option key={h} value={h}>{HIGHLIGHT_LABELS[h]}</option>)}
                 </select>
-                <button onClick={() => { setEditing(a.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-200">Modifier</button>
-                {(a.status === 'draft' || a.status === 'paused') && <button onClick={() => moderate(a.id, { p_status: 'published' })} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white">Publier</button>}
-                {a.status === 'published' && <button onClick={() => moderate(a.id, { p_status: 'paused' })} className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold text-neutral-200">Pause</button>}
-                {a.status !== 'archived' && <button onClick={() => moderate(a.id, { p_status: 'archived' }, `Archiver « ${a.title} » ? Elle ne sera plus réservable.`)} className="rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-400">Archiver</button>}
-                <button onClick={() => remove(a)} className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-400">Supprimer</button>
-                {a.status === 'published' && <a href={`/activites/${a.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-400 underline">Voir</a>}
+                <button onClick={() => { setEditing(a.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-900">Modifier</button>
+                {(a.status === 'draft' || a.status === 'paused') && <button onClick={() => moderate(a.id, { p_status: 'published' })} className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white">Publier</button>}
+                {a.status === 'published' && <button onClick={() => moderate(a.id, { p_status: 'paused' })} className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-900">Pause</button>}
+                {a.status !== 'archived' && <button onClick={() => moderate(a.id, { p_status: 'archived' }, `Archiver « ${a.title} » ? Elle ne sera plus réservable.`)} className="rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-700">Archiver</button>}
+                <button onClick={() => remove(a)} className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-700">Supprimer</button>
+                {a.status === 'published' && <a href={`/activites/${a.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-700 underline">Voir</a>}
               </div>
             </div>
           </li>))}</ul>
@@ -153,10 +153,10 @@ export function ActivitiesTab() {
 
 function Kpi({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">{label}</p>
-      <p className="mt-1 font-display text-xl font-bold text-white">{value}</p>
-      {sub && <p className="mt-0.5 text-[11px] text-neutral-500">{sub}</p>}
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-600">{label}</p>
+      <p className="mt-1 font-display text-xl font-bold text-dark">{value}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-neutral-600">{sub}</p>}
     </div>
   );
 }

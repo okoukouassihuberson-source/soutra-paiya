@@ -37,3 +37,11 @@ Périmètre : page d'accueil `apps/web` (FR + `/en`), en-tête, barre mobile, pi
 - Les sections volontairement sombres (`.bg-night`) restaurent les valeurs claires pour leur contenu (boutons blancs, etc.).
 - Pastilles d'état (`bg-red-50`, `text-emerald-700`…), cartes Leaflet et champs natifs ont des surcharges dédiées en fin de `globals.css`. Ne pas utiliser de couleur hexadécimale en dur dans un composant.
 - Contrôle : axe-core (WCAG AA) en clair et en sombre.
+
+### Espaces Compte, Pro, Admin et Organisateur (thème clair/sombre)
+
+- Ces écrans étaient écrits « sombre uniquement » (`bg-neutral-900/50`, `border-neutral-800`, `text-white`…). Ils utilisent désormais les mêmes classes claires que le reste du site (`bg-white`, `border-neutral-200`, `text-dark`, `text-neutral-600`) : l'échelle `neutral` s'inverse toute seule en sombre. **Ne jamais réintroduire de classes réservées au sombre** ni de `dark:` sur les neutres.
+- Texte sur fond orange plein : toujours `text-night` (le CSS le force pour `.bg-primary-500`/`.bg-primary-400` et `.btn-primary`).
+- Pastilles d'état : `bg-X-100 text-X-700` (ou `bg-X-500/15`), les surcharges sombres sont dans `globals.css`.
+- Admin : la navigation est regroupée (Pilotage, À traiter, Catalogue, Communauté, Argent, Système) via `NavItem.group` ; la vue d'ensemble commence par « À traiter » (`AdminTodo`, comptes par file d'attente).
+- Compte : page d'accueil du compte (raccourcis selon le rôle, abonnement, apparence), historiques repliés.

@@ -18,10 +18,10 @@ interface BookingRow {
 }
 
 const STATUS: Record<Status, { label: string; tone: string }> = {
-  draft: { label: 'Brouillon', tone: 'bg-amber-500/15 text-amber-400' },
-  published: { label: 'Publiée', tone: 'bg-emerald-500/15 text-emerald-400' },
-  paused: { label: 'En pause', tone: 'bg-neutral-500/15 text-neutral-400' },
-  archived: { label: 'Archivée', tone: 'bg-red-500/15 text-red-400' },
+  draft: { label: 'Brouillon', tone: 'bg-amber-500/15 text-amber-700' },
+  published: { label: 'Publiée', tone: 'bg-emerald-500/15 text-emerald-700' },
+  paused: { label: 'En pause', tone: 'bg-neutral-500/15 text-neutral-700' },
+  archived: { label: 'Archivée', tone: 'bg-red-500/15 text-red-700' },
 };
 const BOOKING_LABEL: Record<string, string> = { pending: 'En attente', paid: 'Payé', confirmed: 'Confirmé', cancelled: 'Annulé', used: 'Utilisé' };
 const ERR: Record<string, string> = {
@@ -74,7 +74,7 @@ export function ActivityManager() {
     }
   }
 
-  if (loading) return <p className="p-10 text-center text-neutral-500">Chargement…</p>;
+  if (loading) return <p className="p-10 text-center text-neutral-600">Chargement…</p>;
   const t = dash?.totals;
   return (
     <div className="space-y-6">
@@ -83,44 +83,44 @@ export function ActivityManager() {
       </div>
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-bold">Mes activités</h2>
-        <button onClick={() => { setCreating((v) => !v); setEditing(null); }} className="rounded-full bg-primary-500 px-4 py-1.5 text-xs font-bold text-white">{creating ? 'Fermer' : '+ Nouvelle activité'}</button>
+        <button onClick={() => { setCreating((v) => !v); setEditing(null); }} className="rounded-full bg-primary-500 px-4 py-1.5 text-xs font-bold text-night">{creating ? 'Fermer' : '+ Nouvelle activité'}</button>
       </div>
       {creating && <ActivityEditor onSaved={() => { setCreating(false); setMsg({ ok: true, text: 'Brouillon créé. Ajoutez des créneaux puis soumettez-le.' }); load(); }} onCancel={() => setCreating(false)} />}
       {editing && <ActivityEditor activityId={editing} onSaved={() => { setEditing(null); load(); }} onCancel={() => setEditing(null)} />}
-      {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-400'}`}>{msg.text}</p>}
+      {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? 'bg-emerald-500/10 text-emerald-700' : 'bg-red-500/10 text-red-700'}`}>{msg.text}</p>}
 
       {!dash?.activities.length ? (
-        <p className="rounded-2xl border border-neutral-800/60 bg-neutral-900/50 p-10 text-center text-sm text-neutral-400">Aucune activité pour le moment. Créez votre premier brouillon.</p>
+        <p className="rounded-2xl border border-neutral-200 bg-white p-10 text-center text-sm text-neutral-700">Aucune activité pour le moment. Créez votre premier brouillon.</p>
       ) : (
         <ul className="space-y-3">
           {dash.activities.map((a) => (
-            <li key={a.id} className="rounded-2xl border border-neutral-800/60 bg-neutral-900/50 p-4">
+            <li key={a.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS[a.status].tone}`}>{STATUS[a.status].label}</span>
-                  {a.status === 'draft' && a.submitted_at && <span className="ml-2 rounded-full bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-300">En attente de validation</span>}
+                  {a.status === 'draft' && a.submitted_at && <span className="ml-2 rounded-full bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-700">En attente de validation</span>}
                   <p className="mt-1 font-display text-base font-bold">{a.title}</p>
-                  <p className="text-xs text-neutral-500">{activityCategoryEmoji(a.category)} {activityCategoryLabel(a.category)} · {formatXOF(a.price_xof)} · {a.upcoming_slots} créneau(x) à venir{a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}</p>
-                  <p className="text-xs text-neutral-400">{a.bookings} réservation(s) · encaissé {formatXOF(a.paid_xof)}</p>
+                  <p className="text-xs text-neutral-600">{activityCategoryEmoji(a.category)} {activityCategoryLabel(a.category)} · {formatXOF(a.price_xof)} · {a.upcoming_slots} créneau(x) à venir{a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}</p>
+                  <p className="text-xs text-neutral-700">{a.bookings} réservation(s) · encaissé {formatXOF(a.paid_xof)}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {a.status === 'draft' && <button onClick={() => { setEditing(a.id); setCreating(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold">Modifier</button>}
-                  <button onClick={() => openPanel(a.id, 'slots')} className="rounded-lg border border-neutral-700 px-3 py-1.5 text-xs font-bold">Créneaux</button>
-                  {a.bookings > 0 && <button onClick={() => openPanel(a.id, 'bookings')} className="rounded-lg border border-neutral-700 px-3 py-1.5 text-xs font-bold">Participants</button>}
-                  {a.status === 'draft' && !a.submitted_at && <button onClick={() => submitForReview(a.id)} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white">Soumettre</button>}
-                  {a.status === 'published' && <button onClick={() => setStatus(a.id, 'paused')} className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold">Mettre en pause</button>}
-                  {a.status === 'paused' && a.approved_at && <button onClick={() => setStatus(a.id, 'published')} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white">Reprendre</button>}
-                  {a.status === 'published' && <a href={`/activites/${a.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-400 underline">Voir</a>}
+                  {a.status === 'draft' && <button onClick={() => { setEditing(a.id); setCreating(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-bold">Modifier</button>}
+                  <button onClick={() => openPanel(a.id, 'slots')} className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-bold">Créneaux</button>
+                  {a.bookings > 0 && <button onClick={() => openPanel(a.id, 'bookings')} className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-bold">Participants</button>}
+                  {a.status === 'draft' && !a.submitted_at && <button onClick={() => submitForReview(a.id)} className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white">Soumettre</button>}
+                  {a.status === 'published' && <button onClick={() => setStatus(a.id, 'paused')} className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-bold">Mettre en pause</button>}
+                  {a.status === 'paused' && a.approved_at && <button onClick={() => setStatus(a.id, 'published')} className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white">Reprendre</button>}
+                  {a.status === 'published' && <a href={`/activites/${a.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-700 underline">Voir</a>}
                 </div>
               </div>
               {panel?.id === a.id && panel.kind === 'slots' && <SlotsManager activityId={a.id} />}
               {panel?.id === a.id && panel.kind === 'bookings' && (
-                <div className="mt-3 overflow-x-auto rounded-xl bg-neutral-950/60">
-                  {!bookings ? <p className="p-4 text-sm text-neutral-500">Chargement…</p> : (
+                <div className="mt-3 overflow-x-auto rounded-xl bg-neutral-50">
+                  {!bookings ? <p className="p-4 text-sm text-neutral-600">Chargement…</p> : (
                     <table className="w-full text-left text-xs">
-                      <thead className="text-neutral-500"><tr><th className="p-2">Réf.</th><th className="p-2">Voyageur</th><th className="p-2">Tél.</th><th className="p-2">Créneau</th><th className="p-2">Pers.</th><th className="p-2">Payé</th><th className="p-2">Statut</th></tr></thead>
+                      <thead className="text-neutral-600"><tr><th className="p-2">Réf.</th><th className="p-2">Voyageur</th><th className="p-2">Tél.</th><th className="p-2">Créneau</th><th className="p-2">Pers.</th><th className="p-2">Payé</th><th className="p-2">Statut</th></tr></thead>
                       <tbody>{bookings.map((b) => (
-                        <tr key={b.id} className="border-t border-neutral-800/60">
+                        <tr key={b.id} className="border-t border-neutral-200">
                           <td className="p-2 font-mono">{b.reference}</td><td className="p-2">{b.traveler_name ?? '—'}</td>
                           <td className="p-2">{b.contact_phone ? <a className="underline" href={`tel:${b.contact_phone}`}>{b.contact_phone}</a> : '—'}</td>
                           <td className="p-2 whitespace-nowrap">{new Date(b.starts_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' })}</td>
@@ -140,8 +140,8 @@ export function ActivityManager() {
 
 function Kpi({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl border border-neutral-800/60 bg-neutral-900/50 p-4">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">{label}</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-600">{label}</p>
       <p className="mt-1 font-display text-xl font-bold">{value}</p>
     </div>
   );

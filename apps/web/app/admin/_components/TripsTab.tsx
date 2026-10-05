@@ -21,10 +21,10 @@ interface Stats {
 
 const STATUS_LABEL: Record<Status, string> = { draft: 'Brouillon', published: 'Publié', full: 'Complet', closed: 'Clos', cancelled: 'Annulé' };
 const STATUS_TONE: Record<Status, string> = {
-  draft: 'bg-amber-500/15 text-amber-400', published: 'bg-emerald-500/15 text-emerald-400', full: 'bg-blue-500/15 text-blue-400',
-  closed: 'bg-neutral-500/15 text-neutral-400', cancelled: 'bg-red-500/15 text-red-400',
+  draft: 'bg-amber-500/15 text-amber-700', published: 'bg-emerald-500/15 text-emerald-700', full: 'bg-blue-500/15 text-blue-700',
+  closed: 'bg-neutral-500/15 text-neutral-700', cancelled: 'bg-red-500/15 text-red-700',
 };
-const input = 'w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600';
+const input = 'w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-dark placeholder:text-neutral-600';
 
 export function TripsTab() {
   const sb = supabaseBrowser() as any;
@@ -101,43 +101,43 @@ export function TripsTab() {
       <div className="flex flex-wrap items-center gap-2">
         {(['draft', 'published', 'full', 'closed', 'cancelled', 'all'] as const).map((s) => (
           <button key={s} onClick={() => setFilter(s)}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${filter === s ? 'border-primary-500 bg-primary-500/15 text-primary-400' : 'border-neutral-800 bg-neutral-900/50 text-neutral-400'}`}>
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${filter === s ? 'border-primary-500 bg-primary-500/15 text-primary-700' : 'border-neutral-200 bg-white text-neutral-700'}`}>
             {s === 'all' ? 'Tous' : STATUS_LABEL[s]}
           </button>
         ))}
-        <button onClick={() => setShowForm((v) => !v)} className="ml-auto rounded-full bg-primary-500 px-4 py-1.5 text-xs font-bold text-white">
+        <button onClick={() => setShowForm((v) => !v)} className="ml-auto rounded-full bg-primary-500 px-4 py-1.5 text-xs font-bold text-night">
           {showForm ? 'Fermer' : '+ Nouveau voyage'}
         </button>
       </div>
 
       {showForm && <TripEditor onSaved={() => { setShowForm(false); setFilter('draft'); load(); }} onCancel={() => setShowForm(false)} />}
       {editing && <TripEditor tripId={editing} onSaved={() => { setEditing(null); load(); }} onCancel={() => setEditing(null)} />}
-      {error && <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="rounded-lg bg-red-500/10 p-3 text-sm text-red-700">{error}</p>}
 
-      {loading ? <p className="p-8 text-center text-neutral-500">Chargement…</p> : rows.length === 0 ? (
-        <p className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-10 text-center text-sm text-neutral-400">Aucun voyage pour ce filtre.</p>
+      {loading ? <p className="p-8 text-center text-neutral-600">Chargement…</p> : rows.length === 0 ? (
+        <p className="rounded-2xl border border-neutral-200 bg-white p-10 text-center text-sm text-neutral-700">Aucun voyage pour ce filtre.</p>
       ) : (
         <ul className="space-y-3">
           {rows.map((t) => (
-            <li key={t.id} className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
+            <li key={t.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_TONE[t.status]}`}>{STATUS_LABEL[t.status]}</span>
-                  {t.status === 'draft' && t.submitted_at && <span className="ml-2 rounded-full bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-300">Soumis à validation</span>}
-                  <span className="ml-2 text-[10px] font-semibold uppercase text-neutral-500">{t.scope === 'national' ? '🇨🇮 National' : '🌍 International'}</span>
-                  <p className="mt-1 font-display text-base font-bold text-white">{t.title}</p>
-                  <p className="text-xs text-neutral-500">{[t.city, t.country].filter(Boolean).join(', ')} · {formatTripDates(t.starts_on, t.ends_on)}</p>
-                  <p className="text-xs text-neutral-400">{formatXOF(t.base_price_xof)} · {t.seats_booked}/{t.seats_total} places</p>
+                  {t.status === 'draft' && t.submitted_at && <span className="ml-2 rounded-full bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-700">Soumis à validation</span>}
+                  <span className="ml-2 text-[10px] font-semibold uppercase text-neutral-600">{t.scope === 'national' ? '🇨🇮 National' : '🌍 International'}</span>
+                  <p className="mt-1 font-display text-base font-bold text-dark">{t.title}</p>
+                  <p className="text-xs text-neutral-600">{[t.city, t.country].filter(Boolean).join(', ')} · {formatTripDates(t.starts_on, t.ends_on)}</p>
+                  <p className="text-xs text-neutral-700">{formatXOF(t.base_price_xof)} · {t.seats_booked}/{t.seats_total} places</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="text-[10px] text-neutral-500">Commission %
+                  <label className="text-[10px] text-neutral-600">Commission %
                     <input type="number" min={0} max={100} step="0.5" defaultValue={t.commission_pct ?? ''} placeholder="0"
                       onBlur={(e) => { const v = e.target.value; if (v !== '' && Number(v) !== t.commission_pct) moderate(t.id, { p_commission_pct: Number(v) }); }}
-                      className="ml-1 w-16 rounded border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs text-white" />
+                      className="ml-1 w-16 rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs text-dark" />
                   </label>
                   <select value={t.highlight ?? ''} aria-label="Mise en avant"
                     onChange={(e) => e.target.value ? moderate(t.id, { p_highlight: e.target.value }) : moderate(t.id, { p_clear_highlight: true })}
-                    className="rounded border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs text-white">
+                    className="rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs text-dark">
                     <option value="">Aucune mise en avant</option>
                     {(Object.keys(HIGHLIGHT_LABELS) as TripHighlight[]).map((h) => <option key={h} value={h}>{HIGHLIGHT_LABELS[h]}</option>)}
                   </select>
@@ -146,7 +146,7 @@ export function TripsTab() {
                   {(t.status === 'published' || t.status === 'full') && <Btn busy={busy === t.id} tone="neutral" onClick={() => moderate(t.id, { p_status: 'closed' })}>Clore</Btn>}
                   {t.status !== 'cancelled' && <Btn busy={busy === t.id} tone="red" onClick={() => moderate(t.id, { p_status: 'cancelled' }, `Annuler « ${t.title} » ? Les voyageurs déjà payés devront être remboursés manuellement.`)}>Annuler</Btn>}
                   <Btn busy={busy === t.id} tone="red" onClick={() => remove(t)}>Supprimer</Btn>
-                  {(t.status === 'published' || t.status === 'full') && <a href={`/voyages/${t.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-400 underline">Voir</a>}
+                  {(t.status === 'published' || t.status === 'full') && <a href={`/voyages/${t.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-700 underline">Voir</a>}
                 </div>
               </div>
             </li>
@@ -159,31 +159,31 @@ export function TripsTab() {
 
 function Kpi({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">{label}</p>
-      <p className="mt-1 font-display text-xl font-bold text-white">{value}</p>
-      {sub && <p className="mt-0.5 text-[11px] text-neutral-500">{sub}</p>}
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-600">{label}</p>
+      <p className="mt-1 font-display text-xl font-bold text-dark">{value}</p>
+      {sub && <p className="mt-0.5 text-[11px] text-neutral-600">{sub}</p>}
     </div>
   );
 }
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4"><h3 className="mb-3 text-sm font-bold text-white">{title}</h3>{children}</div>;
+  return <div className="rounded-2xl border border-neutral-200 bg-white p-4"><h3 className="mb-3 text-sm font-bold text-dark">{title}</h3>{children}</div>;
 }
 function Bars({ items, empty }: { items: { label: string; value: number; text: string }[]; empty: string }) {
   const max = Math.max(1, ...items.map((i) => i.value));
-  if (items.length === 0) return <p className="text-sm text-neutral-500">{empty}</p>;
+  if (items.length === 0) return <p className="text-sm text-neutral-600">{empty}</p>;
   return (
     <ul className="space-y-2">
       {items.map((i) => (
         <li key={i.label}>
-          <div className="flex justify-between text-xs text-neutral-300"><span>{i.label}</span><span className="text-neutral-500">{i.text}</span></div>
-          <div className="mt-1 h-2 rounded bg-neutral-800"><div className="h-2 rounded bg-primary-500" style={{ width: `${Math.max(3, (i.value / max) * 100)}%` }} /></div>
+          <div className="flex justify-between text-xs text-neutral-800"><span>{i.label}</span><span className="text-neutral-600">{i.text}</span></div>
+          <div className="mt-1 h-2 rounded bg-neutral-100"><div className="h-2 rounded bg-primary-500" style={{ width: `${Math.max(3, (i.value / max) * 100)}%` }} /></div>
         </li>
       ))}
     </ul>
   );
 }
 function Btn({ children, onClick, busy, tone }: { children: React.ReactNode; onClick: () => void; busy: boolean; tone: 'emerald' | 'red' | 'neutral' }) {
-  const c = tone === 'emerald' ? 'bg-emerald-600 text-white' : tone === 'red' ? 'bg-red-500/15 text-red-400' : 'bg-neutral-800 text-neutral-200';
+  const c = tone === 'emerald' ? 'bg-emerald-700 text-white' : tone === 'red' ? 'bg-red-500/15 text-red-700' : 'bg-neutral-100 text-neutral-900';
   return <button disabled={busy} onClick={onClick} className={`rounded-lg px-3 py-1.5 text-xs font-bold disabled:opacity-50 ${c}`}>{children}</button>;
 }

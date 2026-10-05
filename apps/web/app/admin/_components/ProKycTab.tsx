@@ -19,10 +19,10 @@ interface ProKycRow {
 }
 
 const STATUS_META: Record<ProKycRow['kyc_status'], { label: string; bg: string; text: string }> = {
-  pending:  { label: 'En attente', bg: 'bg-amber-500/15',   text: 'text-amber-400' },
-  none:     { label: 'Non soumis', bg: 'bg-neutral-500/15', text: 'text-neutral-400' },
-  verified: { label: 'Vérifié',    bg: 'bg-emerald-500/15', text: 'text-emerald-400' },
-  rejected: { label: 'Rejeté',     bg: 'bg-red-500/15',     text: 'text-red-400' },
+  pending:  { label: 'En attente', bg: 'bg-amber-500/15',   text: 'text-amber-700' },
+  none:     { label: 'Non soumis', bg: 'bg-neutral-500/15', text: 'text-neutral-700' },
+  verified: { label: 'Vérifié',    bg: 'bg-emerald-500/15', text: 'text-emerald-700' },
+  rejected: { label: 'Rejeté',     bg: 'bg-red-500/15',     text: 'text-red-700' },
 };
 
 /**
@@ -111,8 +111,8 @@ export function ProKycTab() {
               onClick={() => setStatus(s)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 active
-                  ? 'border-primary-500 bg-primary-500/15 text-primary-400'
-                  : 'border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700'
+                  ? 'border-primary-500 bg-primary-500/15 text-primary-700'
+                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400'
               }`}
             >
               {label}
@@ -131,12 +131,12 @@ export function ProKycTab() {
 
       {/* List */}
       {loading ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
           Chargement…
         </div>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center">
-          <p className="text-sm text-neutral-400">Aucun propriétaire dans ce filtre.</p>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+          <p className="text-sm text-neutral-700">Aucun propriétaire dans ce filtre.</p>
         </div>
       ) : (
         <ul className="space-y-3">
@@ -144,10 +144,10 @@ export function ProKycTab() {
             const statusMeta = STATUS_META[r.kyc_status];
             const isActionable = r.kyc_status !== 'verified';
             return (
-              <li key={r.id} className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4 sm:p-5">
+              <li key={r.id} className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5">
                 {/* Header : identité + statut */}
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-neutral-800 text-base font-bold text-neutral-400">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-base font-bold text-neutral-700">
                     {(r.full_name || r.phone || '?').slice(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -155,12 +155,12 @@ export function ProKycTab() {
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${statusMeta.bg} ${statusMeta.text}`}>
                         {statusMeta.label}
                       </span>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-600">
                         {r.venues_count} établissement{r.venues_count > 1 ? 's' : ''}
                       </span>
                     </div>
-                    <p className="mt-1 truncate font-display text-base font-bold text-white">{r.full_name || '— (sans nom)'}</p>
-                    <p className="text-xs text-neutral-500">
+                    <p className="mt-1 truncate font-display text-base font-bold text-dark">{r.full_name || '— (sans nom)'}</p>
+                    <p className="text-xs text-neutral-600">
                       {r.phone ? `📞 ${r.phone}` : '— pas de téléphone'}
                       {r.email ? ` · ✉ ${r.email}` : ''}
                       {r.city ? ` · ${r.city}` : ''}
@@ -185,20 +185,20 @@ export function ProKycTab() {
                       placeholder="Note de décision (optionnelle si vérification, recommandée si rejet)"
                       rows={2}
                       maxLength={2000}
-                      className="w-full rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-white placeholder:text-neutral-600 focus:border-primary-500 focus:outline-none"
+                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-dark placeholder:text-neutral-600 focus:border-primary-500 focus:outline-none"
                     />
                     <div className="flex flex-wrap gap-2">
                       <button
                         disabled={actionId === r.id}
                         onClick={() => verify(r.id)}
-                        className="rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-50"
+                        className="rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-500/25 disabled:opacity-50"
                       >
                         ✓ Vérifier KYC
                       </button>
                       <button
                         disabled={actionId === r.id}
                         onClick={() => reject(r.id)}
-                        className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/25 disabled:opacity-50"
+                        className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-500/25 disabled:opacity-50"
                       >
                         ✕ Rejeter KYC
                       </button>
@@ -217,7 +217,7 @@ export function ProKycTab() {
 function DocLink({ label, url }: { label: string; url: string | null }) {
   if (!url) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-red-300 ring-1 ring-red-500/30">
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-red-700 ring-1 ring-red-500/30">
         {label} : manquant
       </span>
     );
@@ -227,7 +227,7 @@ function DocLink({ label, url }: { label: string; url: string | null }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 rounded-full bg-primary-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary-300 ring-1 ring-primary-500/30 hover:bg-primary-500/20"
+      className="inline-flex items-center gap-1 rounded-full bg-primary-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary-700 ring-1 ring-primary-500/30 hover:bg-primary-500/20"
     >
       📎 {label}
     </a>
@@ -236,14 +236,14 @@ function DocLink({ label, url }: { label: string; url: string | null }) {
 
 function SummaryCard({ label, value, tone }: { label: string; value: number; tone: 'amber' | 'emerald' | 'red' | 'neutral' }) {
   const map = {
-    amber: 'text-amber-400',
-    emerald: 'text-emerald-400',
-    red: 'text-red-400',
-    neutral: 'text-neutral-400',
+    amber: 'text-amber-700',
+    emerald: 'text-emerald-700',
+    red: 'text-red-700',
+    neutral: 'text-neutral-700',
   } as const;
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">{label}</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-600">{label}</p>
       <p className={`mt-1 font-display text-2xl font-bold ${map[tone]}`}>{value}</p>
     </div>
   );

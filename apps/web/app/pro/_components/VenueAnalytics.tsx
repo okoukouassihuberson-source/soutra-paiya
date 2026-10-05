@@ -100,7 +100,7 @@ export function VenueAnalytics({ venueId, venueName }: { venueId: string | null;
 
   if (!venueId) {
     return (
-      <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-500">
+      <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-600">
         Crée d'abord ton établissement pour voir les analytics.
       </div>
     );
@@ -117,7 +117,7 @@ export function VenueAnalytics({ venueId, venueName }: { venueId: string | null;
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-lg font-bold text-dark">Analytics {venueName ? `· ${venueName}` : ''}</h2>
-          <p className="mt-0.5 text-xs text-neutral-500">
+          <p className="mt-0.5 text-xs text-neutral-600">
             {data?.kpi?.period_from && data?.kpi?.period_to
               ? `Du ${data.kpi.period_from} au ${data.kpi.period_to}`
               : 'Sélectionne une période pour afficher les données.'}
@@ -132,7 +132,7 @@ export function VenueAnalytics({ venueId, venueName }: { venueId: string | null;
                 onClick={() => setDays(p.value)}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   active
-                    ? 'bg-primary-500 text-white shadow-sm'
+                    ? 'bg-primary-500 text-night shadow-sm'
                     : 'border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300'
                 }`}
               >
@@ -148,7 +148,7 @@ export function VenueAnalytics({ venueId, venueName }: { venueId: string | null;
           {error}
         </div>
       ) : loading || !data ? (
-        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-sm text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-sm text-neutral-600">
           {loading ? 'Chargement des analytics…' : 'Aucune donnée.'}
         </div>
       ) : (
@@ -172,7 +172,7 @@ export function VenueAnalytics({ venueId, venueName }: { venueId: string | null;
               </div>
             </div>
             {data.daily.length === 0 || maxDaily === 0 ? (
-              <p className="py-10 text-center text-xs text-neutral-400">Aucune activité sur la période.</p>
+              <p className="py-10 text-center text-xs text-neutral-600">Aucune activité sur la période.</p>
             ) : (
               <div className="flex h-[160px] items-end gap-[3px] overflow-x-auto pb-1">
                 {data.daily.map((d) => {
@@ -187,7 +187,7 @@ export function VenueAnalytics({ venueId, venueName }: { venueId: string | null;
                         <div className="w-[4px] rounded-t bg-amber-500" style={{ height: `${Math.max(hClick, d.clicks > 0 ? 2 : 0)}px` }} />
                         <div className="w-[4px] rounded-t bg-purple-500" style={{ height: `${Math.max(hRes, d.reservations > 0 ? 2 : 0)}px` }} />
                       </div>
-                      <span className="mt-1 text-[9px] font-medium text-neutral-400">{dateLabel}</span>
+                      <span className="mt-1 text-[9px] font-medium text-neutral-600">{dateLabel}</span>
                     </div>
                   );
                 })}
@@ -199,7 +199,7 @@ export function VenueAnalytics({ venueId, venueName }: { venueId: string | null;
           <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5">
             <h3 className="mb-4 text-sm font-semibold text-dark">Répartition des interactions</h3>
             {data.by_kind.length === 0 ? (
-              <p className="text-center text-xs text-neutral-400">Aucune interaction enregistrée.</p>
+              <p className="text-center text-xs text-neutral-600">Aucune interaction enregistrée.</p>
             ) : (
               <div className="space-y-3">
                 {data.by_kind.map((b) => {
@@ -246,19 +246,19 @@ function KpiCard({ label, value, sub, emoji, tone }: {
     <div className="rounded-2xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[11px] font-medium uppercase tracking-wide text-neutral-500">{label}</p>
+          <p className="truncate text-[11px] font-medium uppercase tracking-wide text-neutral-600">{label}</p>
           <p className="mt-1 truncate font-display text-2xl font-bold text-dark">{value}</p>
         </div>
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base ${toneClass}`}>{emoji}</div>
       </div>
-      <p className="mt-2 truncate text-[11px] text-neutral-500">{sub}</p>
+      <p className="mt-2 truncate text-[11px] text-neutral-600">{sub}</p>
     </div>
   );
 }
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
-    <span className="flex items-center gap-1 text-neutral-500">
+    <span className="flex items-center gap-1 text-neutral-600">
       <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
       {label}
     </span>

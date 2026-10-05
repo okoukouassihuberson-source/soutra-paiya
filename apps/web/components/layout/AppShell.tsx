@@ -17,6 +17,10 @@ export interface NavItem {
   inBottomNav?: boolean;
   /** Match strict ou prefix pour `isActive`. Default prefix. */
   match?: 'exact' | 'prefix';
+  /** Titre de section : affiché dans la sidebar quand il change d'un item au suivant. */
+  group?: string;
+  /** Libellé court pour la barre inférieure mobile (sinon `label`). */
+  shortLabel?: string;
 }
 
 export interface ShellUser {

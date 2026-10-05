@@ -18,11 +18,11 @@ interface BookingRow {
 }
 
 const STATUS: Record<Status, { label: string; tone: string }> = {
-  draft: { label: 'Brouillon', tone: 'bg-amber-500/15 text-amber-400' },
-  published: { label: 'Publié', tone: 'bg-emerald-500/15 text-emerald-400' },
-  full: { label: 'Complet', tone: 'bg-blue-500/15 text-blue-400' },
-  closed: { label: 'Ventes closes', tone: 'bg-neutral-500/15 text-neutral-400' },
-  cancelled: { label: 'Annulé', tone: 'bg-red-500/15 text-red-400' },
+  draft: { label: 'Brouillon', tone: 'bg-amber-500/15 text-amber-700' },
+  published: { label: 'Publié', tone: 'bg-emerald-500/15 text-emerald-700' },
+  full: { label: 'Complet', tone: 'bg-blue-500/15 text-blue-700' },
+  closed: { label: 'Ventes closes', tone: 'bg-neutral-500/15 text-neutral-700' },
+  cancelled: { label: 'Annulé', tone: 'bg-red-500/15 text-red-700' },
 };
 const BOOKING_LABEL: Record<string, string> = { pending: 'En attente', paid: 'Payé', confirmed: 'Acompte versé', cancelled: 'Annulé', used: 'Embarqué' };
 const ERR: Record<string, string> = {
@@ -75,7 +75,7 @@ export function OrganizerDashboard() {
     setBookings((data as BookingRow[]) ?? []);
   }
 
-  if (loading) return <p className="p-10 text-center text-neutral-500">Chargement…</p>;
+  if (loading) return <p className="p-10 text-center text-neutral-600">Chargement…</p>;
   const t = dash?.totals;
 
   return (
@@ -89,43 +89,43 @@ export function OrganizerDashboard() {
 
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-bold">Mes voyages</h2>
-        <button onClick={() => { setCreating((v) => !v); setEditing(null); }} className="rounded-full bg-primary-500 px-4 py-1.5 text-xs font-bold text-white">{creating ? 'Fermer' : '+ Nouveau voyage'}</button>
+        <button onClick={() => { setCreating((v) => !v); setEditing(null); }} className="rounded-full bg-primary-500 px-4 py-1.5 text-xs font-bold text-night">{creating ? 'Fermer' : '+ Nouveau voyage'}</button>
       </div>
 
       {creating && <TripEditor onSaved={() => { setCreating(false); setMsg({ ok: true, text: 'Brouillon créé. Complétez-le puis soumettez-le pour validation.' }); load(); }} onCancel={() => setCreating(false)} />}
       {editing && <TripEditor tripId={editing} onSaved={() => { setEditing(null); load(); }} onCancel={() => setEditing(null)} />}
-      {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-400'}`}>{msg.text}</p>}
+      {msg && <p role="status" className={`rounded-lg p-3 text-sm ${msg.ok ? 'bg-emerald-500/10 text-emerald-700' : 'bg-red-500/10 text-red-700'}`}>{msg.text}</p>}
 
       {!dash?.trips.length ? (
-        <p className="rounded-2xl border border-neutral-800/60 bg-neutral-900/50 p-10 text-center text-sm text-neutral-400">Aucun voyage pour le moment. Créez votre premier brouillon.</p>
+        <p className="rounded-2xl border border-neutral-200 bg-white p-10 text-center text-sm text-neutral-700">Aucun voyage pour le moment. Créez votre premier brouillon.</p>
       ) : (
         <ul className="space-y-3">
           {dash.trips.map((tr) => (
-            <li key={tr.id} className="rounded-2xl border border-neutral-800/60 bg-neutral-900/50 p-4">
+            <li key={tr.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS[tr.status].tone}`}>{STATUS[tr.status].label}</span>
-                  {tr.status === 'draft' && tr.submitted_at && <span className="ml-2 rounded-full bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-300">En attente de validation</span>}
+                  {tr.status === 'draft' && tr.submitted_at && <span className="ml-2 rounded-full bg-primary-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-700">En attente de validation</span>}
                   <p className="mt-1 font-display text-base font-bold">{tr.title}</p>
-                  <p className="text-xs text-neutral-500">{tr.scope === 'national' ? '🇨🇮' : '🌍'} {formatTripDates(tr.starts_on, tr.ends_on)} · {formatXOF(tr.base_price_xof)} · {tr.seats_booked}/{tr.seats_total} places</p>
-                  <p className="text-xs text-neutral-400">{tr.bookings} réservation(s) · encaissé {formatXOF(tr.paid_xof)} · à encaisser {formatXOF(tr.due_xof)}</p>
+                  <p className="text-xs text-neutral-600">{tr.scope === 'national' ? '🇨🇮' : '🌍'} {formatTripDates(tr.starts_on, tr.ends_on)} · {formatXOF(tr.base_price_xof)} · {tr.seats_booked}/{tr.seats_total} places</p>
+                  <p className="text-xs text-neutral-700">{tr.bookings} réservation(s) · encaissé {formatXOF(tr.paid_xof)} · à encaisser {formatXOF(tr.due_xof)}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  {tr.status === 'draft' && <button onClick={() => { setEditing(tr.id); setCreating(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold">Modifier</button>}
-                  {tr.status === 'draft' && !tr.submitted_at && <button onClick={() => submitForReview(tr.id)} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white">Soumettre</button>}
-                  {(tr.status === 'published' || tr.status === 'full') && <button onClick={() => closeSales(tr.id)} className="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs font-bold">Clore les ventes</button>}
-                  {tr.bookings > 0 && <button onClick={() => toggleBookings(tr.id)} className="rounded-lg border border-neutral-700 px-3 py-1.5 text-xs font-bold">{open === tr.id ? 'Masquer' : 'Voyageurs'}</button>}
-                  {(tr.status === 'published' || tr.status === 'full') && <a href={`/voyages/${tr.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-400 underline">Voir</a>}
+                  {tr.status === 'draft' && <button onClick={() => { setEditing(tr.id); setCreating(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-bold">Modifier</button>}
+                  {tr.status === 'draft' && !tr.submitted_at && <button onClick={() => submitForReview(tr.id)} className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white">Soumettre</button>}
+                  {(tr.status === 'published' || tr.status === 'full') && <button onClick={() => closeSales(tr.id)} className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs font-bold">Clore les ventes</button>}
+                  {tr.bookings > 0 && <button onClick={() => toggleBookings(tr.id)} className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-bold">{open === tr.id ? 'Masquer' : 'Voyageurs'}</button>}
+                  {(tr.status === 'published' || tr.status === 'full') && <a href={`/voyages/${tr.slug}`} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-700 underline">Voir</a>}
                 </div>
               </div>
               {open === tr.id && (
-                <div className="mt-3 overflow-x-auto rounded-xl bg-neutral-950/60">
-                  {!bookings ? <p className="p-4 text-sm text-neutral-500">Chargement…</p> : (
+                <div className="mt-3 overflow-x-auto rounded-xl bg-neutral-50">
+                  {!bookings ? <p className="p-4 text-sm text-neutral-600">Chargement…</p> : (
                     <table className="w-full text-left text-xs">
-                      <thead className="text-neutral-500"><tr><th className="p-2">Réf.</th><th className="p-2">Voyageur</th><th className="p-2">Tél.</th><th className="p-2">Pers.</th><th className="p-2">Payé / Total</th><th className="p-2">Statut</th></tr></thead>
+                      <thead className="text-neutral-600"><tr><th className="p-2">Réf.</th><th className="p-2">Voyageur</th><th className="p-2">Tél.</th><th className="p-2">Pers.</th><th className="p-2">Payé / Total</th><th className="p-2">Statut</th></tr></thead>
                       <tbody>
                         {bookings.map((b) => (
-                          <tr key={b.id} className="border-t border-neutral-800/60">
+                          <tr key={b.id} className="border-t border-neutral-200">
                             <td className="p-2 font-mono">{b.reference}</td><td className="p-2">{b.traveler_name ?? '—'}</td>
                             <td className="p-2">{b.contact_phone ? <a className="underline" href={`tel:${b.contact_phone}`}>{b.contact_phone}</a> : '—'}</td>
                             <td className="p-2">{b.participants}</td><td className="p-2">{formatXOF(b.paid_xof)} / {formatXOF(b.total_xof)}</td>
@@ -147,8 +147,8 @@ export function OrganizerDashboard() {
 
 function Kpi({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl border border-neutral-800/60 bg-neutral-900/50 p-4">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">{label}</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-600">{label}</p>
       <p className="mt-1 font-display text-xl font-bold">{value}</p>
     </div>
   );

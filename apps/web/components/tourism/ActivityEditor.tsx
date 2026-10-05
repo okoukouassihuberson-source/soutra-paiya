@@ -11,8 +11,8 @@ const TRANSLATABLE = [
   { name: 'conditions', label: 'Conditions', multiline: true }, { name: 'includes', label: 'Inclus', list: true }, { name: 'excludes', label: 'Non inclus', list: true },
 ];
 
-const input = 'w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600';
-const lbl = 'block text-xs font-semibold text-neutral-400';
+const input = 'w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-dark placeholder:text-neutral-600';
+const lbl = 'block text-xs font-semibold text-neutral-700';
 
 /**
  * Création / modification d'une activité (thème sombre : espace organisateur et admin).
@@ -68,12 +68,12 @@ export function ActivityEditor({ activityId, onSaved, onCancel }: { activityId?:
     onSaved();
   }
 
-  if (loading) return <p className="p-6 text-center text-neutral-500">Chargement…</p>;
+  if (loading) return <p className="p-6 text-center text-neutral-600">Chargement…</p>;
   const v = (k: string) => (a?.[k] ?? '') as string | number;
   const arr = (k: string) => ((a?.[k] ?? []) as string[]).join('\n');
 
   return (
-    <form onSubmit={submit} className="space-y-4 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-5 text-white">
+    <form onSubmit={submit} className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5 text-dark">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className={`${lbl} sm:col-span-2`}>Titre *<input name="title" required maxLength={200} defaultValue={v('title')} className={input} /></label>
         <label className={`${lbl} sm:col-span-2`}>Résumé<input name="summary" maxLength={500} defaultValue={v('summary')} className={input} /></label>
@@ -98,11 +98,11 @@ export function ActivityEditor({ activityId, onSaved, onCancel }: { activityId?:
         <label className={lbl}>WhatsApp contact<input name="contact_whatsapp" defaultValue={v('contact_whatsapp')} className={input} /></label>
         <TranslationFields fields={TRANSLATABLE} defaults={a?.i18n} />
       </div>
-      {err && <p role="alert" className="text-sm text-red-400">{err}</p>}
+      {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <button disabled={busy} className="rounded-lg bg-primary-500 px-5 py-2 text-sm font-bold text-night disabled:opacity-60">{busy ? 'Enregistrement…' : activityId ? 'Enregistrer' : 'Créer le brouillon'}</button>
-        {onCancel && <button type="button" onClick={onCancel} className="text-sm text-neutral-400 underline">Annuler</button>}
-        <p className="text-xs text-neutral-500">Ajoutez ensuite des créneaux, puis soumettez l’activité pour validation.</p>
+        {onCancel && <button type="button" onClick={onCancel} className="text-sm text-neutral-700 underline">Annuler</button>}
+        <p className="text-xs text-neutral-600">Ajoutez ensuite des créneaux, puis soumettez l’activité pour validation.</p>
       </div>
     </form>
   );

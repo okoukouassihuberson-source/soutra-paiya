@@ -133,7 +133,7 @@ export function PaymentMethodsPanel({ venueId }: { venueId: string }) {
 
   if (!loaded) {
     return (
-      <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
+      <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-600">
         Chargement…
       </div>
     );
@@ -144,7 +144,7 @@ export function PaymentMethodsPanel({ venueId }: { venueId: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="font-display text-base font-bold text-dark">Moyens de paiement acceptés</h3>
-          <p className="mt-1 text-sm text-neutral-500">
+          <p className="mt-1 text-sm text-neutral-600">
             Choisis et réordonne les moyens visibles par tes clients sur l&apos;app mobile.
           </p>
         </div>
@@ -152,7 +152,7 @@ export function PaymentMethodsPanel({ venueId }: { venueId: string }) {
           <button
             onClick={save}
             disabled={saving}
-            className="rounded-xl bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-primary-500/30 transition hover:bg-primary-600 disabled:opacity-50"
+            className="rounded-xl bg-primary-500 px-4 py-2 text-sm font-semibold text-night shadow-md shadow-primary-500/30 transition hover:bg-primary-400 disabled:opacity-50"
           >
             {saving ? 'Sauvegarde…' : 'Sauvegarder'}
           </button>
@@ -161,7 +161,7 @@ export function PaymentMethodsPanel({ venueId }: { venueId: string }) {
 
       {/* Méthodes actives — réordonnable */}
       <div className="mt-5">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-600">
           Actives ({methods.length})
         </p>
         {methods.length === 0 ? (
@@ -176,7 +176,7 @@ export function PaymentMethodsPanel({ venueId }: { venueId: string }) {
                 key={m}
                 className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3"
               >
-                <span className="w-6 text-center font-mono text-xs font-bold text-neutral-400">
+                <span className="w-6 text-center font-mono text-xs font-bold text-neutral-600">
                   {i + 1}
                 </span>
                 <PaymentLogo name={m} className="h-9 w-auto" />
@@ -184,7 +184,7 @@ export function PaymentMethodsPanel({ venueId }: { venueId: string }) {
                   <p className="truncate text-sm font-semibold text-dark">
                     {labelOf(m)}
                   </p>
-                  <p className="truncate text-xs text-neutral-500">
+                  <p className="truncate text-xs text-neutral-600">
                     {METHOD_DESCRIPTIONS[m]}
                   </p>
                 </div>
@@ -217,7 +217,7 @@ export function PaymentMethodsPanel({ venueId }: { venueId: string }) {
       {/* Méthodes inactives — à activer */}
       {inactive.length > 0 && (
         <div className="mt-6">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-600">
             Inactives ({inactive.length})
           </p>
           <ul className="space-y-2">
@@ -231,7 +231,7 @@ export function PaymentMethodsPanel({ venueId }: { venueId: string }) {
                   <p className="truncate text-sm font-semibold text-neutral-600">
                     {labelOf(m)}
                   </p>
-                  <p className="truncate text-xs text-neutral-500">
+                  <p className="truncate text-xs text-neutral-600">
                     {METHOD_DESCRIPTIONS[m]}
                   </p>
                 </div>

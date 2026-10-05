@@ -67,7 +67,7 @@ export function AssistantChat({ initialText = '', compact = false, context = '' 
       <ol className="space-y-3" aria-live="polite">
         {msgs.map((m, i) => (
           <li key={i} className={m.role === 'user' ? 'text-right' : ''}>
-            <div className={`inline-block max-w-[90%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-left text-sm ${m.role === 'user' ? 'bg-primary-500 text-white' : m.error ? 'bg-red-50 text-danger' : 'bg-neutral-100 text-dark'}`}>
+            <div className={`inline-block max-w-[90%] whitespace-pre-line rounded-2xl px-4 py-2.5 text-left text-sm ${m.role === 'user' ? 'bg-primary-500 text-night' : m.error ? 'bg-red-50 text-red-700' : 'bg-neutral-100 text-dark'}`}>
               <span className="sr-only">{m.role === 'user' ? t('assistant.you') : t('assistant.bot')} : </span>{m.content}
             </div>
             {m.items && m.items.length > 0 && (

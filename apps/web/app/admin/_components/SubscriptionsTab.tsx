@@ -89,13 +89,13 @@ const PLAN_COLORS: Record<PlanCode, string> = {
 };
 
 const EVENT_LABELS: Record<string, { label: string; color: string }> = {
-  plan_view:         { label: 'Vue',          color: 'text-neutral-400' },
-  plan_click:        { label: 'Clic',         color: 'text-blue-400' },
-  subscribe_attempt: { label: 'Tentative',    color: 'text-amber-400' },
-  subscribe_success: { label: 'Souscription', color: 'text-emerald-400' },
-  subscribe_abandon: { label: 'Abandon',      color: 'text-red-400' },
-  cancel:            { label: 'Résiliation',  color: 'text-red-400' },
-  plan_change:       { label: 'Changement',   color: 'text-purple-400' },
+  plan_view:         { label: 'Vue',          color: 'text-neutral-700' },
+  plan_click:        { label: 'Clic',         color: 'text-blue-700' },
+  subscribe_attempt: { label: 'Tentative',    color: 'text-amber-700' },
+  subscribe_success: { label: 'Souscription', color: 'text-emerald-700' },
+  subscribe_abandon: { label: 'Abandon',      color: 'text-red-700' },
+  cancel:            { label: 'Résiliation',  color: 'text-red-700' },
+  plan_change:       { label: 'Changement',   color: 'text-purple-700' },
 };
 
 /* ─────────────────────────────────────────────────── *
@@ -128,7 +128,7 @@ export function SubscriptionsTab() {
 
   if (loading && !stats) {
     return (
-      <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">
+      <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
         Chargement des analytics…
       </div>
     );
@@ -137,8 +137,8 @@ export function SubscriptionsTab() {
   if (error) {
     return (
       <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-center">
-        <p className="text-sm font-medium text-red-400">Erreur : {error}</p>
-        <p className="mt-2 text-xs text-neutral-500">
+        <p className="text-sm font-medium text-red-700">Erreur : {error}</p>
+        <p className="mt-2 text-xs text-neutral-600">
           La migration 0048 (admin_subscription_stats) est-elle appliquée ?
         </p>
       </div>
@@ -157,7 +157,7 @@ export function SubscriptionsTab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-display text-lg font-bold">Analytics Abonnements</p>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-neutral-600">
             Fenêtre : {stats.window_days} jours · généré {formatRelativeTime(stats.generated_at)}
           </p>
         </div>
@@ -168,8 +168,8 @@ export function SubscriptionsTab() {
               onClick={() => setWindowDays(d)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 windowDays === d
-                  ? 'border-primary-500 bg-primary-500/15 text-primary-400'
-                  : 'border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700'
+                  ? 'border-primary-500 bg-primary-500/15 text-primary-700'
+                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400'
               }`}
             >
               {d} jours
@@ -235,9 +235,9 @@ export function SubscriptionsTab() {
                     <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#737373' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+                <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
                 <Tooltip content={<DarkTooltip />} />
                 <Area type="monotone" dataKey="views" name="Vues" stroke="#6b7280" fill="url(#viewsGrad)" strokeWidth={1.5} />
                 <Area type="monotone" dataKey="clicks" name="Clics" stroke="#3b82f6" fill="url(#clicksGrad)" strokeWidth={1.5} />
@@ -251,9 +251,9 @@ export function SubscriptionsTab() {
           {stats.by_day.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={stats.by_day.map((d) => ({ ...d, day: shortDate(d.day) }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#737373' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+                <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
                 <Tooltip content={<DarkTooltip />} />
                 <Line type="monotone" dataKey="new_subs" name="Tous" stroke="#6b7280" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="new_paid_subs" name="Payants" stroke="#f97316" strokeWidth={2.5} dot={{ r: 3 }} />
@@ -298,9 +298,9 @@ export function SubscriptionsTab() {
                 mrr: p.mrr_xof,
                 code: p.code,
               }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#737373' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#737373' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+                <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
                 <Tooltip content={<DarkTooltip formatter={(v: number) => formatXOF(v)} />} />
                 <Bar dataKey="mrr" name="MRR" radius={[6, 6, 0, 0]}>
                   {stats.per_plan.filter((p) => p.mrr_xof > 0).map((p) => (
@@ -314,13 +314,13 @@ export function SubscriptionsTab() {
       </div>
 
       {/* ═══════════ TABLE PER PLAN ═══════════ */}
-      <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
-        <div className="border-b border-neutral-800/50 px-6 py-4">
-          <h3 className="text-sm font-semibold text-neutral-400">Performance par plan</h3>
+      <div className="rounded-2xl border border-neutral-200 bg-white">
+        <div className="border-b border-neutral-200 px-6 py-4">
+          <h3 className="text-sm font-semibold text-neutral-700">Performance par plan</h3>
           {topPlan && (
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-neutral-600">
               Plan le plus choisi :{' '}
-              <strong className="text-white">{topPlan.display_name}</strong>{' '}
+              <strong className="text-dark">{topPlan.display_name}</strong>{' '}
               ({topPlan.active_subs} abonnés)
             </p>
           )}
@@ -328,7 +328,7 @@ export function SubscriptionsTab() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-neutral-800/50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+              <tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                 <th className="px-6 py-3">Plan</th>
                 <th className="px-6 py-3">Abonnés</th>
                 <th className="px-6 py-3">MRR</th>
@@ -343,7 +343,7 @@ export function SubscriptionsTab() {
                   ? Math.round((p.successes_30d / p.clicks_30d) * 1000) / 10
                   : 0;
                 return (
-                  <tr key={p.code} className="border-b border-neutral-800/30 transition hover:bg-neutral-800/20">
+                  <tr key={p.code} className="border-b border-neutral-100 transition hover:bg-neutral-100">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2.5">
                         <span
@@ -352,17 +352,17 @@ export function SubscriptionsTab() {
                         />
                         <span className="font-medium">{p.display_name}</span>
                         {p.is_recommended && (
-                          <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-bold text-blue-400">RECO</span>
+                          <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-bold text-blue-700">RECO</span>
                         )}
                         {p.is_prestige && (
-                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-400">PRESTIGE</span>
+                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-700">PRESTIGE</span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-3 font-mono font-medium">{p.active_subs}</td>
                     <td className="px-6 py-3 font-mono">{formatXOF(p.mrr_xof)}</td>
-                    <td className="px-6 py-3 text-neutral-300">{p.clicks_30d}</td>
-                    <td className="px-6 py-3 text-emerald-400">{p.successes_30d}</td>
+                    <td className="px-6 py-3 text-neutral-800">{p.clicks_30d}</td>
+                    <td className="px-6 py-3 text-emerald-700">{p.successes_30d}</td>
                     <td className="px-6 py-3 font-mono text-xs">{conv}%</td>
                   </tr>
                 );
@@ -373,19 +373,19 @@ export function SubscriptionsTab() {
       </div>
 
       {/* ═══════════ EVENTS RÉCENTS ═══════════ */}
-      <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
-        <div className="border-b border-neutral-800/50 px-6 py-4">
-          <h3 className="text-sm font-semibold text-neutral-400">Derniers événements ({stats.recent_events.length})</h3>
+      <div className="rounded-2xl border border-neutral-200 bg-white">
+        <div className="border-b border-neutral-200 px-6 py-4">
+          <h3 className="text-sm font-semibold text-neutral-700">Derniers événements ({stats.recent_events.length})</h3>
         </div>
         {stats.recent_events.length === 0 ? (
-          <div className="p-12 text-center text-sm text-neutral-500">
+          <div className="p-12 text-center text-sm text-neutral-600">
             Aucun événement enregistré pour l&apos;instant.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-800/50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                <tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                   <th className="px-6 py-3">Date</th>
                   <th className="px-6 py-3">Type</th>
                   <th className="px-6 py-3">Plan</th>
@@ -395,10 +395,10 @@ export function SubscriptionsTab() {
               </thead>
               <tbody>
                 {stats.recent_events.slice(0, 30).map((e) => {
-                  const meta = EVENT_LABELS[e.kind] ?? { label: e.kind, color: 'text-neutral-400' };
+                  const meta = EVENT_LABELS[e.kind] ?? { label: e.kind, color: 'text-neutral-700' };
                   return (
-                    <tr key={e.id} className="border-b border-neutral-800/30 transition hover:bg-neutral-800/20">
-                      <td className="px-6 py-3 text-xs text-neutral-400">{formatRelativeTime(e.created_at)}</td>
+                    <tr key={e.id} className="border-b border-neutral-100 transition hover:bg-neutral-100">
+                      <td className="px-6 py-3 text-xs text-neutral-700">{formatRelativeTime(e.created_at)}</td>
                       <td className={`px-6 py-3 font-medium ${meta.color}`}>{meta.label}</td>
                       <td className="px-6 py-3 text-xs">
                         {e.plan_code ? (
@@ -408,10 +408,10 @@ export function SubscriptionsTab() {
                           </span>
                         ) : <span className="text-neutral-600">—</span>}
                       </td>
-                      <td className="px-6 py-3 text-xs text-neutral-500 font-mono">
+                      <td className="px-6 py-3 text-xs text-neutral-600 font-mono">
                         {e.user_id ? `${e.user_id.slice(0, 8)}…` : <span className="text-neutral-700">anon</span>}
                       </td>
-                      <td className="px-6 py-3 text-xs text-neutral-500 font-mono">
+                      <td className="px-6 py-3 text-xs text-neutral-600 font-mono">
                         {e.session_id ? `${e.session_id.slice(0, 12)}…` : <span className="text-neutral-700">—</span>}
                       </td>
                     </tr>
@@ -432,7 +432,7 @@ export function SubscriptionsTab() {
 
 function Funnel({ funnel }: { funnel: Stats['funnel'] }) {
   const steps: { key: string; label: string; value: number; color: string }[] = [
-    { key: 'views',     label: 'Vues',          value: funnel.views,     color: 'bg-neutral-700' },
+    { key: 'views',     label: 'Vues',          value: funnel.views,     color: 'bg-neutral-200' },
     { key: 'clicks',    label: 'Clics',         value: funnel.clicks,    color: 'bg-blue-500' },
     { key: 'attempts',  label: 'Tentatives',    value: funnel.attempts,  color: 'bg-amber-500' },
     { key: 'successes', label: 'Souscriptions', value: funnel.successes, color: 'bg-emerald-500' },
@@ -450,21 +450,21 @@ function Funnel({ funnel }: { funnel: Stats['funnel'] }) {
         return (
           <div key={step.key}>
             <div className="mb-1 flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold text-neutral-300">{step.label}</span>
+              <span className="text-sm font-semibold text-neutral-800">{step.label}</span>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-sm font-bold text-white">{step.value.toLocaleString('fr-FR')}</span>
+                <span className="font-mono text-sm font-bold text-dark">{step.value.toLocaleString('fr-FR')}</span>
                 {conv !== null && (
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                    conv >= 50 ? 'bg-emerald-500/15 text-emerald-400'
-                    : conv >= 20 ? 'bg-amber-500/15 text-amber-400'
-                    : 'bg-red-500/15 text-red-400'
+                    conv >= 50 ? 'bg-emerald-500/15 text-emerald-700'
+                    : conv >= 20 ? 'bg-amber-500/15 text-amber-700'
+                    : 'bg-red-500/15 text-red-700'
                   }`}>
                     →{conv}%
                   </span>
                 )}
               </div>
             </div>
-            <div className="h-3 overflow-hidden rounded-full bg-neutral-800/50">
+            <div className="h-3 overflow-hidden rounded-full bg-neutral-100">
               <div
                 className={`h-full rounded-full ${step.color} transition-all duration-700`}
                 style={{ width: `${pct}%` }}
@@ -473,18 +473,18 @@ function Funnel({ funnel }: { funnel: Stats['funnel'] }) {
           </div>
         );
       })}
-      <div className="mt-4 grid grid-cols-3 gap-3 border-t border-neutral-800/50 pt-4 text-xs">
+      <div className="mt-4 grid grid-cols-3 gap-3 border-t border-neutral-200 pt-4 text-xs">
         <div className="text-center">
-          <p className="text-neutral-500">Taux abandon</p>
-          <p className="mt-1 font-display text-lg font-bold text-red-400">{funnel.abandon_rate}%</p>
+          <p className="text-neutral-600">Taux abandon</p>
+          <p className="mt-1 font-display text-lg font-bold text-red-700">{funnel.abandon_rate}%</p>
         </div>
         <div className="text-center">
-          <p className="text-neutral-500">Résiliations</p>
-          <p className="mt-1 font-display text-lg font-bold text-amber-400">{funnel.cancels}</p>
+          <p className="text-neutral-600">Résiliations</p>
+          <p className="mt-1 font-display text-lg font-bold text-amber-700">{funnel.cancels}</p>
         </div>
         <div className="text-center">
-          <p className="text-neutral-500">Conv. globale</p>
-          <p className="mt-1 font-display text-lg font-bold text-emerald-400">{funnel.overall_conversion_rate}%</p>
+          <p className="text-neutral-600">Conv. globale</p>
+          <p className="mt-1 font-display text-lg font-bold text-emerald-700">{funnel.overall_conversion_rate}%</p>
         </div>
       </div>
     </div>
@@ -493,8 +493,8 @@ function Funnel({ funnel }: { funnel: Stats['funnel'] }) {
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-      <h3 className="mb-4 text-sm font-semibold text-neutral-400">{title}</h3>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+      <h3 className="mb-4 text-sm font-semibold text-neutral-700">{title}</h3>
       {children}
     </div>
   );
@@ -511,8 +511,8 @@ function EmptyChart({ label = 'Aucune donnée' }: { label?: string }) {
 function DarkTooltip({ active, payload, label, formatter }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 shadow-2xl">
-      {label && <p className="mb-1 text-xs text-neutral-500">{label}</p>}
+    <div className="rounded-xl border border-neutral-300 bg-white px-4 py-3 shadow-2xl">
+      {label && <p className="mb-1 text-xs text-neutral-600">{label}</p>}
       {payload.map((p: any, i: number) => (
         <p key={i} className="text-sm font-medium" style={{ color: p.color || p.payload?.fill }}>
           {p.name}: {formatter ? formatter(p.value) : p.value.toLocaleString('fr-FR')}
@@ -562,19 +562,19 @@ function KpiCard({
   icon: keyof typeof ICONS;
 }) {
   const map = {
-    blue:    { bg: 'bg-blue-500/10',    text: 'text-blue-400',    ring: 'ring-blue-500/20' },
-    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', ring: 'ring-emerald-500/20' },
-    amber:   { bg: 'bg-amber-500/10',   text: 'text-amber-400',   ring: 'ring-amber-500/20' },
-    red:     { bg: 'bg-red-500/10',     text: 'text-red-400',     ring: 'ring-red-500/20' },
-    purple:  { bg: 'bg-purple-500/10',  text: 'text-purple-400',  ring: 'ring-purple-500/20' },
+    blue:    { bg: 'bg-blue-500/10',    text: 'text-blue-700',    ring: 'ring-blue-500/20' },
+    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-700', ring: 'ring-emerald-500/20' },
+    amber:   { bg: 'bg-amber-500/10',   text: 'text-amber-700',   ring: 'ring-amber-500/20' },
+    red:     { bg: 'bg-red-500/10',     text: 'text-red-700',     ring: 'ring-red-500/20' },
+    purple:  { bg: 'bg-purple-500/10',  text: 'text-purple-700',  ring: 'ring-purple-500/20' },
   } as const;
   const c = map[color];
 
   return (
-    <div className="group rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4 transition-all hover:border-neutral-700/50 sm:p-5">
+    <div className="group rounded-2xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-400 sm:p-5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[11px] font-medium text-neutral-500 sm:text-xs">{label}</p>
+          <p className="truncate text-[11px] font-medium text-neutral-600 sm:text-xs">{label}</p>
           <p className="mt-1 truncate font-display text-lg font-bold tracking-tight sm:mt-1.5 sm:text-2xl">
             {value}
           </p>

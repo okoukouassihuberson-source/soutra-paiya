@@ -14,7 +14,7 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-full bg-primary-500 px-6 py-3 font-semibold text-white shadow-lg shadow-primary-500/25 transition-all duration-200 hover:bg-primary-400 hover:shadow-xl hover:shadow-primary-500/30 active:scale-[0.98];
+    @apply inline-flex items-center justify-center rounded-full bg-primary-500 px-6 py-3 font-semibold text-night shadow-lg shadow-primary-500/25 transition-all duration-200 hover:bg-primary-400 hover:shadow-xl hover:shadow-primary-500/30 active:scale-[0.98];
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center rounded-full border border-neutral-200 bg-white px-6 py-3 font-semibold text-dark transition-all duration-200 hover:border-neutral-300 hover:shadow-md active:scale-[0.98];
@@ -67,7 +67,6 @@ html[data-theme='dark'] .from-white { --tw-gradient-from: rgb(var(--surface)) va
 html[data-theme='dark'] .via-white { --tw-gradient-to: rgb(var(--surface) / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), rgb(var(--surface)) var(--tw-gradient-via-position), var(--tw-gradient-to); }
 html[data-theme='dark'] .to-white { --tw-gradient-to: rgb(var(--surface)) var(--tw-gradient-to-position); }
 html[data-theme='dark'] .ring-white { --tw-ring-color: rgb(var(--surface)); }
-html[data-theme='dark'] .text-night:not([class*='bg-primary']) { color: rgb(var(--c-night-text)); }
 html[data-theme='dark'] .bg-dark { background-color: #1a1d2e; }  /* fond « nuit » fixe (espace organisateur, boutons sombres) */
 /* Pastilles d'état (fonds pastel → teintes translucides, textes foncés → clairs) */
 html[data-theme='dark'] :is(.bg-red-50, .bg-red-100) { background-color: rgb(239 68 68 / .14); }
@@ -96,3 +95,7 @@ html[data-theme='dark'] img { filter: brightness(.92); }
 html[data-theme='dark'] .leaflet-popup-content-wrapper img, html[data-theme='dark'] [role='dialog'] img { filter: none; }
 html[data-theme='dark'] .leaflet-control-attribution { background: rgb(var(--surface) / .8) !important; color: rgb(var(--n-600)); }
 html[data-theme='dark'] .leaflet-control-attribution a { color: #7dd3fc; }
+select { max-width: 100%; }
+/* Texte sur un fond orange plein : toujours « night » (contraste AA), quel que soit le thème. */
+.bg-primary-500, .bg-primary-400 { color: #101828; }
+html[data-theme='dark'] .text-night:not([class*='bg-primary'], .btn-primary) { color: rgb(var(--c-night-text)); }

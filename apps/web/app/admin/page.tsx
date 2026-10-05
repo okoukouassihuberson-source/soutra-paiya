@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useId, useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { supabaseBrowser } from '@/lib/supabase';
 import { formatXOF } from '@soutra/shared';
+import { AdminTodo } from './_components/AdminTodo';
 import { ReportsTab } from './_components/ReportsTab';
 import { ClaimsTab } from './_components/ClaimsTab';
 import { SubmissionsTab } from './_components/SubmissionsTab';
@@ -27,7 +28,7 @@ import { WalletsTab } from './_components/WalletsTab';
 // partagee), c'est pourquoi on duplique l'objet à chaque appel.
 const ChartLoader = () => (
   <div className="flex h-[240px] items-center justify-center text-xs text-neutral-600">
-    <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-700 border-t-primary-500" />
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-primary-500" />
   </div>
 );
 
@@ -69,17 +70,17 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 ];
 
 const ROLE_META: Record<string, { label: string; color: string }> = {
-  user: { label: 'Utilisateur', color: 'bg-neutral-700 text-neutral-300' },
-  venue_owner: { label: 'Propriétaire', color: 'bg-blue-900/50 text-blue-400' },
-  organizer: { label: 'Organisateur', color: 'bg-purple-900/50 text-purple-400' },
-  staff: { label: 'Staff', color: 'bg-amber-900/50 text-amber-400' },
-  admin: { label: 'Admin', color: 'bg-red-900/50 text-red-400' },
+  user: { label: 'Utilisateur', color: 'bg-neutral-200 text-neutral-800' },
+  venue_owner: { label: 'Propriétaire', color: 'bg-blue-100 text-blue-700' },
+  organizer: { label: 'Organisateur', color: 'bg-purple-100 text-purple-700' },
+  staff: { label: 'Staff', color: 'bg-amber-100 text-amber-700' },
+  admin: { label: 'Admin', color: 'bg-red-100 text-red-700' },
 };
 
 const BAN_STATUS: Record<string, { label: string; color: string }> = {
-  normal: { label: 'Normal', color: 'bg-emerald-900/50 text-emerald-400' },
-  banned: { label: 'Banni', color: 'bg-red-900/50 text-red-400' },
-  suspended: { label: 'Suspendu', color: 'bg-amber-900/50 text-amber-400' },
+  normal: { label: 'Normal', color: 'bg-emerald-100 text-emerald-700' },
+  banned: { label: 'Banni', color: 'bg-red-100 text-red-700' },
+  suspended: { label: 'Suspendu', color: 'bg-amber-100 text-amber-700' },
 };
 
 function banStatusOf(u: { is_banned?: boolean; is_suspended?: boolean }): keyof typeof BAN_STATUS {
@@ -89,33 +90,33 @@ function banStatusOf(u: { is_banned?: boolean; is_suspended?: boolean }): keyof 
 }
 
 const KYC_META: Record<string, { label: string; color: string }> = {
-  none: { label: 'Non vérifié', color: 'bg-neutral-700 text-neutral-400' },
-  pending: { label: 'En attente', color: 'bg-amber-900/50 text-amber-400' },
-  verified: { label: 'Vérifié', color: 'bg-emerald-900/50 text-emerald-400' },
-  rejected: { label: 'Rejeté', color: 'bg-red-900/50 text-red-400' },
+  none: { label: 'Non vérifié', color: 'bg-neutral-200 text-neutral-700' },
+  pending: { label: 'En attente', color: 'bg-amber-100 text-amber-700' },
+  verified: { label: 'Vérifié', color: 'bg-emerald-100 text-emerald-700' },
+  rejected: { label: 'Rejeté', color: 'bg-red-100 text-red-700' },
 };
 
 const VENUE_STATUS: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Brouillon', color: 'bg-neutral-700 text-neutral-400' },
-  active: { label: 'Actif', color: 'bg-emerald-900/50 text-emerald-400' },
-  suspended: { label: 'Suspendu', color: 'bg-red-900/50 text-red-400' },
-  closed: { label: 'Fermé', color: 'bg-neutral-700 text-neutral-400' },
+  draft: { label: 'Brouillon', color: 'bg-neutral-200 text-neutral-700' },
+  active: { label: 'Actif', color: 'bg-emerald-100 text-emerald-700' },
+  suspended: { label: 'Suspendu', color: 'bg-red-100 text-red-700' },
+  closed: { label: 'Fermé', color: 'bg-neutral-200 text-neutral-700' },
 };
 
 const TX_STATUS: Record<string, { label: string; color: string }> = {
-  pending: { label: 'En cours', color: 'bg-amber-900/50 text-amber-400' },
-  success: { label: 'Réussi', color: 'bg-emerald-900/50 text-emerald-400' },
-  failed: { label: 'Échoué', color: 'bg-red-900/50 text-red-400' },
-  reversed: { label: 'Inversé', color: 'bg-purple-900/50 text-purple-400' },
+  pending: { label: 'En cours', color: 'bg-amber-100 text-amber-700' },
+  success: { label: 'Réussi', color: 'bg-emerald-100 text-emerald-700' },
+  failed: { label: 'Échoué', color: 'bg-red-100 text-red-700' },
+  reversed: { label: 'Inversé', color: 'bg-purple-100 text-purple-700' },
 };
 
 const RESA_STATUS: Record<string, { label: string; color: string }> = {
-  pending: { label: 'En attente', color: 'bg-amber-900/50 text-amber-400' },
-  confirmed: { label: 'Confirmé', color: 'bg-blue-900/50 text-blue-400' },
-  arrived: { label: 'Arrivé', color: 'bg-emerald-900/50 text-emerald-400' },
-  no_show: { label: 'No-show', color: 'bg-red-900/50 text-red-400' },
-  cancelled: { label: 'Annulé', color: 'bg-neutral-700 text-neutral-400' },
-  refunded: { label: 'Remboursé', color: 'bg-purple-900/50 text-purple-400' },
+  pending: { label: 'En attente', color: 'bg-amber-100 text-amber-700' },
+  confirmed: { label: 'Confirmé', color: 'bg-blue-100 text-blue-700' },
+  arrived: { label: 'Arrivé', color: 'bg-emerald-100 text-emerald-700' },
+  no_show: { label: 'No-show', color: 'bg-red-100 text-red-700' },
+  cancelled: { label: 'Annulé', color: 'bg-neutral-200 text-neutral-700' },
+  refunded: { label: 'Remboursé', color: 'bg-purple-100 text-purple-700' },
 };
 
 // PIE_COLORS et CustomTooltip ont migré vers _components/AdminCharts.tsx
@@ -451,12 +452,6 @@ function AdminDashboard() {
     return Array.from(map.entries()).map(([day, count]) => ({ day: fmtShortDate(day), reservations: count })).sort((a, b) => a.day.localeCompare(b.day)).slice(-30);
   }, [resas]);
 
-  const resaStatusPie = useMemo(() => {
-    const map = new Map<string, number>();
-    resas.forEach((r) => { const s = r.status || 'unknown'; map.set(s, (map.get(s) || 0) + 1); });
-    return Array.from(map.entries()).map(([name, value]) => ({ name: RESA_STATUS[name]?.label || name, value }));
-  }, [resas]);
-
   const txStatusPie = useMemo(() => {
     const map = new Map<string, number>();
     txs.forEach((t) => { const s = t.status || 'unknown'; map.set(s, (map.get(s) || 0) + 1); });
@@ -475,7 +470,6 @@ function AdminDashboard() {
     return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
   }, [venues]);
 
-  const topVenues = useMemo(() => [...venues].sort((a, b) => (b.rating_avg || 0) - (a.rating_avg || 0)).slice(0, 5), [venues]);
 
   const userGrowth = useMemo(() => {
     const map = new Map<string, number>();
@@ -519,32 +513,22 @@ function AdminDashboard() {
     return Math.round((txs.filter((t) => t.status === 'failed').length / txs.length) * 100);
   }, [txs]);
 
-  // Health score
-  const healthScore = useMemo(() => {
-    let score = 50;
-    if (kpis.conversionRate > 60) score += 15; else if (kpis.conversionRate > 30) score += 8;
-    if (kpis.noShowRate < 10) score += 15; else if (kpis.noShowRate < 25) score += 5;
-    if (kpis.activeVenues > 0) score += 10;
-    if (kpis.pending === 0) score += 10; else if (kpis.pending < 5) score += 5;
-    return Math.min(100, score);
-  }, [kpis]);
-
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-neutral-950 px-4">
+      <div className="flex min-h-[60vh] items-center justify-center bg-neutral-50 px-4">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-neutral-700 border-t-primary-500" />
-          <p className="text-sm text-neutral-500">Chargement du centre de contrôle…</p>
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-neutral-300 border-t-primary-500" />
+          <p className="text-sm text-neutral-600">Chargement du centre de contrôle…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-neutral-950 text-white">
+    <div className="min-h-screen bg-neutral-50 text-dark">
       {toast && (
         <div
-          className={`fixed left-1/2 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-2xl backdrop-blur-xl sm:left-auto sm:right-6 sm:translate-x-0 sm:px-5 sm:py-3 ${toast.ok ? 'bg-emerald-600/95' : 'bg-red-600/95'}`}
+          className={`fixed left-1/2 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium shadow-2xl backdrop-blur-xl sm:left-auto sm:right-6 sm:translate-x-0 sm:px-5 sm:py-3 ${toast.ok ? 'bg-emerald-700/95' : 'bg-red-600/95'}`}
           style={{ top: 'calc(env(safe-area-inset-top, 0px) + 70px)' }}
         >
           <span className="text-lg">{toast.ok ? '✓' : '✗'}</span>
@@ -554,7 +538,7 @@ function AdminDashboard() {
 
       {/* Header local — sticky sous la topbar AppShell. Thème dark assumé. */}
       <header
-        className="sticky z-20 border-b border-neutral-800/50 bg-neutral-950/85 backdrop-blur-xl"
+        className="sticky z-20 border-b border-neutral-200 bg-neutral-50 backdrop-blur-xl"
         style={{ top: 0 }}
       >
         <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4 lg:px-8 lg:py-5">
@@ -562,20 +546,21 @@ function AdminDashboard() {
             <h1 className="truncate font-display text-base font-bold sm:text-xl">
               {TABS.find((t) => t.id === tab)?.label || 'Admin'}
             </h1>
-            <p className="mt-0.5 truncate text-xs text-neutral-500 sm:text-sm">
+            <p className="mt-0.5 truncate text-xs text-neutral-600 sm:text-sm">
               Centre de contrôle Soutra-Playce
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={async () => { setLoading(true); await loadAll(); setLoading(false); flash('Données actualisées'); }}
-              className="inline-flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs font-medium text-neutral-400 transition hover:border-primary-500/30 hover:text-white sm:px-4"
+              aria-label="Actualiser les données"
+              className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 transition hover:border-primary-500 hover:text-primary-700 sm:px-4"
             >
               <IcoRefresh />
-              <span className="hidden xs:inline">Actualiser</span>
+              <span className="hidden sm:inline">Actualiser</span>
             </button>
-            <div className="hidden h-8 w-px bg-neutral-800 sm:block" />
-            <div className="flex items-center gap-2 text-xs text-neutral-400 sm:text-sm">
+            <div className="hidden h-8 w-px bg-neutral-100 sm:block" />
+            <div className="flex items-center gap-2 text-xs text-neutral-700 sm:text-sm">
               <div className={`h-2 w-2 rounded-full shadow-lg ${maintenanceMode ? 'bg-amber-500 shadow-amber-500/50' : 'bg-emerald-500 shadow-emerald-500/50'}`} />
               <span className="hidden sm:inline">{maintenanceMode ? 'Maintenance' : 'En ligne'}</span>
             </div>
@@ -608,63 +593,19 @@ function AdminDashboard() {
 
           {/* ═══════════ OVERVIEW ═══════════ */}
           {tab === 'overview' && (
-            <>
+            <div className="space-y-6">
+              <AdminTodo pendingTx={kpis.pending} />
               <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
                 <KpiCard label="Utilisateurs" value={kpis.users} sub={`+${kpis.newUsersToday} aujourd'hui`} icon={<IcoUsers className="h-5 w-5" />} color="blue" />
                 <KpiCard label="Revenus totaux" value={formatXOF(kpis.revenue)} sub={`${formatXOF(kpis.fees)} de frais`} icon={<IcoTrend className="h-5 w-5" />} color="emerald" />
                 <KpiCard label="Réservations" value={kpis.reservations} sub={`${kpis.conversionRate}% conversion`} icon={<IcoCalendar className="h-5 w-5" />} color="amber" />
                 <KpiCard label="Ticket moyen" value={formatXOF(kpis.avgTicket)} sub={`${kpis.transactions} transactions`} icon={<IcoCurrency className="h-5 w-5" />} color="purple" />
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-4">
-                <MiniKpi label="Venues actives" value={`${kpis.activeVenues}/${kpis.venues}`} color="emerald" />
-                <MiniKpi label="Tx en attente" value={kpis.pending} color={kpis.pending > 0 ? 'red' : 'emerald'} />
-                <MiniKpi label="Taux no-show" value={`${kpis.noShowRate}%`} color={kpis.noShowRate > 20 ? 'red' : 'emerald'} />
-                <MiniKpi label="Santé" value={`${healthScore}/100`} color={healthScore >= 80 ? 'emerald' : 'amber'} />
-              </div>
-              <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                <ChartCard title="Revenus (30 derniers jours)">
-                  {revenueByDay.length > 0 ? <RevenueAreaChart data={revenueByDay} height={240} /> : <EmptyChart />}
-                </ChartCard>
-                <ChartCard title="Réservations par statut">
-                  {resaStatusPie.length > 0 ? <GenericPie data={resaStatusPie} height={240} innerRadius={55} outerRadius={90} /> : <EmptyChart />}
-                </ChartCard>
-              </div>
-              <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                  <h3 className="mb-4 text-sm font-semibold text-neutral-400">Navigation rapide</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {(['analytics', 'marketing', 'security', 'settings'] as Tab[]).map((t) => (
-                      <button key={t} onClick={() => setTab(t)} className="rounded-xl border border-neutral-800/50 bg-neutral-950/50 px-4 py-3 text-sm font-medium text-neutral-300 transition hover:border-primary-500/30 hover:bg-primary-500/5 hover:text-primary-400 capitalize">{TABS.find((x) => x.id === t)?.label}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                  <h3 className="mb-4 text-sm font-semibold text-neutral-400">Statut plateforme</h3>
-                  <div className="space-y-3">
-                    <StatusRow label="Base de données" status="Opérationnel" ok />
-                    <StatusRow label="Paiements" status="Opérationnel" ok />
-                    <StatusRow label="Temps réel" status="Opérationnel" ok />
-                    <StatusRow label="Mode maintenance" status={maintenanceMode ? 'Activé' : 'Désactivé'} ok={!maintenanceMode} />
-                  </div>
-                </div>
-              </div>
-              {topVenues.length > 0 && (
-                <div className="mt-6">
-                  <ChartCard title="Top Établissements (par note)">
-                    <div className="space-y-3 p-2">
-                      {topVenues.map((v, i) => (
-                        <div key={v.id} className="flex items-center gap-4">
-                          <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${i === 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-neutral-800 text-neutral-500'}`}>{i + 1}</span>
-                          <div className="flex-1"><div className="text-sm font-medium">{v.name}</div><div className="text-xs text-neutral-500">{v.category} — {v.city}</div></div>
-                          <div className="flex items-center gap-1 font-mono text-sm"><span className="text-amber-400">&#9733; {v.rating_avg || 0}</span><span className="text-neutral-600">({v.rating_count || 0})</span></div>
-                          <Badge meta={VENUE_STATUS[v.status]} />
-                        </div>
-                      ))}
-                    </div>
-                  </ChartCard>
-                </div>
-              )}
-            </>
+              <ChartCard title="Revenus (30 derniers jours)">
+                {revenueByDay.length > 0 ? <RevenueAreaChart data={revenueByDay} height={260} /> : <EmptyChart />}
+              </ChartCard>
+              <p className="text-center text-xs text-neutral-600">Plus de détails : <button type="button" onClick={() => setTab('analytics')} className="font-semibold text-primary-700 underline">Analytics</button> · <button type="button" onClick={() => setTab('transactions')} className="font-semibold text-primary-700 underline">Transactions</button></p>
+            </div>
           )}
 
           {/* ═══════════ ANALYTICS ═══════════ */}
@@ -716,28 +657,28 @@ function AdminDashboard() {
                   cells: [
                     <span key="n" className="font-medium">
                       {u.full_name || '—'}
-                      {u.is_super_admin && <span className="ml-2 rounded-full bg-gradient-to-r from-red-500/20 to-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-400 ring-1 ring-amber-500/30">Super admin</span>}
+                      {u.is_super_admin && <span className="ml-2 rounded-full bg-gradient-to-r from-red-500/20 to-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-amber-500/30">Super admin</span>}
                     </span>,
-                    <span key="p" className="font-mono text-xs text-neutral-400">{u.phone || '—'}</span>,
+                    <span key="p" className="font-mono text-xs text-neutral-700">{u.phone || '—'}</span>,
                     <Badge key="r" meta={ROLE_META[u.role]} />,
                     <Badge key="k" meta={KYC_META[u.kyc_status]} />,
-                    <span key="c" className="text-neutral-400">{u.city || '—'}</span>,
+                    <span key="c" className="text-neutral-700">{u.city || '—'}</span>,
                     <div key="ban">
                       <Badge meta={BAN_STATUS[banStatusOf(u)]} />
                       {u.is_suspended && u.suspended_until && (
-                        <p className="mt-1 text-[10px] text-neutral-500">jusqu'au {fmtDate(u.suspended_until)}</p>
+                        <p className="mt-1 text-[10px] text-neutral-600">jusqu'au {fmtDate(u.suspended_until)}</p>
                       )}
                     </div>,
-                    <span key="d" className="text-xs text-neutral-500">{fmtDate(u.created_at)}</span>,
+                    <span key="d" className="text-xs text-neutral-600">{fmtDate(u.created_at)}</span>,
                     <ActionGroup key="a" loading={actionLoading === u.id} actions={[
-                      u.kyc_status !== 'verified' && { label: 'Vérifier KYC', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => updateProfile(u.id, { kyc_status: 'verified' }) },
-                      u.role === 'user' && { label: '→ Organisateur', cls: 'text-purple-400 hover:bg-purple-900/30', fn: () => updateProfile(u.id, { role: 'organizer' }) },
-                      u.role !== 'admin' && { label: '→ Admin', cls: 'text-amber-400 hover:bg-amber-900/30', fn: () => updateProfile(u.id, { role: 'admin' }) },
-                      u.role !== 'user' && u.role !== 'admin' && { label: '→ User', cls: 'text-neutral-400 hover:bg-neutral-800', fn: () => updateProfile(u.id, { role: 'user' }) },
-                      !u.is_super_admin && !u.is_banned && { label: 'Bannir', cls: 'text-red-400 hover:bg-red-900/30', fn: () => setBanTarget(u) },
-                      !u.is_super_admin && !u.is_suspended && !u.is_banned && { label: 'Suspendre', cls: 'text-amber-400 hover:bg-amber-900/30', fn: () => setSuspendTarget(u) },
-                      u.is_banned && { label: 'Réactiver', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => unbanUser(u.id) },
-                      u.is_suspended && { label: 'Lever suspension', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => unsuspendUser(u.id) },
+                      u.kyc_status !== 'verified' && { label: 'Vérifier KYC', cls: 'text-emerald-700 hover:bg-emerald-100', fn: () => updateProfile(u.id, { kyc_status: 'verified' }) },
+                      u.role === 'user' && { label: '→ Organisateur', cls: 'text-purple-700 hover:bg-purple-100', fn: () => updateProfile(u.id, { role: 'organizer' }) },
+                      u.role !== 'admin' && { label: '→ Admin', cls: 'text-amber-700 hover:bg-amber-100', fn: () => updateProfile(u.id, { role: 'admin' }) },
+                      u.role !== 'user' && u.role !== 'admin' && { label: '→ User', cls: 'text-neutral-700 hover:bg-neutral-100', fn: () => updateProfile(u.id, { role: 'user' }) },
+                      !u.is_super_admin && !u.is_banned && { label: 'Bannir', cls: 'text-red-700 hover:bg-red-100', fn: () => setBanTarget(u) },
+                      !u.is_super_admin && !u.is_suspended && !u.is_banned && { label: 'Suspendre', cls: 'text-amber-700 hover:bg-amber-100', fn: () => setSuspendTarget(u) },
+                      u.is_banned && { label: 'Réactiver', cls: 'text-emerald-700 hover:bg-emerald-100', fn: () => unbanUser(u.id) },
+                      u.is_suspended && { label: 'Lever suspension', cls: 'text-emerald-700 hover:bg-emerald-100', fn: () => unsuspendUser(u.id) },
                     ]} />,
                   ],
                 }))} total={filterList(users, 'full_name', 'role').length} />
@@ -755,15 +696,15 @@ function AdminDashboard() {
           {tab === 'venues' && (
             <>
               {/* PR Scores — bouton de refresh global des 4 scores */}
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-3 text-xs">
-                <span className="text-neutral-400">
-                  <strong className="text-white">Scores</strong> calculés à partir des reviews, signalements et événements
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-neutral-200 bg-white p-3 text-xs">
+                <span className="text-neutral-700">
+                  <strong className="text-dark">Scores</strong> calculés à partir des reviews, signalements et événements
                   des 30 derniers jours (migration 0036).
                 </span>
                 <button
                   onClick={recomputeAllScores}
                   disabled={actionLoading === '__scores__'}
-                  className="rounded-full bg-primary-500/15 px-3 py-1.5 text-xs font-semibold text-primary-300 hover:bg-primary-500/25 disabled:opacity-50"
+                  className="rounded-full bg-primary-500/15 px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-500/25 disabled:opacity-50"
                 >
                   {actionLoading === '__scores__' ? 'Recalcul…' : '⚙ Recalculer tous les scores'}
                 </button>
@@ -775,16 +716,16 @@ function AdminDashboard() {
                   key: v.id,
                   cells: [
                     <span key="n" className="font-medium">{v.name}</span>,
-                    <span key="c" className="text-xs capitalize text-neutral-400">{v.category}</span>,
-                    <span key="ci" className="text-neutral-400">{v.city}</span>,
-                    <span key="r" className="font-mono text-amber-400">&#9733; {v.rating_avg || 0}</span>,
+                    <span key="c" className="text-xs capitalize text-neutral-700">{v.category}</span>,
+                    <span key="ci" className="text-neutral-700">{v.city}</span>,
+                    <span key="r" className="font-mono text-amber-700">&#9733; {v.rating_avg || 0}</span>,
                     <ScoreCluster key="sc" trust={v.trust_score} quality={v.quality_score} activity={v.activity_score} popularity={v.popularity_score} />,
                     <Badge key="s" meta={VENUE_STATUS[v.status]} />,
-                    <span key="d" className="text-xs text-neutral-500">{fmtDate(v.created_at)}</span>,
+                    <span key="d" className="text-xs text-neutral-600">{fmtDate(v.created_at)}</span>,
                     <ActionGroup key="a" loading={actionLoading === v.id} actions={[
-                      v.status !== 'active' && { label: 'Activer', cls: 'text-emerald-400 hover:bg-emerald-900/30', fn: () => updateVenue(v.id, { status: 'active' }) },
-                      v.status === 'active' && { label: 'Suspendre', cls: 'text-red-400 hover:bg-red-900/30', fn: () => updateVenue(v.id, { status: 'suspended' }) },
-                      v.status !== 'closed' && { label: 'Fermer', cls: 'text-neutral-400 hover:bg-neutral-800', fn: () => updateVenue(v.id, { status: 'closed' }) },
+                      v.status !== 'active' && { label: 'Activer', cls: 'text-emerald-700 hover:bg-emerald-100', fn: () => updateVenue(v.id, { status: 'active' }) },
+                      v.status === 'active' && { label: 'Suspendre', cls: 'text-red-700 hover:bg-red-100', fn: () => updateVenue(v.id, { status: 'suspended' }) },
+                      v.status !== 'closed' && { label: 'Fermer', cls: 'text-neutral-700 hover:bg-neutral-100', fn: () => updateVenue(v.id, { status: 'closed' }) },
                     ]} />,
                   ],
                 }))} total={filterList(venues, 'name', 'status').length} />
@@ -810,11 +751,11 @@ function AdminDashboard() {
               rows={filterList(txs, 'type', 'status').map((t) => ({
                 key: t.id,
                 cells: [
-                  <span key="d" className="text-xs text-neutral-400">{fmtDateTime(t.created_at)}</span>,
-                  <span key="t" className="rounded bg-neutral-800 px-2 py-0.5 text-xs capitalize">{t.type}</span>,
+                  <span key="d" className="text-xs text-neutral-700">{fmtDateTime(t.created_at)}</span>,
+                  <span key="t" className="rounded bg-neutral-100 px-2 py-0.5 text-xs capitalize">{t.type}</span>,
                   <span key="a" className="font-mono font-medium">{formatXOF(t.amount_xof)}</span>,
-                  <span key="f" className="font-mono text-xs text-neutral-500">{formatXOF(t.fee_xof)}</span>,
-                  <span key="p" className="text-xs capitalize text-neutral-400">{t.provider || '—'}</span>,
+                  <span key="f" className="font-mono text-xs text-neutral-600">{formatXOF(t.fee_xof)}</span>,
+                  <span key="p" className="text-xs capitalize text-neutral-700">{t.provider || '—'}</span>,
                   <Badge key="s" meta={TX_STATUS[t.status]} />,
                 ],
               }))} total={filterList(txs, 'type', 'status').length} />
@@ -832,10 +773,10 @@ function AdminDashboard() {
                   <span key="p" className="font-medium">{r.party_size} pers.</span>,
                   <span key="a" className="font-mono">{formatXOF(r.deposit_xof)}</span>,
                   <Badge key="s" meta={RESA_STATUS[r.status]} />,
-                  <span key="c" className="text-xs text-neutral-500">{fmtDate(r.created_at)}</span>,
+                  <span key="c" className="text-xs text-neutral-600">{fmtDate(r.created_at)}</span>,
                   <ActionGroup key="ac" loading={actionLoading === r.id} actions={[
-                    r.status === 'pending' && { label: 'Confirmer', cls: 'text-blue-400 hover:bg-blue-900/30', fn: () => updateReservation(r.id, { status: 'confirmed' }) },
-                    ['pending', 'confirmed'].includes(r.status) && { label: 'Annuler', cls: 'text-red-400 hover:bg-red-900/30', fn: () => updateReservation(r.id, { status: 'cancelled', cancelled_at: new Date().toISOString() }) },
+                    r.status === 'pending' && { label: 'Confirmer', cls: 'text-blue-700 hover:bg-blue-100', fn: () => updateReservation(r.id, { status: 'confirmed' }) },
+                    ['pending', 'confirmed'].includes(r.status) && { label: 'Annuler', cls: 'text-red-700 hover:bg-red-100', fn: () => updateReservation(r.id, { status: 'cancelled', cancelled_at: new Date().toISOString() }) },
                   ]} />,
                 ],
               }))} total={filterList(resas, 'venue_id', 'status').length} />
@@ -859,53 +800,53 @@ function AdminDashboard() {
                 </ChartCard>
 
                 {/* Créer un code promo */}
-                <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                  <h3 className="mb-4 text-sm font-semibold text-neutral-400">Créer un code promo</h3>
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                  <h3 className="mb-4 text-sm font-semibold text-neutral-700">Créer un code promo</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="mb-1 block text-xs text-neutral-500">Code</label>
-                      <input type="text" value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="BIENVENUE20" className="w-full rounded-xl border border-neutral-800/50 bg-neutral-950 px-4 py-2.5 font-mono text-sm text-white placeholder-neutral-600 focus:border-primary-500 focus:outline-none" />
+                      <label className="mb-1 block text-xs text-neutral-600">Code</label>
+                      <input type="text" value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="BIENVENUE20" className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 font-mono text-sm text-dark placeholder-neutral-600 focus:border-primary-500 focus:outline-none" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="mb-1 block text-xs text-neutral-500">Remise (%)</label>
-                        <select value={promoDiscount} onChange={(e) => setPromoDiscount(e.target.value)} className="w-full rounded-xl border border-neutral-800/50 bg-neutral-950 px-4 py-2.5 text-sm text-white focus:border-primary-500 focus:outline-none">
+                        <label className="mb-1 block text-xs text-neutral-600">Remise (%)</label>
+                        <select value={promoDiscount} onChange={(e) => setPromoDiscount(e.target.value)} className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
                           {['5', '10', '15', '20', '25', '30', '50'].map((v) => <option key={v} value={v}>{v}%</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs text-neutral-500">Cible</label>
-                        <select value={promoTarget} onChange={(e) => setPromoTarget(e.target.value as any)} className="w-full rounded-xl border border-neutral-800/50 bg-neutral-950 px-4 py-2.5 text-sm text-white focus:border-primary-500 focus:outline-none">
+                        <label className="mb-1 block text-xs text-neutral-600">Cible</label>
+                        <select value={promoTarget} onChange={(e) => setPromoTarget(e.target.value as any)} className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
                           <option value="all">Tous</option>
                           <option value="new">Nouveaux</option>
                           <option value="inactive">Inactifs</option>
                         </select>
                       </div>
                     </div>
-                    <button onClick={createPromo} className="w-full rounded-xl bg-primary-500 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-600">Créer le code promo</button>
+                    <button onClick={createPromo} className="w-full rounded-xl bg-primary-500 py-2.5 text-sm font-semibold text-night transition hover:bg-primary-400">Créer le code promo</button>
                   </div>
                 </div>
               </div>
 
               {/* Envoyer une notification */}
-              <div className="mt-6 rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                <h3 className="mb-4 text-sm font-semibold text-neutral-400">Envoyer une notification</h3>
+              <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6">
+                <h3 className="mb-4 text-sm font-semibold text-neutral-700">Envoyer une notification</h3>
                 <div className="grid gap-4 lg:grid-cols-4">
                   <div>
-                    <label className="mb-1 block text-xs text-neutral-500">Cible</label>
-                    <select value={notifTarget} onChange={(e) => setNotifTarget(e.target.value as any)} className="w-full rounded-xl border border-neutral-800/50 bg-neutral-950 px-4 py-2.5 text-sm text-white focus:border-primary-500 focus:outline-none">
+                    <label className="mb-1 block text-xs text-neutral-600">Cible</label>
+                    <select value={notifTarget} onChange={(e) => setNotifTarget(e.target.value as any)} className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
                       <option value="all">Tous ({users.length})</option>
                       <option value="venue_owner">Propriétaires ({users.filter((u) => u.role === 'venue_owner').length})</option>
                       <option value="user">Utilisateurs ({users.filter((u) => u.role === 'user').length})</option>
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-neutral-500">Titre</label>
-                    <input type="text" value={notifTitle} onChange={(e) => setNotifTitle(e.target.value)} placeholder="Nouvelle fonctionnalité !" className="w-full rounded-xl border border-neutral-800/50 bg-neutral-950 px-4 py-2.5 text-sm text-white placeholder-neutral-600 focus:border-primary-500 focus:outline-none" />
+                    <label className="mb-1 block text-xs text-neutral-600">Titre</label>
+                    <input type="text" value={notifTitle} onChange={(e) => setNotifTitle(e.target.value)} placeholder="Nouvelle fonctionnalité !" className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-dark placeholder-neutral-600 focus:border-primary-500 focus:outline-none" />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-neutral-500">Message</label>
-                    <input type="text" value={notifBody} onChange={(e) => setNotifBody(e.target.value)} placeholder="Découvrez les meilleures venues..." className="w-full rounded-xl border border-neutral-800/50 bg-neutral-950 px-4 py-2.5 text-sm text-white placeholder-neutral-600 focus:border-primary-500 focus:outline-none" />
+                    <label className="mb-1 block text-xs text-neutral-600">Message</label>
+                    <input type="text" value={notifBody} onChange={(e) => setNotifBody(e.target.value)} placeholder="Découvrez les meilleures venues..." className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-dark placeholder-neutral-600 focus:border-primary-500 focus:outline-none" />
                   </div>
                   <div className="flex items-end">
                     <button onClick={sendNotification} className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700">Envoyer</button>
@@ -915,21 +856,21 @@ function AdminDashboard() {
 
               {/* Liste promos créées */}
               {promos.length > 0 && (
-                <div className="mt-6 rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
-                  <div className="border-b border-neutral-800/50 px-6 py-4"><h3 className="text-sm font-semibold text-neutral-400">Codes promos actifs</h3></div>
+                <div className="mt-6 rounded-2xl border border-neutral-200 bg-white">
+                  <div className="border-b border-neutral-200 px-6 py-4"><h3 className="text-sm font-semibold text-neutral-700">Codes promos actifs</h3></div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead><tr className="border-b border-neutral-800/50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                      <thead><tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                         <th className="px-6 py-3">Code</th><th className="px-6 py-3">Remise</th><th className="px-6 py-3">Cible</th><th className="px-6 py-3">Créé le</th><th className="px-6 py-3">Actions</th>
                       </tr></thead>
                       <tbody>
                         {promos.map((p, i) => (
-                          <tr key={i} className="border-b border-neutral-800/30 transition hover:bg-neutral-800/20">
-                            <td className="px-6 py-3 font-mono font-bold text-primary-400">{p.code}</td>
-                            <td className="px-6 py-3 text-emerald-400">{p.discount}%</td>
-                            <td className="px-6 py-3 capitalize text-neutral-400">{p.target === 'all' ? 'Tous' : p.target === 'new' ? 'Nouveaux' : 'Inactifs'}</td>
-                            <td className="px-6 py-3 text-xs text-neutral-500">{fmtDateTime(p.created)}</td>
-                            <td className="px-6 py-3"><button onClick={() => { setPromos((prev) => prev.filter((_, j) => j !== i)); flash('Promo supprimée'); }} className="rounded-lg px-2.5 py-1 text-xs font-semibold text-red-400 transition hover:bg-red-900/30">Supprimer</button></td>
+                          <tr key={i} className="border-b border-neutral-100 transition hover:bg-neutral-100">
+                            <td className="px-6 py-3 font-mono font-bold text-primary-700">{p.code}</td>
+                            <td className="px-6 py-3 text-emerald-700">{p.discount}%</td>
+                            <td className="px-6 py-3 capitalize text-neutral-700">{p.target === 'all' ? 'Tous' : p.target === 'new' ? 'Nouveaux' : 'Inactifs'}</td>
+                            <td className="px-6 py-3 text-xs text-neutral-600">{fmtDateTime(p.created)}</td>
+                            <td className="px-6 py-3"><button onClick={() => { setPromos((prev) => prev.filter((_, j) => j !== i)); flash('Promo supprimée'); }} className="rounded-lg px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100">Supprimer</button></td>
                           </tr>
                         ))}
                       </tbody>
@@ -952,49 +893,49 @@ function AdminDashboard() {
 
               <div className="mt-6 grid gap-6 lg:grid-cols-2">
                 {/* Alertes de sécurité */}
-                <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                  <h3 className="mb-4 text-sm font-semibold text-neutral-400">Alertes de sécurité</h3>
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                  <h3 className="mb-4 text-sm font-semibold text-neutral-700">Alertes de sécurité</h3>
                   <div className="space-y-3">
                     {suspiciousTxs.length > 0 && (
                       <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-                        <IcoAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-                        <div><p className="text-sm font-medium text-red-400">{suspiciousTxs.length} transaction(s) suspecte(s)</p><p className="mt-0.5 text-xs text-neutral-500">Transactions échouées ou montant {'>'}500 000 FCFA</p></div>
+                        <IcoAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
+                        <div><p className="text-sm font-medium text-red-700">{suspiciousTxs.length} transaction(s) suspecte(s)</p><p className="mt-0.5 text-xs text-neutral-600">Transactions échouées ou montant {'>'}500 000 FCFA</p></div>
                       </div>
                     )}
                     {users.filter((u) => u.kyc_status === 'pending').length > 0 && (
                       <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-                        <IcoAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
-                        <div><p className="text-sm font-medium text-amber-400">{users.filter((u) => u.kyc_status === 'pending').length} KYC en attente</p><p className="mt-0.5 text-xs text-neutral-500">Vérifications d'identité à traiter</p></div>
+                        <IcoAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                        <div><p className="text-sm font-medium text-amber-700">{users.filter((u) => u.kyc_status === 'pending').length} KYC en attente</p><p className="mt-0.5 text-xs text-neutral-600">Vérifications d'identité à traiter</p></div>
                       </div>
                     )}
                     {venues.filter((v) => v.status === 'suspended').length > 0 && (
                       <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-                        <IcoBuilding className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
-                        <div><p className="text-sm font-medium text-amber-400">{venues.filter((v) => v.status === 'suspended').length} venue(s) suspendue(s)</p><p className="mt-0.5 text-xs text-neutral-500">Établissements à examiner</p></div>
+                        <IcoBuilding className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                        <div><p className="text-sm font-medium text-amber-700">{venues.filter((v) => v.status === 'suspended').length} venue(s) suspendue(s)</p><p className="mt-0.5 text-xs text-neutral-600">Établissements à examiner</p></div>
                       </div>
                     )}
                     {suspiciousTxs.length === 0 && users.filter((u) => u.kyc_status === 'pending').length === 0 && venues.filter((v) => v.status === 'suspended').length === 0 && (
                       <div className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-                        <IcoShield className="h-5 w-5 text-emerald-400" />
-                        <p className="text-sm font-medium text-emerald-400">Aucune alerte — tout est en ordre</p>
+                        <IcoShield className="h-5 w-5 text-emerald-700" />
+                        <p className="text-sm font-medium text-emerald-700">Aucune alerte — tout est en ordre</p>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Comptes admin */}
-                <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                  <h3 className="mb-4 text-sm font-semibold text-neutral-400">Comptes administrateurs</h3>
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                  <h3 className="mb-4 text-sm font-semibold text-neutral-700">Comptes administrateurs</h3>
                   <div className="space-y-3">
                     {users.filter((u) => u.role === 'admin').map((u) => (
-                      <div key={u.id} className="flex items-center justify-between rounded-xl border border-neutral-800/50 bg-neutral-950/50 px-4 py-3">
+                      <div key={u.id} className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
                         <div>
                           <p className="text-sm font-medium">{u.full_name || 'Sans nom'}</p>
-                          <p className="font-mono text-xs text-neutral-500">{u.phone}</p>
+                          <p className="font-mono text-xs text-neutral-600">{u.phone}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge meta={KYC_META[u.kyc_status]} />
-                          <span className="text-xs text-neutral-500">{fmtDate(u.created_at)}</span>
+                          <span className="text-xs text-neutral-600">{fmtDate(u.created_at)}</span>
                         </div>
                       </div>
                     ))}
@@ -1007,24 +948,24 @@ function AdminDashboard() {
 
               {/* Transactions suspectes */}
               {suspiciousTxs.length > 0 && (
-                <div className="mt-6 rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
-                  <div className="border-b border-neutral-800/50 px-6 py-4">
-                    <h3 className="text-sm font-semibold text-neutral-400">Transactions suspectes (échouées ou {'>'} 500 000 FCFA)</h3>
+                <div className="mt-6 rounded-2xl border border-neutral-200 bg-white">
+                  <div className="border-b border-neutral-200 px-6 py-4">
+                    <h3 className="text-sm font-semibold text-neutral-700">Transactions suspectes (échouées ou {'>'} 500 000 FCFA)</h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead><tr className="border-b border-neutral-800/50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                      <thead><tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                         <th className="px-6 py-3">Date</th><th className="px-6 py-3">Type</th><th className="px-6 py-3">Montant</th><th className="px-6 py-3">Provider</th><th className="px-6 py-3">Statut</th><th className="px-6 py-3">Raison</th>
                       </tr></thead>
                       <tbody>
                         {suspiciousTxs.slice(0, 20).map((t) => (
-                          <tr key={t.id} className="border-b border-neutral-800/30 transition hover:bg-neutral-800/20">
-                            <td className="px-6 py-3 text-xs text-neutral-400">{fmtDateTime(t.created_at)}</td>
+                          <tr key={t.id} className="border-b border-neutral-100 transition hover:bg-neutral-100">
+                            <td className="px-6 py-3 text-xs text-neutral-700">{fmtDateTime(t.created_at)}</td>
                             <td className="px-6 py-3 text-xs capitalize">{t.type}</td>
                             <td className="px-6 py-3 font-mono font-medium">{formatXOF(t.amount_xof)}</td>
-                            <td className="px-6 py-3 text-xs capitalize text-neutral-400">{t.provider || '—'}</td>
+                            <td className="px-6 py-3 text-xs capitalize text-neutral-700">{t.provider || '—'}</td>
                             <td className="px-6 py-3"><Badge meta={TX_STATUS[t.status]} /></td>
-                            <td className="px-6 py-3 text-xs text-neutral-500">{t.status === 'failed' ? 'Échec paiement' : 'Montant élevé'}</td>
+                            <td className="px-6 py-3 text-xs text-neutral-600">{t.status === 'failed' ? 'Échec paiement' : 'Montant élevé'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1034,23 +975,23 @@ function AdminDashboard() {
               )}
 
               {/* Journal d'audit */}
-              <div className="mt-6 rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
-                <div className="border-b border-neutral-800/50 px-6 py-4"><h3 className="text-sm font-semibold text-neutral-400">Journal d'audit</h3></div>
+              <div className="mt-6 rounded-2xl border border-neutral-200 bg-white">
+                <div className="border-b border-neutral-200 px-6 py-4"><h3 className="text-sm font-semibold text-neutral-700">Journal d'audit</h3></div>
                 {auditLogs.length === 0 ? (
                   <div className="py-12 text-center text-neutral-600">Aucun événement d'audit enregistré</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead><tr className="border-b border-neutral-800/50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                      <thead><tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                         <th className="px-6 py-3">Date</th><th className="px-6 py-3">Action</th><th className="px-6 py-3">Détails</th><th className="px-6 py-3">IP</th>
                       </tr></thead>
                       <tbody>
                         {auditLogs.slice(0, 50).map((log: any, i: number) => (
-                          <tr key={log.id || i} className="border-b border-neutral-800/30 transition hover:bg-neutral-800/20">
-                            <td className="px-6 py-3 text-xs text-neutral-400">{fmtDateTime(log.created_at)}</td>
-                            <td className="px-6 py-3"><span className="rounded bg-neutral-800 px-2 py-0.5 text-xs font-medium">{log.action}</span></td>
-                            <td className="max-w-xs truncate px-6 py-3 text-xs text-neutral-400">{log.details || '—'}</td>
-                            <td className="px-6 py-3 font-mono text-xs text-neutral-500">{log.ip_address || '—'}</td>
+                          <tr key={log.id || i} className="border-b border-neutral-100 transition hover:bg-neutral-100">
+                            <td className="px-6 py-3 text-xs text-neutral-700">{fmtDateTime(log.created_at)}</td>
+                            <td className="px-6 py-3"><span className="rounded bg-neutral-100 px-2 py-0.5 text-xs font-medium">{log.action}</span></td>
+                            <td className="max-w-xs truncate px-6 py-3 text-xs text-neutral-700">{log.details || '—'}</td>
+                            <td className="px-6 py-3 font-mono text-xs text-neutral-600">{log.ip_address || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1066,8 +1007,8 @@ function AdminDashboard() {
             <>
               <div className="grid gap-6 lg:grid-cols-2">
                 {/* Configuration générale */}
-                <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                  <h3 className="mb-5 text-sm font-semibold text-neutral-400">Configuration générale</h3>
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                  <h3 className="mb-5 text-sm font-semibold text-neutral-700">Configuration générale</h3>
                   <div className="space-y-4">
                     <SettingInput label="Taux de commission (%)" value={commissionRate} onChange={setCommissionRate} type="number" />
                     <SettingInput label="Acompte minimum (FCFA)" value={minDeposit} onChange={setMinDeposit} type="number" />
@@ -1077,8 +1018,8 @@ function AdminDashboard() {
                 </div>
 
                 {/* Switches */}
-                <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                  <h3 className="mb-5 text-sm font-semibold text-neutral-400">Options plateforme</h3>
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                  <h3 className="mb-5 text-sm font-semibold text-neutral-700">Options plateforme</h3>
                   <div className="space-y-5">
                     <SettingToggle label="Mode maintenance" desc="Désactive l'accès public à la plateforme" checked={maintenanceMode} onChange={setMaintenanceMode} danger />
                     <SettingToggle label="Approbation auto des venues" desc="Les nouvelles venues sont actives immédiatement" checked={autoApproveVenues} onChange={setAutoApproveVenues} />
@@ -1086,8 +1027,8 @@ function AdminDashboard() {
                 </div>
 
                 {/* Contact support */}
-                <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                  <h3 className="mb-5 text-sm font-semibold text-neutral-400">Contact support</h3>
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                  <h3 className="mb-5 text-sm font-semibold text-neutral-700">Contact support</h3>
                   <div className="space-y-4">
                     <SettingInput label="Email support" value={supportEmail} onChange={setSupportEmail} />
                     <SettingInput label="Téléphone support" value={supportPhone} onChange={setSupportPhone} />
@@ -1095,8 +1036,8 @@ function AdminDashboard() {
                 </div>
 
                 {/* Export de données */}
-                <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                  <h3 className="mb-5 text-sm font-semibold text-neutral-400">Export de données (CSV)</h3>
+                <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                  <h3 className="mb-5 text-sm font-semibold text-neutral-700">Export de données (CSV)</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: 'Utilisateurs', key: 'users', count: users.length },
@@ -1105,9 +1046,9 @@ function AdminDashboard() {
                       { label: 'Réservations', key: 'reservations', count: resas.length },
                     ].map((item) => (
                       <button key={item.key} onClick={() => exportData(item.key)}
-                        className="flex items-center justify-between rounded-xl border border-neutral-800/50 bg-neutral-950/50 px-4 py-3 text-sm transition hover:border-primary-500/30 hover:bg-primary-500/5">
-                        <span className="font-medium text-neutral-300">{item.label}</span>
-                        <span className="text-xs text-neutral-500">{item.count}</span>
+                        className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm transition hover:border-primary-500/30 hover:bg-primary-500/5">
+                        <span className="font-medium text-neutral-800">{item.label}</span>
+                        <span className="text-xs text-neutral-600">{item.count}</span>
                       </button>
                     ))}
                   </div>
@@ -1115,8 +1056,8 @@ function AdminDashboard() {
               </div>
 
               {/* Statistiques DB */}
-              <div className="mt-6 rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6">
-                <h3 className="mb-4 text-sm font-semibold text-neutral-400">Statistiques de la base de données</h3>
+              <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6">
+                <h3 className="mb-4 text-sm font-semibold text-neutral-700">Statistiques de la base de données</h3>
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
                   {[
                     { label: 'Profiles', value: users.length },
@@ -1125,8 +1066,8 @@ function AdminDashboard() {
                     { label: 'Réservations', value: resas.length },
                     { label: 'Audit logs', value: auditLogs.length },
                   ].map((s) => (
-                    <div key={s.label} className="rounded-xl border border-neutral-800/50 bg-neutral-950/50 p-4 text-center">
-                      <p className="text-xs text-neutral-500">{s.label}</p>
+                    <div key={s.label} className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-center">
+                      <p className="text-xs text-neutral-600">{s.label}</p>
                       <p className="mt-1 font-display text-2xl font-bold">{s.value}</p>
                     </div>
                   ))}
@@ -1135,7 +1076,7 @@ function AdminDashboard() {
 
               {/* Save button */}
               <div className="mt-6 flex justify-end">
-                <button onClick={saveSettings} className="rounded-xl bg-primary-500 px-8 py-3 text-sm font-semibold text-white transition hover:bg-primary-600">
+                <button onClick={saveSettings} className="rounded-xl bg-primary-500 px-8 py-3 text-sm font-semibold text-night transition hover:bg-primary-400">
                   Sauvegarder les paramètres
                 </button>
               </div>
@@ -1154,20 +1095,20 @@ function AdminDashboard() {
 /* ─────────────────────────────────────────────────── */
 
 const COLOR_MAP: Record<string, { bg: string; text: string; ring: string }> = {
-  blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', ring: 'ring-blue-500/20' },
-  emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', ring: 'ring-emerald-500/20' },
-  amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', ring: 'ring-amber-500/20' },
-  purple: { bg: 'bg-purple-500/10', text: 'text-purple-400', ring: 'ring-purple-500/20' },
-  red: { bg: 'bg-red-500/10', text: 'text-red-400', ring: 'ring-red-500/20' },
+  blue: { bg: 'bg-blue-500/10', text: 'text-blue-700', ring: 'ring-blue-500/20' },
+  emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-700', ring: 'ring-emerald-500/20' },
+  amber: { bg: 'bg-amber-500/10', text: 'text-amber-700', ring: 'ring-amber-500/20' },
+  purple: { bg: 'bg-purple-500/10', text: 'text-purple-700', ring: 'ring-purple-500/20' },
+  red: { bg: 'bg-red-500/10', text: 'text-red-700', ring: 'ring-red-500/20' },
 };
 
 function KpiCard({ label, value, sub, icon, color }: { label: string; value: number | string; sub: string; icon: React.ReactNode; color: string }) {
   const c = COLOR_MAP[color] || COLOR_MAP.blue;
   return (
-    <div className="group rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4 transition-all hover:border-neutral-700/50 hover:shadow-lg hover:shadow-black/20 sm:p-5">
+    <div className="group rounded-2xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-400 hover:shadow-lg hover:shadow-black/20 sm:p-5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[11px] font-medium text-neutral-500 sm:text-xs">{label}</p>
+          <p className="truncate text-[11px] font-medium text-neutral-600 sm:text-xs">{label}</p>
           <p className="mt-1 truncate font-display text-lg font-bold tracking-tight sm:mt-1.5 sm:text-2xl">{value}</p>
           <p className={`mt-1 truncate text-[11px] ${c.text} sm:text-xs`}>{sub}</p>
         </div>
@@ -1177,19 +1118,8 @@ function KpiCard({ label, value, sub, icon, color }: { label: string; value: num
   );
 }
 
-function MiniKpi({ label, value, color }: { label: string; value: number | string; color: string }) {
-  const c = COLOR_MAP[color] || COLOR_MAP.blue;
-  return (
-    <div className="flex items-center gap-2 rounded-xl border border-neutral-800/50 bg-neutral-900/30 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
-      <div className={`h-2 w-2 shrink-0 rounded-full ${c.text.replace('text-', 'bg-')}`} />
-      <span className="truncate text-[11px] text-neutral-500 sm:text-xs">{label}</span>
-      <span className={`ml-auto text-xs font-bold sm:text-sm ${c.text}`}>{value}</span>
-    </div>
-  );
-}
-
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-6"><h3 className="mb-4 text-sm font-semibold text-neutral-400">{title}</h3>{children}</div>;
+  return <div className="rounded-2xl border border-neutral-200 bg-white p-6"><h3 className="mb-4 text-sm font-semibold text-neutral-700">{title}</h3>{children}</div>;
 }
 
 function EmptyChart() {
@@ -1199,30 +1129,20 @@ function EmptyChart() {
 function InsightCard({ title, value, desc, trend, color }: { title: string; value: string; desc: string; trend: 'up' | 'down'; color: string }) {
   const c = COLOR_MAP[color] || COLOR_MAP.blue;
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-5">
-      <div className="flex items-center justify-between"><span className="text-xs font-medium text-neutral-500">{title}</span><span className={`text-lg ${trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>{trend === 'up' ? '↑' : '↓'}</span></div>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-5">
+      <div className="flex items-center justify-between"><span className="text-xs font-medium text-neutral-600">{title}</span><span className={`text-lg ${trend === 'up' ? 'text-emerald-700' : 'text-red-700'}`}>{trend === 'up' ? '↑' : '↓'}</span></div>
       <p className={`mt-2 font-display text-3xl font-bold ${c.text}`}>{value}</p>
-      <p className="mt-1 text-xs text-neutral-500">{desc}</p>
-    </div>
-  );
-}
-
-function StatusRow({ label, status, ok }: { label: string; status: string; ok: boolean }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-neutral-300">{label}</span>
-      <span className={`flex items-center gap-2 text-xs font-medium ${ok ? 'text-emerald-400' : 'text-amber-400'}`}>
-        <span className={`h-2 w-2 rounded-full ${ok ? 'bg-emerald-400 shadow-lg shadow-emerald-500/50' : 'bg-amber-400 shadow-lg shadow-amber-500/50'}`} />{status}
-      </span>
+      <p className="mt-1 text-xs text-neutral-600">{desc}</p>
     </div>
   );
 }
 
 function SettingInput({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  const id = useId();
   return (
     <div>
-      <label className="mb-1 block text-xs text-neutral-500">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border border-neutral-800/50 bg-neutral-950 px-4 py-2.5 text-sm text-white transition focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500/30" />
+      <label htmlFor={id} className="mb-1 block text-xs text-neutral-600">{label}</label>
+      <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500/30" />
     </div>
   );
 }
@@ -1230,9 +1150,9 @@ function SettingInput({ label, value, onChange, type = 'text' }: { label: string
 function SettingToggle({ label, desc, checked, onChange, danger }: { label: string; desc: string; checked: boolean; onChange: (v: boolean) => void; danger?: boolean }) {
   return (
     <div className="flex items-center justify-between">
-      <div><p className="text-sm font-medium text-neutral-300">{label}</p><p className="text-xs text-neutral-500">{desc}</p></div>
-      <button onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 rounded-full transition-colors ${checked ? (danger ? 'bg-red-500' : 'bg-primary-500') : 'bg-neutral-700'}`}>
+      <div><p className="text-sm font-medium text-neutral-800">{label}</p><p className="text-xs text-neutral-600">{desc}</p></div>
+      <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}
+        className={`relative h-6 w-11 rounded-full transition-colors ${checked ? (danger ? 'bg-red-500' : 'bg-primary-500') : 'bg-neutral-200'}`}>
         <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : ''}`} />
       </button>
     </div>
@@ -1244,13 +1164,13 @@ function AdminTable({ searchPlaceholder, search, onSearch, filterValue, onFilter
   filterOptions: { value: string; label: string }[]; headers: string[]; rows: { key: string; cells: React.ReactNode[] }[]; total: number;
 }) {
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50">
-      <div className="flex flex-col gap-4 border-b border-neutral-800/50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-2xl border border-neutral-200 bg-white">
+      <div className="flex flex-col gap-4 border-b border-neutral-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative">
-          <IcoSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
-          <input type="text" placeholder={searchPlaceholder} value={search} onChange={(e) => onSearch(e.target.value)} className="w-72 rounded-xl border border-neutral-800/50 bg-neutral-950 py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-600 transition focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500/30" />
+          <IcoSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-600" />
+          <input type="text" placeholder={searchPlaceholder} value={search} onChange={(e) => onSearch(e.target.value)} className="w-72 rounded-xl border border-neutral-200 bg-neutral-50 py-2.5 pl-10 pr-4 text-sm text-dark placeholder-neutral-600 transition focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500/30" />
         </div>
-        <select value={filterValue} onChange={(e) => onFilter(e.target.value)} className="rounded-xl border border-neutral-800/50 bg-neutral-950 px-4 py-2.5 text-sm text-white transition focus:border-primary-500 focus:outline-none">
+        <select value={filterValue} onChange={(e) => onFilter(e.target.value)} className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none">
           {filterOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
@@ -1259,12 +1179,12 @@ function AdminTable({ searchPlaceholder, search, onSearch, filterValue, onFilter
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-neutral-800/50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">{headers.map((h) => <th key={h} className="px-6 py-3">{h}</th>)}</tr></thead>
-            <tbody>{rows.map((r) => <tr key={r.key} className="border-b border-neutral-800/30 transition hover:bg-neutral-800/20">{r.cells.map((cell, i) => <td key={i} className="px-6 py-3.5">{cell}</td>)}</tr>)}</tbody>
+            <thead><tr className="border-b border-neutral-200 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">{headers.map((h) => <th key={h} className="px-6 py-3">{h}</th>)}</tr></thead>
+            <tbody>{rows.map((r) => <tr key={r.key} className="border-b border-neutral-100 transition hover:bg-neutral-100">{r.cells.map((cell, i) => <td key={i} className="px-6 py-3.5">{cell}</td>)}</tr>)}</tbody>
           </table>
         </div>
       )}
-      <div className="border-t border-neutral-800/50 px-6 py-3 text-xs text-neutral-600">{total} résultat{total > 1 ? 's' : ''}</div>
+      <div className="border-t border-neutral-200 px-6 py-3 text-xs text-neutral-600">{total} résultat{total > 1 ? 's' : ''}</div>
     </div>
   );
 }
@@ -1276,7 +1196,7 @@ function Badge({ meta }: { meta?: { label: string; color: string } }) {
 
 function ActionGroup({ loading, actions }: { loading: boolean; actions: (false | undefined | { label: string; cls: string; fn: () => void })[] }) {
   const valid = actions.filter(Boolean) as { label: string; cls: string; fn: () => void }[];
-  if (loading) return <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-700 border-t-primary-500" />;
+  if (loading) return <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-primary-500" />;
   if (valid.length === 0) return <span className="text-neutral-700">—</span>;
   return <div className="flex gap-1">{valid.map((a) => <button key={a.label} onClick={a.fn} className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${a.cls}`}>{a.label}</button>)}</div>;
 }
@@ -1305,19 +1225,19 @@ function BanModal({ user, onClose, onDone }: { user: any; onClose: () => void; o
 
   return (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4" onClick={() => !submitting && onClose()}>
-      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-        <h3 className="font-display text-lg font-bold text-red-400">Bannir cet utilisateur</h3>
-        <p className="mt-1 text-sm text-neutral-400">{user.full_name || user.phone} — bannissement définitif.</p>
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6">
+        <h3 className="font-display text-lg font-bold text-red-700">Bannir cet utilisateur</h3>
+        <p className="mt-1 text-sm text-neutral-700">{user.full_name || user.phone} — bannissement définitif.</p>
 
-        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-neutral-600">
           Raison (obligatoire, tracée dans le journal d'audit)
         </label>
-        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="ex: fraude confirmée" className="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white" />
+        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="ex: fraude confirmée" className="mt-1 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-dark" />
 
-        {error && <p className="mt-3 text-xs font-semibold text-red-400">{error}</p>}
+        {error && <p className="mt-3 text-xs font-semibold text-red-700">{error}</p>}
 
         <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} disabled={submitting} className="rounded-full border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-800 disabled:opacity-50">Annuler</button>
+          <button onClick={onClose} disabled={submitting} className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100 disabled:opacity-50">Annuler</button>
           <button onClick={submit} disabled={!canSubmit} className="rounded-full bg-red-500 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-40">{submitting ? 'Bannissement…' : 'Confirmer le bannissement'}</button>
         </div>
       </div>
@@ -1346,22 +1266,22 @@ function SuspendModal({ user, onClose, onDone }: { user: any; onClose: () => voi
 
   return (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4" onClick={() => !submitting && onClose()}>
-      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-900 p-6">
-        <h3 className="font-display text-lg font-bold text-amber-400">Suspendre cet utilisateur</h3>
-        <p className="mt-1 text-sm text-neutral-400">{user.full_name || user.phone} — suspension temporaire.</p>
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6">
+        <h3 className="font-display text-lg font-bold text-amber-700">Suspendre cet utilisateur</h3>
+        <p className="mt-1 text-sm text-neutral-700">{user.full_name || user.phone} — suspension temporaire.</p>
 
-        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-neutral-500">Durée (jours)</label>
-        <input type="number" value={days} onChange={(e) => setDays(e.target.value)} min={1} max={365} className="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white" />
+        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-neutral-600">Durée (jours)</label>
+        <input type="number" value={days} onChange={(e) => setDays(e.target.value)} min={1} max={365} className="mt-1 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-dark" />
 
-        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-neutral-600">
           Raison (obligatoire, tracée dans le journal d'audit)
         </label>
-        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="ex: comportement abusif signalé" className="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white" />
+        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="ex: comportement abusif signalé" className="mt-1 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-dark" />
 
-        {error && <p className="mt-3 text-xs font-semibold text-red-400">{error}</p>}
+        {error && <p className="mt-3 text-xs font-semibold text-red-700">{error}</p>}
 
         <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} disabled={submitting} className="rounded-full border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:bg-neutral-800 disabled:opacity-50">Annuler</button>
+          <button onClick={onClose} disabled={submitting} className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 transition hover:bg-neutral-100 disabled:opacity-50">Annuler</button>
           <button onClick={submit} disabled={!canSubmit} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-40">{submitting ? 'Suspension…' : 'Confirmer la suspension'}</button>
         </div>
       </div>
@@ -1378,7 +1298,7 @@ function ScoreCluster({
   trust, quality, activity, popularity,
 }: { trust?: number; quality?: number; activity?: number; popularity?: number }) {
   const pop = popularity ?? 0;
-  const popColor = pop >= 70 ? 'text-emerald-300' : pop >= 40 ? 'text-amber-300' : 'text-neutral-400';
+  const popColor = pop >= 70 ? 'text-emerald-700' : pop >= 40 ? 'text-amber-700' : 'text-neutral-700';
   return (
     <div className="flex items-center gap-1.5">
       <span
@@ -1398,7 +1318,7 @@ function ScoreCluster({
 
 function ScoreDot({ value, label }: { value?: number; label: string }) {
   const v = value ?? 0;
-  const bg = v >= 70 ? 'bg-emerald-500/15 text-emerald-300' : v >= 40 ? 'bg-amber-500/15 text-amber-300' : 'bg-neutral-700/40 text-neutral-400';
+  const bg = v >= 70 ? 'bg-emerald-500/15 text-emerald-700' : v >= 40 ? 'bg-amber-500/15 text-amber-700' : 'bg-neutral-200 text-neutral-700';
   return (
     <span className={`inline-flex h-5 w-5 items-center justify-center rounded text-[9px] font-bold ${bg}`} title={`${label} : ${v}/100`}>
       {label}

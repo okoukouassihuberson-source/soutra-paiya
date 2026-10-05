@@ -222,7 +222,7 @@ export function SubscribeView({
   }, [plans]);
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white">
+    <div className="relative min-h-screen overflow-x-hidden bg-neutral-50 text-neutral-900 ">
       {/* Navbar site (fixed top). Sur bg light la nav dark reste lisible et
           garde la cohérence avec home + /loyalty qui l'utilisent aussi. */}
       <LandingNavbar />
@@ -236,8 +236,7 @@ export function SubscribeView({
       {/* Toast — décalé sous la navbar (72 = navbar 64px + 8px marge) */}
       {toast && (
         <div
-          className={`fixed left-1/2 top-20 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur-xl ${
-            toast.ok
+          className={`fixed left-1/2 top-20 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur-xl ${ toast.ok
               ? 'bg-emerald-500/95 text-white'
               : 'bg-red-500/95 text-white'
           }`}
@@ -253,15 +252,15 @@ export function SubscribeView({
         {/* Bandeau "Mon abonnement" — visible si l'user a déjà un abo actif */}
         {currentSubscription?.subscription && (
           <div className="mb-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-500/30 bg-primary-500/5 px-5 py-3 backdrop-blur-xl">
-            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            <p className="text-sm text-neutral-700 ">
               Tu es abonné à{' '}
-              <strong className="text-neutral-900 dark:text-white">
+              <strong className="text-neutral-900 ">
                 {currentSubscription.plan?.display_name || currentPlanCode}
               </strong>
             </p>
             <Link
               href="/account"
-              className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-100 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900 shadow-sm transition hover:bg-neutral-100 "
             >
               Gérer mon abonnement
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -274,7 +273,7 @@ export function SubscribeView({
 
         {/* ═══════════ HERO ═══════════ */}
         <section className="mx-auto max-w-3xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-500/30 bg-primary-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-500/30 bg-primary-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary-600 ">
             <span className="h-1.5 w-1.5 animate-glow-pulse rounded-full bg-primary-500" />
             Premium Soutra-Playce
           </div>
@@ -284,12 +283,12 @@ export function SubscribeView({
               Soutra-Playce
             </span>
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base text-neutral-600 dark:text-neutral-400 sm:text-lg">
+          <p className="mx-auto mt-5 max-w-2xl text-base text-neutral-600 sm:text-lg">
             Profitez d&apos;avantages exclusifs et d&apos;une expérience personnalisée adaptée à votre style de vie.
           </p>
 
           {/* Billing toggle */}
-          <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/80 p-1.5 shadow-sm backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/80">
+          <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/80 p-1.5 shadow-sm backdrop-blur-xl ">
             <BillingToggle value={billing} onChange={setBilling} />
           </div>
         </section>
@@ -314,11 +313,11 @@ export function SubscribeView({
         <section className="mt-20 sm:mt-28">
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-amber-500/30 bg-amber-500/5 p-8 text-center sm:text-left">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Programme de fidélité</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-600 ">Programme de fidélité</p>
               <h2 className="mt-2 font-display text-2xl font-black tracking-tight sm:text-3xl">
                 Gagne des points sur chaque paiement
               </h2>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="mt-1 text-sm text-neutral-600 ">
                 100 FCFA dépensés = 1 point, quel que soit ton plan. Échange-les contre des récompenses.
               </p>
             </div>
@@ -338,23 +337,23 @@ export function SubscribeView({
 
         {/* ═══════════ FOOTER NOTE ═══════════ */}
         <section className="mt-20 sm:mt-28">
-          <div className="rounded-3xl border border-neutral-200 bg-white/60 p-8 text-center backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/60">
+          <div className="rounded-3xl border border-neutral-200 bg-white/60 p-8 text-center backdrop-blur-xl ">
             <h3 className="font-display text-xl font-bold sm:text-2xl">
               Une question avant de souscrire ?
             </h3>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-2 text-sm text-neutral-600 ">
               Notre équipe te répond en moins de 2 heures.
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               <a
                 href="mailto:support@soutra-paiya.com"
-                className="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                className="rounded-full bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-neutral-800 "
               >
                 Nous contacter
               </a>
               <a
                 href="tel:+2250708817409"
-                className="rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-900 transition hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-white dark:hover:border-neutral-600"
+                className="rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-900 transition hover:border-neutral-400 "
               >
                 Appeler le support
               </a>
@@ -395,24 +394,22 @@ function BillingToggle({
     <>
       <button
         onClick={() => onChange('monthly')}
-        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-          value === 'monthly'
-            ? 'bg-neutral-900 text-white shadow-md dark:bg-white dark:text-neutral-900'
-            : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
+        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${ value === 'monthly'
+            ? 'bg-neutral-900 text-white shadow-md '
+            : 'text-neutral-600 hover:text-neutral-900 '
         }`}
       >
         Mensuel
       </button>
       <button
         onClick={() => onChange('yearly')}
-        className={`relative rounded-full px-4 py-2 text-sm font-semibold transition ${
-          value === 'yearly'
-            ? 'bg-neutral-900 text-white shadow-md dark:bg-white dark:text-neutral-900'
-            : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
+        className={`relative rounded-full px-4 py-2 text-sm font-semibold transition ${ value === 'yearly'
+            ? 'bg-neutral-900 text-white shadow-md '
+            : 'text-neutral-600 hover:text-neutral-900 '
         }`}
       >
         Annuel
-        <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+        <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600 ">
           −2 mois
         </span>
       </button>
@@ -435,8 +432,7 @@ function PlanCard({
 
   return (
     <article
-      className={`group relative flex flex-col overflow-hidden rounded-3xl border p-6 transition-all duration-300 ${style.container} ${
-        plan.is_recommended ? 'lg:scale-105 lg:shadow-2xl' : ''
+      className={`group relative flex flex-col overflow-hidden rounded-3xl border p-6 transition-all duration-300 ${style.container} ${ plan.is_recommended ? 'lg:scale-105 lg:shadow-2xl' : ''
       }`}
     >
       {/* Badges en haut */}
@@ -547,9 +543,9 @@ function PlanIcon({ code, className }: { code: Plan['code']; className?: string 
 
 function ComparisonTable({ plans }: { plans: Plan[] }) {
   return (
-    <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white/80 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/80">
-      <div className="border-b border-neutral-200 p-6 dark:border-neutral-800 sm:p-8">
-        <p className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">Comparateur</p>
+    <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white/80 backdrop-blur-xl ">
+      <div className="border-b border-neutral-200 p-6 sm:p-8">
+        <p className="text-xs font-bold uppercase tracking-wider text-primary-600 ">Comparateur</p>
         <h2 className="mt-2 font-display text-2xl font-black tracking-tight sm:text-3xl">
           Tous les avantages en un coup d&apos;œil
         </h2>
@@ -559,19 +555,18 @@ function ComparisonTable({ plans }: { plans: Plan[] }) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
           <thead>
-            <tr className="border-b border-neutral-200 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-950/50">
-              <th className="sticky left-0 z-10 bg-neutral-50/50 px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-neutral-500 dark:bg-neutral-950/50 dark:text-neutral-400">
+            <tr className="border-b border-neutral-200 bg-neutral-50/50 ">
+              <th className="sticky left-0 z-10 bg-neutral-50/50 px-5 py-4 text-left text-xs font-bold uppercase tracking-wider text-neutral-500 ">
                 Fonctionnalité
               </th>
               {plans.map((p) => (
                 <th
                   key={p.code}
-                  className={`px-4 py-4 text-center text-xs font-bold uppercase tracking-wider ${
-                    p.is_recommended
-                      ? 'text-blue-600 dark:text-blue-400'
+                  className={`px-4 py-4 text-center text-xs font-bold uppercase tracking-wider ${ p.is_recommended
+                      ? 'text-blue-600 '
                       : p.is_prestige
-                      ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-neutral-700 dark:text-neutral-300'
+                      ? 'text-amber-600 '
+                      : 'text-neutral-700 '
                   }`}
                 >
                   {p.display_name}
@@ -585,17 +580,16 @@ function ComparisonTable({ plans }: { plans: Plan[] }) {
             {COMPARE_ROWS.map((row, i) => (
               <tr
                 key={row.feature}
-                className={`border-b border-neutral-100 last:border-b-0 dark:border-neutral-800/50 ${
-                  i % 2 === 1 ? 'bg-neutral-50/30 dark:bg-neutral-950/30' : ''
+                className={`border-b border-neutral-100 last:border-b-0 ${ i % 2 === 1 ? 'bg-neutral-50/30 ' : ''
                 }`}
               >
-                <td className="sticky left-0 z-10 bg-inherit px-5 py-4 text-left font-medium text-neutral-900 dark:text-white">
+                <td className="sticky left-0 z-10 bg-inherit px-5 py-4 text-left font-medium text-neutral-900 ">
                   {row.feature}
                 </td>
                 {plans.map((p) => {
                   const v = row.values[p.code];
                   return (
-                    <td key={p.code} className="px-4 py-4 text-center text-neutral-700 dark:text-neutral-300">
+                    <td key={p.code} className="px-4 py-4 text-center text-neutral-700 ">
                       <CompareValue value={v} />
                     </td>
                   );
@@ -612,13 +606,13 @@ function ComparisonTable({ plans }: { plans: Plan[] }) {
 function CompareValue({ value }: { value: CompareCell }) {
   if (typeof value === 'boolean') {
     return value ? (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 ">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </span>
     ) : (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200/60 text-neutral-400 dark:bg-neutral-800/60 dark:text-neutral-600">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200/60 text-neutral-400 ">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
@@ -683,27 +677,27 @@ function SubscribeModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="animate-sheet-slide-up flex max-h-[100dvh] w-full max-w-lg flex-col rounded-t-3xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 sm:max-h-[90vh] sm:rounded-3xl"
+        className="animate-sheet-slide-up flex max-h-[100dvh] w-full max-w-lg flex-col rounded-t-3xl border border-neutral-200 bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl"
       >
         {/* Header — non scrollable */}
         <div className="flex-shrink-0 px-6 pt-6 sm:px-8 sm:pt-8">
           {/* Handle (mobile) */}
-          <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-700 sm:hidden" />
+          <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 sm:hidden" />
 
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Souscription</p>
-              <h3 className="mt-1 font-display text-2xl font-black tracking-tight text-neutral-900 dark:text-white">
+              <h3 className="mt-1 font-display text-2xl font-black tracking-tight text-neutral-900 ">
                 {plan.display_name}
               </h3>
-              <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="mt-0.5 text-sm text-neutral-600 ">
                 {formatXOF(price)} / {billing === 'monthly' ? 'mois' : 'an'}
               </p>
             </div>
             <button
               onClick={onClose}
               aria-label="Fermer"
-              className="rounded-full p-2 text-neutral-500 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="rounded-full p-2 text-neutral-500 transition hover:bg-neutral-100 "
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -716,7 +710,7 @@ function SubscribeModal({
         {/* Body scrollable */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5 sm:px-8">
         <div className="mt-0">
-          <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+          <p className="text-sm font-semibold text-neutral-700 ">
             Moyen de paiement
           </p>
           <p className="mt-1 text-xs text-neutral-500">
@@ -727,16 +721,15 @@ function SubscribeModal({
               <button
                 key={p.id}
                 onClick={() => setProvider(p.id)}
-                className={`flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
-                  provider === p.id
-                    ? 'border-primary-500 bg-primary-500/10 text-primary-600 dark:text-primary-400'
-                    : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300'
+                className={`flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${ provider === p.id
+                    ? 'border-primary-500 bg-primary-500/10 text-primary-600 '
+                    : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300 '
                 }`}
               >
                 <span className="text-lg leading-none">{p.icon}</span>
                 <span className="min-w-0 flex-1 truncate">{p.label}</span>
                 {p.note && (
-                  <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                  <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-neutral-500 ">
                     {p.note}
                   </span>
                 )}
@@ -752,7 +745,7 @@ function SubscribeModal({
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <p className="text-xs text-amber-700 dark:text-amber-300">
+            <p className="text-xs text-amber-700 ">
               <strong>Configuration en cours.</strong> Le paiement réel sera activé dans la prochaine mise à jour. Tu peux dès maintenant simuler la souscription pour découvrir l&apos;expérience.
             </p>
           </div>
@@ -762,12 +755,12 @@ function SubscribeModal({
 
         {/* Footer — non scrollable, sticky bottom */}
         <div
-          className="flex flex-shrink-0 flex-col-reverse gap-2 border-t border-neutral-100 bg-white px-6 py-4 dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row sm:justify-end sm:rounded-b-3xl sm:px-8 sm:py-5"
+          className="flex flex-shrink-0 flex-col-reverse gap-2 border-t border-neutral-100 bg-white px-6 py-4 sm:flex-row sm:justify-end sm:rounded-b-3xl sm:px-8 sm:py-5"
           style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
         >
           <button
             onClick={onClose}
-            className="rounded-2xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-2xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 "
           >
             Annuler
           </button>
@@ -806,63 +799,63 @@ function getCardStyle(accent: AccentColor): CardStyle {
   switch (accent) {
     case 'neutral':
       return {
-        container: 'border-neutral-200 bg-white/90 dark:border-neutral-800 dark:bg-neutral-900/80',
-        title: 'text-neutral-900 dark:text-white',
-        tagline: 'text-neutral-500 dark:text-neutral-500',
-        iconBg: 'bg-neutral-100 dark:bg-neutral-800',
-        iconColor: 'text-neutral-700 dark:text-neutral-300',
-        price: 'text-neutral-900 dark:text-white',
-        priceUnit: 'text-neutral-500 dark:text-neutral-500',
-        checkBg: 'bg-neutral-200 dark:bg-neutral-700',
-        checkIcon: 'text-neutral-700 dark:text-neutral-300',
-        featureText: 'text-neutral-700 dark:text-neutral-300',
-        cta: 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200',
+        container: 'border-neutral-200 bg-white/90 ',
+        title: 'text-neutral-900 ',
+        tagline: 'text-neutral-500 ',
+        iconBg: 'bg-neutral-100 ',
+        iconColor: 'text-neutral-700 ',
+        price: 'text-neutral-900 ',
+        priceUnit: 'text-neutral-500 ',
+        checkBg: 'bg-neutral-200 ',
+        checkIcon: 'text-neutral-700 ',
+        featureText: 'text-neutral-700 ',
+        cta: 'bg-neutral-900 text-white hover:bg-neutral-800 ',
       };
     case 'orange':
       return {
-        container: 'border-primary-500/30 bg-gradient-to-br from-primary-500/5 via-white to-amber-500/5 dark:from-primary-500/10 dark:via-neutral-900/80 dark:to-amber-500/5',
-        title: 'text-neutral-900 dark:text-white',
-        tagline: 'text-primary-600 dark:text-primary-400',
+        container: 'border-primary-500/30 bg-gradient-to-br from-primary-500/5 via-white to-amber-500/5 ',
+        title: 'text-neutral-900 ',
+        tagline: 'text-primary-600 ',
         iconBg: 'bg-primary-500/15',
-        iconColor: 'text-primary-600 dark:text-primary-400',
-        price: 'text-neutral-900 dark:text-white',
-        priceUnit: 'text-neutral-500 dark:text-neutral-500',
+        iconColor: 'text-primary-600 ',
+        price: 'text-neutral-900 ',
+        priceUnit: 'text-neutral-500 ',
         checkBg: 'bg-primary-500/15',
-        checkIcon: 'text-primary-600 dark:text-primary-400',
-        featureText: 'text-neutral-700 dark:text-neutral-200',
+        checkIcon: 'text-primary-600 ',
+        featureText: 'text-neutral-700 ',
         cta: 'bg-gradient-to-r from-primary-500 to-amber-500 text-white shadow-lg shadow-primary-500/30 hover:opacity-90',
       };
     case 'blue-purple':
       return {
-        container: 'border-blue-500/40 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-purple-500/10 ring-2 ring-blue-500/20 dark:from-blue-500/15 dark:via-purple-500/10 dark:to-purple-500/15',
-        title: 'text-neutral-900 dark:text-white',
-        tagline: 'text-blue-600 dark:text-blue-400',
+        container: 'border-blue-500/40 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-purple-500/10 ring-2 ring-blue-500/20 ',
+        title: 'text-neutral-900 ',
+        tagline: 'text-blue-600 ',
         iconBg: 'bg-gradient-to-br from-blue-500 to-purple-600 text-white',
         iconColor: 'text-white',
         price: 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent',
-        priceUnit: 'text-neutral-500 dark:text-neutral-500',
+        priceUnit: 'text-neutral-500 ',
         checkBg: 'bg-gradient-to-br from-blue-500 to-purple-600 text-white',
         checkIcon: 'text-white',
-        featureText: 'text-neutral-800 dark:text-neutral-100',
+        featureText: 'text-neutral-800 ',
         cta: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl shadow-blue-500/30 hover:opacity-90',
       };
     case 'purple-gold':
       return {
-        container: 'border-purple-500/40 bg-gradient-to-br from-purple-500/10 via-amber-500/5 to-amber-500/10 dark:from-purple-500/15 dark:via-amber-500/10 dark:to-amber-500/15',
-        title: 'text-neutral-900 dark:text-white',
-        tagline: 'text-purple-600 dark:text-purple-400',
+        container: 'border-purple-500/40 bg-gradient-to-br from-purple-500/10 via-amber-500/5 to-amber-500/10 ',
+        title: 'text-neutral-900 ',
+        tagline: 'text-purple-600 ',
         iconBg: 'bg-gradient-to-br from-purple-500 to-amber-500 text-white',
         iconColor: 'text-white',
         price: 'bg-gradient-to-r from-purple-600 to-amber-500 bg-clip-text text-transparent',
-        priceUnit: 'text-neutral-500 dark:text-neutral-500',
+        priceUnit: 'text-neutral-500 ',
         checkBg: 'bg-gradient-to-br from-purple-500 to-amber-500 text-white',
         checkIcon: 'text-white',
-        featureText: 'text-neutral-800 dark:text-neutral-100',
+        featureText: 'text-neutral-800 ',
         cta: 'bg-gradient-to-r from-purple-500 to-amber-500 text-white shadow-xl shadow-purple-500/30 hover:opacity-90',
       };
     case 'black-gold':
       return {
-        container: 'border-amber-500/40 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 text-white shadow-2xl shadow-amber-500/10 dark:from-black dark:via-neutral-950 dark:to-black',
+        container: 'border-amber-500/40 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 text-white shadow-2xl shadow-amber-500/10 ',
         title: 'bg-gradient-to-r from-amber-200 to-amber-500 bg-clip-text text-transparent',
         tagline: 'text-amber-400/80',
         iconBg: 'bg-gradient-to-br from-amber-400 to-amber-600',

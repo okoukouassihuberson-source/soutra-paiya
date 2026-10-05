@@ -10,14 +10,14 @@ export interface DayPoint { day: string; bookings: number; revenue_xof: number }
 export interface TopPoint { name: string; revenue_xof: number; bookings: number; kind: 'trip' | 'activity' }
 
 const COLORS = ['#FF6B1A', '#3b82f6', '#10b981', '#a855f7', '#ef4444', '#94a3b8'];
-const AXIS = { fontSize: 11, fill: '#a3a3a3' } as const;
+const AXIS = { fontSize: 11, fill: 'rgb(var(--n-600))' } as const;
 const dayLabel = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 
 function Tip({ active, payload, label, money }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-xs shadow-2xl">
-      {label && <p className="mb-1 text-neutral-400">{/^\d{4}-\d{2}-\d{2}$/.test(String(label)) ? `${String(label).slice(8, 10)}/${String(label).slice(5, 7)}/${String(label).slice(0, 4)}` : label}</p>}
+    <div className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs shadow-2xl">
+      {label && <p className="mb-1 text-neutral-700">{/^\d{4}-\d{2}-\d{2}$/.test(String(label)) ? `${String(label).slice(8, 10)}/${String(label).slice(5, 7)}/${String(label).slice(0, 4)}` : label}</p>}
       {payload.map((p: any, i: number) => (
         <p key={i} className="font-semibold" style={{ color: p.color || p.payload?.fill }}>
           {p.name}: {money ? formatXOF(p.value) : Number(p.value).toLocaleString('fr-FR')}
@@ -37,7 +37,7 @@ export function RevenueChart({ data }: { data: DayPoint[] }) {
             <stop offset="100%" stopColor="#FF6B1A" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
         <XAxis dataKey="day" tickFormatter={dayLabel} tick={AXIS} minTickGap={24} />
         <YAxis tick={AXIS} width={44} domain={[0, "auto"]} tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
         <Tooltip content={<Tip money />} />
@@ -51,7 +51,7 @@ export function BookingsChart({ data }: { data: DayPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data} margin={{ left: 0, right: 8, top: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" vertical={false} />
         <XAxis dataKey="day" tickFormatter={dayLabel} tick={AXIS} minTickGap={24} />
         <YAxis tick={AXIS} width={32} allowDecimals={false} domain={[0, "auto"]} />
         <Tooltip content={<Tip />} cursor={{ fill: 'rgba(255,255,255,.06)' }} />
@@ -66,7 +66,7 @@ export function TopChart({ data }: { data: TopPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={Math.max(160, rows.length * 38 + 24)}>
       <BarChart data={rows} layout="vertical" margin={{ left: 0, right: 16, top: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" horizontal={false} />
         <XAxis type="number" tick={AXIS} tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
         <YAxis type="category" dataKey="label" tick={AXIS} width={130} />
         <Tooltip content={<Tip money />} cursor={{ fill: 'rgba(255,255,255,.06)' }} />
