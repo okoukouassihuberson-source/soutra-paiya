@@ -49,7 +49,7 @@ export function PromoField({ value, onChange, preview }: {
         </button>
       </div>
       <div aria-live="polite" className="text-sm">
-        {err && value && <p className="text-danger">{t(`promo.err.${err}` as 'promo.err.generic') === `promo.err.${err}` ? t('promo.err.generic') : t(`promo.err.${err}` as 'promo.err.generic')}</p>}
+        {err && value && <p className="text-red-700">{t(`promo.err.${err}` as 'promo.err.generic') === `promo.err.${err}` ? t('promo.err.generic') : t(`promo.err.${err}` as 'promo.err.generic')}</p>}
         {!err && preview?.offer && preview.discount_xof > 0 && (
           <p className="font-medium text-success">
             {t(value && preview.offer.code ? 'promo.applied' : 'promo.auto', { title: preview.offer.title, amount: fmtXOF(preview.discount_xof) })}

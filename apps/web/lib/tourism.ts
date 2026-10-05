@@ -155,3 +155,13 @@ export async function tripPins(trips: TripCard[]): Promise<Map<string, { lat: nu
   }
   return out;
 }
+
+/** Voyages publiés pour la comparaison, dans l'ordre demandé (3 max). */
+export async function listTripsBySlugs(slugs: string[]): Promise<Trip[]> {
+  const wanted = slugs.slice(0, 3);
+  if (wanted.length === 0) return [];
+  const { data, error } = await db().from('trips').select('*').in('slug', wanted).in('status', ['published', 'full']);
+  if (error) console.error('[tourism] listTripsBySlugs', error);
+  const rows = (data ?? []) as Trip[];
+  return wanted.map((s) => rows.find((r) => r.slug === s)).filter((r): r is Trip => !!r);
+}

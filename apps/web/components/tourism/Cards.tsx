@@ -3,6 +3,7 @@ import { categoryEmoji, seatsLeft, activityCategoryEmoji, formatTripDates, type 
 import { getI18n } from '@/lib/i18n/server';
 import type { TripCard, VenueCard } from '@/lib/tourism';
 import type { ActivityCard } from '@/lib/activities';
+import { CompareToggle } from './CompareUi';
 
 function Cover({ src, alt }: { src: string | null; alt: string }) {
   return src
@@ -16,7 +17,8 @@ export function TripCardView({ trip }: { trip: TripCard }) {
   const left = seatsLeft(trip);
   const title = i.field(trip, 'title') ?? trip.title;
   return (
-    <Link href={i.lp(`/voyages/${trip.slug}`)} className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl">
+    <div className="relative h-full">
+    <Link href={i.lp(`/voyages/${trip.slug}`)} className="group block h-full overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl">
       <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
         <Cover src={trip.cover_url} alt={title} />
         {trip.highlight && (
@@ -30,12 +32,14 @@ export function TripCardView({ trip }: { trip: TripCard }) {
         <p className="text-sm text-neutral-600">{formatTripDates(trip.starts_on, trip.ends_on, i.intl)}</p>
         <div className="flex items-end justify-between pt-1">
           <p className="text-lg font-bold text-primary-700"><span className="text-xs font-normal text-neutral-500">{i.t('common.from')} </span>{i.fmtXOF(trip.base_price_xof)}</p>
-          <p className={`text-xs font-semibold ${left <= 5 ? 'text-danger' : 'text-neutral-500'}`}>
+          <p className={`text-xs font-semibold ${left <= 5 ? 'text-red-700' : 'text-neutral-500'}`}>
             {left === 0 ? i.t('cards.full') : i.tn('cards.seatsLeft', left)}
           </p>
         </div>
       </div>
     </Link>
+    <CompareToggle slug={trip.slug} title={title} />
+    </div>
   );
 }
 

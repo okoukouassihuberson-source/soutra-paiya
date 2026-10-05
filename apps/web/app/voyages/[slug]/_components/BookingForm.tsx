@@ -74,8 +74,8 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
         {busy ? t('booking.booking') : cta}
       </button>
       {msg && (msg.text === 'login'
-        ? <p className="text-sm text-danger">{t('booking.loginPrompt')}<Link className="underline" href="/login">{t('common.signIn')}</Link></p>
-        : <p role="status" className={`text-sm ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</p>)}
+        ? <p className="text-sm text-red-700">{t('booking.loginPrompt')}<Link className="underline" href="/login">{t('common.signIn')}</Link></p>
+        : <p role="status" className={`text-sm ${msg.ok ? 'text-success' : 'text-red-700'}`}>{msg.text}</p>)}
       {bookingId && <Link href={lp(`/mes-voyages/${bookingId}`)} className="block rounded-xl bg-emerald-600 py-3 text-center font-semibold text-white">{t('booking.payAndTicket')}</Link>}
     </form>
   );

@@ -130,7 +130,7 @@ export default async function TripPage({ params }: { params: { slug: string } })
               <div className="mt-3" role="img" aria-label={`${t('tripx.spotsTitle')} : ${t('tripx.filled', { pct })}`}>
                 <div className="h-2 overflow-hidden rounded-full bg-neutral-200"><div className={`h-full rounded-full ${left <= 5 ? 'bg-danger' : 'bg-primary-500'}`} style={{ width: `${pct}%` }} /></div>
               </div>
-              <p className={`mt-2 flex justify-between text-xs font-semibold ${left > 0 && left <= 5 ? 'text-danger' : 'text-neutral-600'}`}>
+              <p className={`mt-2 flex justify-between text-xs font-semibold ${left > 0 && left <= 5 ? 'text-red-700' : 'text-neutral-600'}`}>
                 <span>{left === 0 ? t('booking.full') : left <= 5 ? t('tripx.almostFull') : t('tripx.filled', { pct })}</span>
                 {left > 0 && <span>{i.tn('tripx.spotsLeft', left)}</span>}
               </p>

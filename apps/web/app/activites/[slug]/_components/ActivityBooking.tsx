@@ -93,8 +93,8 @@ export function ActivityBooking({ slots, basePrice, maxGroup, minAge }: {
       <PriceSummary preview={preview} fallback={unit * n} label={slot ? slotFmt(slot.starts_at) : ''} />
       <button disabled={busy || !slot} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-night hover:bg-primary-400 disabled:opacity-60">{busy ? t('act.booking') : t('act.book')}</button>
       {msg && (msg.text === 'login'
-        ? <p className="text-sm text-danger">{t('booking.loginPrompt')}<Link className="underline" href="/login">{t('common.signIn')}</Link></p>
-        : <p role="status" className={`text-sm ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</p>)}
+        ? <p className="text-sm text-red-700">{t('booking.loginPrompt')}<Link className="underline" href="/login">{t('common.signIn')}</Link></p>
+        : <p role="status" className={`text-sm ${msg.ok ? 'text-success' : 'text-red-700'}`}>{msg.text}</p>)}
       {msg?.id && <Link href={lp(`/mes-activites/${msg.id}`)} className="block rounded-xl bg-emerald-600 py-3 text-center font-semibold text-white">{t('booking.payAndTicket')}</Link>}
     </form>
   );

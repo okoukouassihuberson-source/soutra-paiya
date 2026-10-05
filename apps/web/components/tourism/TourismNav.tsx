@@ -3,6 +3,7 @@ import { getI18n } from '@/lib/i18n/server';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileDock } from '@/components/home/MobileDock';
+import { CompareBar } from './CompareUi';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CommandPalette } from '@/components/search/CommandPalette';
 import { AssistantDock } from './AssistantDock';
@@ -43,6 +44,7 @@ export function TourismNav() {
       </header>
       <MobileDock />
       <AssistantDock />
+      <CompareBar />
     </>
   );
 }
