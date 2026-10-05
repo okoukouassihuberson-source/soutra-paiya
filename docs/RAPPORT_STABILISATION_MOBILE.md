@@ -61,3 +61,28 @@ NON TESTÉ — nécessite exécution dans l'environnement du projet :
 - `ScrollView` conservés volontairement : wallet (15 transactions max), trending (20 à 50 éléments), search (résultats groupés plafonnés) ; tickets est passé en FlatList.
 
 À faire côté utilisateur : reconstruire le dev client, envoyer les lignes `[DIAG]` si le crash persiste, redéployer Vercel, appliquer la migration 0096. Retirer les logs `[DIAG]` de `index.js` une fois le crash réglé.
+
+## G. Audit Supabase — index et RLS (analyse statique des migrations 0001 → 0096)
+Méthode : lecture des migrations, pas d'accès à la base de production. Les tables créées hors historique de migrations (ex. `orders`, certaines colonnes) n'ont pas pu être vérifiées. **NON TESTÉ sur la base réelle** : exécuter la requête de contrôle ci-dessous.
+
+**Index (corrigé — `0097_fk_indexes.sql`)** : 11 index ajoutés sur des clés étrangères/filtres utilisés par l'app (`transactions.counterparty_id`, `chat_members.user_id`, `favorites.venue_id`, `events/activities.venue_id`, `reviews.user_id`, `follows.followed_id`, `sos_alerts.user_id`, `loyalty_reward_redemptions.user_id`, `tourism_offers.trip_id/activity_id`). Migration rejouée deux fois sur un Postgres 16 de test (tables factices) : syntaxe et idempotence OK. Les autres FK sans index sont de faible volume (colonnes `created_by`, `decided_by`, `resolved_by`…) et laissées.
+
+**RLS — vérifié OK** : les 85 tables ont la RLS activée (les 16 signalées par une première analyse l'activent bien dans 0022, 0041, 0050, 0082, 0087) ; aucune policy d'écriture en `using (true)` ; aucune fonction `security definer` sans `search_path` ; les 7 tables sans policy (`payment_pins`, `push_tokens`, `notification_outbox`…) ne sont lues par aucun client, donc « tout refusé sauf service_role » est le comportement voulu ; wallets/transactions n'ont plus de policy d'écriture client.
+
+**RLS — point à traiter (NON corrigé volontairement)** : `profiles_select_public` (`using (true)`, 0001) rend **toute la table `profiles` lisible, y compris sans connexion** avec la clé anon : `phone`, `email`, `kyc_id_number`, `kyc_id_type`, `kyc_doc_url`, `role`. Les PIN ont été déplacés dans `payment_pins` (privé), mais les données KYC et téléphones restent exposées.
+Pourquoi pas corrigé ici : un `revoke select (colonnes)` fait échouer tout `select('*')` sur `profiles`, et l'app lit ces colonnes pour l'utilisateur lui-même (`kyc.tsx`) et pour l'admin web. Correctif proposé, à faire avec une base de test :
+1. vue `public_profiles (id, full_name, avatar_url, bio, city)` pour l'affichage des auteurs, avis, etc. ;
+2. policy `select` limitée à `id = auth.uid() or is_admin() or is_moderator()` sur `profiles` ;
+3. RPC `security definer` pour la recherche par téléphone (déjà couverte par `search_my_universe`) ;
+4. migrer les requêtes de l'app qui joignent `profiles` (`author:user_id(...)`, wallet, chat) vers la vue.
+
+Contrôle à lancer sur la base réelle (SQL editor Supabase) :
+```sql
+-- tables sans RLS
+select relname from pg_class c join pg_namespace n on n.oid=c.relnamespace
+where n.nspname='public' and c.relkind='r' and not c.relrowsecurity;
+-- FK sans index couvrant
+select conrelid::regclass, a.attname from pg_constraint k
+join pg_attribute a on a.attrelid=k.conrelid and a.attnum=k.conkey[1]
+where k.contype='f' and not exists (select 1 from pg_index i where i.indrelid=k.conrelid and i.indkey[0]=k.conkey[1]);
+```
