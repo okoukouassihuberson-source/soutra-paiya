@@ -14,6 +14,7 @@ import {
   type ProModule,
 } from '@soutra/shared';
 import { VenueAnalytics } from './_components/VenueAnalytics';
+import { ProDashboardCharts } from './_components/ProDashboardCharts';
 import { ProRevenueDashboard } from './_components/ProRevenueDashboard';
 import { ShopProductsTab } from './_components/ShopProductsTab';
 import { ShopOrdersTab } from './_components/ShopOrdersTab';
@@ -1044,12 +1045,14 @@ function ProDashboard() {
               {/* ═══════════ DASHBOARD ═══════════ */}
               {tab === 'dashboard' && (
                 <>
-                  <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4">
                     <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-700" label="Réservations du jour" value={String(todayRes.length)} sub={`${reservations.length} au total`} />
                     <KpiCard icon={<IcoWallet className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-700" label="Chiffre d'affaires" value={formatXOF(revenue)} sub="Acomptes confirmés" />
                     <KpiCard icon={<IcoAlert className="h-5 w-5" />} iconBg={noShowRate > 15 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'} label="Taux de no-show" value={`${noShowRate}%`} sub={noShowRate > 15 ? 'Élevé — action requise' : 'Dans la norme'} />
                     <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-700" label="Note moyenne" value={`★ ${selectedVenue?.rating_avg?.toFixed(1) || '—'}`} sub={`${selectedVenue?.rating_count || 0} avis`} />
                   </div>
+
+                  <ProDashboardCharts reservations={reservations} />
 
                   <ReservationTable reservations={filtered} tableLoading={tableLoading} search={search} onSearch={setSearch} statusFilter={statusFilter} onStatusFilter={setStatusFilter} actionLoading={actionLoading} onUpdateStatus={updateStatus} />
                 </>
@@ -2067,15 +2070,13 @@ function ReservationTable({ reservations, tableLoading, search, onSearch, status
 
 function KpiCard({ icon, iconBg, label, value, sub }: { icon: React.ReactNode; iconBg: string; label: string; value: string; sub: string }) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-md sm:p-5 lg:p-6">
-      <div className="flex items-center gap-3 sm:gap-4">
-        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${iconBg}`}>{icon}</div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[11px] font-medium text-neutral-600 sm:text-xs">{label}</div>
-          <div className="mt-0.5 truncate font-display text-lg font-bold text-dark sm:text-2xl">{value}</div>
-        </div>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-md sm:p-5">
+      <div className="flex items-center gap-2.5">
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9 ${iconBg}`}>{icon}</div>
+        <div className="min-w-0 text-xs font-medium leading-tight text-neutral-700 sm:text-sm">{label}</div>
       </div>
-      <div className="mt-2 truncate text-[11px] text-neutral-600 sm:mt-3 sm:text-xs">{sub}</div>
+      <div className="mt-3 break-words font-display text-xl font-bold leading-tight text-dark sm:text-2xl">{value}</div>
+      <div className="mt-1 text-[11px] text-neutral-600 sm:text-xs">{sub}</div>
     </div>
   );
 }
