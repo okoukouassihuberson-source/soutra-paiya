@@ -7,6 +7,7 @@ import { useColors } from '@/lib/theme';
 import { useI18n, type TKey } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Banner, Btn, DateField, Field, Pill } from '@/components/organizer/OrgUi';
+import { orgTones } from '@/lib/organizer-theme';
 import { MAX_GENERATED_SLOTS, deleteSlot, generateSlots, listSlots, toggleSlot, type OrgSlot } from '@/lib/organizer';
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -16,7 +17,8 @@ export default function OrganizerSlotsScreen() {
   const { id, title } = useLocalSearchParams<{ id: string; title?: string }>();
   const c = useColors();
   const { t, intl } = useI18n();
-  const s = useMemo(() => makeStyles(c), [c]);
+  const k = useMemo(() => orgTones(c), [c]);
+  const s = useMemo(() => makeStyles(c, k), [c, k]);
   const [slots, setSlots] = useState<OrgSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -66,7 +68,7 @@ export default function OrganizerSlotsScreen() {
             const on = days.includes(d);
             return (
               <Pressable key={d} onPress={() => setDays((p) => (on ? p.filter((x) => x !== d) : [...p, d]))} accessibilityRole="checkbox" accessibilityState={{ checked: on }} style={[s.dow, on && { backgroundColor: c.primary[500], borderColor: c.primary[500] }]}>
-                <Text style={[s.dowText, on && { color: '#fff' }]}>{t(`org.slotsScreen.dow.${d}` as TKey)}</Text>
+                <Text style={[s.dowText, on && { color: k.onPrimary }]}>{t(`org.slotsScreen.dow.${d}` as TKey)}</Text>
               </Pressable>
             );
           })}
@@ -93,16 +95,16 @@ export default function OrganizerSlotsScreen() {
   );
 }
 
-function makeStyles(c: ColorPalette) {
+function makeStyles(c: ColorPalette, k: ReturnType<typeof orgTones>) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: c.light },
     label: { fontSize: typography.fontSize.xs, fontWeight: '700', color: c.neutral[600], marginBottom: 6 },
     dows: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.lg },
-    dow: { minWidth: 46, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, borderWidth: 1, borderColor: c.neutral[200], backgroundColor: '#fff', paddingHorizontal: 10 },
+    dow: { minWidth: 46, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, borderWidth: 1, borderColor: c.neutral[200], backgroundColor: k.surface, paddingHorizontal: 10 },
     dowText: { fontSize: typography.fontSize.sm, fontWeight: '600', color: c.dark },
     limit: { fontSize: typography.fontSize.xs, color: c.neutral[500], textAlign: 'center', marginTop: spacing.xs },
     empty: { fontSize: typography.fontSize.sm, color: c.neutral[600], textAlign: 'center' },
-    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#fff', borderRadius: radius.md, borderWidth: 1, borderColor: c.neutral[100], padding: spacing.md, marginBottom: spacing.sm },
+    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: k.surface, borderRadius: radius.md, borderWidth: 1, borderColor: c.neutral[100], padding: spacing.md, marginBottom: spacing.sm },
     when: { fontSize: typography.fontSize.sm, fontWeight: '700', color: c.dark },
     meta: { fontSize: typography.fontSize.xs, color: c.neutral[600] },
   });

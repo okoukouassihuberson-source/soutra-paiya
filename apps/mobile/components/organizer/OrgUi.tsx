@@ -4,13 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { radius, spacing, typography, type ColorPalette } from '@soutra/shared';
-import { useColors } from '@/lib/theme';
+import { orgTones, type ToneKey } from '@/lib/organizer-theme';
+import { useColors, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import { uploadTourismImage } from '@/lib/organizer';
 
 export function useOrgStyles() {
   const c = useColors();
-  return { c, s: useMemo(() => makeStyles(c), [c]) };
+  const k = useMemo(() => orgTones(c), [c]);
+  return { c, k, s: useMemo(() => makeStyles(c, k), [c, k]) };
 }
 
 export function Field({ label, value, onChange, multiline, keyboard, placeholder, maxLength }: {
@@ -28,7 +30,7 @@ export function Field({ label, value, onChange, multiline, keyboard, placeholder
 }
 
 export function Chips<T extends string>({ options, value, onChange, disabled }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; disabled?: boolean }) {
-  const { c, s } = useOrgStyles();
+  const { c, k, s } = useOrgStyles();
   return (
     <View style={s.chips}>
       {options.map((o) => {
@@ -36,7 +38,7 @@ export function Chips<T extends string>({ options, value, onChange, disabled }: 
         return (
           <Pressable key={o.value} disabled={disabled} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ selected: active, disabled }}
             style={[s.chip, active && { backgroundColor: c.primary[500], borderColor: c.primary[500] }, disabled && { opacity: 0.6 }]}>
-            <Text style={[s.chipText, active && { color: '#fff' }]}>{o.label}</Text>
+            <Text style={[s.chipText, active && { color: k.onPrimary }]}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -51,6 +53,7 @@ const fromIso = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T1
 export function DateField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const { c, s } = useOrgStyles();
   const { intl } = useI18n();
+  const { resolved } = useTheme();
   const [show, setShow] = useState(false);
   return (
     <View style={s.field}>
@@ -62,7 +65,7 @@ export function DateField({ label, value, onChange }: { label: string; value: st
         </Text>
       </Pressable>
       {show && (
-        <DateTimePicker value={fromIso(value)} mode="date" onChange={(_e, d) => { setShow(Platform.OS === 'ios'); if (d) onChange(iso(d)); }} />
+        <DateTimePicker value={fromIso(value)} mode="date" themeVariant={resolved} onChange={(_e, d) => { setShow(Platform.OS === 'ios'); if (d) onChange(iso(d)); }} />
       )}
     </View>
   );
@@ -119,20 +122,16 @@ export function Kpi({ label, value }: { label: string; value: string | number })
   );
 }
 
-export function Pill({ text, tone }: { text: string; tone: 'amber' | 'green' | 'blue' | 'grey' | 'red' | 'orange' }) {
-  const { s } = useOrgStyles();
-  const t = TONES[tone];
+export function Pill({ text, tone }: { text: string; tone: ToneKey }) {
+  const { k, s } = useOrgStyles();
+  const t = k.pill[tone];
   return <View style={[s.pill, { backgroundColor: t.bg }]}><Text style={[s.pillText, { color: t.fg }]}>{text}</Text></View>;
 }
-const TONES = {
-  amber: { bg: '#FEF3C7', fg: '#92400E' }, green: { bg: '#D1FAE5', fg: '#065F46' }, blue: { bg: '#DBEAFE', fg: '#1E40AF' },
-  grey: { bg: '#E5E7EB', fg: '#374151' }, red: { bg: '#FEE2E2', fg: '#B91C1C' }, orange: { bg: '#FFEDD5', fg: '#9A3412' },
-} as const;
 
 export function Btn({ label, onPress, kind = 'neutral', disabled, busy }: { label: string; onPress: () => void; kind?: 'primary' | 'green' | 'neutral' | 'danger'; disabled?: boolean; busy?: boolean }) {
-  const { c, s } = useOrgStyles();
-  const bg = kind === 'primary' ? c.primary[500] : kind === 'green' ? '#059669' : kind === 'danger' ? '#DC2626' : c.neutral[100];
-  const fg = kind === 'neutral' ? c.dark : '#fff';
+  const { c, k, s } = useOrgStyles();
+  const bg = kind === 'primary' ? c.primary[500] : kind === 'green' ? k.green : kind === 'danger' ? k.danger : c.neutral[100];
+  const fg = kind === 'neutral' ? c.dark : kind === 'primary' ? k.onPrimary : '#fff';
   return (
     <Pressable onPress={onPress} disabled={disabled || busy} accessibilityRole="button" style={({ pressed }) => [s.btn, { backgroundColor: bg }, (disabled || busy) && { opacity: 0.6 }, pressed && { opacity: 0.85 }]}>
       {busy ? <ActivityIndicator color={fg} size="small" /> : <Text style={[s.btnText, { color: fg }]}>{label}</Text>}
@@ -141,24 +140,25 @@ export function Btn({ label, onPress, kind = 'neutral', disabled, busy }: { labe
 }
 
 export function Banner({ ok, text }: { ok: boolean; text: string }) {
-  const { s } = useOrgStyles();
-  return <View accessibilityRole="alert" style={[s.banner, { backgroundColor: ok ? '#D1FAE5' : '#FEE2E2' }]}><Text style={{ color: ok ? '#065F46' : '#B91C1C', fontSize: typography.fontSize.sm }}>{text}</Text></View>;
+  const { k, s } = useOrgStyles();
+  const t = ok ? k.ok : k.err;
+  return <View accessibilityRole="alert" style={[s.banner, { backgroundColor: t.bg }]}><Text style={{ color: t.fg, fontSize: typography.fontSize.sm }}>{text}</Text></View>;
 }
 
-function makeStyles(c: ColorPalette) {
+function makeStyles(c: ColorPalette, k: ReturnType<typeof orgTones>) {
   return StyleSheet.create({
     field: { marginBottom: spacing.md },
     label: { fontSize: typography.fontSize.xs, fontWeight: '700', color: c.neutral[600], marginBottom: 6 },
     input: { backgroundColor: c.neutral[50], borderRadius: radius.md, borderWidth: 1, borderColor: c.neutral[200], paddingHorizontal: spacing.md, paddingVertical: spacing.md, fontSize: typography.fontSize.base, color: c.dark },
     dateBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-    chip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full, borderWidth: 1, borderColor: c.neutral[200], backgroundColor: '#fff' },
+    chip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full, borderWidth: 1, borderColor: c.neutral[200], backgroundColor: k.surface },
     chipText: { fontSize: typography.fontSize.sm, fontWeight: '600', color: c.dark },
     imgRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     thumb: { width: 88, height: 88, borderRadius: radius.md, backgroundColor: c.neutral[100] },
     addThumb: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: c.neutral[300] },
     thumbX: { position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center' },
-    kpi: { flexBasis: '47%', flexGrow: 1, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: c.neutral[100], padding: spacing.md },
+    kpi: { flexBasis: '47%', flexGrow: 1, backgroundColor: k.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.neutral[100], padding: spacing.md },
     kpiLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', color: c.neutral[500], letterSpacing: 0.4 },
     kpiValue: { marginTop: 4, fontSize: typography.fontSize.lg, fontWeight: '800', color: c.dark },
     pill: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.full },

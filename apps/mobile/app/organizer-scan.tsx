@@ -7,13 +7,15 @@ import { useColors } from '@/lib/theme';
 import { useI18n, type TKey } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Banner, Btn } from '@/components/organizer/OrgUi';
+import { orgTones } from '@/lib/organizer-theme';
 import { validateTicket, type ScanResult } from '@/lib/organizer';
 
 /** /organizer-scan — validation des billets (voyage / activité) à l'embarquement : caméra ou saisie du code. */
 export default function OrganizerScanScreen() {
   const c = useColors();
   const { t } = useI18n();
-  const s = useMemo(() => makeStyles(c), [c]);
+  const k = useMemo(() => orgTones(c), [c]);
+  const s = useMemo(() => makeStyles(c, k), [c, k]);
   const [perm, requestPerm] = useCameraPermissions();
   const [cam, setCam] = useState(false);
   const [code, setCode] = useState('');
@@ -58,11 +60,11 @@ export default function OrganizerScanScreen() {
 
         {err && <Banner ok={false} text={err} />}
         {res && (
-          <View accessibilityRole="alert" style={[s.result, { backgroundColor: res.ok ? '#D1FAE5' : '#FEE2E2' }]}>
-            <Text style={[s.resultTitle, { color: res.ok ? '#065F46' : '#B91C1C' }]}>{res.ok ? t('org.scanScreen.valid') : `${t('org.scanScreen.refused')} — ${reason}`}</Text>
+          <View accessibilityRole="alert" style={[s.result, { backgroundColor: (res.ok ? k.ok : k.err).bg }]}>
+            <Text style={[s.resultTitle, { color: (res.ok ? k.ok : k.err).fg }]}>{res.ok ? t('org.scanScreen.valid') : `${t('org.scanScreen.refused')} — ${reason}`}</Text>
             {!!res.traveler && <Text style={s.resultLine}>{res.traveler}</Text>}
             {res.ok && <Text style={s.resultLine}>{res.trip ?? res.activity} · {res.reference} · {t('org.pers', { n: res.participants ?? 0 })}</Text>}
-            {res.ok && !!res.balance_due_xof && <Text style={[s.resultLine, { color: '#92400E', fontWeight: '800' }]}>{t('org.scanScreen.balance', { amount: formatXOF(res.balance_due_xof) })}</Text>}
+            {res.ok && !!res.balance_due_xof && <Text style={[s.resultLine, { color: k.warn, fontWeight: '800' }]}>{t('org.scanScreen.balance', { amount: formatXOF(res.balance_due_xof) })}</Text>}
             <View style={{ marginTop: spacing.sm }}><Btn label={t('org.scanScreen.again')} onPress={() => { setRes(null); setCode(''); startCam(); }} /></View>
           </View>
         )}
@@ -71,15 +73,15 @@ export default function OrganizerScanScreen() {
   );
 }
 
-function makeStyles(c: ColorPalette) {
+function makeStyles(c: ColorPalette, k: ReturnType<typeof orgTones>) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: c.light },
     camBox: { height: 320, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: '#000', justifyContent: 'flex-end' },
     aim: { color: '#fff', textAlign: 'center', padding: spacing.sm, backgroundColor: 'rgba(0,0,0,0.5)', fontSize: typography.fontSize.sm },
     manual: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-    input: { flex: 1, backgroundColor: '#fff', borderRadius: radius.md, borderWidth: 1, borderColor: c.neutral[200], paddingHorizontal: spacing.md, paddingVertical: spacing.md, fontSize: typography.fontSize.base, color: c.dark },
+    input: { flex: 1, backgroundColor: k.surface, borderRadius: radius.md, borderWidth: 1, borderColor: c.neutral[200], paddingHorizontal: spacing.md, paddingVertical: spacing.md, fontSize: typography.fontSize.base, color: c.dark },
     result: { borderRadius: radius.lg, padding: spacing.md, gap: 4 },
     resultTitle: { fontSize: typography.fontSize.lg, fontWeight: '800' },
-    resultLine: { fontSize: typography.fontSize.sm, color: c.dark },
+    resultLine: { fontSize: typography.fontSize.sm, color: k.resultText },
   });
 }

@@ -9,6 +9,7 @@ import { useColors } from '@/lib/theme';
 import { useI18n, type TKey } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Banner, Btn, Kpi, Pill } from '@/components/organizer/OrgUi';
+import { orgTones } from '@/lib/organizer-theme';
 import {
   ORGANIZER_ROLES, closeTripSales, getActivityBookings, getActivityDashboard, getMyCommission, getMyRole, getTripBookings, getTripDashboard,
   orgError, setActivityStatus, submitActivity, submitTrip,
@@ -25,7 +26,8 @@ export default function OrganizerScreen() {
   const router = useRouter();
   const c = useColors();
   const { t, intl } = useI18n();
-  const s = useMemo(() => makeStyles(c), [c]);
+  const k = useMemo(() => orgTones(c), [c]);
+  const s = useMemo(() => makeStyles(c, k), [c, k]);
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>('trips');
   const [trips, setTrips] = useState<OrgTripDash | null>(null);
@@ -96,9 +98,9 @@ export default function OrganizerScreen() {
           <Text style={s.commission}>💼 {t('org.commission', { trip: Number(comm.trip_pct), act: Number(comm.activity_pct), taken: formatXOF(Number(comm.commission_xof)), collected: formatXOF(Number(comm.collected_xof)) })}</Text>
         )}
         <View style={s.tabs} accessibilityRole="tablist">
-          {(['trips', 'acts'] as Tab[]).map((k) => (
-            <Pressable key={k} onPress={() => { setTab(k); setOpen(null); setMsg(null); }} accessibilityRole="tab" accessibilityState={{ selected: tab === k }} style={[s.tab, tab === k && { backgroundColor: c.primary[500], borderColor: c.primary[500] }]}>
-              <Text style={[s.tabText, tab === k && { color: '#fff' }]}>{k === 'trips' ? `🚌 ${t('org.tabTrips')}` : `🎯 ${t('org.tabActs')}`}</Text>
+          {(['trips', 'acts'] as Tab[]).map((key) => (
+            <Pressable key={key} onPress={() => { setTab(key); setOpen(null); setMsg(null); }} accessibilityRole="tab" accessibilityState={{ selected: tab === key }} style={[s.tab, tab === key && { backgroundColor: c.primary[500], borderColor: c.primary[500] }]}>
+              <Text style={[s.tabText, tab === key && { color: k.onPrimary }]}>{key === 'trips' ? `🚌 ${t('org.tabTrips')}` : `🎯 ${t('org.tabActs')}`}</Text>
             </Pressable>
           ))}
         </View>
@@ -170,7 +172,8 @@ export default function OrganizerScreen() {
 function BookingList({ kind, rows, label }: { kind: Tab; rows: OrgBooking[] | null; label: (k: Tab, s: string) => string }) {
   const c = useColors();
   const { t, intl } = useI18n();
-  const s = useMemo(() => makeStyles(c), [c]);
+  const k = useMemo(() => orgTones(c), [c]);
+  const s = useMemo(() => makeStyles(c, k), [c, k]);
   if (!rows) return <ActivityIndicator style={{ marginTop: spacing.md }} color={c.primary[500]} />;
   if (rows.length === 0) return <Text style={[s.emptyText, { marginTop: spacing.md }]}>{t('org.noBookings')}</Text>;
   return (
@@ -189,20 +192,20 @@ function BookingList({ kind, rows, label }: { kind: Tab; rows: OrgBooking[] | nu
   );
 }
 
-function makeStyles(c: ColorPalette) {
+function makeStyles(c: ColorPalette, k: ReturnType<typeof orgTones>) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: c.light },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
     emptyTitle: { fontSize: typography.fontSize.lg, fontWeight: '700', color: c.dark, textAlign: 'center' },
     emptyText: { fontSize: typography.fontSize.sm, color: c.neutral[600], textAlign: 'center' },
-    commission: { fontSize: typography.fontSize.xs, color: c.neutral[700], backgroundColor: '#fff', borderWidth: 1, borderColor: c.neutral[100], borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, lineHeight: 18 },
+    commission: { fontSize: typography.fontSize.xs, color: c.neutral[700], backgroundColor: k.surface, borderWidth: 1, borderColor: c.neutral[100], borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, lineHeight: 18 },
     tabs: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-    tab: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, borderWidth: 1, borderColor: c.neutral[200], backgroundColor: '#fff' },
+    tab: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, borderWidth: 1, borderColor: c.neutral[200], backgroundColor: k.surface },
     tabText: { fontSize: typography.fontSize.sm, fontWeight: '700', color: c.dark },
     kpis: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
     headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md, gap: spacing.sm },
     h2: { fontSize: typography.fontSize.lg, fontWeight: '800', color: c.dark, flexShrink: 1 },
-    card: { backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: c.neutral[100], padding: spacing.md, marginBottom: spacing.md, gap: 4 },
+    card: { backgroundColor: k.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: c.neutral[100], padding: spacing.md, marginBottom: spacing.md, gap: 4 },
     pills: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
     cardTitle: { fontSize: typography.fontSize.base, fontWeight: '800', color: c.dark, marginTop: 4 },
     meta: { fontSize: typography.fontSize.xs, color: c.neutral[600] },
