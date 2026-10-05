@@ -442,6 +442,12 @@ export const en: Dict = {
   claimStatus: { label: 'Claim: {status}', pending: 'Pending', reviewing: 'Under review', approved: 'Approved', rejected: 'Rejected', cancelled: 'Cancelled' },
   submissionStatus: { pending: 'Pending', reviewing: 'Under review', approved: 'Approved', rejected: 'Rejected', duplicate: 'Duplicate' },
   sys: {
+    offline: 'Offline', offlineHint: 'The last data loaded stays visible.', weak: 'Weak connection', back: 'Back online',
+    loading: 'Loading…', errNetwork: 'Something went wrong. Check your connection and try again.', errTimeout: 'The connection is too slow. Try again in a moment.',
+    staleData: 'Saved data — can’t refresh right now.', empty: 'Nothing to show yet.',
+    cfgTitle: 'Incomplete setup', cfgBody: 'The app is not configured correctly (server missing). Reinstall the latest version or contact support.',
+    sessionErr: 'Couldn’t verify your session. Check your connection — you can continue and sign in again.', checking: 'Checking your session…', continue: 'Continue',
+    routeErrTitle: 'This screen ran into a problem', home: 'Back to home', imgFail: 'Image unavailable', showMore: 'Show more ({n})',
     destination: 'Destination', mapUnavailTitle: 'Directions unavailable', mapUnavailBody: 'No maps app is installed on this phone.', badNumber: 'Invalid number', badPhoneBody: 'The phone number is empty or invalid.', callUnavailTitle: 'Call unavailable', callUnavailBody: 'Could not open the dialler on this phone.',
     badWaBody: 'The WhatsApp number is empty.', waUnavailTitle: 'WhatsApp unavailable', waUnavailBody: 'Could not open WhatsApp on this phone.',
     permTitle: 'Permission required', permCover: 'Allow access to your photos to choose a cover.', permCoverCam: 'Allow the camera to take a cover photo.', permAvatar: 'Allow access to your photos to choose an avatar.', permAvatarCam: 'Allow the camera to take an avatar.',

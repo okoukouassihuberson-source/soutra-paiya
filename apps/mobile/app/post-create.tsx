@@ -8,6 +8,7 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { useAuth } from '@/lib/auth-context';
 import { createPost } from '@/lib/social';
 import { useI18n } from '@/lib/i18n';
+import { compressAsset } from '@/lib/image-compress';
 
 const MAX_LEN = 1000;
 
@@ -27,12 +28,11 @@ export default function PostCreate() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      base64: true,
       quality: 0.7,
       allowsEditing: false,
     });
     if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
+    const asset = await compressAsset(result.assets[0]);
     // Garde-fou taille (8 Mo équivalent base64 ~ 11 Mo)
     if (asset.fileSize && asset.fileSize > 8 * 1024 * 1024) {
       Alert.alert(t('compose.bigTitle'), t('compose.bigBody'));

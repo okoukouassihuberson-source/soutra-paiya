@@ -23,6 +23,7 @@ import {
 } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { useI18n, type TKey } from '@/lib/i18n';
+import { compressAsset } from '@/lib/image-compress';
 import {
   listMyProVenues, getVenueDetail, updateProVenue, uploadVenueMedia,
   type ProVenue, type VenueDetail,
@@ -133,12 +134,14 @@ export default function ProManage() {
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, base64: true, allowsEditing: kind !== 'gallery',
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: kind !== 'gallery',
     });
-    if (res.canceled || !res.assets[0]?.base64 || !venueId) return;
+    if (res.canceled || !res.assets[0] || !venueId) return;
+    const packed = await compressAsset(res.assets[0], { maxSide: kind === 'gallery' ? 1280 : 1600 });
+    if (!packed.base64) return;
     setUploadingKind(kind);
     try {
-      const url = await uploadVenueMedia(venueId, kind, res.assets[0].base64, galleryUrls);
+      const url = await uploadVenueMedia(venueId, kind, packed.base64, galleryUrls);
       if (kind === 'logo') setLogoUrl(url);
       else if (kind === 'cover') setCoverUrl(url);
       else setGalleryUrls((prev) => [...prev, url]);

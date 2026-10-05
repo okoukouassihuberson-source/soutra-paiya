@@ -11,6 +11,8 @@ export interface SupabaseConfig {
   autoRefreshToken?: boolean;
   persistSession?: boolean;
   detectSessionInUrl?: boolean;
+  /** fetch personnalisé (ex. avec délai d'attente sur mobile). */
+  fetch?: typeof fetch;
 }
 
 export function createSupabase(config: SupabaseConfig): SupabaseDb {
@@ -21,5 +23,6 @@ export function createSupabase(config: SupabaseConfig): SupabaseDb {
       persistSession: config.persistSession ?? true,
       detectSessionInUrl: config.detectSessionInUrl ?? false,
     },
+    ...(config.fetch ? { global: { fetch: config.fetch } } : {}),
   });
 }

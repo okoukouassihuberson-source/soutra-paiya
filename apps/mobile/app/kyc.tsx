@@ -12,6 +12,7 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { useI18n, type TKey } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { compressAsset } from '@/lib/image-compress';
 
 const ID_TYPES = ['CNI', 'Passeport', 'Permis de conduire'];
 
@@ -60,11 +61,10 @@ export default function Kyc() {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.6,
-      base64: true,
       allowsEditing: true,
     });
     if (res.canceled || !res.assets?.[0]) return;
-    const asset = res.assets[0];
+    const asset = await compressAsset(res.assets[0]);
     if (!asset.base64) {
       Alert.alert(t('kyc.error'), t('kyc.unreadable'));
       return;

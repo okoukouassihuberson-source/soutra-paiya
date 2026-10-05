@@ -229,7 +229,7 @@ function TransactionHistory({
           .limit(15);
         if (!mounted) return;
         if (error) { console.error('[wallet] tx error:', error); setTxs([]); }
-        else { setTxs((data as Transaction[]) ?? []); }
+        else { setTxs((data as unknown as Transaction[]) ?? []); }
       } catch (err) {
         console.error('[wallet] tx unexpected:', err);
         if (mounted) setTxs([]);

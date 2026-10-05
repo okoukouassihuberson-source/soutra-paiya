@@ -8,6 +8,7 @@ import { orgTones, type ToneKey } from '@/lib/organizer-theme';
 import { useColors, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import { uploadTourismImage } from '@/lib/organizer';
+import { compressAsset } from '@/lib/image-compress';
 
 export function useOrgStyles() {
   const c = useColors();
@@ -79,8 +80,8 @@ export function ImageField({ label, userId, urls, onChange, multiple }: { label:
   async function pick() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) { Alert.alert(t('org.img.add'), t('org.img.permBody')); return; }
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, base64: true, allowsEditing: !multiple, aspect: [16, 9] });
-    const b64 = res.canceled ? null : res.assets[0]?.base64;
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, allowsEditing: !multiple, aspect: [16, 9] });
+    const b64 = res.canceled || !res.assets[0] ? null : (await compressAsset(res.assets[0])).base64;
     if (!b64) return;
     setBusy(true);
     try {

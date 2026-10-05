@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 import { supabase } from './supabase';
 import { tr } from '@/lib/i18n';
+import { compressAsset } from './image-compress';
 
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5 Mo après compression
 
@@ -27,13 +28,12 @@ export async function pickAvatarFromGallery(): Promise<ImagePicker.ImagePickerAs
   }
   const r = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    base64: true,
     quality: 0.6,
     allowsEditing: true,
     aspect: [1, 1], // recadrage carré -> compatible avec l'affichage rond
   });
   if (r.canceled || !r.assets[0]) return null;
-  return validateOrAlert(r.assets[0]);
+  return validateOrAlert(await compressAsset(r.assets[0], { maxSide: 512 }));
 }
 
 /** Demande la permission caméra et ouvre l'appareil photo. */
@@ -45,13 +45,12 @@ export async function pickAvatarFromCamera(): Promise<ImagePicker.ImagePickerAss
   }
   const r = await ImagePicker.launchCameraAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    base64: true,
     quality: 0.6,
     allowsEditing: true,
     aspect: [1, 1],
   });
   if (r.canceled || !r.assets[0]) return null;
-  return validateOrAlert(r.assets[0]);
+  return validateOrAlert(await compressAsset(r.assets[0], { maxSide: 512 }));
 }
 
 function validateOrAlert(asset: ImagePicker.ImagePickerAsset): ImagePicker.ImagePickerAsset | null {

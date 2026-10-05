@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { radius, spacing, typography, type ColorPalette, type Destination } from '@soutra/shared';
+import { radius, spacing, typography, type ColorPalette, } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { listDestinations } from '@/lib/tourism';
+import { listDestinations, type DestinationCard as Destination } from '@/lib/tourism';
 
 /** /destinations — villes, régions et sites à découvrir (toucher une carte pour lire la présentation). */
 export default function DestinationsScreen() {

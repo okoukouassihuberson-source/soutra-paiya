@@ -444,6 +444,12 @@ export const fr = {
   claimStatus: { label: 'Revendication : {status}', pending: 'En attente', reviewing: 'En revue', approved: 'Approuvée', rejected: 'Refusée', cancelled: 'Annulée' },
   submissionStatus: { pending: 'En attente', reviewing: 'En examen', approved: 'Approuvée', rejected: 'Refusée', duplicate: 'Doublon' },
   sys: {
+    offline: 'Hors connexion', offlineHint: 'Les dernières données chargées restent visibles.', weak: 'Connexion faible', back: 'Connexion rétablie',
+    loading: 'Chargement…', errNetwork: 'Une erreur est survenue. Vérifie ta connexion puis réessaie.', errTimeout: 'La connexion est trop lente. Réessaie dans un instant.',
+    staleData: 'Données enregistrées — mise à jour impossible pour le moment.', empty: 'Rien à afficher pour le moment.',
+    cfgTitle: 'Configuration incomplète', cfgBody: 'L’application n’est pas configurée correctement (serveur manquant). Réinstalle la dernière version ou contacte le support.',
+    sessionErr: 'Impossible de vérifier ta session. Vérifie ta connexion, tu peux continuer et te reconnecter.', checking: 'Vérification de ta session…', continue: 'Continuer',
+    routeErrTitle: 'Cet écran a rencontré un problème', home: 'Retour à l’accueil', imgFail: 'Image indisponible', showMore: 'Voir plus ({n})',
     destination: 'Destination', mapUnavailTitle: 'Itinéraire indisponible', mapUnavailBody: 'Aucune application de cartographie installée sur ce téléphone.', badNumber: 'Numéro invalide', badPhoneBody: 'Le numéro de téléphone est vide ou invalide.', callUnavailTitle: 'Appel indisponible', callUnavailBody: 'Impossible d’ouvrir le composeur sur ce téléphone.',
     badWaBody: 'Le numéro WhatsApp est vide.', waUnavailTitle: 'WhatsApp indisponible', waUnavailBody: 'Impossible d’ouvrir WhatsApp sur ce téléphone.',
     permTitle: 'Permission requise', permCover: 'Autorise l’accès à tes photos pour choisir une couverture.', permCoverCam: 'Autorise la caméra pour prendre une couverture.', permAvatar: 'Autorise l’accès à tes photos pour choisir un avatar.', permAvatarCam: 'Autorise la caméra pour prendre un avatar.',

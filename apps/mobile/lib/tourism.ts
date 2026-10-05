@@ -6,6 +6,7 @@
 import type { Activity, ActivitySlot, Destination, Trip, TripItineraryDay, TripPackage, TripScope } from '@soutra/shared';
 import { supabase } from './supabase';
 import { tr, intlLocale, type TKey } from './i18n';
+import { cachedQuery } from './query-cache';
 
 const db = supabase as any;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -75,10 +76,17 @@ export async function getActivity(slug: string): Promise<{ activity: Activity; s
   };
 }
 
-export async function listDestinations(limit = 40): Promise<Destination[]> {
-  const { data, error } = await db.from('destinations').select('*').eq('is_published', true).order('name').limit(limit);
-  if (error) throw error;
-  return (data ?? []) as Destination[];
+export type DestinationCard = Pick<Destination, 'id' | 'slug' | 'name' | 'kind' | 'country_code' | 'tagline' | 'cover_url' | 'is_featured' | 'i18n'>;
+const DEST_CARD = 'id, slug, name, kind, country_code, tagline, cover_url, is_featured, i18n';
+
+/** Liste des destinations : colonnes d'affichage seulement, cache 10 min + copie hors ligne. */
+export async function listDestinations(limit = 40): Promise<DestinationCard[]> {
+  const { data } = await cachedQuery<DestinationCard[]>(`destinations:${limit}`, async () => {
+    const { data, error } = await db.from('destinations').select(DEST_CARD).eq('is_published', true).order('name').limit(limit);
+    if (error) throw error;
+    return (data ?? []) as DestinationCard[];
+  }, { ttlMs: 10 * 60_000 });
+  return data;
 }
 
 // --- Offres ---------------------------------------------------------------

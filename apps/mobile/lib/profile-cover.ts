@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 import { supabase } from './supabase';
 import { tr } from '@/lib/i18n';
+import { compressAsset } from './image-compress';
 
 const COVER_MAX_BYTES = 8 * 1024 * 1024;
 
@@ -26,13 +27,12 @@ export async function pickCoverFromGallery(): Promise<ImagePicker.ImagePickerAss
   }
   const r = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    base64: true,
     quality: 0.65,
     allowsEditing: true,
     aspect: [16, 9],
   });
   if (r.canceled || !r.assets[0]) return null;
-  return validateOrAlert(r.assets[0]);
+  return validateOrAlert(await compressAsset(r.assets[0], { maxSide: 1280 }));
 }
 
 export async function pickCoverFromCamera(): Promise<ImagePicker.ImagePickerAsset | null> {
@@ -43,13 +43,12 @@ export async function pickCoverFromCamera(): Promise<ImagePicker.ImagePickerAsse
   }
   const r = await ImagePicker.launchCameraAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    base64: true,
     quality: 0.65,
     allowsEditing: true,
     aspect: [16, 9],
   });
   if (r.canceled || !r.assets[0]) return null;
-  return validateOrAlert(r.assets[0]);
+  return validateOrAlert(await compressAsset(r.assets[0], { maxSide: 1280 }));
 }
 
 function validateOrAlert(asset: ImagePicker.ImagePickerAsset): ImagePicker.ImagePickerAsset | null {

@@ -8,6 +8,7 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { useAuth } from '@/lib/auth-context';
 import { createStory } from '@/lib/stories';
 import { useI18n } from '@/lib/i18n';
+import { compressAsset } from '@/lib/image-compress';
 
 export default function StoryCreate() {
   const { t } = useI18n();
@@ -32,7 +33,6 @@ export default function StoryCreate() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      base64: true,
       quality: 0.7,
       allowsEditing: false,
     });
@@ -40,7 +40,7 @@ export default function StoryCreate() {
       router.back();
       return;
     }
-    const asset = result.assets[0];
+    const asset = await compressAsset(result.assets[0]);
     if (asset.fileSize && asset.fileSize > 8 * 1024 * 1024) {
       Alert.alert(t('compose.bigTitle'), t('compose.bigBody'));
       router.back();

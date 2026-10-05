@@ -30,6 +30,7 @@ import { useI18n, type TKey } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { submitVenueClaim } from '@/lib/venue-claims';
+import { compressAsset } from '@/lib/image-compress';
 
 interface Props {
   visible: boolean;
@@ -98,12 +99,11 @@ export function ClaimSheet({ visible, onClose, venueId, venueName, onSubmitted }
     }
     const r = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      base64: true,
       quality: 0.7,
       allowsEditing: false,
     });
     if (r.canceled || !r.assets[0]) return;
-    const asset = r.assets[0];
+    const asset = await compressAsset(r.assets[0]);
     if (asset.fileSize && asset.fileSize > 8 * 1024 * 1024) {
       Alert.alert(t('claim.bigTitle'), t('claim.bigBody'));
       return;
