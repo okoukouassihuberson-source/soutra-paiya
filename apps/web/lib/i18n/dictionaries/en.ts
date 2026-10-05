@@ -813,4 +813,9 @@ export const en: Dict = {
     "factSeats": "Seats",
     "jumpToBooking": "Go to booking",
   },
+  "recent": {
+    "title": "Pick up where you left off",
+    "clear": "Clear",
+    "kind": { "trip": "Trip", "activity": "Activity" },
+  },
 };

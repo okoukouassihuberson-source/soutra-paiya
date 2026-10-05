@@ -815,6 +815,11 @@ export const fr = {
     "factSeats": "Places",
     "jumpToBooking": "Aller à la réservation",
   },
+  "recent": {
+    "title": "Reprendre où vous étiez",
+    "clear": "Effacer",
+    "kind": { "trip": "Voyage", "activity": "Activité" },
+  },
 } as const;
 
 export type Dict = Widen<typeof fr>;

@@ -5,6 +5,7 @@ import { formatTripDates, seatsLeft } from '@soutra/shared';
 import { getTrip } from '@/lib/tourism';
 import { TourismNav } from '@/components/tourism/TourismNav';
 import { BookingForm } from './_components/BookingForm';
+import { RecentTracker } from '@/components/tourism/RecentlyViewed';
 import { TripGallery } from '@/components/tourism/TripGallery';
 import { TripStickyBar } from '@/components/tourism/TripStickyBar';
 import { OffersBlock } from '@/components/tourism/Offers';
@@ -66,6 +67,7 @@ export default async function TripPage({ params }: { params: { slug: string } })
     <>
       <TourismNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
+      <RecentTracker kind="trip" slug={trip.slug} title={title} image={trip.cover_url} price={trip.base_price_xof} />
       <main className="pb-28">
         <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
           <TripGallery images={gallery} title={title} />

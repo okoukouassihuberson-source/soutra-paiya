@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { activityCategoryEmoji } from '@soutra/shared';
 import { getActivity } from '@/lib/activities';
+import { RecentTracker } from '@/components/tourism/RecentlyViewed';
 import { TripGallery } from '@/components/tourism/TripGallery';
 import { TourismNav } from '@/components/tourism/TourismNav';
 import { ActivityBooking } from './_components/ActivityBooking';
@@ -62,6 +63,7 @@ export default async function ActivityPage({ params }: { params: { slug: string 
     <>
       <TourismNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
+      <RecentTracker kind="activity" slug={a.slug} title={title} image={a.cover_url} price={a.price_xof} />
       <main className="pb-28">
         {gallery.length > 1 ? (
           <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">

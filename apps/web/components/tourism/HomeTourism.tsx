@@ -9,6 +9,7 @@ import { VIBES, FALLBACK_DESTINATIONS } from '@/lib/home-visuals';
 import type { TKey } from '@/lib/i18n/t';
 import { OfferCard } from './Offers';
 import { DestinationCardView, TripCardView, ActivityCardView } from './Cards';
+import { RecentlyViewed } from './RecentlyViewed';
 import { HomeHero } from '@/components/home/HomeHero';
 import { Reveal } from '@/components/home/Reveal';
 import { NearMeButton } from '@/components/home/NearMe';
@@ -36,6 +37,7 @@ export async function HomeTourism() {
   return (
     <>
       <HomeHero />
+      <RecentlyViewed />
 
       {/* ── Que voulez-vous vivre ? ─────────────────────────────── */}
       <section aria-labelledby="vibes" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
