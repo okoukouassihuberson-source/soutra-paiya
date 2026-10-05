@@ -69,7 +69,7 @@ Méthode : lecture des migrations, pas d'accès à la base de production. Les ta
 
 **RLS — vérifié OK** : les 85 tables ont la RLS activée (les 16 signalées par une première analyse l'activent bien dans 0022, 0041, 0050, 0082, 0087) ; aucune policy d'écriture en `using (true)` ; aucune fonction `security definer` sans `search_path` ; les 7 tables sans policy (`payment_pins`, `push_tokens`, `notification_outbox`…) ne sont lues par aucun client, donc « tout refusé sauf service_role » est le comportement voulu ; wallets/transactions n'ont plus de policy d'écriture client.
 
-**RLS `profiles` — corrigé dans `0098_profiles_rls.sql` (à appliquer EN DERNIER)** : `profiles_select_public` (`using (true)`) rendait toute la table lisible sans connexion (téléphone, e-mail, KYC, rôle). Désormais :
+**RLS `profiles` — corrigé dans `supabase/pending/0098_profiles_rls.sql` (à appliquer EN DERNIER : le déplacer dans `supabase/migrations/` puis `supabase db push`)** : `profiles_select_public` (`using (true)`) rendait toute la table lisible sans connexion (téléphone, e-mail, KYC, rôle). Désormais :
 - `profiles` n'est lisible que par soi-même, les admins et les modérateurs (`anon` : rien) ;
 - vues `public_profiles` (nom, avatar, bio, ville…) et `discoverable_profiles` (profils ayant activé la découverte) pour tout ce qui est public ;
 - RPC `find_profile_by_phone` (envoi P2P) et `reservation_contacts` (un gérant ne voit que les coordonnées de SES clients) ;
