@@ -46,14 +46,21 @@ export interface I18n {
   list: (row: { i18n?: Record<string, Record<string, string>> | null } & Record<string, any>, name: string) => string[];
 }
 
+/**
+ * Règle du pluriel « one », sans Intl.PluralRules : Hermes (Android) ne fournit pas cette API —
+ * `new Intl.PluralRules()` y lève « Cannot read property 'prototype' of undefined » au démarrage.
+ * Français : 0 et 1 (et les décimaux < 2) sont au singulier ; anglais : seulement 1.
+ */
+export const isOne = (locale: Locale, n: number): boolean =>
+  locale === 'fr' ? n >= 0 && n < 2 : n === 1;
+
 export function createI18n(locale: Locale): I18n {
   const dict = DICTS[locale] ?? fr;
   const raw = (key: string) => lookup(dict, key) ?? lookup(fr, key);
-  const rules = new Intl.PluralRules(INTL[locale]);
   const intl = INTL[locale];
   const t = (key: string, params?: Params) => interpolate(raw(key) ?? key, params);
   const tn = (key: string, n: number, params?: Params) =>
-    interpolate(raw(key + (rules.select(n) === 'one' ? '_one' : '_other')) ?? raw(key + '_other') ?? key, { n, ...params });
+    interpolate(raw(key + (isOne(locale, n) ? '_one' : '_other')) ?? raw(key + '_other') ?? key, { n, ...params });
   return {
     locale, intl,
     t: t as I18n['t'], tn,

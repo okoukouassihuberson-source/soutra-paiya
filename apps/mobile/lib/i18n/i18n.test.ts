@@ -33,6 +33,23 @@ test('pluriels selon la langue', () => {
   assert.equal(createI18n('en').tn('trips.seats', 0), '0 seats');
 });
 
+test('pluriels : français 0/1 au singulier, 2+ au pluriel', () => {
+  assert.equal(createI18n('fr').tn('trips.seats', 0), '0 place');
+  assert.equal(createI18n('fr').tn('trips.seats', 2), '2 places');
+});
+
+test("régression Hermes : createI18n ne dépend pas d'Intl.PluralRules (absent sur Android)", () => {
+  const I = Intl as any;
+  const saved = I.PluralRules;
+  delete I.PluralRules;
+  try {
+    assert.equal(createI18n('fr').tn('trips.seats', 3), '3 places');
+    assert.equal(createI18n('en').tn('trips.seats', 1), '1 seat');
+  } finally {
+    I.PluralRules = saved;
+  }
+});
+
 test('clé inconnue : la clé elle-même (pas de plantage) ; tdyn avec repli', () => {
   const i = createI18n('en');
   assert.equal((i.t as (k: string) => string)('nope.nope'), 'nope.nope');
