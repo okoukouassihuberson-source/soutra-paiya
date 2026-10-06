@@ -15,7 +15,7 @@ export function SearchBar({ q = '', city = '', cat = '', dark = false }: { q?: s
         <span className="sr-only">{t('search.where')}</span>
         <input name="city" defaultValue={city} list="search-cities" placeholder={t('search.wherePlaceholder')} className="w-full rounded-xl border-0 bg-neutral-50 px-4 py-3 text-base text-dark placeholder:text-neutral-400 focus:ring-2 focus:ring-primary-500" />
       </label>
-      <button type="submit" className="rounded-xl bg-primary-500 px-6 py-3 font-semibold text-white transition hover:bg-primary-600">{t('common.search')}</button>
+      <button type="submit" className="rounded-xl bg-primary-500 px-6 py-3 font-semibold text-night transition hover:bg-primary-400">{t('common.search')}</button>
       <datalist id="search-suggestions">
         {t('search.suggestions').split('|').map((s) => <option key={s} value={s} />)}
       </datalist>

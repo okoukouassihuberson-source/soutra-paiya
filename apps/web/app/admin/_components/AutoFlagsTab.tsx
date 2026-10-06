@@ -46,11 +46,11 @@ interface FlagRow {
 }
 
 const SEVERITY_META: Record<FlagSeverity, { label: string; tone: string }> = {
-  critical: { label: 'Critique', tone: 'bg-red-500/15 text-red-300 border-red-500/30' },
-  high:     { label: 'Élevé',    tone: 'bg-orange-500/15 text-orange-300 border-orange-500/30' },
-  medium:   { label: 'Moyen',    tone: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
-  low:      { label: 'Faible',   tone: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
-  info:     { label: 'Info',     tone: 'bg-neutral-500/15 text-neutral-300 border-neutral-500/30' },
+  critical: { label: 'Critique', tone: 'bg-red-500/15 text-red-700 border-red-500/30' },
+  high:     { label: 'Élevé',    tone: 'bg-orange-500/15 text-orange-700 border-orange-500/30' },
+  medium:   { label: 'Moyen',    tone: 'bg-amber-500/15 text-amber-800 border-amber-500/30' },
+  low:      { label: 'Faible',   tone: 'bg-blue-500/15 text-blue-700 border-blue-500/30' },
+  info:     { label: 'Info',     tone: 'bg-neutral-500/15 text-neutral-800 border-neutral-500/30' },
 };
 
 const REASON_LABELS: Record<FlagReason, string> = {
@@ -150,9 +150,9 @@ export function AutoFlagsTab() {
     <div>
       {/* Bandeau récap */}
       <div className="mb-5 grid grid-cols-3 gap-3">
-        <Kpi label="Flags affichés" value={counts.total} tone="text-white" />
-        <Kpi label="Critique" value={counts.critical} tone="text-red-300" />
-        <Kpi label="Élevé" value={counts.high} tone="text-orange-300" />
+        <Kpi label="Flags affichés" value={counts.total} tone="text-dark" />
+        <Kpi label="Critique" value={counts.critical} tone="text-red-700" />
+        <Kpi label="Élevé" value={counts.high} tone="text-orange-700" />
       </div>
 
       {/* Filtres */}
@@ -166,8 +166,8 @@ export function AutoFlagsTab() {
                 onClick={() => setStatusFilter(s.id)}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
                   active
-                    ? 'border-primary-500/60 bg-primary-500/15 text-primary-200'
-                    : 'border-neutral-800 bg-neutral-900 text-neutral-400 hover:text-neutral-200'
+                    ? 'border-primary-500/60 bg-primary-500/15 text-primary-700'
+                    : 'border-neutral-200 bg-white text-neutral-700 hover:text-neutral-900'
                 }`}
               >
                 {s.label}
@@ -179,7 +179,7 @@ export function AutoFlagsTab() {
         <select
           value={severityFilter}
           onChange={(e) => setSeverityFilter(e.target.value as FlagSeverity | 'all')}
-          className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1 text-xs font-semibold text-neutral-300 focus:border-primary-500 focus:outline-none"
+          className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-semibold text-neutral-800 focus:border-primary-500 focus:outline-none"
         >
           <option value="all">Toutes sévérités</option>
           {(['critical','high','medium','low','info'] as FlagSeverity[]).map((s) => (
@@ -188,7 +188,7 @@ export function AutoFlagsTab() {
         </select>
         <button
           onClick={load}
-          className="ml-auto rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1 text-xs font-semibold text-neutral-300 transition hover:text-white"
+          className="ml-auto rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-semibold text-neutral-800 transition hover:border-primary-500 hover:text-primary-700"
         >
           ↻ Recharger
         </button>
@@ -196,11 +196,11 @@ export function AutoFlagsTab() {
 
       {/* Liste */}
       {loading ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-sm text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-sm text-neutral-600">
           Chargement…
         </div>
       ) : flags.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-sm text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-sm text-neutral-600">
           Aucun flag {statusFilter !== 'all' ? `(${STATUS_FILTERS.find((s) => s.id === statusFilter)?.label.toLowerCase()})` : ''} à afficher.
         </div>
       ) : (
@@ -221,8 +221,8 @@ export function AutoFlagsTab() {
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 rounded-xl border px-4 py-3 text-sm shadow-xl ${
           toast.ok
-            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
-            : 'border-red-500/30 bg-red-500/10 text-red-200'
+            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
+            : 'border-red-500/30 bg-red-500/10 text-red-700'
         }`}>
           {toast.msg}
         </div>
@@ -233,8 +233,8 @@ export function AutoFlagsTab() {
 
 function Kpi({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
-      <p className="text-[11px] uppercase tracking-wider text-neutral-500">{label}</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <p className="text-[11px] uppercase tracking-wider text-neutral-600">{label}</p>
       <p className={`mt-1 font-display text-2xl font-bold ${tone}`}>{value}</p>
     </div>
   );
@@ -267,35 +267,35 @@ function FlagCard({
   const isFinal = flag.status === 'dismissed' || flag.status === 'resolved';
 
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-5">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-5">
       <div className="flex items-start gap-3">
         <div className={`shrink-0 rounded-lg border px-2.5 py-1 text-[11px] font-bold uppercase ${sev.tone}`}>
           {sev.label}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs uppercase tracking-wider text-neutral-500">
+          <p className="text-xs uppercase tracking-wider text-neutral-600">
             {REASON_LABELS[flag.reason]}
           </p>
-          <p className="mt-1 font-display text-base font-bold text-white">
+          <p className="mt-1 font-display text-base font-bold text-dark">
             {flag.venue_name}{' '}
-            <span className="text-xs font-normal text-neutral-500">· {flag.venue_category} · {flag.venue_city}</span>
+            <span className="text-xs font-normal text-neutral-600">· {flag.venue_category} · {flag.venue_city}</span>
           </p>
-          <p className="mt-0.5 text-xs text-neutral-500">
-            Propriétaire : <span className="text-neutral-300">{flag.owner_name || '—'}</span>
+          <p className="mt-0.5 text-xs text-neutral-600">
+            Propriétaire : <span className="text-neutral-800">{flag.owner_name || '—'}</span>
             {' · '}
-            Status : <code className="rounded bg-neutral-800/70 px-1 py-px font-mono">{flag.venue_status}</code>
+            Status : <code className="rounded bg-neutral-100 px-1 py-px font-mono">{flag.venue_status}</code>
             {' · '}
             {new Date(flag.created_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
           </p>
 
           {detailsList.length > 0 && (
-            <div className="mt-3 rounded-lg border border-neutral-800/50 bg-neutral-950/40 p-3">
-              <p className="text-[11px] uppercase tracking-wider text-neutral-500">Détails</p>
+            <div className="mt-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+              <p className="text-[11px] uppercase tracking-wider text-neutral-600">Détails</p>
               <dl className="mt-1 grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
                 {detailsList.map((e) => (
                   <div key={e.k} className="flex items-start gap-2">
-                    <dt className="shrink-0 text-neutral-500">{e.k} :</dt>
-                    <dd className="break-all text-neutral-200">{e.v}</dd>
+                    <dt className="shrink-0 text-neutral-600">{e.k} :</dt>
+                    <dd className="break-all text-neutral-900">{e.v}</dd>
                   </div>
                 ))}
               </dl>
@@ -303,7 +303,7 @@ function FlagCard({
           )}
 
           {flag.resolution_note && (
-            <p className="mt-2 text-xs italic text-neutral-500">
+            <p className="mt-2 text-xs italic text-neutral-600">
               Note : {flag.resolution_note}
             </p>
           )}
@@ -316,21 +316,21 @@ function FlagCard({
           <button
             onClick={onResolve}
             disabled={busy}
-            className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:opacity-50"
+            className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-500/20 disabled:opacity-50"
           >
             ✓ Examiné, OK
           </button>
           <button
             onClick={onDismiss}
             disabled={busy}
-            className="rounded-lg border border-neutral-700/60 bg-neutral-800/40 px-3 py-1.5 text-xs font-semibold text-neutral-200 transition hover:bg-neutral-800 disabled:opacity-50"
+            className="rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-900 transition hover:bg-neutral-100 disabled:opacity-50"
           >
             Ignorer (faux positif)
           </button>
           <button
             onClick={onSuspend}
             disabled={busy}
-            className="ml-auto rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-50"
+            className="ml-auto rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-500/20 disabled:opacity-50"
           >
             ⛔ Suspendre le venue
           </button>

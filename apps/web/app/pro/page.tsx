@@ -14,6 +14,7 @@ import {
   type ProModule,
 } from '@soutra/shared';
 import { VenueAnalytics } from './_components/VenueAnalytics';
+import { ProDashboardCharts } from './_components/ProDashboardCharts';
 import { ProRevenueDashboard } from './_components/ProRevenueDashboard';
 import { ShopProductsTab } from './_components/ShopProductsTab';
 import { ShopOrdersTab } from './_components/ShopOrdersTab';
@@ -25,7 +26,7 @@ import { PaymentMethodsPanel } from './_components/PaymentMethodsPanel';
 // Picker GPS — chargé en client only (leaflet utilise window au montage).
 const VenueLocationPicker = dynamic(() => import('@/components/VenueLocationPicker'), {
   ssr: false,
-  loading: () => <div className="py-12 text-center text-sm text-neutral-400">Chargement de la carte…</div>,
+  loading: () => <div className="py-12 text-center text-sm text-neutral-600">Chargement de la carte…</div>,
 });
 
 type Tab = 'dashboard' | 'reservations' | 'events' | 'menu' | 'analytics' | 'shop-products' | 'shop-orders' | 'hotel-rooms' | 'hotel-bookings' | 'finances' | 'marketing' | 'settings';
@@ -54,25 +55,6 @@ const STATUS_META_EVT: Record<'draft' | 'published' | 'sold_out' | 'cancelled' |
   sold_out: { label: 'Complet', color: 'text-amber-700', bg: 'bg-amber-50' },
   cancelled: { label: 'Annulé', color: 'text-red-700', bg: 'bg-red-50' },
   done: { label: 'Terminé', color: 'text-blue-700', bg: 'bg-blue-50' },
-};
-
-// Catalogue complet des entrées de la "quick nav" du dashboard, indexé par
-// ProModule. La liste effective est filtrée à l'exécution selon le
-// businessType du venue actif (PR2 onboarding) — alignée avec la sidebar
-// du shell (ProShell.tsx) et MODULES_BY_BUSINESS_TYPE (@soutra/shared).
-const QUICK_NAV: Record<Tab, { id: Tab; label: string; icon: React.ReactNode }> = {
-  'dashboard':      { id: 'dashboard',      label: 'Dashboard',              icon: <IcoGrid /> },
-  'reservations':   { id: 'reservations',   label: 'Réservations',           icon: <IcoCalendar /> },
-  'events':         { id: 'events',         label: 'Événements',             icon: <IcoTicket /> },
-  'menu':           { id: 'menu',           label: 'Menu',                   icon: <IcoUtensils /> },
-  'shop-products':  { id: 'shop-products',  label: 'Catalogue',              icon: <IcoUtensils /> },
-  'shop-orders':    { id: 'shop-orders',    label: 'Commandes',              icon: <IcoCalendar /> },
-  'hotel-rooms':    { id: 'hotel-rooms',    label: 'Chambres',               icon: <IcoUtensils /> },
-  'hotel-bookings': { id: 'hotel-bookings', label: 'Réservations chambres',  icon: <IcoCalendar /> },
-  'analytics':      { id: 'analytics',      label: 'Analytics',              icon: <IcoTrend /> },
-  'finances':       { id: 'finances',       label: 'Finances',               icon: <IcoWallet /> },
-  'marketing':      { id: 'marketing',      label: 'Marketing',              icon: <IcoMegaphone /> },
-  'settings':       { id: 'settings',       label: 'Paramètres',             icon: <IcoGear /> },
 };
 
 // Catégories d'établissement — désormais sourcées de @soutra/shared
@@ -347,7 +329,8 @@ function ProDashboard() {
     const rows = (data || []) as any[];
     if (rows.length > 0) {
       const userIds = [...new Set(rows.map((r: any) => r.user_id))];
-      const { data: profiles } = await (supabase as any).from('profiles').select('id, full_name, phone').in('id', userIds);
+      // RPC (migration 0098) : coordonnées des seuls clients de CE gérant ; `profiles` n'est plus lisible directement.
+      const { data: profiles } = await (supabase as any).rpc('reservation_contacts', { p_user_ids: userIds });
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       setReservations(rows.map((r: any) => { const p = map.get(r.user_id) as any; return { ...r, status: r.status as ResStatus, customer_name: p?.full_name || null, customer_phone: p?.phone || null }; }));
     } else { setReservations([]); }
@@ -954,18 +937,18 @@ function ProDashboard() {
       <div className="flex min-h-[60vh] items-center justify-center px-4">
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-primary-200 border-t-primary-500" />
-          <p className="mt-4 text-sm text-neutral-500">Chargement du dashboard…</p>
+          <p className="mt-4 text-sm text-neutral-600">Chargement du dashboard…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50">
       {toast && (
         <div
           className={`fixed left-1/2 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium shadow-xl sm:left-auto sm:right-6 sm:translate-x-0 sm:px-5 sm:py-3 ${
-            toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+            toast.type === 'success' ? 'bg-emerald-700 text-white' : 'bg-red-600 text-white'
           }`}
           style={{ top: 'calc(env(safe-area-inset-top, 0px) + 70px)' }}
         >
@@ -984,11 +967,12 @@ function ProDashboard() {
             <h1 className="truncate font-display text-base font-bold text-dark sm:text-xl">
               Bonjour, {userName.split(' ')[0] || '—'}
             </h1>
-            <p className="mt-0.5 truncate text-xs capitalize text-neutral-400 sm:text-sm">{today}</p>
+            <p className="mt-0.5 truncate text-xs capitalize text-neutral-600 sm:text-sm">{today}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 max-w-full items-center gap-3">
             {venues.length > 1 && (
               <select
+                aria-label="Établissement"
                 value={selectedVenueId}
                 onChange={(e) => {
                   const nextId = e.target.value;
@@ -999,7 +983,7 @@ function ProDashboard() {
                   url.searchParams.set('venue', nextId);
                   router.replace(`/pro${url.search}`, { scroll: false });
                 }}
-                className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-dark transition focus:border-primary-500 focus:outline-none sm:w-auto sm:px-4 sm:py-2.5"
+                className="w-full min-w-0 max-w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-dark transition focus:border-primary-500 focus:outline-none sm:w-auto sm:px-4 sm:py-2.5"
               >
                 {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
@@ -1020,8 +1004,8 @@ function ProDashboard() {
               <div className="mb-6 text-center">
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-50"><IcoGrid className="h-8 w-8 text-primary-500" /></div>
                 <h2 className="mt-4 font-display text-2xl font-bold text-dark">Crée ton établissement</h2>
-                <p className="mt-1 text-sm text-neutral-500">
-                  Renseigne les infos de base — ton fiche sera <span className="font-semibold text-emerald-600">active immédiatement</span>.
+                <p className="mt-1 text-sm text-neutral-600">
+                  Renseigne les infos de base — ton fiche sera <span className="font-semibold text-emerald-700">active immédiatement</span>.
                   Tu pourras tout compléter ensuite dans Paramètres.
                 </p>
               </div>
@@ -1029,7 +1013,7 @@ function ProDashboard() {
                 <ProInput label="Nom de l'établissement" value={nv.name} onChange={(v) => setNv((p) => ({ ...p, name: v }))} placeholder="Le Maquis du Coin" />
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-neutral-500">Catégorie</label>
+                    <label className="mb-1 block text-xs font-medium text-neutral-600">Catégorie</label>
                     <select value={nv.category} onChange={(e) => setNv((p) => ({ ...p, category: e.target.value }))} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
                       {VENUE_CATEGORY_GROUPS_PRO.map((g) => (
                         <optgroup key={g.group} label={g.label}>
@@ -1046,13 +1030,13 @@ function ProDashboard() {
                   <ProInput label="WhatsApp" value={nv.whatsapp} onChange={(v) => setNv((p) => ({ ...p, whatsapp: v }))} placeholder="+225XXXXXXXXXX" />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-neutral-500">Description</label>
+                  <label className="mb-1 block text-xs font-medium text-neutral-600">Description</label>
                   <textarea value={nv.description} onChange={(e) => setNv((p) => ({ ...p, description: e.target.value }))} rows={3} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none" placeholder="Présente ton établissement en quelques lignes..." />
                 </div>
                 <button onClick={createVenue} disabled={creating} className="btn-primary w-full disabled:opacity-50">
                   {creating ? 'Création...' : 'Créer mon établissement'}
                 </button>
-                <p className="text-center text-xs text-neutral-400">Ton établissement sera vérifié par l&apos;équipe Soutra-Playce avant d&apos;apparaître dans l&apos;application.</p>
+                <p className="text-center text-xs text-neutral-600">Ton établissement sera vérifié par l&apos;équipe Soutra-Playce avant d&apos;apparaître dans l&apos;application.</p>
               </div>
             </div>
           )}
@@ -1062,29 +1046,14 @@ function ProDashboard() {
               {/* ═══════════ DASHBOARD ═══════════ */}
               {tab === 'dashboard' && (
                 <>
-                  <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                    <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-600" label="Réservations du jour" value={String(todayRes.length)} sub={`${reservations.length} au total`} />
-                    <KpiCard icon={<IcoWallet className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-600" label="Chiffre d'affaires" value={formatXOF(revenue)} sub="Acomptes confirmés" />
-                    <KpiCard icon={<IcoAlert className="h-5 w-5" />} iconBg={noShowRate > 15 ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'} label="Taux de no-show" value={`${noShowRate}%`} sub={noShowRate > 15 ? 'Élevé — action requise' : 'Dans la norme'} />
-                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-600" label="Note moyenne" value={`★ ${selectedVenue?.rating_avg?.toFixed(1) || '—'}`} sub={`${selectedVenue?.rating_count || 0} avis`} />
+                  <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4">
+                    <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-700" label="Réservations du jour" value={String(todayRes.length)} sub={`${reservations.length} au total`} />
+                    <KpiCard icon={<IcoWallet className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-700" label="Chiffre d'affaires" value={formatXOF(revenue)} sub="Acomptes confirmés" />
+                    <KpiCard icon={<IcoAlert className="h-5 w-5" />} iconBg={noShowRate > 15 ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'} label="Taux de no-show" value={`${noShowRate}%`} sub={noShowRate > 15 ? 'Élevé — action requise' : 'Dans la norme'} />
+                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-700" label="Note moyenne" value={`★ ${selectedVenue?.rating_avg?.toFixed(1) || '—'}`} sub={`${selectedVenue?.rating_count || 0} avis`} />
                   </div>
 
-                  {/* Quick nav — filtrée selon les modules disponibles pour
-                      le businessType du venue actif (PR2 onboarding). */}
-                  <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 lg:gap-3">
-                    {availableModules.filter((m) => m !== 'dashboard').map((m) => {
-                      const s = QUICK_NAV[m];
-                      return (
-                      <button
-                        key={s.id}
-                        onClick={() => setTab(s.id)}
-                        className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-center text-xs font-medium text-neutral-600 transition hover:border-primary-500/30 hover:text-primary-500 sm:px-4 sm:py-3 sm:text-sm"
-                      >
-                        {s.label}
-                      </button>
-                      );
-                    })}
-                  </div>
+                  <ProDashboardCharts reservations={reservations} />
 
                   <ReservationTable reservations={filtered} tableLoading={tableLoading} search={search} onSearch={setSearch} statusFilter={statusFilter} onStatusFilter={setStatusFilter} actionLoading={actionLoading} onUpdateStatus={updateStatus} />
                 </>
@@ -1094,10 +1063,10 @@ function ProDashboard() {
               {tab === 'reservations' && (
                 <>
                   <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-600" label="Aujourd'hui" value={String(todayRes.length)} sub={`${todayRes.filter((r) => r.status === 'pending').length} en attente`} />
-                    <KpiCard icon={<IcoCheck className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-600" label="Confirmées" value={String(reservations.filter((r) => r.status === 'confirmed').length)} sub="à accueillir" />
-                    <KpiCard icon={<IcoAlert className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-600" label="En attente" value={String(reservations.filter((r) => r.status === 'pending').length)} sub="à traiter" />
-                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-600" label="Total couverts" value={String(reservations.reduce((s, r) => s + r.party_size, 0))} sub="toutes réservations" />
+                    <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-700" label="Aujourd'hui" value={String(todayRes.length)} sub={`${todayRes.filter((r) => r.status === 'pending').length} en attente`} />
+                    <KpiCard icon={<IcoCheck className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-700" label="Confirmées" value={String(reservations.filter((r) => r.status === 'confirmed').length)} sub="à accueillir" />
+                    <KpiCard icon={<IcoAlert className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-700" label="En attente" value={String(reservations.filter((r) => r.status === 'pending').length)} sub="à traiter" />
+                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-700" label="Total couverts" value={String(reservations.reduce((s, r) => s + r.party_size, 0))} sub="toutes réservations" />
                   </div>
 
                   <ReservationTable reservations={filtered} tableLoading={tableLoading} search={search} onSearch={setSearch} statusFilter={statusFilter} onStatusFilter={setStatusFilter} actionLoading={actionLoading} onUpdateStatus={updateStatus} />
@@ -1105,12 +1074,12 @@ function ProDashboard() {
                   {/* Répartition par statut */}
                   {resaByStatus.length > 0 && (
                     <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6">
-                      <h3 className="mb-4 text-sm font-semibold text-neutral-400">Répartition par statut</h3>
+                      <h3 className="mb-4 text-sm font-semibold text-neutral-600">Répartition par statut</h3>
                       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
                         {resaByStatus.map((s) => (
                           <div key={s.status} className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
                             <p className="text-2xl font-bold text-dark">{s.count}</p>
-                            <p className="mt-1 text-xs text-neutral-500">{s.status}</p>
+                            <p className="mt-1 text-xs text-neutral-600">{s.status}</p>
                           </div>
                         ))}
                       </div>
@@ -1137,13 +1106,13 @@ function ProDashboard() {
                           <ProInput label="Capacité" value={evtCapacity} onChange={setEvtCapacity} type="number" placeholder="50" />
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-neutral-500">Description</label>
+                          <label className="mb-1 block text-xs font-medium text-neutral-600">Description</label>
                           <textarea value={evtDesc} onChange={(e) => setEvtDesc(e.target.value)} rows={3} placeholder="Décris l'événement, le programme, l'ambiance..." className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none" />
                         </div>
                         <button onClick={createEvent} disabled={evtSaving || !selectedVenueId} className="btn-primary w-full disabled:opacity-50">
                           {evtSaving ? 'Création…' : 'Créer l\'événement (brouillon)'}
                         </button>
-                        {!selectedVenueId && <p className="text-xs text-neutral-400">Crée d'abord un établissement.</p>}
+                        {!selectedVenueId && <p className="text-xs text-neutral-600">Crée d'abord un établissement.</p>}
                       </div>
                     </div>
 
@@ -1151,7 +1120,7 @@ function ProDashboard() {
                     <div className="rounded-2xl border border-neutral-200 bg-white p-6">
                       <h3 className="mb-4 font-display text-lg font-bold text-dark">Mes événements ({events.length})</h3>
                       {events.length === 0 ? (
-                        <div className="py-12 text-center text-neutral-400">Aucun événement créé</div>
+                        <div className="py-12 text-center text-neutral-600">Aucun événement créé</div>
                       ) : (
                         <div className="space-y-3">
                           {events.map((e) => {
@@ -1164,12 +1133,12 @@ function ProDashboard() {
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="min-w-0">
                                     <p className="truncate font-medium text-dark">{e.title}</p>
-                                    <p className="mt-1 text-xs text-neutral-500">{fmtDateTime(e.starts_at)}</p>
-                                    {e.description && <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{e.description}</p>}
+                                    <p className="mt-1 text-xs text-neutral-600">{fmtDateTime(e.starts_at)}</p>
+                                    {e.description && <p className="mt-1 line-clamp-2 text-xs text-neutral-600">{e.description}</p>}
                                   </div>
                                   <div className="shrink-0 text-right">
                                     <p className="font-mono text-sm font-medium text-primary-600">{formatXOF(tier?.price_xof || 0)}</p>
-                                    <p className="text-xs text-neutral-400">
+                                    <p className="text-xs text-neutral-600">
                                       {remaining !== null ? `${remaining} place${remaining === 1 ? '' : 's'}` : 'illimité'}
                                       {sold > 0 && ` · ${sold} vendu${sold === 1 ? '' : 's'}`}
                                     </p>
@@ -1184,10 +1153,10 @@ function ProDashboard() {
                                     <button onClick={() => updateEventStatus(e.id, 'cancelled')} className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 transition hover:bg-red-100">Annuler</button>
                                   </>}
                                   {e.status === 'sold_out' && <button onClick={() => updateEventStatus(e.id, 'published')} className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">Rouvrir</button>}
-                                  <button onClick={() => setEditingEvent({ ...e })} className="ml-auto rounded-lg p-1 text-neutral-400 transition hover:bg-neutral-200 hover:text-neutral-700" title="Modifier">
+                                  <button onClick={() => setEditingEvent({ ...e })} className="ml-auto rounded-lg p-1 text-neutral-600 transition hover:bg-neutral-200 hover:text-neutral-700" title="Modifier">
                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                   </button>
-                                  <button onClick={() => { if (confirm(`Supprimer « ${e.title} » ?`)) deleteEvent(e.id); }} className="rounded-lg p-1 text-neutral-400 transition hover:bg-red-50 hover:text-red-500" title="Supprimer">
+                                  <button onClick={() => { if (confirm(`Supprimer « ${e.title} » ?`)) deleteEvent(e.id); }} className="rounded-lg p-1 text-neutral-600 transition hover:bg-red-50 hover:text-red-500" title="Supprimer">
                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                                   </button>
                                 </div>
@@ -1205,7 +1174,7 @@ function ProDashboard() {
                       <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
                         <div className="mb-4 flex items-center justify-between">
                           <h3 className="font-display text-lg font-bold text-dark">Modifier l'événement</h3>
-                          <button onClick={() => setEditingEvent(null)} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100">
+                          <button onClick={() => setEditingEvent(null)} className="rounded-lg p-1 text-neutral-600 hover:bg-neutral-100">
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                           </button>
                         </div>
@@ -1236,7 +1205,7 @@ function ProDashboard() {
                             </p>
                           )}
                           <div>
-                            <label className="mb-1 block text-xs font-medium text-neutral-500">Description</label>
+                            <label className="mb-1 block text-xs font-medium text-neutral-600">Description</label>
                             <textarea rows={3} value={editingEvent.description || ''} onChange={(e) => setEditingEvent((prev) => prev && { ...prev, description: e.target.value })} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none" />
                           </div>
                           <div className="flex gap-3">
@@ -1260,14 +1229,14 @@ function ProDashboard() {
                       <div className="space-y-4">
                         <ProInput label="Nom" value={menuName} onChange={setMenuName} placeholder="Alloco, Attiéké poisson..." />
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-neutral-500">Catégorie</label>
+                          <label className="mb-1 block text-xs font-medium text-neutral-600">Catégorie</label>
                           <select value={menuCat} onChange={(e) => setMenuCat(e.target.value)} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
                             {['Entrée', 'Plat principal', 'Dessert', 'Boisson', 'Cocktail', 'Snack', 'Spécialité'].map((c) => <option key={c} value={c}>{c}</option>)}
                           </select>
                         </div>
                         <ProInput label="Prix (FCFA)" value={menuPrice} onChange={setMenuPrice} type="number" placeholder="3000" />
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-neutral-500">Description (optionnelle)</label>
+                          <label className="mb-1 block text-xs font-medium text-neutral-600">Description (optionnelle)</label>
                           <textarea
                             value={menuDesc}
                             onChange={(e) => setMenuDesc(e.target.value)}
@@ -1283,7 +1252,7 @@ function ProDashboard() {
                         >
                           {menuSaving ? 'Ajout…' : 'Ajouter au menu'}
                         </button>
-                        {!selectedVenueId && <p className="text-xs text-neutral-400">Crée d'abord un établissement.</p>}
+                        {!selectedVenueId && <p className="text-xs text-neutral-600">Crée d'abord un établissement.</p>}
                       </div>
                     </div>
 
@@ -1291,14 +1260,14 @@ function ProDashboard() {
                     <div className="lg:col-span-2 rounded-2xl border border-neutral-200 bg-white p-6">
                       <h3 className="mb-4 font-display text-lg font-bold text-dark">Menu ({menuItems.length} articles)</h3>
                       {menuLoading ? (
-                        <div className="py-12 text-center text-sm text-neutral-400">Chargement…</div>
+                        <div className="py-12 text-center text-sm text-neutral-600">Chargement…</div>
                       ) : menuItems.length === 0 ? (
-                        <div className="py-12 text-center text-neutral-400">Aucun article dans le menu</div>
+                        <div className="py-12 text-center text-neutral-600">Aucun article dans le menu</div>
                       ) : (
                         <div className="space-y-4">
                           {menuCategories.map((cat) => (
                             <div key={cat}>
-                              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400">{cat}</h4>
+                              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-600">{cat}</h4>
                               <div className="space-y-2">
                                 {menuItems.filter((m) => m.category === cat).map((item) => (
                                   <div key={item.id} className="flex items-center justify-between rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
@@ -1309,15 +1278,15 @@ function ProDashboard() {
                                         title={item.available ? 'Disponible — clic pour rendre indispo' : 'Indisponible — clic pour activer'}
                                       />
                                       <div className="min-w-0">
-                                        <div className={`truncate text-sm font-medium ${item.available ? 'text-dark' : 'text-neutral-400 line-through'}`}>{item.name}</div>
-                                        {item.description && <div className="mt-0.5 truncate text-xs text-neutral-500">{item.description}</div>}
+                                        <div className={`truncate text-sm font-medium ${item.available ? 'text-dark' : 'text-neutral-600 line-through'}`}>{item.name}</div>
+                                        {item.description && <div className="mt-0.5 truncate text-xs text-neutral-600">{item.description}</div>}
                                       </div>
                                     </div>
                                     <div className="flex shrink-0 items-center gap-3">
                                       <span className="font-mono text-sm font-medium text-primary-600">{formatXOF(item.price_xof)}</span>
                                       <button
                                         onClick={() => deleteMenuItem(item.id)}
-                                        className="rounded-lg p-1 text-neutral-400 transition hover:bg-red-50 hover:text-red-500"
+                                        className="rounded-lg p-1 text-neutral-600 transition hover:bg-red-50 hover:text-red-500"
                                         title="Supprimer"
                                       >
                                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -1350,7 +1319,7 @@ function ProDashboard() {
                       Le module Catalogue n&apos;est disponible que pour les venues catégorie{' '}
                       <strong>boutique, mall, supermarché ou pharmacie</strong>.
                     </p>
-                    <p className="mt-2 text-xs text-neutral-500">
+                    <p className="mt-2 text-xs text-neutral-600">
                       Catégorie actuelle : <code className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono">{selectedVenue?.category || '—'}</code>
                     </p>
                   </div>
@@ -1379,7 +1348,7 @@ function ProDashboard() {
                       Le module Chambres n&apos;est disponible que pour les venues catégorie{' '}
                       <strong>hôtel, villa, resort, auberge ou résidence meublée</strong>.
                     </p>
-                    <p className="mt-2 text-xs text-neutral-500">
+                    <p className="mt-2 text-xs text-neutral-600">
                       Catégorie actuelle : <code className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono">{selectedVenue?.category || '—'}</code>
                     </p>
                   </div>
@@ -1427,25 +1396,25 @@ function ProDashboard() {
                   </div>
 
                   <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <KpiCard icon={<IcoWallet className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-600" label="Solde wallet" value={formatXOF(walletBalance)} sub="disponible" />
-                    <KpiCard icon={<IcoTrend className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-600" label="Revenus acomptes" value={formatXOF(revenue)} sub="confirmés + arrivés" />
-                    <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-600" label="Transactions" value={String(txs.length)} sub="historique" />
-                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-600" label="Revenus événements" value={formatXOF(events.reduce((s, e) => s + (e.ticket_tiers || []).reduce((ts, t) => ts + (t.price_xof || 0) * (t.sold || 0), 0), 0))} sub={`${events.length} événements`} />
+                    <KpiCard icon={<IcoWallet className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-700" label="Solde wallet" value={formatXOF(walletBalance)} sub="disponible" />
+                    <KpiCard icon={<IcoTrend className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-700" label="Revenus acomptes" value={formatXOF(revenue)} sub="confirmés + arrivés" />
+                    <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-700" label="Transactions" value={String(txs.length)} sub="historique" />
+                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-700" label="Revenus événements" value={formatXOF(events.reduce((s, e) => s + (e.ticket_tiers || []).reduce((ts, t) => ts + (t.price_xof || 0) * (t.sold || 0), 0), 0))} sub={`${events.length} événements`} />
                   </div>
 
                   {/* Revenue chart (simple bar) */}
                   {revByDay.length > 0 && (
                     <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6">
-                      <h3 className="mb-4 text-sm font-semibold text-neutral-400">Revenus des 14 derniers jours</h3>
+                      <h3 className="mb-4 text-sm font-semibold text-neutral-600">Revenus des 14 derniers jours</h3>
                       <div className="flex h-40 items-end gap-2">
                         {revByDay.map((d, i) => {
                           const max = Math.max(...revByDay.map((x) => x.value), 1);
                           const h = Math.max(4, (d.value / max) * 100);
                           return (
                             <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                              <span className="text-[9px] text-neutral-400">{formatXOF(d.value)}</span>
-                              <div className="w-full rounded-t-md bg-primary-500 transition-all hover:bg-primary-600" style={{ height: `${h}%` }} />
-                              <span className="text-[9px] text-neutral-400">{d.day}</span>
+                              <span className="text-[9px] text-neutral-600">{formatXOF(d.value)}</span>
+                              <div className="w-full rounded-t-md bg-primary-500 transition-all hover:bg-primary-400" style={{ height: `${h}%` }} />
+                              <span className="text-[9px] text-neutral-600">{d.day}</span>
                             </div>
                           );
                         })}
@@ -1457,16 +1426,16 @@ function ProDashboard() {
                   <div className="rounded-2xl border border-neutral-200 bg-white">
                     <div className="border-b border-neutral-100 px-6 py-4"><h3 className="font-display text-lg font-bold text-dark">Historique transactions</h3></div>
                     {txs.length === 0 ? (
-                      <div className="py-12 text-center text-neutral-400">Aucune transaction</div>
+                      <div className="py-12 text-center text-neutral-600">Aucune transaction</div>
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                          <thead><tr className="border-b border-neutral-100 text-left text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                          <thead><tr className="border-b border-neutral-100 text-left text-xs font-semibold uppercase tracking-wider text-neutral-600">
                             <th className="px-6 py-3">Date</th><th className="px-6 py-3">Type</th><th className="px-6 py-3">Montant</th><th className="px-6 py-3">Statut</th>
                           </tr></thead>
                           <tbody>{txs.map((t: any) => (
                             <tr key={t.id} className="border-b border-neutral-50 hover:bg-neutral-50/50">
-                              <td className="px-6 py-3 text-xs text-neutral-500">{fmtDateTime(t.created_at)}</td>
+                              <td className="px-6 py-3 text-xs text-neutral-600">{fmtDateTime(t.created_at)}</td>
                               <td className="px-6 py-3 text-xs capitalize">{t.type}</td>
                               <td className="px-6 py-3 font-mono font-medium">{formatXOF(t.amount_xof)}</td>
                               <td className="px-6 py-3"><span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${t.status === 'success' ? 'bg-emerald-50 text-emerald-700' : t.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>{t.status === 'success' ? 'Réussi' : t.status === 'pending' ? 'En cours' : 'Échoué'}</span></td>
@@ -1483,10 +1452,10 @@ function ProDashboard() {
               {tab === 'marketing' && (
                 <>
                   <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-600" label="Note moyenne" value={`★ ${selectedVenue?.rating_avg?.toFixed(1) || '—'}`} sub={`${selectedVenue?.rating_count || 0} avis`} />
-                    <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-600" label="Réservations" value={String(reservations.length)} sub="toutes confondues" />
-                    <KpiCard icon={<IcoMegaphone className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-600" label="Promos actives" value={String(promos.filter((p) => p.active).length)} sub={`${promos.length} codes au total`} />
-                    <KpiCard icon={<IcoTrend className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-600" label="Taux conversion" value={`${reservations.length > 0 ? Math.round((reservations.filter((r) => r.status === 'arrived').length / reservations.length) * 100) : 0}%`} sub="arrivés / total" />
+                    <KpiCard icon={<IcoStar className="h-5 w-5" />} iconBg="bg-amber-50 text-amber-700" label="Note moyenne" value={`★ ${selectedVenue?.rating_avg?.toFixed(1) || '—'}`} sub={`${selectedVenue?.rating_count || 0} avis`} />
+                    <KpiCard icon={<IcoCalendar className="h-5 w-5" />} iconBg="bg-blue-50 text-blue-700" label="Réservations" value={String(reservations.length)} sub="toutes confondues" />
+                    <KpiCard icon={<IcoMegaphone className="h-5 w-5" />} iconBg="bg-purple-50 text-purple-700" label="Promos actives" value={String(promos.filter((p) => p.active).length)} sub={`${promos.length} codes au total`} />
+                    <KpiCard icon={<IcoTrend className="h-5 w-5" />} iconBg="bg-emerald-50 text-emerald-700" label="Taux conversion" value={`${reservations.length > 0 ? Math.round((reservations.filter((r) => r.status === 'arrived').length / reservations.length) * 100) : 0}%`} sub="arrivés / total" />
                   </div>
 
                   <div className="grid gap-6 lg:grid-cols-2">
@@ -1497,7 +1466,7 @@ function ProDashboard() {
                         <ProInput label="Code promo" value={promoCode} onChange={(v) => setPromoCode(v.toUpperCase())} placeholder="ETE2026" />
                         {/* Migration 0038 — sélecteur de type de promo */}
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-neutral-500">Type de promo</label>
+                          <label className="mb-1 block text-xs font-medium text-neutral-600">Type de promo</label>
                           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                             {(Object.keys(PROMO_KIND_META) as PromoKind[]).map((k) => {
                               const meta = PROMO_KIND_META[k];
@@ -1509,7 +1478,7 @@ function ProDashboard() {
                                   onClick={() => setPromoKind(k)}
                                   className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
                                     active
-                                      ? 'border-transparent text-white shadow-sm'
+                                      ? 'border-transparent text-night shadow-sm'
                                       : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300'
                                   }`}
                                   style={active ? { backgroundColor: meta.color } : undefined}
@@ -1521,20 +1490,20 @@ function ProDashboard() {
                           </div>
                         </div>
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-neutral-500">Remise (%)</label>
+                          <label className="mb-1 block text-xs font-medium text-neutral-600">Remise (%)</label>
                           <select value={promoDiscount} onChange={(e) => setPromoDiscount(e.target.value)} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
                             {['5', '10', '15', '20', '25', '30', '50'].map((v) => <option key={v} value={v}>{v}%</option>)}
                           </select>
                         </div>
                         <ProInput label="Nombre max d'utilisations (optionnel)" value={promoMaxUses} onChange={setPromoMaxUses} type="number" placeholder="laisser vide = illimité" />
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-neutral-500">Date d'expiration (optionnelle)</label>
+                          <label className="mb-1 block text-xs font-medium text-neutral-600">Date d'expiration (optionnelle)</label>
                           <input type="date" value={promoValidUntil} onChange={(e) => setPromoValidUntil(e.target.value)} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none" />
                         </div>
                         <button onClick={createPromo} disabled={promoSaving || !selectedVenueId} className="btn-primary w-full disabled:opacity-50">
                           {promoSaving ? 'Création…' : 'Créer le code'}
                         </button>
-                        {!selectedVenueId && <p className="text-xs text-neutral-400">Crée d'abord un établissement.</p>}
+                        {!selectedVenueId && <p className="text-xs text-neutral-600">Crée d'abord un établissement.</p>}
                       </div>
                     </div>
 
@@ -1542,9 +1511,9 @@ function ProDashboard() {
                     <div className="rounded-2xl border border-neutral-200 bg-white p-6">
                       <h3 className="mb-4 font-display text-lg font-bold text-dark">Codes promos ({promos.length})</h3>
                       {promosLoading ? (
-                        <div className="py-12 text-center text-sm text-neutral-400">Chargement…</div>
+                        <div className="py-12 text-center text-sm text-neutral-600">Chargement…</div>
                       ) : promos.length === 0 ? (
-                        <div className="py-12 text-center text-neutral-400">Aucun code promo</div>
+                        <div className="py-12 text-center text-neutral-600">Aucun code promo</div>
                       ) : (
                         <div className="space-y-2">
                           {promos.map((p) => {
@@ -1572,21 +1541,21 @@ function ProDashboard() {
                                     {expired && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">expiré</span>}
                                     {exhausted && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">épuisé</span>}
                                   </div>
-                                  <p className="mt-0.5 text-xs text-neutral-400">
+                                  <p className="mt-0.5 text-xs text-neutral-600">
                                     {p.uses_count}{p.max_uses !== null ? ` / ${p.max_uses}` : ''} utilisation{p.uses_count === 1 ? '' : 's'}
                                     {p.valid_until && ` · jusqu'au ${fmtShort(p.valid_until.slice(0, 10))}`}
                                   </p>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-2">
-                                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${live ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-200 text-neutral-500'}`}>-{p.discount_pct}%</span>
-                                  <button onClick={() => togglePromo(p.id, !p.active)} className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-200" title={p.active ? 'Désactiver' : 'Activer'}>
+                                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${live ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-200 text-neutral-600'}`}>-{p.discount_pct}%</span>
+                                  <button onClick={() => togglePromo(p.id, !p.active)} className="rounded-lg p-1 text-neutral-600 hover:bg-neutral-200" title={p.active ? 'Désactiver' : 'Activer'}>
                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                       {p.active
                                         ? <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                                         : <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />}
                                     </svg>
                                   </button>
-                                  <button onClick={() => deletePromo(p.id)} className="rounded-lg p-1 text-neutral-400 hover:bg-red-50 hover:text-red-500" title="Supprimer">
+                                  <button onClick={() => deletePromo(p.id)} className="rounded-lg p-1 text-neutral-600 hover:bg-red-50 hover:text-red-500" title="Supprimer">
                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                                   </button>
                                 </div>
@@ -1626,13 +1595,13 @@ function ProDashboard() {
                     <h3 className="mb-5 font-display text-lg font-bold text-dark">Médias de la vitrine</h3>
                     <div className="grid gap-6 lg:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-xs font-medium text-neutral-500">Logo</label>
+                        <label className="mb-2 block text-xs font-medium text-neutral-600">Logo</label>
                         <div className="flex items-center gap-4">
                           <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
                             {media.logo ? (
                               <Image src={media.logo} alt="logo" fill sizes="80px" className="object-cover" />
                             ) : (
-                              <IcoGrid className="h-7 w-7 text-neutral-300" />
+                              <IcoGrid className="h-7 w-7 text-neutral-600" />
                             )}
                           </div>
                           <label className="cursor-pointer rounded-xl border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition hover:border-primary-500/30 hover:text-primary-500">
@@ -1643,13 +1612,13 @@ function ProDashboard() {
                         </div>
                       </div>
                       <div>
-                        <label className="mb-2 block text-xs font-medium text-neutral-500">Bannière</label>
+                        <label className="mb-2 block text-xs font-medium text-neutral-600">Bannière</label>
                         <div className="flex items-center gap-4">
                           <div className="relative flex h-20 w-32 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
                             {media.cover ? (
                               <Image src={media.cover} alt="bannière" fill sizes="128px" className="object-cover" />
                             ) : (
-                              <IcoGrid className="h-7 w-7 text-neutral-300" />
+                              <IcoGrid className="h-7 w-7 text-neutral-600" />
                             )}
                           </div>
                           <label className="cursor-pointer rounded-xl border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition hover:border-primary-500/30 hover:text-primary-500">
@@ -1662,15 +1631,15 @@ function ProDashboard() {
                     </div>
                     <div className="mt-6">
                       <div className="mb-2 flex items-center justify-between">
-                        <label className="text-xs font-medium text-neutral-500">Galerie photos ({media.gallery.length})</label>
-                        <label className="cursor-pointer rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-600">
+                        <label className="text-xs font-medium text-neutral-600">Galerie photos ({media.gallery.length})</label>
+                        <label className="cursor-pointer rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-night transition hover:bg-primary-400">
                           {uploading === 'gallery' ? 'Envoi…' : '+ Ajouter une photo'}
                           <input type="file" accept="image/*" className="hidden" disabled={!!uploading}
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMedia(f, 'gallery'); e.target.value = ''; }} />
                         </label>
                       </div>
                       {media.gallery.length === 0 ? (
-                        <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400">Aucune photo — ajoute des visuels pour attirer les clients</p>
+                        <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-600">Aucune photo — ajoute des visuels pour attirer les clients</p>
                       ) : (
                         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
                           {media.gallery.map((url) => (
@@ -1689,17 +1658,17 @@ function ProDashboard() {
                     {/* PR Video — galerie vidéos */}
                     <div className="mt-6 border-t border-neutral-100 pt-6">
                       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                        <label className="text-xs font-medium text-neutral-500">
-                          Galerie vidéos ({media.videos.length}) <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500">MP4 · MOV · WebM · 50 Mo max</span>
+                        <label className="text-xs font-medium text-neutral-600">
+                          Galerie vidéos ({media.videos.length}) <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">MP4 · MOV · WebM · 50 Mo max</span>
                         </label>
-                        <label className="cursor-pointer rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-600">
+                        <label className="cursor-pointer rounded-xl bg-primary-500 px-4 py-2 text-sm font-medium text-night transition hover:bg-primary-400">
                           {uploading === 'video' ? 'Envoi…' : '+ Ajouter une vidéo'}
                           <input type="file" accept="video/mp4,video/quicktime,video/webm,video/x-m4v" className="hidden" disabled={!!uploading}
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadMedia(f, 'video'); e.target.value = ''; }} />
                         </label>
                       </div>
                       {media.videos.length === 0 ? (
-                        <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400">
+                        <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-600">
                           Aucune vidéo — une visite vidéo augmente fortement l'engagement
                         </p>
                       ) : (
@@ -1725,8 +1694,8 @@ function ProDashboard() {
 
                     {/* PR Video — Visite virtuelle 360° */}
                     <div className="mt-6 border-t border-neutral-100 pt-6">
-                      <label className="mb-2 block text-xs font-medium text-neutral-500">
-                        Visite virtuelle 360° <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500">Matterport, Kuula, Pano2VR…</span>
+                      <label className="mb-2 block text-xs font-medium text-neutral-600">
+                        Visite virtuelle 360° <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">Matterport, Kuula, Pano2VR…</span>
                       </label>
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <input
@@ -1738,13 +1707,13 @@ function ProDashboard() {
                         />
                         <button
                           onClick={saveTour360}
-                          className="rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary-600"
+                          className="rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-medium text-night transition hover:bg-primary-400"
                         >
                           {media.tour360 === (tour360Input.trim() || null) ? '✓ Enregistré' : 'Enregistrer'}
                         </button>
                       </div>
                       {media.tour360 && (
-                        <p className="mt-2 text-xs text-neutral-500">
+                        <p className="mt-2 text-xs text-neutral-600">
                           Lien actif :{' '}
                           <a href={media.tour360} target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">
                             ouvrir la visite
@@ -1756,8 +1725,8 @@ function ProDashboard() {
                     {/* Phase 5 refonte UX — photos par catégorie (en plus de la
                         galerie plate ci-dessus, jamais retouchée) */}
                     <div className="mt-6 border-t border-neutral-100 pt-6">
-                      <label className="mb-2 block text-xs font-medium text-neutral-500">
-                        Photos par catégorie <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-500">Menu, Chambres, Vitrine…</span>
+                      <label className="mb-2 block text-xs font-medium text-neutral-600">
+                        Photos par catégorie <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600">Menu, Chambres, Vitrine…</span>
                       </label>
                       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                         <select
@@ -1777,7 +1746,7 @@ function ProDashboard() {
                           placeholder="…ou tape une catégorie personnalisée"
                           className="flex-1 rounded-xl border border-neutral-200 px-3 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none"
                         />
-                        <label className={`cursor-pointer rounded-xl px-4 py-2.5 text-sm font-medium text-white transition ${newPhotoCategory.trim() ? 'bg-primary-500 hover:bg-primary-600' : 'bg-neutral-300'}`}>
+                        <label className={`cursor-pointer rounded-xl px-4 py-2.5 text-sm font-medium text-night transition ${newPhotoCategory.trim() ? 'bg-primary-500 hover:bg-primary-400' : 'bg-neutral-300'}`}>
                           {uploading === 'category-photo' ? 'Envoi…' : '+ Ajouter'}
                           <input
                             type="file" accept="image/*" className="hidden"
@@ -1787,7 +1756,7 @@ function ProDashboard() {
                         </label>
                       </div>
                       {categorizedPhotos.length === 0 ? (
-                        <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400">
+                        <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-600">
                           Aucune photo catégorisée — ajoute des visuels par type (menu, chambres, vitrine…)
                         </p>
                       ) : (
@@ -1820,11 +1789,11 @@ function ProDashboard() {
                   <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-6">
                     <div className="mb-2 flex items-baseline justify-between">
                       <h3 className="font-display text-lg font-bold text-dark">Localisation GPS</h3>
-                      <span className={`text-xs ${geo ? 'text-emerald-600' : 'text-amber-600'}`}>
+                      <span className={`text-xs ${geo ? 'text-emerald-700' : 'text-amber-700'}`}>
                         {geo ? '✓ Position enregistrée' : '⚠ Pas encore positionné sur la carte'}
                       </span>
                     </div>
-                    <p className="mb-5 text-sm text-neutral-500">
+                    <p className="mb-5 text-sm text-neutral-600">
                       Place ton établissement sur la carte. Sans coordonnées GPS, ta vitrine n'apparaîtra pas dans la recherche par proximité et tes clients ne pourront pas obtenir d'itinéraire.
                     </p>
                     {selectedVenueId ? (
@@ -1834,7 +1803,7 @@ function ProDashboard() {
                         onSave={saveVenueLocation}
                       />
                     ) : (
-                      <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-400">
+                      <p className="rounded-xl border border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-600">
                         Crée d'abord un établissement.
                       </p>
                     )}
@@ -1846,7 +1815,7 @@ function ProDashboard() {
                       <div className="space-y-4">
                         <ProInput label="Nom de l'établissement" value={settingsName} onChange={setSettingsName} />
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-neutral-500">Catégorie</label>
+                          <label className="mb-1 block text-xs font-medium text-neutral-600">Catégorie</label>
                           <select value={settingsCategory} onChange={(e) => setSettingsCategory(e.target.value)} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none">
                             {VENUE_CATEGORY_GROUPS_PRO.map((g) => (
                         <optgroup key={g.group} label={g.label}>
@@ -1868,7 +1837,7 @@ function ProDashboard() {
                         <ProInput label="WhatsApp" value={vx.whatsapp} onChange={(v) => setVx((p) => ({ ...p, whatsapp: v }))} placeholder="+225XXXXXXXXXX" />
                         <ProInput label="Email" value={vx.email} onChange={(v) => setVx((p) => ({ ...p, email: v }))} placeholder="contact@etablissement.ci" />
                         <div>
-                          <label className="mb-1 block text-xs font-medium text-neutral-500">Description</label>
+                          <label className="mb-1 block text-xs font-medium text-neutral-600">Description</label>
                           <textarea value={settingsDesc} onChange={(e) => setSettingsDesc(e.target.value)} rows={4}
                             className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none" placeholder="Décrivez votre établissement..." />
                         </div>
@@ -1881,7 +1850,7 @@ function ProDashboard() {
                       sans clé si fermé. Lecture mobile : hoursHelpers.computeOpenStatus. */}
                   <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6">
                     <h3 className="mb-1 font-display text-lg font-bold text-dark">Horaires d&apos;ouverture</h3>
-                    <p className="mb-5 text-xs text-neutral-500">
+                    <p className="mb-5 text-xs text-neutral-600">
                       Pour les fermetures après minuit (ex. 17h → 02h), saisis 02:00 en heure de fermeture. La fonction « Ouvert maintenant » sur mobile gère le wrap automatiquement.
                     </p>
                     <div className="grid gap-3">
@@ -1924,7 +1893,7 @@ function ProDashboard() {
                             {!isClosed && (
                               <>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs text-neutral-500">Ouverture</span>
+                                  <span className="text-xs text-neutral-600">Ouverture</span>
                                   <input
                                     type="time"
                                     value={open}
@@ -1933,7 +1902,7 @@ function ProDashboard() {
                                   />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs text-neutral-500">Fermeture</span>
+                                  <span className="text-xs text-neutral-600">Fermeture</span>
                                   <input
                                     type="time"
                                     value={close}
@@ -1989,12 +1958,12 @@ function ProDashboard() {
 
                   {/* Services, ambiance, réseaux & tarif */}
                   <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                    <div className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-6">
+                    <div className="min-w-0 space-y-5 rounded-2xl border border-neutral-200 bg-white p-6">
                       <h3 className="font-display text-lg font-bold text-dark">Services & ambiance</h3>
                       <TagEditor label="Services proposés" tags={vx.amenities} suggestions={AMENITY_SUGGESTIONS} placeholder="Ajouter un service…" onChange={(t) => setVx((p) => ({ ...p, amenities: t }))} />
                       <TagEditor label="Ambiance" tags={vx.ambiance} suggestions={AMBIANCE_SUGGESTIONS} placeholder="Ajouter une ambiance…" onChange={(t) => setVx((p) => ({ ...p, ambiance: t }))} />
                     </div>
-                    <div className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6">
+                    <div className="min-w-0 space-y-4 rounded-2xl border border-neutral-200 bg-white p-6">
                       <h3 className="font-display text-lg font-bold text-dark">Tarif & réseaux sociaux</h3>
                       <ProInput label="Prix de référence (FCFA)" type="number" value={vx.price} onChange={(v) => setVx((p) => ({ ...p, price: v }))} placeholder="5000" />
                       <ProInput label="Instagram" value={vx.socials.instagram} onChange={(v) => setVx((p) => ({ ...p, socials: { ...p.socials, instagram: v } }))} placeholder="@monetablissement" />
@@ -2005,22 +1974,22 @@ function ProDashboard() {
 
                   {/* Venue info */}
                   <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6">
-                    <h3 className="mb-4 text-sm font-semibold text-neutral-400">Informations du compte</h3>
+                    <h3 className="mb-4 text-sm font-semibold text-neutral-600">Informations du compte</h3>
                     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                       <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-                        <p className="text-xs text-neutral-500">Statut</p>
-                        <p className={`mt-1 text-sm font-semibold ${selectedVenue?.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}`}>{selectedVenue?.status === 'active' ? 'Actif' : selectedVenue?.status || '—'}</p>
+                        <p className="text-xs text-neutral-600">Statut</p>
+                        <p className={`mt-1 text-sm font-semibold ${selectedVenue?.status === 'active' ? 'text-emerald-700' : 'text-amber-700'}`}>{selectedVenue?.status === 'active' ? 'Actif' : selectedVenue?.status || '—'}</p>
                       </div>
                       <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-                        <p className="text-xs text-neutral-500">Note</p>
-                        <p className="mt-1 text-sm font-semibold text-amber-600">★ {selectedVenue?.rating_avg || 0}</p>
+                        <p className="text-xs text-neutral-600">Note</p>
+                        <p className="mt-1 text-sm font-semibold text-amber-700">★ {selectedVenue?.rating_avg || 0}</p>
                       </div>
                       <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-                        <p className="text-xs text-neutral-500">Avis</p>
+                        <p className="text-xs text-neutral-600">Avis</p>
                         <p className="mt-1 text-sm font-semibold text-dark">{selectedVenue?.rating_count || 0}</p>
                       </div>
                       <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-center">
-                        <p className="text-xs text-neutral-500">Réservations</p>
+                        <p className="text-xs text-neutral-600">Réservations</p>
                         <p className="mt-1 text-sm font-semibold text-dark">{reservations.length}</p>
                       </div>
                     </div>
@@ -2049,12 +2018,12 @@ function ReservationTable({ reservations, tableLoading, search, onSearch, status
     <section className="rounded-2xl border border-neutral-200 bg-white shadow-sm">
       <div className="flex flex-col gap-4 border-b border-neutral-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-display text-lg font-bold text-dark">Réservations</h2>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <IcoSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-            <input type="text" placeholder="Rechercher un client..." value={search} onChange={(e) => onSearch(e.target.value)} className="w-56 rounded-xl border border-neutral-200 py-2.5 pl-10 pr-4 text-sm transition focus:border-primary-500 focus:outline-none" />
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
+            <IcoSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-600" />
+            <input type="text" aria-label="Rechercher un client" placeholder="Rechercher un client..." value={search} onChange={(e) => onSearch(e.target.value)} className="w-full rounded-xl sm:w-56 border border-neutral-200 py-2.5 pl-10 pr-4 text-sm transition focus:border-primary-500 focus:outline-none" />
           </div>
-          <select value={statusFilter} onChange={(e) => onStatusFilter(e.target.value)} className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm transition focus:border-primary-500 focus:outline-none">
+          <select aria-label="Filtrer par statut" value={statusFilter} onChange={(e) => onStatusFilter(e.target.value)} className="min-w-0 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm transition focus:border-primary-500 focus:outline-none">
             <option value="all">Tous les statuts</option>
             <option value="pending">En attente</option><option value="confirmed">Confirmé</option><option value="arrived">Arrivé</option><option value="no_show">No-show</option><option value="cancelled">Annulé</option>
           </select>
@@ -2063,11 +2032,11 @@ function ReservationTable({ reservations, tableLoading, search, onSearch, status
       {tableLoading ? (
         <div className="flex items-center justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-500" /></div>
       ) : reservations.length === 0 ? (
-        <div className="py-16 text-center text-neutral-400">Aucune réservation</div>
+        <div className="py-16 text-center text-neutral-600">Aucune réservation</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-neutral-100 text-left text-xs font-semibold uppercase tracking-wider text-neutral-400">
+            <thead><tr className="border-b border-neutral-100 text-left text-xs font-semibold uppercase tracking-wider text-neutral-600">
               <th className="px-6 py-3">Date / Heure</th><th className="px-6 py-3">Client</th><th className="px-6 py-3">Pers.</th><th className="px-6 py-3">Acompte</th><th className="px-6 py-3">Statut</th><th className="px-6 py-3 text-right">Actions</th>
             </tr></thead>
             <tbody>{reservations.map((r) => {
@@ -2075,17 +2044,17 @@ function ReservationTable({ reservations, tableLoading, search, onSearch, status
               const meta = STATUS_META[r.status] || STATUS_META.pending;
               return (
                 <tr key={r.id} className="border-b border-neutral-50 transition-colors hover:bg-neutral-50/50">
-                  <td className="px-6 py-4"><div className="font-medium text-dark">{dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</div><div className="font-mono text-xs text-neutral-400">{dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div></td>
-                  <td className="px-6 py-4"><div className="font-medium text-dark">{r.customer_name || 'Client'}</div>{r.customer_phone && <div className="text-xs text-neutral-400">{r.customer_phone}</div>}</td>
+                  <td className="px-6 py-4"><div className="font-medium text-dark">{dt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</div><div className="font-mono text-xs text-neutral-600">{dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div></td>
+                  <td className="px-6 py-4"><div className="font-medium text-dark">{r.customer_name || 'Client'}</div>{r.customer_phone && <div className="text-xs text-neutral-600">{r.customer_phone}</div>}</td>
                   <td className="px-6 py-4 font-medium">{r.party_size}</td>
                   <td className="px-6 py-4 font-mono font-medium">{formatXOF(r.deposit_xof)}</td>
                   <td className="px-6 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${meta.bg} ${meta.color}`}>{meta.label}</span></td>
                   <td className="px-6 py-4 text-right">
                     {actionLoading === r.id ? <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-primary-200 border-t-primary-500" /> : (
                       <div className="flex items-center justify-end gap-1">
-                        {r.status === 'pending' && <><button onClick={() => onUpdateStatus(r.id, 'confirmed')} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50">Confirmer</button><button onClick={() => onUpdateStatus(r.id, 'cancelled')} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50">Annuler</button></>}
-                        {r.status === 'confirmed' && <><button onClick={() => onUpdateStatus(r.id, 'arrived')} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-50">Arrivé</button><button onClick={() => onUpdateStatus(r.id, 'no_show')} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-amber-600 transition hover:bg-amber-50">No-show</button></>}
-                        {['arrived', 'no_show', 'cancelled', 'refunded'].includes(r.status) && <span className="text-xs text-neutral-300">—</span>}
+                        {r.status === 'pending' && <><button onClick={() => onUpdateStatus(r.id, 'confirmed')} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50">Confirmer</button><button onClick={() => onUpdateStatus(r.id, 'cancelled')} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50">Annuler</button></>}
+                        {r.status === 'confirmed' && <><button onClick={() => onUpdateStatus(r.id, 'arrived')} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50">Arrivé</button><button onClick={() => onUpdateStatus(r.id, 'no_show')} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-50">No-show</button></>}
+                        {['arrived', 'no_show', 'cancelled', 'refunded'].includes(r.status) && <span className="text-xs text-neutral-600">—</span>}
                       </div>
                     )}
                   </td>
@@ -2095,22 +2064,20 @@ function ReservationTable({ reservations, tableLoading, search, onSearch, status
           </table>
         </div>
       )}
-      <div className="border-t border-neutral-100 px-6 py-3 text-xs text-neutral-400">{reservations.length} réservation{reservations.length > 1 ? 's' : ''}</div>
+      <div className="border-t border-neutral-100 px-6 py-3 text-xs text-neutral-600">{reservations.length} réservation{reservations.length > 1 ? 's' : ''}</div>
     </section>
   );
 }
 
 function KpiCard({ icon, iconBg, label, value, sub }: { icon: React.ReactNode; iconBg: string; label: string; value: string; sub: string }) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-md sm:p-5 lg:p-6">
-      <div className="flex items-center gap-3 sm:gap-4">
-        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${iconBg}`}>{icon}</div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[11px] font-medium text-neutral-400 sm:text-xs">{label}</div>
-          <div className="mt-0.5 truncate font-display text-lg font-bold text-dark sm:text-2xl">{value}</div>
-        </div>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-md sm:p-5">
+      <div className="flex items-center gap-2.5">
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9 ${iconBg}`}>{icon}</div>
+        <div className="min-w-0 text-xs font-medium leading-tight text-neutral-700 sm:text-sm">{label}</div>
       </div>
-      <div className="mt-2 truncate text-[11px] text-neutral-400 sm:mt-3 sm:text-xs">{sub}</div>
+      <div className="mt-3 break-words font-display text-xl font-bold leading-tight text-dark sm:text-2xl">{value}</div>
+      <div className="mt-1 text-[11px] text-neutral-600 sm:text-xs">{sub}</div>
     </div>
   );
 }
@@ -2118,7 +2085,7 @@ function KpiCard({ icon, iconBg, label, value, sub }: { icon: React.ReactNode; i
 function ProInput({ label, value, onChange, type = 'text', placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-neutral-500">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-neutral-600">{label}</label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none" />
     </div>
   );
@@ -2134,7 +2101,7 @@ function TagEditor({ label, tags, onChange, suggestions, placeholder }: { label:
   const remaining = (suggestions || []).filter((s) => !tags.includes(s));
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-neutral-500">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-neutral-600">{label}</label>
       {tags.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2">
           {tags.map((t) => (
@@ -2155,7 +2122,7 @@ function TagEditor({ label, tags, onChange, suggestions, placeholder }: { label:
       {remaining.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {remaining.map((s) => (
-            <button key={s} type="button" onClick={() => add(s)} className="rounded-full border border-neutral-200 px-2.5 py-0.5 text-xs text-neutral-500 transition hover:border-primary-500/40 hover:text-primary-500">+ {s}</button>
+            <button key={s} type="button" onClick={() => add(s)} className="rounded-full border border-neutral-200 px-2.5 py-0.5 text-xs text-neutral-600 transition hover:border-primary-500/40 hover:text-primary-500">+ {s}</button>
           ))}
         </div>
       )}

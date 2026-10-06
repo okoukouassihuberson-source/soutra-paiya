@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { supabaseBrowser } from '@/lib/supabase';
 import { BrandMark } from '@/components/layout/BrandMark';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { CommandPalette } from '@/components/search/CommandPalette';
 import { LanguageSwitcher } from '@/components/tourism/LanguageSwitcher';
 import { useI18n } from '@/lib/i18n/client';
 
@@ -80,6 +82,8 @@ export function LandingNavbar() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <CommandPalette />
+            <ThemeToggle className="max-[359px]:hidden" />
             <LanguageSwitcher tone={light ? 'light' : 'dark'} className="hidden sm:inline-flex" />
             <Link href={account.href} className={cn('hidden whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold transition-colors sm:inline-flex', light ? 'text-neutral-700 hover:bg-neutral-100' : 'text-white hover:bg-white/10')}>
               {account.label}

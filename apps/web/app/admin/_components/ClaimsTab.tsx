@@ -33,11 +33,11 @@ interface ClaimRow {
 }
 
 const STATUS_META: Record<ClaimRow['status'], { label: string; bg: string; text: string }> = {
-  pending:   { label: 'En attente',  bg: 'bg-amber-500/15',   text: 'text-amber-400' },
-  reviewing: { label: 'En examen',   bg: 'bg-blue-500/15',    text: 'text-blue-400' },
-  approved:  { label: 'Approuvée',   bg: 'bg-emerald-500/15', text: 'text-emerald-400' },
-  rejected:  { label: 'Refusée',     bg: 'bg-red-500/15',     text: 'text-red-400' },
-  cancelled: { label: 'Annulée',     bg: 'bg-neutral-500/15', text: 'text-neutral-400' },
+  pending:   { label: 'En attente',  bg: 'bg-amber-500/15',   text: 'text-amber-700' },
+  reviewing: { label: 'En examen',   bg: 'bg-blue-500/15',    text: 'text-blue-700' },
+  approved:  { label: 'Approuvée',   bg: 'bg-emerald-500/15', text: 'text-emerald-700' },
+  rejected:  { label: 'Refusée',     bg: 'bg-red-500/15',     text: 'text-red-700' },
+  cancelled: { label: 'Annulée',     bg: 'bg-neutral-500/15', text: 'text-neutral-700' },
 };
 
 /**
@@ -139,8 +139,8 @@ export function ClaimsTab() {
               onClick={() => setStatus(s)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 active
-                  ? 'border-primary-500 bg-primary-500/15 text-primary-400'
-                  : 'border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700'
+                  ? 'border-primary-500 bg-primary-500/15 text-primary-700'
+                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400'
               }`}
             >
               {label}
@@ -159,12 +159,12 @@ export function ClaimsTab() {
 
       {/* List */}
       {loading ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
           Chargement…
         </div>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center">
-          <p className="text-sm text-neutral-400">Aucune revendication pour ce filtre.</p>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+          <p className="text-sm text-neutral-700">Aucune revendication pour ce filtre.</p>
         </div>
       ) : (
         <ul className="space-y-3">
@@ -172,10 +172,10 @@ export function ClaimsTab() {
             const statusMeta = STATUS_META[r.status];
             const isActionable = r.status === 'pending' || r.status === 'reviewing';
             return (
-              <li key={r.id} className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4 sm:p-5">
+              <li key={r.id} className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5">
                 {/* Header : venue + status */}
                 <div className="flex items-start gap-3">
-                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-neutral-800">
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-neutral-100">
                     {r.venue_cover ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={r.venue_cover} alt="" className="h-full w-full object-cover" />
@@ -186,12 +186,12 @@ export function ClaimsTab() {
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${statusMeta.bg} ${statusMeta.text}`}>
                         {statusMeta.label}
                       </span>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-neutral-600">
                         {r.venue_category}
                       </span>
                     </div>
-                    <p className="mt-1 truncate font-display text-base font-bold text-white">{r.venue_name}</p>
-                    <p className="text-xs text-neutral-500">
+                    <p className="mt-1 truncate font-display text-base font-bold text-dark">{r.venue_name}</p>
+                    <p className="text-xs text-neutral-600">
                       {[r.venue_district, r.venue_city].filter(Boolean).join(' · ') || '—'} ·{' '}
                       {new Date(r.created_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -200,19 +200,19 @@ export function ClaimsTab() {
 
                 {/* Claimant + current owner */}
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-neutral-800/50 bg-neutral-950/50 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">Demandeur</p>
-                    <p className="mt-1 text-sm font-semibold text-white">{r.claimant_name || '—'}</p>
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-600">Demandeur</p>
+                    <p className="mt-1 text-sm font-semibold text-dark">{r.claimant_name || '—'}</p>
                     {r.contact_phone && (
-                      <p className="text-xs text-neutral-400">📞 {r.contact_phone}</p>
+                      <p className="text-xs text-neutral-700">📞 {r.contact_phone}</p>
                     )}
                     {r.business_name && (
-                      <p className="mt-1 text-xs text-neutral-300">{r.business_name}{r.business_role ? ` — ${r.business_role}` : ''}</p>
+                      <p className="mt-1 text-xs text-neutral-800">{r.business_name}{r.business_role ? ` — ${r.business_role}` : ''}</p>
                     )}
                   </div>
-                  <div className="rounded-xl border border-neutral-800/50 bg-neutral-950/50 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">Owner actuel</p>
-                    <p className="mt-1 text-sm font-semibold text-white">{r.current_owner_name || '— (aucun)'}</p>
+                  <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-600">Owner actuel</p>
+                    <p className="mt-1 text-sm font-semibold text-dark">{r.current_owner_name || '— (aucun)'}</p>
                   </div>
                 </div>
 
@@ -225,8 +225,8 @@ export function ClaimsTab() {
 
                 {/* Notes du demandeur */}
                 {r.notes && (
-                  <div className="mt-3 rounded-xl border border-neutral-800/50 bg-neutral-950/50 p-3 text-sm text-neutral-300">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-500">Notes du demandeur</span>
+                  <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-800">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-neutral-600">Notes du demandeur</span>
                     <p className="mt-1 whitespace-pre-wrap">{r.notes}</p>
                   </div>
                 )}
@@ -234,8 +234,8 @@ export function ClaimsTab() {
                 {/* Décision admin */}
                 {r.decision_note && (
                   <div className="mt-3 rounded-xl border border-emerald-800/30 bg-emerald-500/5 p-3 text-xs">
-                    <span className="font-bold text-emerald-400">Note admin :</span>{' '}
-                    <span className="text-neutral-300">{r.decision_note}</span>
+                    <span className="font-bold text-emerald-700">Note admin :</span>{' '}
+                    <span className="text-neutral-800">{r.decision_note}</span>
                   </div>
                 )}
 
@@ -248,14 +248,14 @@ export function ClaimsTab() {
                       placeholder="Note de décision (optionnelle, visible côté demandeur)"
                       rows={2}
                       maxLength={2000}
-                      className="w-full rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-white placeholder:text-neutral-600 focus:border-primary-500 focus:outline-none"
+                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-dark placeholder:text-neutral-600 focus:border-primary-500 focus:outline-none"
                     />
                     <div className="flex flex-wrap gap-2">
                       {r.status === 'pending' && (
                         <button
                           disabled={actionId === r.id}
                           onClick={() => takeOver(r.id)}
-                          className="rounded-full bg-blue-500/15 px-3 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/25 disabled:opacity-50"
+                          className="rounded-full bg-blue-500/15 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-500/25 disabled:opacity-50"
                         >
                           Prendre en charge
                         </button>
@@ -263,14 +263,14 @@ export function ClaimsTab() {
                       <button
                         disabled={actionId === r.id}
                         onClick={() => approve(r.id)}
-                        className="rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-50"
+                        className="rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-500/25 disabled:opacity-50"
                       >
                         ✓ Approuver
                       </button>
                       <button
                         disabled={actionId === r.id}
                         onClick={() => reject(r.id)}
-                        className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/25 disabled:opacity-50"
+                        className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-500/25 disabled:opacity-50"
                       >
                         ✕ Refuser
                       </button>
@@ -290,7 +290,7 @@ function DocLink({ label, url, optional }: { label: string; url: string | null; 
   if (!url) {
     return (
       <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-        optional ? 'bg-neutral-800/50 text-neutral-500' : 'bg-red-500/10 text-red-300 ring-1 ring-red-500/30'
+        optional ? 'bg-neutral-100 text-neutral-600' : 'bg-red-500/10 text-red-700 ring-1 ring-red-500/30'
       }`}>
         {label} : {optional ? '—' : 'manquant'}
       </span>
@@ -301,7 +301,7 @@ function DocLink({ label, url, optional }: { label: string; url: string | null; 
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 rounded-full bg-primary-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary-300 ring-1 ring-primary-500/30 hover:bg-primary-500/20"
+      className="inline-flex items-center gap-1 rounded-full bg-primary-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary-700 ring-1 ring-primary-500/30 hover:bg-primary-500/20"
     >
       📎 {label}
     </a>
@@ -310,14 +310,14 @@ function DocLink({ label, url, optional }: { label: string; url: string | null; 
 
 function SummaryCard({ label, value, tone }: { label: string; value: number; tone: 'amber' | 'blue' | 'emerald' | 'neutral' }) {
   const map = {
-    amber: 'text-amber-400',
-    blue: 'text-blue-400',
-    emerald: 'text-emerald-400',
-    neutral: 'text-neutral-400',
+    amber: 'text-amber-700',
+    blue: 'text-blue-700',
+    emerald: 'text-emerald-700',
+    neutral: 'text-neutral-700',
   } as const;
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">{label}</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-600">{label}</p>
       <p className={`mt-1 font-display text-2xl font-bold ${map[tone]}`}>{value}</p>
     </div>
   );

@@ -1,5 +1,6 @@
 import { supabaseServer } from './supabase-server';
 import type { Activity, ActivitySlot } from '@soutra/shared';
+import { publicNames } from './public-profiles';
 
 const db = () => supabaseServer() as any;
 
@@ -38,17 +39,18 @@ export async function getActivity(slug: string) {
   const [{ data: slots }, { data: reviews }, { data: dest }] = await Promise.all([
     sb.from('activity_slots').select('*').eq('activity_id', activity.id).eq('status', 'open')
       .gt('starts_at', nowPlus).order('starts_at').limit(60),
-    sb.from('activity_reviews').select('id, rating, comment, created_at, profiles(full_name)')
+    sb.from('activity_reviews').select('id, rating, comment, created_at, user_id')
       .eq('activity_id', activity.id).eq('status', 'published').order('created_at', { ascending: false }).limit(20),
     activity.destination_id
       ? sb.from('destinations').select('slug, name').eq('id', activity.destination_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
+  const names = await publicNames(sb, ((reviews ?? []) as any[]).map((r) => r.user_id));
   return {
     activity: activity as Activity,
     slots: ((slots ?? []) as ActivitySlot[]).filter((s) => s.capacity > s.booked),
     reviews: ((reviews ?? []) as any[]).map((r): ReviewRow => ({
-      id: r.id, rating: r.rating, comment: r.comment, created_at: r.created_at, author: shortName(r.profiles?.full_name),
+      id: r.id, rating: r.rating, comment: r.comment, created_at: r.created_at, author: shortName(names.get(r.user_id)),
     })),
     destination: dest as { slug: string; name: string } | null,
   };

@@ -270,7 +270,7 @@ export default function LoyaltyScreen() {
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={s.rowTitle} numberOfLines={1}>{r.label}</Text>
                   <Text style={s.rowSub} numberOfLines={2}>{r.description}</Text>
-                  <Text style={s.rewardCost}>{r.points_cost.toLocaleString('fr-FR')} pts</Text>
+                  <Text style={s.rewardCost}>{r.points_cost.toLocaleString(intlLocale())} pts</Text>
                 </View>
                 <Pressable
                   style={[s.redeemBtn, (!affordable || redeeming === r.code) && s.redeemBtnDisabled]}
@@ -297,7 +297,7 @@ export default function LoyaltyScreen() {
             <View key={row.rank} style={s.row}>
               <Text style={s.rankNumber}>#{row.rank}</Text>
               <Text style={s.rowTitle} numberOfLines={1}>{row.full_name ?? 'Utilisateur'}</Text>
-              <Text style={s.rowAmount}>{row.points_lifetime.toLocaleString('fr-FR')} pts</Text>
+              <Text style={s.rowAmount}>{row.points_lifetime.toLocaleString(intlLocale())} pts</Text>
             </View>
           ))}
         </View>
@@ -334,7 +334,7 @@ export default function LoyaltyScreen() {
                     <Text style={s.rowSub} numberOfLines={1}>{relativeDate(tx.created_at)}</Text>
                   </View>
                   <Text style={[s.rowAmount, { color: positive ? c.success : c.danger }]}>
-                    {positive ? '+' : ''}{tx.points.toLocaleString('fr-FR')} pts
+                    {positive ? '+' : ''}{tx.points.toLocaleString(intlLocale())} pts
                   </Text>
                 </View>
               );

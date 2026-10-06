@@ -116,8 +116,8 @@ export function MonetizationTab() {
               onClick={() => setSection(s.id)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 active
-                  ? 'border-primary-500 bg-primary-500/15 text-primary-400'
-                  : 'border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700'
+                  ? 'border-primary-500 bg-primary-500/15 text-primary-700'
+                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400'
               }`}
             >
               {s.icon} {s.label}
@@ -198,7 +198,7 @@ function RulesSection() {
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
-          className="rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-white"
+          className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-dark"
         >
           <option value="all">Toutes catégories</option>
           {GROUP_ORDER.map((g) => (
@@ -213,7 +213,7 @@ function RulesSection() {
           value={filterCity}
           onChange={(e) => setFilterCity(e.target.value)}
           placeholder="Filtrer par ville…"
-          className="rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-white placeholder:text-neutral-600"
+          className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-dark placeholder:text-neutral-600"
         />
         <button
           onClick={() => { setEditing({
@@ -229,44 +229,44 @@ function RulesSection() {
             account_verification_xof: null, venue_certification_xof: null,
             event_publication_xof: null, promo_publication_xof: null,
           }); setCreating(true); }}
-          className="ml-auto rounded-full bg-primary-500 px-4 py-2 text-xs font-bold text-white hover:bg-primary-600"
+          className="ml-auto rounded-full bg-primary-500 px-4 py-2 text-xs font-bold text-night hover:bg-primary-400"
         >
           + Nouvelle règle
         </button>
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
           Chargement…
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center">
-          <p className="text-sm text-neutral-400">Aucune règle pour ce filtre.</p>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+          <p className="text-sm text-neutral-700">Aucune règle pour ce filtre.</p>
         </div>
       ) : (
         <ul className="space-y-3">
           {filtered.map((r) => (
-            <li key={r.id} className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
+            <li key={r.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                      r.enabled ? 'bg-emerald-500/15 text-emerald-400' : 'bg-neutral-700/50 text-neutral-400'
+                      r.enabled ? 'bg-emerald-500/15 text-emerald-700' : 'bg-neutral-200 text-neutral-700'
                     }`}>
                       {r.enabled ? 'Active' : 'Désactivée'}
                     </span>
-                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-400">
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
                       Priorité {r.priority}
                     </span>
                     {r.category && (
-                      <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-400">
+                      <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700">
                         {r.category}
                       </span>
                     )}
-                    {r.city && <span className="text-[10px] uppercase tracking-wide text-neutral-500">📍 {r.city}</span>}
-                    {r.commune && <span className="text-[10px] uppercase tracking-wide text-neutral-500">· {r.commune}</span>}
+                    {r.city && <span className="text-[10px] uppercase tracking-wide text-neutral-600">📍 {r.city}</span>}
+                    {r.commune && <span className="text-[10px] uppercase tracking-wide text-neutral-600">· {r.commune}</span>}
                     {r.subscription_tier && (
-                      <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-400">
+                      <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-purple-700">
                         {r.subscription_tier}
                       </span>
                     )}
@@ -276,8 +276,8 @@ function RulesSection() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 font-display text-base font-bold text-white">{r.name}</p>
-                  {r.description && <p className="text-xs text-neutral-400">{r.description}</p>}
+                  <p className="mt-1 font-display text-base font-bold text-dark">{r.name}</p>
+                  {r.description && <p className="text-xs text-neutral-700">{r.description}</p>}
 
                   {/* Snapshot des principaux taux */}
                   <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
@@ -285,9 +285,9 @@ function RulesSection() {
                       const v = r[f] as number | null;
                       if (v == null || v === 0) return null;
                       return (
-                        <div key={f as string} className="rounded-lg bg-neutral-950/60 px-2 py-1.5">
-                          <p className="truncate text-[10px] uppercase tracking-wide text-neutral-500">{FIELD_LABELS[f as string]}</p>
-                          <p className="text-sm font-bold text-emerald-300">{v}%</p>
+                        <div key={f as string} className="rounded-lg bg-neutral-50 px-2 py-1.5">
+                          <p className="truncate text-[10px] uppercase tracking-wide text-neutral-600">{FIELD_LABELS[f as string]}</p>
+                          <p className="text-sm font-bold text-emerald-700">{v}%</p>
                         </div>
                       );
                     })}
@@ -295,9 +295,9 @@ function RulesSection() {
                       const v = r[f] as number | null;
                       if (v == null || v === 0) return null;
                       return (
-                        <div key={f as string} className="rounded-lg bg-neutral-950/60 px-2 py-1.5">
-                          <p className="truncate text-[10px] uppercase tracking-wide text-neutral-500">{FIELD_LABELS[f as string]}</p>
-                          <p className="text-sm font-bold text-amber-300">{formatXOF(v)}</p>
+                        <div key={f as string} className="rounded-lg bg-neutral-50 px-2 py-1.5">
+                          <p className="truncate text-[10px] uppercase tracking-wide text-neutral-600">{FIELD_LABELS[f as string]}</p>
+                          <p className="text-sm font-bold text-amber-700">{formatXOF(v)}</p>
                         </div>
                       );
                     })}
@@ -307,19 +307,19 @@ function RulesSection() {
                 <div className="flex flex-row gap-2 sm:flex-col">
                   <button
                     onClick={() => { setEditing(r); setCreating(false); }}
-                    className="rounded-full bg-blue-500/15 px-3 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/25"
+                    className="rounded-full bg-blue-500/15 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-500/25"
                   >
                     ✏️ Éditer
                   </button>
                   <button
                     onClick={() => toggleEnabled(r)}
-                    className="rounded-full bg-neutral-700/40 px-3 py-1.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-700/70"
+                    className="rounded-full bg-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-200"
                   >
                     {r.enabled ? '⏸️ Pause' : '▶️ Activer'}
                   </button>
                   <button
                     onClick={() => deleteRule(r)}
-                    className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/25"
+                    className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-500/25"
                   >
                     🗑️ Suppr.
                   </button>
@@ -408,13 +408,13 @@ function RuleEditor({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden bg-black/70 p-0 sm:items-center sm:p-4">
-      <div className="flex max-h-[100dvh] w-full max-w-3xl flex-col rounded-t-2xl border border-neutral-800 bg-neutral-950 sm:max-h-[92vh] sm:rounded-2xl">
+      <div className="flex max-h-[100dvh] w-full max-w-3xl flex-col rounded-t-2xl border border-neutral-200 bg-neutral-50 sm:max-h-[92vh] sm:rounded-2xl">
         {/* Header — non scrollable */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-neutral-800 px-5 pb-3 pt-5">
-          <h3 className="font-display text-lg font-bold text-white">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-neutral-200 px-5 pb-3 pt-5">
+          <h3 className="font-display text-lg font-bold text-dark">
             {isCreating ? '+ Nouvelle règle' : '✏️ Éditer la règle'}
           </h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white">✕</button>
+          <button onClick={onClose} className="text-neutral-700 hover:text-dark">✕</button>
         </div>
 
         {/* Body scrollable */}
@@ -447,8 +447,8 @@ function RuleEditor({
           </div>
 
           {/* Cibles */}
-          <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-neutral-500">Cibles (laisser vide = applique à tout)</p>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-neutral-600">Cibles (laisser vide = applique à tout)</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Catégorie">
                 <select
@@ -506,8 +506,8 @@ function RuleEditor({
           </div>
 
           {/* Commissions % */}
-          <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-emerald-400">Commissions / frais en %</p>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-emerald-700">Commissions / frais en %</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
               {PCT_FIELDS.map((f) => (
                 <Field key={f as string} label={FIELD_LABELS[f as string]} suffix="%">
@@ -526,8 +526,8 @@ function RuleEditor({
           </div>
 
           {/* Frais fixes / forfaits XOF */}
-          <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-amber-400">Frais fixes / forfaits (XOF)</p>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-amber-700">Frais fixes / forfaits (XOF)</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
               {XOF_FIELDS.map((f) => (
                 <Field key={f as string} label={FIELD_LABELS[f as string]} suffix="XOF">
@@ -545,8 +545,8 @@ function RuleEditor({
           </div>
 
           {/* Fenêtre de validité */}
-          <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-3">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-neutral-500">Fenêtre de validité (optionnel)</p>
+          <div className="rounded-xl border border-neutral-200 bg-white p-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-neutral-600">Fenêtre de validité (optionnel)</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Début">
                 <input
@@ -565,7 +565,7 @@ function RuleEditor({
                 />
               </Field>
             </div>
-            <label className="mt-3 flex items-center gap-2 text-xs text-neutral-300">
+            <label className="mt-3 flex items-center gap-2 text-xs text-neutral-800">
               <input
                 type="checkbox"
                 checked={draft.enabled}
@@ -579,16 +579,16 @@ function RuleEditor({
 
         {/* Footer — non scrollable, sticky bottom */}
         <div
-          className="flex flex-shrink-0 justify-end gap-2 border-t border-neutral-800 bg-neutral-950 px-5 py-3 sm:rounded-b-2xl"
+          className="flex flex-shrink-0 justify-end gap-2 border-t border-neutral-200 bg-neutral-50 px-5 py-3 sm:rounded-b-2xl"
           style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
         >
-          <button onClick={onClose} className="rounded-full bg-neutral-700/40 px-4 py-2 text-xs font-semibold text-neutral-200 hover:bg-neutral-700/70">
+          <button onClick={onClose} className="rounded-full bg-neutral-200 px-4 py-2 text-xs font-semibold text-neutral-900 hover:bg-neutral-200">
             Annuler
           </button>
           <button
             onClick={save}
             disabled={saving}
-            className="rounded-full bg-primary-500 px-5 py-2 text-xs font-bold text-white hover:bg-primary-600 disabled:opacity-50"
+            className="rounded-full bg-primary-500 px-5 py-2 text-xs font-bold text-night hover:bg-primary-400 disabled:opacity-50"
           >
             {saving ? 'Enregistrement…' : 'Enregistrer'}
           </button>
@@ -617,7 +617,7 @@ function RuleEditor({
 function Field({ label, suffix, className, children }: { label: string; suffix?: string; className?: string; children: React.ReactNode }) {
   return (
     <div className={className}>
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-neutral-500">
+      <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-neutral-600">
         {label}{suffix ? <span className="ml-1 text-neutral-600">({suffix})</span> : null}
       </p>
       {children}
@@ -729,8 +729,8 @@ function DashboardSection() {
             onClick={() => setPeriod(p.id)}
             className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
               period === p.id
-                ? 'border-primary-500 bg-primary-500/15 text-primary-400'
-                : 'border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700'
+                ? 'border-primary-500 bg-primary-500/15 text-primary-700'
+                : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400'
             }`}
           >
             {p.label}
@@ -739,7 +739,7 @@ function DashboardSection() {
         <button
           onClick={runBackfill}
           disabled={backfilling}
-          className="ml-auto rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/25 disabled:opacity-50"
+          className="ml-auto rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-500/25 disabled:opacity-50"
           title="Rattrape l'historique des tickets/réservations/transactions pour alimenter le dashboard"
         >
           {backfilling ? '⏳ Backfill en cours…' : '🔄 Backfill historique'}
@@ -766,8 +766,8 @@ function DashboardSection() {
             onClick={() => setGroupBy(g.id)}
             className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
               groupBy === g.id
-                ? 'border-primary-500 bg-primary-500/15 text-primary-400'
-                : 'border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700'
+                ? 'border-primary-500 bg-primary-500/15 text-primary-700'
+                : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400'
             }`}
           >
             {g.label}
@@ -776,11 +776,11 @@ function DashboardSection() {
       </div>
 
       {/* Bars */}
-      <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
+      <div className="rounded-2xl border border-neutral-200 bg-white p-4">
         {loading ? (
-          <p className="py-8 text-center text-xs text-neutral-500">Chargement…</p>
+          <p className="py-8 text-center text-xs text-neutral-600">Chargement…</p>
         ) : buckets.length === 0 ? (
-          <p className="py-8 text-center text-xs text-neutral-500">
+          <p className="py-8 text-center text-xs text-neutral-600">
             Aucun événement enregistré sur la période.
             <br/>
             <span className="text-neutral-600">
@@ -794,10 +794,10 @@ function DashboardSection() {
               return (
                 <li key={b.bucket} className="">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="truncate font-semibold text-neutral-200">{b.bucket}</span>
-                    <span className="ml-2 shrink-0 text-emerald-300">{formatXOF(b.total_xof)} <span className="text-neutral-500">({b.event_count})</span></span>
+                    <span className="truncate font-semibold text-neutral-900">{b.bucket}</span>
+                    <span className="ml-2 shrink-0 text-emerald-700">{formatXOF(b.total_xof)} <span className="text-neutral-600">({b.event_count})</span></span>
                   </div>
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-neutral-800">
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-neutral-100">
                     <div
                       className="h-full bg-gradient-to-r from-primary-500 to-emerald-500"
                       style={{ width: `${Math.max(2, pct)}%` }}
@@ -813,24 +813,24 @@ function DashboardSection() {
       {/* Top 10 venues par revenu */}
       {topVenues.length > 0 && (
         <div className="mt-6">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-neutral-500">Top 10 établissements par revenu</p>
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-neutral-600">Top 10 établissements par revenu</p>
           <ul className="space-y-2">
             {topVenues.map((v) => (
-              <li key={v.venue_id} className="flex items-center justify-between rounded-xl border border-neutral-800/50 bg-neutral-900/50 px-4 py-3">
+              <li key={v.venue_id} className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white px-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-white">{v.venue_name}</p>
-                  <p className="text-[10px] uppercase tracking-wide text-neutral-500">
+                  <p className="truncate text-sm font-semibold text-dark">{v.venue_name}</p>
+                  <p className="text-[10px] uppercase tracking-wide text-neutral-600">
                     {v.category} · {v.city}{v.commune ? ` · ${v.commune}` : ''}
                   </p>
-                  <div className="mt-1 flex flex-wrap gap-3 text-[10px] text-neutral-400">
+                  <div className="mt-1 flex flex-wrap gap-3 text-[10px] text-neutral-700">
                     {v.resa_xof > 0 && <span>🍽️ Résa : {formatXOF(v.resa_xof)}</span>}
                     {v.ticket_xof > 0 && <span>🎟️ Billets : {formatXOF(v.ticket_xof)}</span>}
                     {v.payment_xof > 0 && <span>💳 Paiements : {formatXOF(v.payment_xof)}</span>}
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-sm font-bold text-emerald-300">{formatXOF(v.total_xof)}</p>
-                  <p className="text-[10px] text-neutral-500">{v.event_count} event{v.event_count > 1 ? 's' : ''}</p>
+                  <p className="text-sm font-bold text-emerald-700">{formatXOF(v.total_xof)}</p>
+                  <p className="text-[10px] text-neutral-600">{v.event_count} event{v.event_count > 1 ? 's' : ''}</p>
                 </div>
               </li>
             ))}
@@ -843,15 +843,15 @@ function DashboardSection() {
 
 function Kpi({ label, value, tone }: { label: string; value: string; tone: 'emerald' | 'blue' | 'amber' | 'red' | 'neutral' }) {
   const map = {
-    emerald: 'text-emerald-400',
-    blue: 'text-blue-400',
-    amber: 'text-amber-400',
-    red: 'text-red-400',
-    neutral: 'text-neutral-300',
+    emerald: 'text-emerald-700',
+    blue: 'text-blue-700',
+    amber: 'text-amber-700',
+    red: 'text-red-700',
+    neutral: 'text-neutral-800',
   } as const;
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">{label}</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-600">{label}</p>
       <p className={`mt-1 font-display text-xl font-bold ${map[tone]}`}>{value}</p>
     </div>
   );
@@ -951,19 +951,19 @@ function CampaignsSection() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-neutral-700">
           Les campagnes écrasent temporairement les commissions standards. Idéal pour des promos saisonnières.
         </p>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="rounded-full bg-primary-500 px-4 py-2 text-xs font-bold text-white hover:bg-primary-600"
+          className="rounded-full bg-primary-500 px-4 py-2 text-xs font-bold text-night hover:bg-primary-400"
         >
           {showForm ? 'Annuler' : '+ Nouvelle campagne'}
         </button>
       </div>
 
       {showForm && (
-        <div className="mb-4 rounded-2xl border border-primary-500/30 bg-neutral-900/50 p-4">
+        <div className="mb-4 rounded-2xl border border-primary-500/30 bg-white p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Nom *">
               <input className="inp" value={draft.name ?? ''} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
@@ -1022,7 +1022,7 @@ function CampaignsSection() {
             </Field>
           </div>
           <div className="mt-3 flex justify-end">
-            <button onClick={save} className="rounded-full bg-primary-500 px-5 py-2 text-xs font-bold text-white hover:bg-primary-600">
+            <button onClick={save} className="rounded-full bg-primary-500 px-5 py-2 text-xs font-bold text-night hover:bg-primary-400">
               Créer la campagne
             </button>
           </div>
@@ -1030,9 +1030,9 @@ function CampaignsSection() {
       )}
 
       {loading ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">Chargement…</div>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">Chargement…</div>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
           Aucune campagne. Crées-en une pour lancer une promo.
         </div>
       ) : (
@@ -1041,27 +1041,27 @@ function CampaignsSection() {
             const now = Date.now();
             const active = c.enabled && new Date(c.starts_at).getTime() <= now && new Date(c.ends_at).getTime() > now;
             return (
-              <li key={c.id} className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
+              <li key={c.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-neutral-700/50 text-neutral-400'}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${active ? 'bg-emerald-500/15 text-emerald-700' : 'bg-neutral-200 text-neutral-700'}`}>
                         {active ? 'EN COURS' : c.enabled ? 'Programmée' : 'Désactivée'}
                       </span>
-                      {c.category && <span className="text-[10px] uppercase text-blue-300">{c.category}</span>}
-                      {c.city && <span className="text-[10px] uppercase text-neutral-500">📍 {c.city}</span>}
+                      {c.category && <span className="text-[10px] uppercase text-blue-700">{c.category}</span>}
+                      {c.city && <span className="text-[10px] uppercase text-neutral-600">📍 {c.city}</span>}
                     </div>
-                    <p className="mt-1 font-display text-base font-bold text-white">{c.name}</p>
-                    {c.description && <p className="text-xs text-neutral-400">{c.description}</p>}
-                    <p className="mt-1 text-[11px] text-neutral-500">
+                    <p className="mt-1 font-display text-base font-bold text-dark">{c.name}</p>
+                    {c.description && <p className="text-xs text-neutral-700">{c.description}</p>}
+                    <p className="mt-1 text-[11px] text-neutral-600">
                       Du {new Date(c.starts_at).toLocaleDateString('fr-FR')} au {new Date(c.ends_at).toLocaleDateString('fr-FR')}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                    <button onClick={() => toggleEnabled(c)} className="rounded-full bg-neutral-700/40 px-3 py-1.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-700/70">
+                    <button onClick={() => toggleEnabled(c)} className="rounded-full bg-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-200">
                       {c.enabled ? '⏸️' : '▶️'}
                     </button>
-                    <button onClick={() => delCampaign(c)} className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/25">
+                    <button onClick={() => delCampaign(c)} className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-500/25">
                       🗑️
                     </button>
                   </div>
@@ -1135,8 +1135,8 @@ function TargetsSection() {
 
   return (
     <div>
-      <div className="mb-4 rounded-2xl border border-primary-500/30 bg-neutral-900/50 p-4">
-        <p className="mb-3 text-xs font-semibold text-neutral-300">Définir un objectif</p>
+      <div className="mb-4 rounded-2xl border border-primary-500/30 bg-white p-4">
+        <p className="mb-3 text-xs font-semibold text-neutral-800">Définir un objectif</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Field label="Mois cible *">
             <input type="month" className="inp"
@@ -1167,32 +1167,32 @@ function TargetsSection() {
           </Field>
         </div>
         <div className="mt-3 flex justify-end">
-          <button onClick={save} className="rounded-full bg-primary-500 px-5 py-2 text-xs font-bold text-white hover:bg-primary-600">
+          <button onClick={save} className="rounded-full bg-primary-500 px-5 py-2 text-xs font-bold text-night hover:bg-primary-400">
             Enregistrer
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">Chargement…</div>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">Chargement…</div>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
           Aucun objectif défini.
         </div>
       ) : (
         <ul className="space-y-2">
           {rows.map((t) => (
-            <li key={t.id} className="flex items-center justify-between rounded-xl border border-neutral-800/50 bg-neutral-900/50 px-4 py-3">
+            <li key={t.id} className="flex items-center justify-between rounded-xl border border-neutral-200 bg-white px-4 py-3">
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold text-dark">
                   {new Date(t.period_month).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-                  {t.category && <span className="ml-2 text-[10px] text-blue-300 uppercase">{t.category}</span>}
-                  {t.kind && <span className="ml-2 text-[10px] text-purple-300 uppercase">{t.kind}</span>}
+                  {t.category && <span className="ml-2 text-[10px] text-blue-700 uppercase">{t.category}</span>}
+                  {t.kind && <span className="ml-2 text-[10px] text-purple-700 uppercase">{t.kind}</span>}
                 </p>
-                <p className="text-xs text-emerald-300">Cible : {formatXOF(t.target_xof)}</p>
-                {t.notes && <p className="mt-0.5 text-[11px] text-neutral-500">{t.notes}</p>}
+                <p className="text-xs text-emerald-700">Cible : {formatXOF(t.target_xof)}</p>
+                {t.notes && <p className="mt-0.5 text-[11px] text-neutral-600">{t.notes}</p>}
               </div>
-              <button onClick={() => del(t)} className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/25">
+              <button onClick={() => del(t)} className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-500/25">
                 🗑️
               </button>
             </li>

@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n';
 
 interface Contact {
   contact_name: string;
@@ -18,6 +19,7 @@ interface Contact {
 const POSITIONS = [1, 2, 3];
 
 export default function SosContacts() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const sb = supabase as any;
@@ -64,11 +66,11 @@ export default function SosContacts() {
   async function saveContact() {
     if (!user?.id || editing === null) return;
     if (name.trim().length < 2) {
-      Alert.alert('Nom requis', 'Indique le nom du contact.');
+      Alert.alert(t('acct.sos.nameReq'), t('acct.sos.nameReqBody'));
       return;
     }
     if (phone.trim().length < 6) {
-      Alert.alert('Numéro requis', 'Indique un numéro de téléphone valide.');
+      Alert.alert(t('acct.sos.phoneReq'), t('acct.sos.phoneReqBody'));
       return;
     }
     setSaving(true);
@@ -85,7 +87,7 @@ export default function SosContacts() {
       );
     setSaving(false);
     if (error) {
-      Alert.alert('Erreur', error.message ?? 'Enregistrement impossible.');
+      Alert.alert(t('acct.error'), error.message ?? t('acct.sos.saveFail'));
       return;
     }
     cancelEdit();
@@ -94,10 +96,10 @@ export default function SosContacts() {
 
   function removeContact(position: number) {
     if (!user?.id) return;
-    Alert.alert('Supprimer', 'Retirer ce contact SOS ?', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('acct.sos.removeTitle'), t('acct.sos.removeBody'), [
+      { text: t('acct.cancel'), style: 'cancel' },
       {
-        text: 'Supprimer',
+        text: t('acct.delete'),
         style: 'destructive',
         onPress: async () => {
           const { error } = await sb
@@ -106,7 +108,7 @@ export default function SosContacts() {
             .eq('user_id', user.id)
             .eq('position', position);
           if (error) {
-            Alert.alert('Erreur', error.message ?? 'Suppression impossible.');
+            Alert.alert(t('acct.error'), error.message ?? t('acct.sos.removeFail'));
             return;
           }
           await load();
@@ -121,7 +123,7 @@ export default function SosContacts() {
         <Pressable hitSlop={10} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </Pressable>
-        <Text style={s.headerTitle}>Mes contacts SOS</Text>
+        <Text style={s.headerTitle}>{t('acct.sos.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -136,7 +138,7 @@ export default function SosContacts() {
             <View style={s.infoCard}>
               <Ionicons name="medkit" size={22} color={colors.danger} />
               <Text style={s.infoText}>
-                Jusqu'à 3 proches alertés automatiquement en cas d'urgence (SOS).
+                {t('acct.sos.info')}
               </Text>
             </View>
 
@@ -147,12 +149,12 @@ export default function SosContacts() {
               if (isEditing) {
                 return (
                   <View key={position} style={s.editCard}>
-                    <Text style={s.slotLabel}>Contact {position}</Text>
+                    <Text style={s.slotLabel}>{t('acct.sos.contactN', { n: position })}</Text>
                     <TextInput
                       value={name}
                       onChangeText={setName}
                       style={s.input}
-                      placeholder="Nom du contact"
+                      placeholder={t('acct.sos.namePh')}
                       placeholderTextColor={colors.neutral[400]}
                       autoCapitalize="words"
                     />
@@ -160,13 +162,13 @@ export default function SosContacts() {
                       value={phone}
                       onChangeText={setPhone}
                       style={[s.input, { marginTop: spacing.sm }]}
-                      placeholder="Numéro de téléphone"
+                      placeholder={t('acct.sos.phonePh')}
                       placeholderTextColor={colors.neutral[400]}
                       keyboardType="phone-pad"
                     />
                     <View style={s.editActions}>
                       <Pressable onPress={cancelEdit} style={[s.btn, s.btnGhost]}>
-                        <Text style={s.btnGhostText}>Annuler</Text>
+                        <Text style={s.btnGhostText}>{t('acct.cancel')}</Text>
                       </Pressable>
                       <Pressable
                         onPress={saveContact}
@@ -175,7 +177,7 @@ export default function SosContacts() {
                       >
                         {saving
                           ? <ActivityIndicator color="#fff" size="small" />
-                          : <Text style={s.btnPrimaryText}>Enregistrer</Text>}
+                          : <Text style={s.btnPrimaryText}>{t('acct.save')}</Text>}
                       </Pressable>
                     </View>
                   </View>
@@ -209,7 +211,7 @@ export default function SosContacts() {
                   style={({ pressed }) => [s.emptySlot, pressed && { opacity: 0.6 }]}
                 >
                   <Ionicons name="add-circle-outline" size={22} color={colors.primary[500]} />
-                  <Text style={s.emptyText}>Ajouter un contact ({position})</Text>
+                  <Text style={s.emptyText}>{t('acct.sos.add', { n: position })}</Text>
                 </Pressable>
               );
             })}

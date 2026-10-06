@@ -2,6 +2,7 @@
 // Revendications de propriété d'un venue + KYC pro (migration 0039).
 // ============================================================================
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 export type ClaimStatus =
   | 'pending'
@@ -10,12 +11,12 @@ export type ClaimStatus =
   | 'rejected'
   | 'cancelled';
 
-export const CLAIM_STATUS_META: Record<ClaimStatus, { label: string; color: string; icon: string }> = {
-  pending:   { label: 'En attente',  color: '#F59E0B', icon: '⏳' },
-  reviewing: { label: 'En revue',    color: '#3B82F6', icon: '🔎' },
-  approved:  { label: 'Approuvée',   color: '#10B981', icon: '✅' },
-  rejected:  { label: 'Refusée',     color: '#EF4444', icon: '❌' },
-  cancelled: { label: 'Annulée',     color: '#6B7280', icon: '🚫' },
+export const CLAIM_STATUS_META: Record<ClaimStatus, { readonly label: string; color: string; icon: string }> = {
+  pending:   { get label() { return tr('claimStatus.pending'); },  color: '#F59E0B', icon: '⏳' },
+  reviewing: { get label() { return tr('claimStatus.reviewing'); },    color: '#3B82F6', icon: '🔎' },
+  approved:  { get label() { return tr('claimStatus.approved'); },   color: '#10B981', icon: '✅' },
+  rejected:  { get label() { return tr('claimStatus.rejected'); },     color: '#EF4444', icon: '❌' },
+  cancelled: { get label() { return tr('claimStatus.cancelled'); },     color: '#6B7280', icon: '🚫' },
 };
 
 export interface ClaimStatusInfo {

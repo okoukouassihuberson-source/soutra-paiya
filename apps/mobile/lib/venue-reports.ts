@@ -2,6 +2,7 @@
 // Signalements communautaires sur les venues (migration 0034).
 // ============================================================================
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 export type ReportKind =
   | 'closed'        // Fermé définitivement
@@ -14,14 +15,14 @@ export type ReportKind =
 
 export type ReportStatus = 'open' | 'reviewing' | 'resolved' | 'rejected';
 
-export const REPORT_KIND_LABELS: Record<ReportKind, { label: string; icon: string; description: string }> = {
-  closed:        { label: 'Fermé définitivement',  icon: '🚫', description: "L'établissement n'existe plus." },
-  moved:         { label: 'A déménagé',            icon: '📦', description: "Le lieu a changé d'adresse." },
-  duplicate:     { label: 'Doublon',               icon: '👯', description: 'Cette fiche existe déjà sous un autre nom.' },
-  wrong_info:    { label: 'Info erronée',          icon: '✏️', description: 'Horaires, numéro ou adresse incorrects.' },
-  wrong_price:   { label: 'Prix incorrect',        icon: '💰', description: 'Le prix affiché ne correspond pas à la réalité.' },
-  inappropriate: { label: 'Contenu inapproprié',   icon: '⚠️', description: 'Photos, description ou autres contenus inappropriés.' },
-  other:         { label: 'Autre',                 icon: '📝', description: 'Autre problème — précise dans le champ détail.' },
+export const REPORT_KIND_LABELS: Record<ReportKind, { readonly label: string; icon: string; readonly description: string }> = {
+  closed:        { get label() { return tr('report.kind.closed'); },  icon: '🚫', get description() { return tr('report.kind.closedD'); } },
+  moved:         { get label() { return tr('report.kind.moved'); },            icon: '📦', get description() { return tr('report.kind.movedD'); } },
+  duplicate:     { get label() { return tr('report.kind.duplicate'); },               icon: '👯', get description() { return tr('report.kind.duplicateD'); } },
+  wrong_info:    { get label() { return tr('report.kind.wrong_info'); },          icon: '✏️', get description() { return tr('report.kind.wrong_infoD'); } },
+  wrong_price:   { get label() { return tr('report.kind.wrong_price'); },        icon: '💰', get description() { return tr('report.kind.wrong_priceD'); } },
+  inappropriate: { get label() { return tr('report.kind.inappropriate'); },   icon: '⚠️', get description() { return tr('report.kind.inappropriateD'); } },
+  other:         { get label() { return tr('report.kind.other'); },                 icon: '📝', get description() { return tr('report.kind.otherD'); } },
 };
 
 export interface SubmitResult {

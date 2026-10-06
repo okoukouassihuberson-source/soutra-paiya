@@ -3,6 +3,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { activityCategoryEmoji } from '@soutra/shared';
 import { getActivity } from '@/lib/activities';
+import { RecentTracker } from '@/components/tourism/RecentlyViewed';
+import { TripGallery } from '@/components/tourism/TripGallery';
 import { TourismNav } from '@/components/tourism/TourismNav';
 import { ActivityBooking } from './_components/ActivityBooking';
 import { ReportButton } from './_components/ReportButton';
@@ -46,6 +48,8 @@ export default async function ActivityPage({ params }: { params: { slug: string 
   const conditions = field(a, 'conditions');
   const includes = list(a, 'includes'), excludes = list(a, 'excludes');
 
+  const gallery = [...new Set([a.cover_url, ...(a.gallery_urls ?? [])].filter((u): u is string => !!u))];
+
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'TouristAttraction', name: title,
     description: field(a, 'summary') ?? description ?? undefined, image: a.cover_url ?? undefined,
@@ -59,17 +63,30 @@ export default async function ActivityPage({ params }: { params: { slug: string 
     <>
       <TourismNav />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
+      <RecentTracker kind="activity" slug={a.slug} title={title} image={a.cover_url} price={a.price_xof} />
       <main className="pb-28">
-        <div className="relative h-64 bg-neutral-200 sm:h-96">
-          {a.cover_url && /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.cover_url} alt={title} className="h-full w-full object-cover" />}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-4 pb-6 text-white sm:px-6 lg:px-8">
-            {a.highlight && <span className="rounded-full bg-primary-500 px-3 py-1 text-xs font-bold">{t(`highlight.${a.highlight}` as 'highlight.a_la_une')}</span>}
-            <h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">{title}</h1>
-            <p className="text-white/85">{activityCategoryEmoji(a.category)} {i.tdyn('actCat', a.category, a.category)}{a.city ? ` · ${a.city}` : ''} · {i.fmtDuration(a.duration_minutes)}
-              {a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}</p>
+        {gallery.length > 1 ? (
+          <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+            <TripGallery images={gallery} title={title} />
+            <div className="mt-5">
+              {a.highlight && <span className="rounded-full bg-primary-500 px-3 py-1 text-xs font-bold text-night">{t(`highlight.${a.highlight}` as 'highlight.a_la_une')}</span>}
+              <h1 className="mt-2 font-display text-3xl font-bold text-dark sm:text-4xl">{title}</h1>
+              <p className="text-neutral-600">{activityCategoryEmoji(a.category)} {i.tdyn('actCat', a.category, a.category)}{a.city ? ` · ${a.city}` : ''} · {i.fmtDuration(a.duration_minutes)}
+                {a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}</p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="relative h-64 bg-neutral-200 sm:h-96">
+            {a.cover_url && /* eslint-disable-next-line @next/next/no-img-element */ <img src={a.cover_url} alt={title} className="h-full w-full object-cover" />}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-4 pb-6 text-white sm:px-6 lg:px-8">
+              {a.highlight && <span className="rounded-full bg-primary-500 px-3 py-1 text-xs font-bold">{t(`highlight.${a.highlight}` as 'highlight.a_la_une')}</span>}
+              <h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">{title}</h1>
+              <p className="text-white/85">{activityCategoryEmoji(a.category)} {i.tdyn('actCat', a.category, a.category)}{a.city ? ` · ${a.city}` : ''} · {i.fmtDuration(a.duration_minutes)}
+                {a.rating_count > 0 ? ` · ★ ${Number(a.rating_avg).toFixed(1)} (${a.rating_count})` : ''}</p>
+            </div>
+          </div>
+        )}
 
         <div className="mx-auto mt-8 grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_380px] lg:px-8">
           <div className="space-y-8">
@@ -100,7 +117,7 @@ export default async function ActivityPage({ params }: { params: { slug: string 
               <section><h2 className="mb-3 font-display text-xl font-bold">{t('act.location')}</h2>
                 <iframe title={t('act.mapTitle', { title })} loading="lazy" className="h-64 w-full rounded-2xl border"
                   src={`https://www.openstreetmap.org/export/embed.html?bbox=${a.longitude - 0.02}%2C${a.latitude - 0.012}%2C${a.longitude + 0.02}%2C${a.latitude + 0.012}&layer=mapnik&marker=${a.latitude}%2C${a.longitude}`} />
-                <a className="mt-2 inline-block text-sm font-semibold text-primary-600 underline" href={`https://www.openstreetmap.org/directions?to=${a.latitude}%2C${a.longitude}`} target="_blank" rel="noreferrer">{t('common.directions')}</a>
+                <a className="mt-2 inline-block text-sm font-semibold text-primary-700 underline" href={`https://www.openstreetmap.org/directions?to=${a.latitude}%2C${a.longitude}`} target="_blank" rel="noreferrer">{t('common.directions')}</a>
               </section>
             )}
             <OffersBlock offers={offers} />
@@ -108,17 +125,17 @@ export default async function ActivityPage({ params }: { params: { slug: string 
               {reviews.length === 0 ? <p className="text-sm text-neutral-500">{t('act.noReviews')}</p> : (
                 <ul className="space-y-4">{reviews.map((rv) => (
                   <li key={rv.id} className="rounded-xl border border-neutral-200 p-4">
-                    <div className="flex items-center justify-between"><b className="text-sm">{rv.author || t('act.traveler')}</b><span className="text-amber-600" aria-label={t('act.ratingAria', { n: rv.rating })}>{'★'.repeat(rv.rating)}<span className="text-neutral-300">{'★'.repeat(5 - rv.rating)}</span></span></div>
+                    <div className="flex items-center justify-between"><b className="text-sm">{rv.author || t('act.traveler')}</b><span className="text-amber-700" aria-label={t('act.ratingAria', { n: rv.rating })}>{'★'.repeat(rv.rating)}<span className="text-neutral-300">{'★'.repeat(5 - rv.rating)}</span></span></div>
                     {rv.comment && <p className="mt-1 text-sm text-neutral-700">{rv.comment}</p>}
                     <div className="mt-1 flex items-center justify-between text-xs text-neutral-400"><span>{new Date(rv.created_at).toLocaleDateString(i.intl, { dateStyle: 'long' })}</span><ReportButton reviewId={rv.id} /></div>
                   </li>))}</ul>
               )}
             </section>
-            {destination && <Link href={lp(`/destinations/${destination.slug}`)} className="inline-block font-semibold text-primary-600 underline">{t('trip.explore', { name: field(destination as any, 'name') ?? destination.name })}</Link>}
+            {destination && <Link href={lp(`/destinations/${destination.slug}`)} className="inline-block font-semibold text-primary-700 underline">{t('trip.explore', { name: field(destination as any, 'name') ?? destination.name })}</Link>}
           </div>
 
           <aside className="lg:sticky lg:top-20 lg:self-start">
-            <p className="mb-3 text-2xl font-bold text-primary-600"><span className="text-sm font-normal text-neutral-500">{t('common.from')} </span>{i.fmtXOF(a.price_xof)}<span className="text-sm font-normal text-neutral-500">{t('trip.perPerson')}</span></p>
+            <p className="mb-3 text-2xl font-bold text-primary-700"><span className="text-sm font-normal text-neutral-500">{t('common.from')} </span>{i.fmtXOF(a.price_xof)}<span className="text-sm font-normal text-neutral-500">{t('trip.perPerson')}</span></p>
             <ActivityBooking slots={slots} basePrice={a.price_xof} maxGroup={a.max_group_size} minAge={a.min_age} />
             <div className="mt-3 flex gap-2 text-sm">
               {a.contact_whatsapp && <a className="flex-1 rounded-xl border py-2 text-center font-medium" href={`https://wa.me/${a.contact_whatsapp.replace(/\D/g, '')}`}>{t('common.whatsapp')}</a>}

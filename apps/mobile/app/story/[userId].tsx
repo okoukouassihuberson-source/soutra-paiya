@@ -5,6 +5,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '@soutra/shared';
 import { listUserStories, markStoryViewed, deleteStory, type StoryItem } from '@/lib/stories';
+import { timeAgo } from '@/lib/time-ago';
+import { useI18n } from '@/lib/i18n';
 
 const STORY_DURATION_MS = 5000;
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -15,6 +17,7 @@ const { width: SCREEN_W } = Dimensions.get('window');
  * Auto-advance après 5s. Marque comme vue dès affichage.
  */
 export default function StoryViewer() {
+  const { t } = useI18n();
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const [stories, setStories] = useState<StoryItem[]>([]);
@@ -37,7 +40,7 @@ export default function StoryViewer() {
         const firstUnviewed = data.findIndex((s) => !s.viewed_by_me && !s.mine);
         setIndex(firstUnviewed >= 0 ? firstUnviewed : 0);
       } catch (err: any) {
-        Alert.alert('Erreur', err?.message ?? 'Chargement impossible.');
+        Alert.alert(t('compose.error'), err?.message ?? t('compose.storyLoadFail'));
         router.back();
       } finally {
         setLoading(false);
@@ -78,17 +81,17 @@ export default function StoryViewer() {
 
   async function handleDelete() {
     if (!current || !current.mine) return;
-    Alert.alert('Supprimer cette story ?', 'Cette action est définitive.', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('compose.storyDelTitle'), t('compose.storyDelBody'), [
+      { text: t('compose.cancel'), style: 'cancel' },
       {
-        text: 'Supprimer', style: 'destructive', onPress: async () => {
+        text: t('compose.delete'), style: 'destructive', onPress: async () => {
           try {
             await deleteStory(current.id);
             const next = stories.filter((s) => s.id !== current.id);
             if (next.length === 0) router.back();
             else { setStories(next); setIndex(Math.min(index, next.length - 1)); }
           } catch (err: any) {
-            Alert.alert('Erreur', err?.message ?? 'Suppression impossible.');
+            Alert.alert(t('compose.error'), err?.message ?? t('compose.storyDelFail'));
           }
         },
       },
@@ -158,13 +161,7 @@ export default function StoryViewer() {
 }
 
 function relativeTime(iso: string): string {
-  const d = new Date(iso);
-  const diff = Math.max(0, Date.now() - d.getTime());
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'à l\'instant';
-  if (m < 60) return `il y a ${m} min`;
-  const h = Math.floor(m / 60);
-  return `il y a ${h} h`;
+  return timeAgo(iso, { prefix: true, until: 'hours' });
 }
 
 const s = StyleSheet.create({

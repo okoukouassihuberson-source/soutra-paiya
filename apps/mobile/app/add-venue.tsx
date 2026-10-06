@@ -28,6 +28,7 @@ import { useColors } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { submitVenueSubmission } from '@/lib/venue-submissions';
+import { compressAsset } from '@/lib/image-compress';
 
 const GROUP_ORDER: VenueCategoryGroup[] = [
   'restauration', 'hebergement', 'loisirs', 'sport',
@@ -102,13 +103,12 @@ export default function AddVenue() {
     }
     const r = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      base64: true,
       quality: 0.7,
       allowsEditing: true,
       aspect: [16, 9],
     });
     if (r.canceled || !r.assets[0]) return;
-    const asset = r.assets[0];
+    const asset = await compressAsset(r.assets[0]);
     if (!asset.base64) {
       Alert.alert(t('addVenue.error'), t('addVenue.readFail'));
       return;

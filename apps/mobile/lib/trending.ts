@@ -2,6 +2,7 @@
 // Module "Ça bouge maintenant" — wrappers RPC (migration 0037).
 // ============================================================================
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 // ----------------------------------------------------------------------------
 // Trending venues
@@ -53,13 +54,13 @@ export async function getTrendingVenues(opts?: {
 /** Migration 0038 — type de promotion. */
 export type PromoKind = 'discount' | 'happy_hour' | 'couple' | 'group' | 'weekend' | 'student';
 
-export const PROMO_KIND_META: Record<PromoKind, { label: string; emoji: string; color: string }> = {
-  discount:   { label: 'Réduction',   emoji: '🏷️', color: '#FF6B1A' },
-  happy_hour: { label: 'Happy Hour',  emoji: '🍻', color: '#F59E0B' },
-  couple:     { label: 'Couple',      emoji: '💑', color: '#EC4899' },
-  group:      { label: 'Groupe',      emoji: '👥', color: '#3B82F6' },
-  weekend:    { label: 'Week-end',    emoji: '🌅', color: '#A855F7' },
-  student:    { label: 'Étudiant',    emoji: '🎓', color: '#10B981' },
+export const PROMO_KIND_META: Record<PromoKind, { readonly label: string; emoji: string; color: string }> = {
+  discount:   { get label() { return tr('promoKind.discount'); },   emoji: '🏷️', color: '#FF6B1A' },
+  happy_hour: { get label() { return tr('promoKind.happy_hour'); },  emoji: '🍻', color: '#F59E0B' },
+  couple:     { get label() { return tr('promoKind.couple'); },      emoji: '💑', color: '#EC4899' },
+  group:      { get label() { return tr('promoKind.group'); },      emoji: '👥', color: '#3B82F6' },
+  weekend:    { get label() { return tr('promoKind.weekend'); },    emoji: '🌅', color: '#A855F7' },
+  student:    { get label() { return tr('promoKind.student'); },    emoji: '🎓', color: '#10B981' },
 };
 
 export interface ActivePromotion {

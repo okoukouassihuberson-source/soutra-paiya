@@ -11,6 +11,7 @@ import {
   IcoChart,
 } from '@/components/layout';
 import { Button } from '@/components/ui';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabaseBrowser } from '@/lib/supabase';
 import {
   businessTypeOf,
@@ -151,10 +152,14 @@ export function ProShell({ user, children }: { user: ShellUser; children: ReactN
       homeHref="/"
       navItems={navItems}
       user={user}
+      headerActions={<ThemeToggle />}
       sidebarFooter={
-        <Button variant="ghost" size="sm" fullWidth onClick={onSignOut} leftIcon={<IcoLogout />}>
-          Se déconnecter
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" fullWidth onClick={onSignOut} leftIcon={<IcoLogout />}>
+            Se déconnecter
+          </Button>
+        </div>
       }
     >
       {children}

@@ -1,5 +1,6 @@
 import { supabaseServer } from './supabase-server';
 import { VIBES } from './home-visuals';
+import { publicNames } from './public-profiles';
 
 const db = () => supabaseServer() as any;
 
@@ -19,15 +20,17 @@ export interface HomeReview { id: string; rating: number; comment: string; autho
 /** Derniers avis publiés (4★ et plus, avec commentaire). Aucun avis factice : liste vide si rien en base. */
 export async function latestReviews(limit = 3): Promise<HomeReview[]> {
   const { data, error } = await db().from('activity_reviews')
-    .select('id, rating, comment, profiles(full_name), activities(title, slug)')
+    .select('id, rating, comment, user_id, activities(title, slug)')
     .eq('status', 'published').gte('rating', 4).not('comment', 'is', null)
     .order('created_at', { ascending: false }).limit(limit * 3);
   if (error) { console.error('[home] reviews', error); return []; }
-  return ((data ?? []) as any[])
+  const kept = ((data ?? []) as any[])
     .filter((r) => (r.comment ?? '').trim().length >= 20 && r.activities)
-    .slice(0, limit)
+    .slice(0, limit);
+  const names = await publicNames(db(), kept.map((r) => r.user_id));
+  return kept
     .map((r) => {
-      const parts = (r.profiles?.full_name ?? '').trim().split(/\s+/).filter(Boolean);
+      const parts = (names.get(r.user_id) ?? '').trim().split(/\s+/).filter(Boolean);
       const author = parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : (parts[0] ?? '');
       return { id: r.id, rating: r.rating, comment: r.comment.trim(), author, title: r.activities.title, slug: r.activities.slug };
     });

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, RefreshControl, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -327,39 +327,37 @@ export default function Tickets() {
     );
   }
 
+  type Row =
+    | { type: 'header'; key: string; past: boolean; count: number }
+    | { type: 'ticket'; key: string; past: boolean; ticket: (typeof tickets)[number] };
+  const rows: Row[] = [
+    ...(upcoming.length ? [{ type: 'header', key: 'h-up', past: false, count: upcoming.length } as Row] : []),
+    ...upcoming.map((tk): Row => ({ type: 'ticket', key: `${tk.kind}-${tk.id}`, past: false, ticket: tk })),
+    ...(past.length ? [{ type: 'header', key: 'h-past', past: true, count: past.length } as Row] : []),
+    ...past.map((tk): Row => ({ type: 'ticket', key: `${tk.kind}-${tk.id}`, past: true, ticket: tk })),
+  ];
+
   return (
     <SafeAreaView style={s.safe}>
       <TabHeader subtitle={subtitle} />
-      <ScrollView
+      <FlatList
+        data={rows}
+        keyExtractor={(r) => r.key}
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadAll(); }} />}
-      >
-        {upcoming.length > 0 && (
-          <>
-            <View style={s.sectionTitleRow}>
-              <View style={[s.sectionAccent, { backgroundColor: c.primary[500] }]} />
-              <Text style={s.sectionTitle}>{t('tickets.upcoming')}</Text>
-              <Text style={s.sectionCount}>{upcoming.length}</Text>
-            </View>
-            {upcoming.map((t) => (
-              <TicketCard c={c} key={`${t.kind}-${t.id}`} ticket={t} onPress={() => openDetail(t, c)} />
-            ))}
-          </>
+        initialNumToRender={6}
+        windowSize={7}
+        removeClippedSubviews
+        renderItem={({ item: r }) => r.type === 'header' ? (
+          <View style={s.sectionTitleRow}>
+            <View style={[s.sectionAccent, { backgroundColor: r.past ? c.neutral[400] : c.primary[500] }]} />
+            <Text style={s.sectionTitle}>{r.past ? t('tickets.history') : t('tickets.upcoming')}</Text>
+            <Text style={s.sectionCount}>{r.count}</Text>
+          </View>
+        ) : (
+          <TicketCard c={c} ticket={r.ticket} muted={r.past} onPress={() => openDetail(r.ticket, c)} />
         )}
-
-        {past.length > 0 && (
-          <>
-            <View style={s.sectionTitleRow}>
-              <View style={[s.sectionAccent, { backgroundColor: c.neutral[400] }]} />
-              <Text style={s.sectionTitle}>{t('tickets.history')}</Text>
-              <Text style={s.sectionCount}>{past.length}</Text>
-            </View>
-            {past.map((t) => (
-              <TicketCard c={c} key={`${t.kind}-${t.id}`} ticket={t} muted onPress={() => openDetail(t, c)} />
-            ))}
-          </>
-        )}
-      </ScrollView>
+      />
     </SafeAreaView>
   );
 }

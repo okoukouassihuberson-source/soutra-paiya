@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ScrollView, View, Text, Pressable, StyleSheet, RefreshControl,
+  FlatList, ScrollView, View, Text, Pressable, StyleSheet, RefreshControl,
   ActivityIndicator, Image, Modal, Alert,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -125,28 +125,31 @@ export default function OrdersScreen() {
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader title={t('orders.title')} subtitle={tn('orders.count', orders.length)} />
 
-      <ScrollView
+      <FlatList
+        data={orders}
+        keyExtractor={(x) => x.id}
         contentContainerStyle={{ paddingBottom: spacing['2xl'] }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
-      >
-        {orders.length === 0 ? (
-          <View style={s.empty}>
-            <Ionicons name="receipt-outline" size={56} color={c.neutral[400]} />
-            <Text style={s.emptyTitle}>{t('orders.emptyTitle')}</Text>
-            <Text style={s.emptyBody}>
-              {t('orders.emptyBody')}
-            </Text>
-            <Pressable onPress={() => router.push('/(tabs)/explore')} style={s.cta}>
-              <Ionicons name="compass" size={18} color="#fff" />
-              <Text style={s.ctaText}>{t('orders.explore')}</Text>
-            </Pressable>
-          </View>
-        ) : (
-          orders.map((o) => (
-            <OrderCard key={o.id} c={c} order={o} onPress={() => setSelected(o)} />
-          ))
+        initialNumToRender={8}
+        windowSize={7}
+        removeClippedSubviews
+        ListEmptyComponent={(
+        <View style={s.empty}>
+          <Ionicons name="receipt-outline" size={56} color={c.neutral[400]} />
+          <Text style={s.emptyTitle}>{t('orders.emptyTitle')}</Text>
+          <Text style={s.emptyBody}>
+            {t('orders.emptyBody')}
+          </Text>
+          <Pressable onPress={() => router.push('/(tabs)/explore')} style={s.cta}>
+            <Ionicons name="compass" size={18} color="#fff" />
+            <Text style={s.ctaText}>{t('orders.explore')}</Text>
+          </Pressable>
+        </View>
         )}
-      </ScrollView>
+        renderItem={({ item: x }) => (
+          <OrderCard c={c} order={x} onPress={() => setSelected(x)} />
+        )}
+      />
 
       <OrderDetailModal order={selected} onClose={() => setSelected(null)} />
     </SafeAreaView>

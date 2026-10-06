@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, formatVenuePriceLabel, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { openDirections } from '@/lib/maps';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Fiche rapide flottante (style Google Maps) au tap sur un marqueur carte.
@@ -38,6 +39,7 @@ interface Props {
 }
 
 export function QuickVenueSheet({ venue, onClose, onOpen }: Props) {
+  const { t } = useI18n();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
 
@@ -86,7 +88,7 @@ export function QuickVenueSheet({ venue, onClose, onOpen }: Props) {
                     { color: venue.is_open_now ? '#15803d' : '#991b1b' },
                   ]}
                 >
-                  {venue.is_open_now ? 'Ouvert' : 'Fermé'}
+                  {venue.is_open_now ? t('ui.open') : t('ui.closed')}
                 </Text>
               </View>
             )}
@@ -143,13 +145,13 @@ export function QuickVenueSheet({ venue, onClose, onOpen }: Props) {
             ]}
           >
             <Ionicons name="navigate" size={16} color={c.primary[600]} />
-            <Text style={s.actionBtnSecondaryText}>Itinéraire</Text>
+            <Text style={s.actionBtnSecondaryText}>{t('ui.directions')}</Text>
           </Pressable>
           <Pressable
             onPress={onOpen}
             style={({ pressed }) => [s.actionBtnPrimary, pressed && { opacity: 0.9 }]}
           >
-            <Text style={s.actionBtnPrimaryText}>Voir la fiche</Text>
+            <Text style={s.actionBtnPrimaryText}>{t('ui.seeVenue')}</Text>
             <Ionicons name="arrow-forward" size={16} color="#fff" />
           </Pressable>
         </View>

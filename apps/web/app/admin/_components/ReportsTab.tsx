@@ -35,18 +35,18 @@ const KIND_META: Record<ReportRow['kind'], { label: string; icon: string; tone: 
 };
 
 const STATUS_META: Record<ReportRow['status'], { label: string; bg: string; text: string }> = {
-  open:      { label: 'Ouvert',     bg: 'bg-amber-500/15', text: 'text-amber-400' },
-  reviewing: { label: 'En examen',  bg: 'bg-blue-500/15',  text: 'text-blue-400' },
-  resolved:  { label: 'Résolu',     bg: 'bg-emerald-500/15', text: 'text-emerald-400' },
-  rejected:  { label: 'Rejeté',     bg: 'bg-neutral-500/15', text: 'text-neutral-400' },
+  open:      { label: 'Ouvert',     bg: 'bg-amber-500/15', text: 'text-amber-700' },
+  reviewing: { label: 'En examen',  bg: 'bg-blue-500/15',  text: 'text-blue-700' },
+  resolved:  { label: 'Résolu',     bg: 'bg-emerald-500/15', text: 'text-emerald-700' },
+  rejected:  { label: 'Rejeté',     bg: 'bg-neutral-500/15', text: 'text-neutral-700' },
 };
 
 const TONE_BG: Record<'red' | 'amber' | 'blue' | 'purple' | 'neutral', string> = {
-  red:     'bg-red-500/10 text-red-400 ring-red-500/30',
-  amber:   'bg-amber-500/10 text-amber-400 ring-amber-500/30',
-  blue:    'bg-blue-500/10 text-blue-400 ring-blue-500/30',
-  purple:  'bg-purple-500/10 text-purple-400 ring-purple-500/30',
-  neutral: 'bg-neutral-700/30 text-neutral-300 ring-neutral-500/20',
+  red:     'bg-red-500/10 text-red-700 ring-red-500/30',
+  amber:   'bg-amber-500/10 text-amber-700 ring-amber-500/30',
+  blue:    'bg-blue-500/10 text-blue-700 ring-blue-500/30',
+  purple:  'bg-purple-500/10 text-purple-700 ring-purple-500/30',
+  neutral: 'bg-neutral-200 text-neutral-800 ring-neutral-500/20',
 };
 
 /**
@@ -115,8 +115,8 @@ export function ReportsTab() {
               onClick={() => setStatus(s)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 active
-                  ? 'border-primary-500 bg-primary-500/15 text-primary-400'
-                  : 'border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700'
+                  ? 'border-primary-500 bg-primary-500/15 text-primary-700'
+                  : 'border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400'
               }`}
             >
               {label}
@@ -135,12 +135,12 @@ export function ReportsTab() {
 
       {/* List */}
       {loading ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
           Chargement…
         </div>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-12 text-center">
-          <p className="text-sm text-neutral-400">Aucun signalement pour ce filtre.</p>
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+          <p className="text-sm text-neutral-700">Aucun signalement pour ce filtre.</p>
         </div>
       ) : (
         <ul className="space-y-3">
@@ -149,11 +149,11 @@ export function ReportsTab() {
             const statusMeta = STATUS_META[r.status];
             const isOpen = r.status === 'open' || r.status === 'reviewing';
             return (
-              <li key={r.id} className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4 sm:p-5">
+              <li key={r.id} className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   {/* Venue + kind */}
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-neutral-800">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-neutral-100">
                       {r.venue_cover ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={r.venue_cover} alt="" className="h-full w-full object-cover" />
@@ -168,13 +168,13 @@ export function ReportsTab() {
                           {statusMeta.label}
                         </span>
                       </div>
-                      <p className="mt-1 truncate font-display text-base font-bold text-white">{r.venue_name}</p>
-                      <p className="text-xs text-neutral-500">
+                      <p className="mt-1 truncate font-display text-base font-bold text-dark">{r.venue_name}</p>
+                      <p className="text-xs text-neutral-600">
                         {r.venue_category} · signalé par {r.reporter_name || 'utilisateur'} ·{' '}
                         {new Date(r.created_at).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </p>
                       {r.duplicate_name && (
-                        <p className="mt-1 text-xs text-purple-300">
+                        <p className="mt-1 text-xs text-purple-700">
                           → Doublon de <strong className="font-semibold">{r.duplicate_name}</strong>
                         </p>
                       )}
@@ -184,7 +184,7 @@ export function ReportsTab() {
 
                 {/* Details */}
                 {r.details && (
-                  <div className="mt-3 rounded-xl border border-neutral-800/50 bg-neutral-950/50 p-3 text-sm text-neutral-300">
+                  <div className="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-800">
                     {r.details}
                   </div>
                 )}
@@ -192,8 +192,8 @@ export function ReportsTab() {
                 {/* Resolution note (resolved/rejected) */}
                 {r.resolution_note && (
                   <div className="mt-3 rounded-xl border border-emerald-800/30 bg-emerald-500/5 p-3 text-xs">
-                    <span className="font-bold text-emerald-400">Note admin :</span>{' '}
-                    <span className="text-neutral-300">{r.resolution_note}</span>
+                    <span className="font-bold text-emerald-700">Note admin :</span>{' '}
+                    <span className="text-neutral-800">{r.resolution_note}</span>
                   </div>
                 )}
 
@@ -206,14 +206,14 @@ export function ReportsTab() {
                       placeholder="Note de résolution (optionnelle)"
                       rows={2}
                       maxLength={1000}
-                      className="w-full rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs text-white placeholder:text-neutral-600 focus:border-primary-500 focus:outline-none"
+                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-dark placeholder:text-neutral-600 focus:border-primary-500 focus:outline-none"
                     />
                     <div className="flex flex-wrap gap-2">
                       {r.status === 'open' && (
                         <button
                           disabled={actionId === r.id}
                           onClick={() => transition(r.id, 'reviewing')}
-                          className="rounded-full bg-blue-500/15 px-3 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/25 disabled:opacity-50"
+                          className="rounded-full bg-blue-500/15 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-500/25 disabled:opacity-50"
                         >
                           Prendre en charge
                         </button>
@@ -221,14 +221,14 @@ export function ReportsTab() {
                       <button
                         disabled={actionId === r.id}
                         onClick={() => transition(r.id, 'resolved')}
-                        className="rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-50"
+                        className="rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-500/25 disabled:opacity-50"
                       >
                         ✓ Résolu
                       </button>
                       <button
                         disabled={actionId === r.id}
                         onClick={() => transition(r.id, 'rejected')}
-                        className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/25 disabled:opacity-50"
+                        className="rounded-full bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-500/25 disabled:opacity-50"
                       >
                         ✕ Rejeter
                       </button>
@@ -246,14 +246,14 @@ export function ReportsTab() {
 
 function SummaryCard({ label, value, tone }: { label: string; value: number; tone: 'amber' | 'blue' | 'emerald' | 'neutral' }) {
   const map = {
-    amber: 'text-amber-400',
-    blue: 'text-blue-400',
-    emerald: 'text-emerald-400',
-    neutral: 'text-neutral-400',
+    amber: 'text-amber-700',
+    blue: 'text-blue-700',
+    emerald: 'text-emerald-700',
+    neutral: 'text-neutral-700',
   } as const;
   return (
-    <div className="rounded-2xl border border-neutral-800/50 bg-neutral-900/50 p-4">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">{label}</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-600">{label}</p>
       <p className={`mt-1 font-display text-2xl font-bold ${map[tone]}`}>{value}</p>
     </div>
   );

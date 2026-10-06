@@ -29,8 +29,8 @@ interface Offer {
 interface Overview { offers_active: number; redemptions: number; discount_xof: number; by_kind: { kind: string; redemptions: number; discount_xof: number }[] }
 interface Target { id: string; title: string }
 
-const input = 'w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600';
-const lbl = 'block text-xs font-semibold text-neutral-400';
+const input = 'w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-dark placeholder:text-neutral-600';
+const lbl = 'block text-xs font-semibold text-neutral-700';
 const toLocal = (iso: string | null) => (iso ? new Date(iso).toISOString().slice(0, 16) : '');
 
 function describe(o: Offer) {
@@ -80,11 +80,11 @@ export function OffersManager({ admin = false }: { admin?: boolean }) {
   }
 
   return (
-    <div className="space-y-5 text-white">
+    <div className="space-y-5 text-dark">
       {admin && ov && (
         <div className="grid grid-cols-3 gap-3">
           {[['Offres actives', ov.offers_active], ['Utilisations', ov.redemptions], ['Réductions accordées', formatXOF(Number(ov.discount_xof))]].map(([k, v]) => (
-            <div key={String(k)} className="rounded-xl border border-neutral-800 bg-neutral-900/60 p-4"><p className="text-xs text-neutral-400">{k}</p><p className="mt-1 text-xl font-bold">{v}</p></div>
+            <div key={String(k)} className="rounded-xl border border-neutral-200 bg-white p-4"><p className="text-xs text-neutral-700">{k}</p><p className="mt-1 text-xl font-bold">{v}</p></div>
           ))}
         </div>
       )}
@@ -92,26 +92,26 @@ export function OffersManager({ admin = false }: { admin?: boolean }) {
         <h2 className="font-display text-xl font-bold">🏷️ {admin ? 'Offres et promotions' : 'Mes offres'}</h2>
         {!editing && <button onClick={() => setEditing('new')} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-bold">+ Nouvelle offre</button>}
       </div>
-      {err && <p role="alert" className="text-sm text-red-400">{err}</p>}
+      {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
       {editing && (
         <OfferForm key={editing === 'new' ? 'new' : editing.id} offer={editing === 'new' ? null : editing} admin={admin} trips={trips} acts={acts}
                    onCancel={() => setEditing(null)} onSaved={() => { setEditing(null); setErr(null); load(); }} />
       )}
-      {loading ? <p className="text-center text-neutral-500">Chargement…</p> : rows.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-neutral-800 p-8 text-center text-neutral-500">Aucune offre pour le moment.</p>
+      {loading ? <p className="text-center text-neutral-600">Chargement…</p> : rows.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-neutral-200 p-8 text-center text-neutral-600">Aucune offre pour le moment.</p>
       ) : (
         <ul className="space-y-2">
           {rows.map((o) => (
-            <li key={o.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900/60 p-4">
+            <li key={o.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4">
               <div className="min-w-0 flex-1">
-                <p className="font-semibold">{o.title} <span className="ml-1 rounded-full bg-primary-500/15 px-2 py-0.5 text-xs text-primary-300">{KIND_LABEL[o.kind]}</span>
-                  {!o.is_public && <span className="ml-1 rounded-full bg-neutral-500/20 px-2 py-0.5 text-xs text-neutral-300">privée</span>}</p>
-                <p className="text-sm text-neutral-400">{describe(o)}</p>
+                <p className="font-semibold">{o.title} <span className="ml-1 rounded-full bg-primary-500/15 px-2 py-0.5 text-xs text-primary-700">{KIND_LABEL[o.kind]}</span>
+                  {!o.is_public && <span className="ml-1 rounded-full bg-neutral-500/20 px-2 py-0.5 text-xs text-neutral-800">privée</span>}</p>
+                <p className="text-sm text-neutral-700">{describe(o)}</p>
               </div>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${o.active ? 'bg-emerald-500/15 text-emerald-400' : 'bg-neutral-500/15 text-neutral-400'}`}>{o.active ? 'Active' : 'Désactivée'}</span>
-              <button onClick={() => toggle(o)} className="text-sm text-neutral-300 underline">{o.active ? 'Désactiver' : 'Activer'}</button>
-              <button onClick={() => setEditing(o)} className="text-sm text-neutral-300 underline">Modifier</button>
-              <button onClick={() => remove(o)} className="text-sm text-red-400 underline">Supprimer</button>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${o.active ? 'bg-emerald-500/15 text-emerald-700' : 'bg-neutral-500/15 text-neutral-700'}`}>{o.active ? 'Active' : 'Désactivée'}</span>
+              <button onClick={() => toggle(o)} className="text-sm text-neutral-800 underline">{o.active ? 'Désactiver' : 'Activer'}</button>
+              <button onClick={() => setEditing(o)} className="text-sm text-neutral-800 underline">Modifier</button>
+              <button onClick={() => remove(o)} className="text-sm text-red-700 underline">Supprimer</button>
             </li>
           ))}
         </ul>
@@ -174,11 +174,11 @@ function OfferForm({ offer, admin, trips, acts, onCancel, onSaved }: {
 
   const hint = KINDS.find((k) => k.key === kind)?.hint;
   return (
-    <form onSubmit={submit} className="space-y-4 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-5">
+    <form onSubmit={submit} className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className={lbl}>Type d’offre
           <select value={kind} onChange={(e) => setKind(e.target.value)} className={input}>{KINDS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}</select>
-          {hint && <span className="mt-1 block font-normal text-neutral-500">{hint}</span>}
+          {hint && <span className="mt-1 block font-normal text-neutral-600">{hint}</span>}
         </label>
         <label className={lbl}>Titre *<input name="title" required maxLength={120} defaultValue={o?.title ?? ''} className={input} /></label>
         <label className={`${lbl} sm:col-span-2`}>Description<textarea name="description" rows={2} maxLength={600} defaultValue={o?.description ?? ''} className={input} /></label>
@@ -211,14 +211,14 @@ function OfferForm({ offer, admin, trips, acts, onCancel, onSaved }: {
         <label className={lbl}>Fin de validité {kind === 'flash' ? '*' : ''}<input name="valid_until" type="datetime-local" required={kind === 'flash'} defaultValue={toLocal(o?.valid_until ?? null)} className={input} /></label>
         <label className={lbl}>Utilisations maximum (total)<input name="max_uses" type="number" min={1} defaultValue={o?.max_uses ?? ''} className={input} /></label>
         <label className={lbl}>Utilisations maximum par client<input name="max_uses_per_user" type="number" min={1} defaultValue={o?.max_uses_per_user ?? ''} className={input} /></label>
-        <label className="flex items-center gap-2 text-sm text-neutral-300"><input type="checkbox" name="is_public" defaultChecked={o?.is_public ?? true} /> Visible publiquement (sinon, code à communiquer)</label>
-        <label className="flex items-center gap-2 text-sm text-neutral-300"><input type="checkbox" name="active" defaultChecked={o?.active ?? true} /> Active</label>
+        <label className="flex items-center gap-2 text-sm text-neutral-800"><input type="checkbox" name="is_public" defaultChecked={o?.is_public ?? true} /> Visible publiquement (sinon, code à communiquer)</label>
+        <label className="flex items-center gap-2 text-sm text-neutral-800"><input type="checkbox" name="active" defaultChecked={o?.active ?? true} /> Active</label>
         <TranslationFields fields={TRANSLATABLE} defaults={o?.i18n} />
       </div>
-      {err && <p role="alert" className="text-sm text-red-400">{err}</p>}
+      {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
       <div className="flex items-center gap-3">
-        <button disabled={busy} className="rounded-lg bg-primary-500 px-5 py-2 text-sm font-bold text-white disabled:opacity-60">{busy ? 'Enregistrement…' : o ? 'Enregistrer' : 'Créer l’offre'}</button>
-        <button type="button" onClick={onCancel} className="text-sm text-neutral-400 underline">Annuler</button>
+        <button disabled={busy} className="rounded-lg bg-primary-500 px-5 py-2 text-sm font-bold text-night disabled:opacity-60">{busy ? 'Enregistrement…' : o ? 'Enregistrer' : 'Créer l’offre'}</button>
+        <button type="button" onClick={onCancel} className="text-sm text-neutral-700 underline">Annuler</button>
       </div>
     </form>
   );

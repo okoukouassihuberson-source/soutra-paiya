@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { formatSlot, formatXOF, type ActivitySlot } from '@soutra/shared';
 import { supabaseBrowser } from '@/lib/supabase';
 
-const input = 'w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white';
+const input = 'w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-dark';
 const MAX_GENERATED = 120;
 
 /** Gestion des créneaux d'une activité : génération par plage de dates / horaires, fermeture, suppression. */
@@ -63,25 +63,25 @@ export function SlotsManager({ activityId }: { activityId: string }) {
 
   const dows = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
   return (
-    <div className="mt-3 space-y-4 rounded-xl bg-neutral-950/60 p-4">
+    <div className="mt-3 space-y-4 rounded-xl bg-neutral-50 p-4">
       <form onSubmit={generate} className="grid gap-3 sm:grid-cols-4">
-        <label className="text-xs font-semibold text-neutral-400">Du<input name="from" type="date" required className={input} /></label>
-        <label className="text-xs font-semibold text-neutral-400">Au (optionnel)<input name="to" type="date" className={input} /></label>
-        <label className="text-xs font-semibold text-neutral-400 sm:col-span-2">Heures (ex. 09:00, 14:30)<input name="times" required placeholder="09:00, 14:00" className={input} /></label>
-        <label className="text-xs font-semibold text-neutral-400">Places par créneau<input name="capacity" type="number" min={1} max={500} defaultValue={10} required className={input} /></label>
-        <label className="text-xs font-semibold text-neutral-400">Prix spécifique (XOF)<input name="price" type="number" min={0} placeholder="prix de base" className={input} /></label>
-        <fieldset className="text-xs font-semibold text-neutral-400 sm:col-span-2"><legend>Jours (tous si aucun)</legend>
+        <label className="text-xs font-semibold text-neutral-700">Du<input name="from" type="date" required className={input} /></label>
+        <label className="text-xs font-semibold text-neutral-700">Au (optionnel)<input name="to" type="date" className={input} /></label>
+        <label className="text-xs font-semibold text-neutral-700 sm:col-span-2">Heures (ex. 09:00, 14:30)<input name="times" required placeholder="09:00, 14:00" className={input} /></label>
+        <label className="text-xs font-semibold text-neutral-700">Places par créneau<input name="capacity" type="number" min={1} max={500} defaultValue={10} required className={input} /></label>
+        <label className="text-xs font-semibold text-neutral-700">Prix spécifique (XOF)<input name="price" type="number" min={0} placeholder="prix de base" className={input} /></label>
+        <fieldset className="text-xs font-semibold text-neutral-700 sm:col-span-2"><legend>Jours (tous si aucun)</legend>
           <div className="mt-1 flex flex-wrap gap-2">{dows.map((d, i) => <label key={d} className="flex items-center gap-1 font-normal"><input type="checkbox" name="dow" value={i} /> {d}</label>)}</div>
         </fieldset>
-        <div className="sm:col-span-4"><button disabled={busy} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{busy ? 'Ajout…' : 'Ajouter des créneaux'}</button></div>
+        <div className="sm:col-span-4"><button disabled={busy} className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-bold text-night disabled:opacity-60">{busy ? 'Ajout…' : 'Ajouter des créneaux'}</button></div>
       </form>
-      {msg && <p role="status" className={`text-sm ${msg.ok ? 'text-emerald-300' : 'text-red-400'}`}>{msg.text}</p>}
-      {loading ? <p className="text-sm text-neutral-500">Chargement…</p> : slots.length === 0 ? <p className="text-sm text-neutral-500">Aucun créneau à venir.</p> : (
-        <ul className="divide-y divide-neutral-800 text-sm">
+      {msg && <p role="status" className={`text-sm ${msg.ok ? 'text-emerald-700' : 'text-red-700'}`}>{msg.text}</p>}
+      {loading ? <p className="text-sm text-neutral-600">Chargement…</p> : slots.length === 0 ? <p className="text-sm text-neutral-600">Aucun créneau à venir.</p> : (
+        <ul className="divide-y divide-neutral-200 text-sm">
           {slots.map((s) => (
             <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span>{formatSlot(s.starts_at)} <span className="text-neutral-500">· {s.booked}/{s.capacity} réservés{s.price_xof != null ? ` · ${formatXOF(s.price_xof)}` : ''}</span>{s.status === 'closed' && <span className="ml-2 rounded bg-neutral-700 px-1.5 text-[10px] uppercase">fermé</span>}</span>
-              <span className="flex gap-3 text-xs"><button onClick={() => toggle(s)} className="underline">{s.status === 'open' ? 'Fermer' : 'Rouvrir'}</button><button onClick={() => remove(s)} className="text-red-400 underline">Supprimer</button></span>
+              <span>{formatSlot(s.starts_at)} <span className="text-neutral-600">· {s.booked}/{s.capacity} réservés{s.price_xof != null ? ` · ${formatXOF(s.price_xof)}` : ''}</span>{s.status === 'closed' && <span className="ml-2 rounded bg-neutral-200 px-1.5 text-[10px] uppercase">fermé</span>}</span>
+              <span className="flex gap-3 text-xs"><button onClick={() => toggle(s)} className="underline">{s.status === 'open' ? 'Fermer' : 'Rouvrir'}</button><button onClick={() => remove(s)} className="text-red-700 underline">Supprimer</button></span>
             </li>
           ))}
         </ul>

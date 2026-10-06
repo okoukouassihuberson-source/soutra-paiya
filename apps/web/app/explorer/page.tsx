@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { TOURISM_CATEGORIES } from '@soutra/shared';
+import { TOURISM_CATEGORIES, categoryEmoji } from '@soutra/shared';
 import { exploreVenues, listTrips, type ExploreParams } from '@/lib/tourism';
 import { EXPLORER_AMENITIES, EXPLORER_SORTS } from '@/lib/explorer-options';
 import { TourismNav } from '@/components/tourism/TourismNav';
 import { ExplorerFilters, type FilterValues } from '@/components/tourism/ExplorerFilters';
 import { VenueCardView, TripCardView } from '@/components/tourism/Cards';
-import { VenuesMapLazy } from '@/components/tourism/VenuesMapLazy';
+import { SplitResults } from '@/components/tourism/SplitResults';
+import type { MapItem } from '@/components/tourism/ResultsMap';
 import { getI18n } from '@/lib/i18n/server';
 import { languageAlternates } from '@/lib/i18n/seo';
 
@@ -35,7 +36,7 @@ function parse(sp: SP) {
     minPrice: one(sp.min_price), maxPrice: one(sp.max_price), minRating: one(sp.min_rating), amenities: am,
     openNow: one(sp.open) === '1', onlinePayment: one(sp.pay) === '1', checkIn: date(one(sp.check_in)), checkOut: date(one(sp.check_out)),
     lat: one(sp.lat), lng: one(sp.lng), radius: one(sp.radius),
-    sort: EXPLORER_SORTS.some((s) => s.key === sortKey) ? sortKey : 'rating', view: one(sp.view) === 'map' ? 'map' : 'list',
+    sort: EXPLORER_SORTS.some((s) => s.key === sortKey) ? sortKey : 'rating', view: one(sp.view) === 'map' ? 'map' : one(sp.view) === 'list' ? 'list' : 'split',
   };
   const lat = num(v.lat, -90, 90), lng = num(v.lng, -180, 180);
   const hasDates = !!v.checkIn && !!v.checkOut && v.checkOut > v.checkIn;
@@ -72,6 +73,7 @@ export default async function ExplorerPage({ searchParams }: { searchParams: SP 
   // Catégories sans établissements (activités, voyages) : leur page dédiée.
   if (cat && !cat.venueCategories) redirect(lp(cat.href));
   const mapView = v.view === 'map';
+  const splitView = v.view === 'split';
 
   const showTrips = !cat || cat.key.startsWith('voyages');
   const [res, trips] = await Promise.all([
@@ -81,7 +83,11 @@ export default async function ExplorerPage({ searchParams }: { searchParams: SP 
     showTrips && v.q ? listTrips({ scope: 'national', q: v.q, limit: 6 }) : Promise.resolve([]),
   ]);
   const { venues, total } = res;
-  const mapped = venues.filter((x) => x.lat != null && x.lng != null) as (typeof venues[number] & { lat: number; lng: number })[];
+  const mapItems: MapItem[] = venues.filter((x) => x.lat != null && x.lng != null).map((x) => ({
+    id: x.id, href: `/v/${x.slug}`, title: x.name, image: x.cover_url, emoji: categoryEmoji(x.category as any),
+    sub: `${tdyn('venueCat', x.category, x.category)} · ${[x.district, x.city].filter(Boolean).join(', ')}`,
+    rating: x.rating_avg, ratingCount: x.rating_count ?? 0, price: x.avg_price_xof, lat: x.lat as number, lng: x.lng as number,
+  }));
 
   // Liens qui conservent tous les filtres (pagination / bascule liste-carte).
   const base = new URLSearchParams();
@@ -96,6 +102,17 @@ export default async function ExplorerPage({ searchParams }: { searchParams: SP 
   };
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const grid = (narrow: boolean) => (
+    <div className={`grid gap-5 sm:grid-cols-2 ${narrow ? 'xl:grid-cols-2' : 'lg:grid-cols-3 xl:grid-cols-4'}`}>
+      {venues.map((x) => (
+        <div key={x.id} className="relative [&>a]:block [&>a]:h-full" data-map-id={x.id}>
+          <VenueCardView venue={x} />
+          {x.distance_km != null && <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-semibold text-white">{t('filters.km', { n: x.distance_km < 10 ? x.distance_km.toFixed(1) : Math.round(x.distance_km) })}</span>}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <>
       <TourismNav />
@@ -109,7 +126,7 @@ export default async function ExplorerPage({ searchParams }: { searchParams: SP 
         <div className="mt-5 flex gap-2 overflow-x-auto pb-2" role="list" aria-label={t('explorer.categories')}>
           {TOURISM_CATEGORIES.map((c) => (
             <Link key={c.key} role="listitem" href={c.key === cat?.key ? lp('/explorer') : lp(c.href)}
-              className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium ${c.key === cat?.key ? 'border-primary-500 bg-primary-500 text-white' : 'border-neutral-200 bg-white text-neutral-700 hover:border-primary-300'}`}>
+              className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium ${c.key === cat?.key ? 'border-primary-500 bg-primary-500 text-night' : 'border-neutral-200 bg-white text-neutral-700 hover:border-primary-300'}`}>
               {c.emoji} {tdyn('cat', c.key, c.label)}
             </Link>
           ))}
@@ -127,9 +144,10 @@ export default async function ExplorerPage({ searchParams }: { searchParams: SP 
             {res.error ? t('explorer.unavailable') : tn('explorer.results', total, { n: fmtNumber(total) })}
             {mapView && total > MAP_LIMIT ? t('explorer.mapCap', { max: MAP_LIMIT }) : ''}
           </p>
-          <div className="inline-flex overflow-hidden rounded-full border border-neutral-300 text-sm font-medium" role="group" aria-label={t('explorer.display')}>
-            <Link href={href({ view: 'list' })} className={`px-4 py-1.5 ${!mapView ? 'bg-dark text-white' : 'bg-white'}`}>{t('explorer.viewList')}</Link>
-            <Link href={href({ view: 'map' })} className={`px-4 py-1.5 ${mapView ? 'bg-dark text-white' : 'bg-white'}`}>{t('explorer.viewMap')}</Link>
+          <div className="inline-flex overflow-hidden rounded-full border border-neutral-300 text-sm font-medium" role="group" aria-label={t('split.view')}>
+            <Link href={href({ view: 'list' })} aria-current={v.view === 'list' ? 'true' : undefined} className={`px-4 py-1.5 ${v.view === 'list' ? 'bg-dark text-white' : 'bg-white'}`}>{t('split.list')}</Link>
+            <Link href={href({ view: 'split' })} aria-current={splitView ? 'true' : undefined} className={`hidden px-4 py-1.5 lg:block ${splitView ? 'bg-dark text-white' : 'bg-white'}`}>{t('split.split')}</Link>
+            <Link href={href({ view: 'map' })} aria-current={mapView ? 'true' : undefined} className={`px-4 py-1.5 ${mapView ? 'bg-dark text-white' : 'bg-white'}`}>{t('split.map')}</Link>
           </div>
         </div>
 
@@ -137,19 +155,10 @@ export default async function ExplorerPage({ searchParams }: { searchParams: SP 
           {venues.length === 0 ? (
             <p className="rounded-2xl bg-neutral-50 p-8 text-center text-neutral-600">{t('explorer.empty')}</p>
           ) : mapView ? (
-            mapped.length === 0
-              ? <p className="rounded-2xl bg-neutral-50 p-8 text-center text-neutral-600">{t('explorer.noGps')}</p>
-              : <VenuesMapLazy venues={mapped} user={user} />
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {venues.map((x) => (
-                <div key={x.id} className="relative">
-                  <VenueCardView venue={x} />
-                  {x.distance_km != null && <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-semibold text-white">{t('filters.km', { n: x.distance_km < 10 ? x.distance_km.toFixed(1) : Math.round(x.distance_km) })}</span>}
-                </div>
-              ))}
-            </div>
-          )}
+            <SplitResults items={mapItems} user={user} mode="map" />
+          ) : splitView ? (
+            <SplitResults items={mapItems} user={user} mode="split">{grid(true)}</SplitResults>
+          ) : grid(false)}
           {!mapView && pages > 1 && (
             <nav className="mt-8 flex items-center justify-center gap-3" aria-label={t('common.pagination')}>
               {page > 1 && <Link className="rounded-full border px-5 py-2 text-sm font-medium" href={href({ page: String(page - 1) })}>{t('common.previous')}</Link>}

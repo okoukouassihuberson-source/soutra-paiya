@@ -10,6 +10,7 @@ import {
   IcoCalendar, IcoMegaphone, IcoGear, IcoLogout,
 } from '@/components/layout';
 import { Button } from '@/components/ui';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabaseBrowser } from '@/lib/supabase';
 
 /**
@@ -78,28 +79,35 @@ const IcoCard = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const SHORT: Record<string, string> = { overview: 'Aperçu', analytics: 'Stats', moderation: 'Modération', venues: 'Lieux', users: 'Membres' };
+const nav = (id: string, label: string, icon: ReactNode, group: string, bottom = false): NavItem =>
+  ({ id, label, shortLabel: SHORT[id], href: `/admin?tab=${id}`, icon, group, match: 'exact', inBottomNav: bottom });
+
+// Regroupé par intention : ce qu'il faut traiter, le catalogue, les gens, l'argent, le système.
 const NAV_ADMIN: NavItem[] = [
-  { id: 'overview',      label: "Vue d'ensemble", href: '/admin?tab=overview',     icon: <IcoGrid />,       inBottomNav: true, match: 'exact' },
-  { id: 'analytics',     label: 'Analytics',      href: '/admin?tab=analytics',    icon: <IcoChart />,      inBottomNav: true, match: 'exact' },
-  { id: 'users',         label: 'Utilisateurs',   href: '/admin?tab=users',        icon: <IcoUsers />,      inBottomNav: true, match: 'exact' },
-  { id: 'venues',        label: 'Établissements', href: '/admin?tab=venues',       icon: <IcoStore />,      inBottomNav: true, match: 'exact' },
-  { id: 'moderation',    label: 'Modération Pro', href: '/admin?tab=moderation',   icon: <IcoCheck />,      inBottomNav: true, match: 'exact' },
-  { id: 'trips',         label: 'Voyages',        href: '/admin?tab=trips',        icon: <IcoCalendar />,                      match: 'exact' },
-  { id: 'destinations',  label: 'Destinations',   href: '/admin?tab=destinations', icon: <IcoStore />,                         match: 'exact' },
-  { id: 'activities',    label: 'Activités',      href: '/admin?tab=activities',   icon: <IcoCalendar />,                      match: 'exact' },
-  { id: 'subscriptions', label: 'Abonnements',    href: '/admin?tab=subscriptions',icon: <IcoCard />,                          match: 'exact' },
-  { id: 'subscribers',   label: 'Abonnés',        href: '/admin?tab=subscribers',  icon: <IcoUsers />,                         match: 'exact' },
-  { id: 'loyalty',       label: 'Fidélité',       href: '/admin?tab=loyalty',      icon: <IcoCash />,                          match: 'exact' },
-  { id: 'wallets',       label: 'Wallets',        href: '/admin?tab=wallets',      icon: <IcoWallet />,                        match: 'exact' },
-  { id: 'reports',       label: 'Signalements',   href: '/admin?tab=reports',      icon: <IcoFlag />,                          match: 'exact' },
-  { id: 'claims',        label: 'Revendications', href: '/admin?tab=claims',       icon: <IcoKey />,                           match: 'exact' },
-  { id: 'submissions',   label: 'Contributions',  href: '/admin?tab=submissions',  icon: <IcoPlus />,                          match: 'exact' },
-  { id: 'monetization',  label: 'Monétisation',   href: '/admin?tab=monetization', icon: <IcoCash />,                          match: 'exact' },
-  { id: 'transactions',  label: 'Transactions',   href: '/admin?tab=transactions', icon: <IcoWallet />,                        match: 'exact' },
-  { id: 'reservations',  label: 'Réservations',   href: '/admin?tab=reservations', icon: <IcoCalendar />,                      match: 'exact' },
-  { id: 'marketing',     label: 'Marketing',      href: '/admin?tab=marketing',    icon: <IcoMegaphone />,                     match: 'exact' },
-  { id: 'security',      label: 'Sécurité',       href: '/admin?tab=security',     icon: <IcoShield />,                        match: 'exact' },
-  { id: 'settings',      label: 'Paramètres',     href: '/admin?tab=settings',     icon: <IcoGear />,                          match: 'exact' },
+  nav('overview',      "Vue d'ensemble", <IcoGrid />,     'Pilotage', true),
+  nav('analytics',     'Analytics',      <IcoChart />,    'Pilotage', true),
+  nav('moderation',    'Modération Pro', <IcoCheck />,    'À traiter', true),
+  nav('submissions',   'Contributions',  <IcoPlus />,     'À traiter'),
+  nav('claims',        'Revendications', <IcoKey />,      'À traiter'),
+  nav('reports',       'Signalements',   <IcoFlag />,     'À traiter'),
+  nav('venues',        'Établissements', <IcoStore />,    'Catalogue', true),
+  nav('trips',         'Voyages',        <IcoCalendar />, 'Catalogue'),
+  nav('activities',    'Activités',      <IcoCalendar />, 'Catalogue'),
+  nav('destinations',  'Destinations',   <IcoStore />,    'Catalogue'),
+  nav('offers',        'Offres',         <IcoCash />,     'Catalogue'),
+  nav('users',         'Utilisateurs',   <IcoUsers />,    'Communauté', true),
+  nav('subscribers',   'Abonnés',        <IcoUsers />,    'Communauté'),
+  nav('loyalty',       'Fidélité',       <IcoCash />,     'Communauté'),
+  nav('reservations',  'Réservations',   <IcoCalendar />, 'Argent'),
+  nav('transactions',  'Transactions',   <IcoWallet />,   'Argent'),
+  nav('wallets',       'Wallets',        <IcoWallet />,   'Argent'),
+  nav('subscriptions', 'Abonnements',    <IcoCard />,     'Argent'),
+  nav('commissions',   'Commissions',    <IcoCash />,     'Argent'),
+  nav('monetization',  'Monétisation',   <IcoCash />,     'Argent'),
+  nav('marketing',     'Marketing',      <IcoMegaphone />,'Système'),
+  nav('security',      'Sécurité',       <IcoShield />,   'Système'),
+  nav('settings',      'Paramètres',     <IcoGear />,     'Système'),
 ];
 
 // Le modérateur ne voit qu'un seul onglet — c'est le seul outil dont il dispose.
@@ -133,10 +141,14 @@ export function AdminShell({
       homeHref="/"
       navItems={navItems}
       user={user}
+      headerActions={<ThemeToggle />}
       sidebarFooter={
-        <Button variant="ghost" size="sm" fullWidth onClick={onSignOut} leftIcon={<IcoLogout />}>
-          Se déconnecter
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" fullWidth onClick={onSignOut} leftIcon={<IcoLogout />}>
+            Se déconnecter
+          </Button>
+        </div>
       }
     >
       {children}

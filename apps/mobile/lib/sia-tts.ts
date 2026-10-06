@@ -6,9 +6,10 @@
  * ne plantent pas — on devient silencieux et l'UX reste fonctionnelle en
  * mode texte.
  *
- * Locale par défaut : fr-FR. La voix exacte dépend de l'OS.
+ * Locale par défaut : celle de l'application. La voix exacte dépend de l'OS.
  */
 
+import { intlLocale } from '@/lib/i18n';
 // Require dynamique : Expo Go ou bundle sans le module natif → on no-op.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let Speech: any = null;
@@ -26,7 +27,7 @@ export function siaSpeak(text: string, opts?: { locale?: string }) {
     // l'overlap de voix en cas de réponses rapides.
     Speech.stop?.();
     Speech.speak?.(text, {
-      language: opts?.locale ?? 'fr-FR',
+      language: opts?.locale ?? intlLocale(),
       pitch: 1.0,
       rate: 1.0,
     });

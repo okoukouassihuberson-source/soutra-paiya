@@ -47,7 +47,7 @@ export function ExplorerFilters({ v }: { v: FilterValues }) {
   return (
     <form ref={form} action={lp('/explorer')} method="get" role="search" className="space-y-3">
       {v.cat && <input type="hidden" name="cat" value={v.cat} />}
-      {v.view === 'map' && <input type="hidden" name="view" value="map" />}
+      {(v.view === 'map' || v.view === 'list') && <input type="hidden" name="view" value={v.view} />}
       <input type="hidden" name="lat" value={geo.lat} />
       <input type="hidden" name="lng" value={geo.lng} />
 
@@ -56,13 +56,13 @@ export function ExplorerFilters({ v }: { v: FilterValues }) {
           <input name="q" defaultValue={v.q} maxLength={80} placeholder={t('search.qPlaceholder')} className="w-full rounded-xl border-0 bg-neutral-50 px-4 py-3 text-base" /></label>
         <label className="block"><span className="sr-only">{t('search.where')}</span>
           <input name="city" defaultValue={v.city} list="ex-cities" maxLength={60} placeholder={t('search.wherePlaceholder')} className="w-full rounded-xl border-0 bg-neutral-50 px-4 py-3 text-base" /></label>
-        <button type="submit" className="rounded-xl bg-primary-500 px-6 py-3 font-semibold text-white hover:bg-primary-600">{t('common.search')}</button>
+        <button type="submit" className="rounded-xl bg-primary-500 px-6 py-3 font-semibold text-night hover:bg-primary-400">{t('common.search')}</button>
         <datalist id="ex-cities">{CI_CITIES.map((c) => <option key={c} value={c} />)}</datalist>
       </div>
 
       <details className="rounded-2xl border border-neutral-200 bg-white p-4" open={active > 0}>
         <summary className="cursor-pointer select-none text-sm font-semibold text-dark">
-          {t('filters.advanced')}{active ? <span className="ml-2 rounded-full bg-primary-500 px-2 py-0.5 text-xs text-white">{t('filters.active')}</span> : null}
+          {t('filters.advanced')}{active ? <span className="ml-2 rounded-full bg-primary-500 px-2 py-0.5 text-xs text-night">{t('filters.active')}</span> : null}
         </summary>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <label className="text-xs font-semibold text-neutral-600">{t('filters.commune')}<input name="commune" defaultValue={v.commune} maxLength={60} className={field} /></label>
@@ -93,7 +93,7 @@ export function ExplorerFilters({ v }: { v: FilterValues }) {
             {EXPLORER_AMENITIES.map((a) => (
               <label key={a.key} className="cursor-pointer">
                 <input type="checkbox" name="am" value={a.key} defaultChecked={v.amenities.includes(a.key)} className="peer sr-only" />
-                <span className="inline-block rounded-full border border-neutral-300 px-3 py-1.5 text-sm peer-checked:border-primary-500 peer-checked:bg-primary-500 peer-checked:text-white peer-focus-visible:ring-2">{t(`amenity.${a.key}` as 'amenity.wifi')}</span>
+                <span className="inline-block rounded-full border border-neutral-300 px-3 py-1.5 text-sm peer-checked:border-primary-500 peer-checked:bg-primary-500 peer-checked:text-night peer-focus-visible:ring-2">{t(`amenity.${a.key}` as 'amenity.wifi')}</span>
               </label>
             ))}
           </div>

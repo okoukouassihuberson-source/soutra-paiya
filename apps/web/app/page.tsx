@@ -4,6 +4,7 @@ import { PaymentLogo } from '@/components/marketing/PaymentLogo';
 import { HomeTourism } from '@/components/tourism/HomeTourism';
 import { EstablishmentLink } from '@/components/marketing/EstablishmentLink';
 import { SiteFooter } from '@/components/home/SiteFooter';
+import { AssistantDock } from '@/components/tourism/AssistantDock';
 import { MobileDock } from '@/components/home/MobileDock';
 import { getI18n } from '@/lib/i18n/server';
 
@@ -407,6 +408,7 @@ export default function HomePage() {
 
       <SiteFooter />
       <MobileDock />
+      <AssistantDock />
     </main>
   );
 }

@@ -87,8 +87,10 @@ const SUPABASE_ORIGIN = (() => {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = getLocale();
   return (
-    <html lang={locale} dir={LOCALES[locale].dir} className={inter.variable}>
+    <html lang={locale} dir={LOCALES[locale].dir} className={inter.variable} suppressHydrationWarning>
       <head>
+        {/* Thème posé avant le premier rendu (évite l'éclair clair) : choix mémorisé, sinon préférence du système. */}
+        <script dangerouslySetInnerHTML={{ __html: "try{var s=localStorage.getItem('soutra.theme');var d=s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.theme=d?'dark':'light'}catch(e){}" }} />
         {/* Preconnect réseau pour Supabase : économise ~100-200ms au premier appel. */}
         <link rel="preconnect" href={SUPABASE_ORIGIN} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={SUPABASE_ORIGIN} />

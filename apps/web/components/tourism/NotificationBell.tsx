@@ -36,7 +36,7 @@ export function NotificationBell() {
       className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-xl hover:bg-neutral-100">
       <span aria-hidden>🔔</span>
       {count > 0 && (
-        <span className="absolute right-0 top-0 min-w-[18px] rounded-full bg-primary-500 px-1 text-center text-[11px] font-bold leading-[18px] text-white">{count > 99 ? '99+' : count}</span>
+        <span className="absolute right-0 top-0 min-w-[18px] rounded-full bg-primary-500 px-1 text-center text-[11px] font-bold leading-[18px] text-night">{count > 99 ? '99+' : count}</span>
       )}
     </Link>
   );

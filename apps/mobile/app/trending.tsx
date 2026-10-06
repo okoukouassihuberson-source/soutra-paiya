@@ -8,11 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import {
   typography, radius, spacing, formatXOF,
-  categoryLabel, categoryEmoji, type ColorPalette,
+  categoryLabel, categoryEmoji, VENUE_CATEGORIES, type ColorPalette,
 } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Skeleton } from '@/components/Skeleton';
+import { useI18n, type TKey } from '@/lib/i18n';
 import {
   getTrendingVenues, getActivePromotions, getCurrentEvents,
   PROMO_KIND_META,
@@ -22,11 +23,17 @@ import {
 
 type TabKey = 'trending' | 'promos' | 'events';
 
-const TABS: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap; emoji: string }[] = [
-  { key: 'trending', label: 'Tendance',   icon: 'flame',      emoji: '🔥' },
-  { key: 'promos',   label: 'Promos',     icon: 'pricetag',   emoji: '🎉' },
-  { key: 'events',   label: 'Événements', icon: 'calendar',   emoji: '📅' },
+const TABS: { key: TabKey; label: TKey; icon: keyof typeof Ionicons.glyphMap; emoji: string }[] = [
+  { key: 'trending', label: 'trending.tabTrending', icon: 'flame',      emoji: '🔥' },
+  { key: 'promos',   label: 'trending.tabPromos',   icon: 'pricetag',   emoji: '🎉' },
+  { key: 'events',   label: 'trending.tabEvents',   icon: 'calendar',   emoji: '📅' },
 ];
+
+/** Libellé d'une catégorie de lieu dans la langue courante (repli : libellé français partagé). */
+function useCatLabel() {
+  const { t } = useI18n();
+  return (cat: string) => (VENUE_CATEGORIES.some((m) => m.value === cat) ? t(`venueCat.${cat}` as TKey) : categoryLabel(cat as any));
+}
 
 /**
  * Module "Ça bouge maintenant".
@@ -43,6 +50,7 @@ const TABS: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap; 
  * côté serveur. Pull-to-refresh pour recharger.
  */
 export default function Trending() {
+  const { t } = useI18n();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
@@ -105,19 +113,19 @@ export default function Trending() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Ça bouge maintenant 🔥" subtitle="Le pouls de la ville en temps réel" />
+      <ScreenHeader title={t('trending.title')} subtitle={t('trending.subtitle')} />
 
       {/* Tabs */}
       <View style={s.tabsRow}>
-        {TABS.map((t) => {
-          const active = tab === t.key;
+        {TABS.map((tb) => {
+          const active = tab === tb.key;
           return (
             <Pressable
-              key={t.key}
-              onPress={() => setTab(t.key)}
+              key={tb.key}
+              onPress={() => setTab(tb.key)}
               style={[s.tab, active && s.tabActive]}
             >
-              <Text style={[s.tabText, active && s.tabTextActive]}>{t.emoji} {t.label}</Text>
+              <Text style={[s.tabText, active && s.tabTextActive]}>{tb.emoji} {t(tb.label)}</Text>
             </Pressable>
           );
         })}
@@ -156,8 +164,10 @@ export default function Trending() {
 // ============================================================================
 function TrendingList({ data, c, onPress }: { data: TrendingVenue[]; c: ColorPalette; onPress: (id: string) => void }) {
   const s = useMemo(() => makeStyles(c), [c]);
+  const { t } = useI18n();
+  const catLabel = useCatLabel();
   if (data.length === 0) {
-    return <EmptyState c={c} title="Aucune tendance pour l'instant" hint="Les venues qui prennent vie apparaîtront ici dès qu'il y aura de l'activité." />;
+    return <EmptyState c={c} title={t('trending.noTrendTitle')} hint={t('trending.noTrendHint')} />;
   }
   return (
     <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
@@ -186,7 +196,7 @@ function TrendingList({ data, c, onPress }: { data: TrendingVenue[]; c: ColorPal
             {v.is_open_now === true && (
               <View style={s.openBadge}>
                 <View style={s.openDot} />
-                <Text style={s.openBadgeText}>OUVERT</Text>
+                <Text style={s.openBadgeText}>{t('trending.open')}</Text>
               </View>
             )}
           </View>
@@ -200,12 +210,12 @@ function TrendingList({ data, c, onPress }: { data: TrendingVenue[]; c: ColorPal
               )}
               {v.happening_event_count > 0 && (
                 <View style={[s.promoBadge, { backgroundColor: '#fef3c7' }]}>
-                  <Text style={[s.promoBadgeText, { color: '#d97706' }]}>EVT</Text>
+                  <Text style={[s.promoBadgeText, { color: '#d97706' }]}>{t('trending.evt')}</Text>
                 </View>
               )}
             </View>
             <Text style={s.cardMeta} numberOfLines={1}>
-              {categoryLabel(v.category)}
+              {catLabel(v.category)}
               {v.district ? ` · ${v.district}` : v.city ? ` · ${v.city}` : ''}
             </Text>
             <View style={s.cardStatsRow}>
@@ -233,7 +243,6 @@ function TrendingList({ data, c, onPress }: { data: TrendingVenue[]; c: ColorPal
 // Tab 2 — Promos
 // ============================================================================
 const PROMO_KIND_ORDER: (PromoKind | 'all')[] = ['all', 'discount', 'happy_hour', 'couple', 'group', 'weekend', 'student'];
-const ALL_LABEL = { label: 'Toutes', emoji: '✨' };
 
 function PromosList({
   data, c, onPress, filter, onFilterChange,
@@ -245,6 +254,9 @@ function PromosList({
   onFilterChange: (k: PromoKind | 'all') => void;
 }) {
   const s = useMemo(() => makeStyles(c), [c]);
+  const { t, intl } = useI18n();
+  const catLabel = useCatLabel();
+  const kindLabel = (k: PromoKind) => t(`promoKind.${k}` as TKey);
   return (
     <View>
       {/* Chips de filtre par kind (migration 0038) */}
@@ -254,7 +266,7 @@ function PromosList({
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: 6 }}
       >
         {PROMO_KIND_ORDER.map((k) => {
-          const meta = k === 'all' ? ALL_LABEL : PROMO_KIND_META[k];
+          const meta = k === 'all' ? { label: t('trending.all'), emoji: '✨' } : { label: kindLabel(k), emoji: PROMO_KIND_META[k].emoji };
           const active = filter === k;
           return (
             <Pressable
@@ -276,11 +288,11 @@ function PromosList({
       {data.length === 0 ? (
         <EmptyState
           c={c}
-          title={filter === 'all' ? 'Aucune promo active' : `Aucune promo ${PROMO_KIND_META[filter as PromoKind]?.label.toLowerCase()}`}
+          title={filter === 'all' ? t('trending.noPromo') : t('trending.noPromoKind', { kind: kindLabel(filter as PromoKind).toLowerCase() })}
           hint={
             filter === 'all'
-              ? "Reviens plus tard, les établissements publient leurs promotions au fil de la journée."
-              : 'Essaie un autre type de promo ou reviens plus tard.'
+              ? t('trending.noPromoHint')
+              : t('trending.noPromoKindHint')
           }
         />
       ) : (
@@ -302,19 +314,19 @@ function PromosList({
                     <Text style={s.cardName} numberOfLines={1}>{p.venue_name}</Text>
                     <View style={[s.kindBadge, { backgroundColor: kindMeta.color + '22', borderColor: kindMeta.color + '55' }]}>
                       <Text style={[s.kindBadgeText, { color: kindMeta.color }]}>
-                        {kindMeta.emoji} {kindMeta.label}
+                        {kindMeta.emoji} {kindLabel((p.kind as PromoKind) || 'discount')}
                       </Text>
                     </View>
                   </View>
                   <Text style={s.cardMeta} numberOfLines={1}>
-                    {categoryEmoji(p.venue_category)} {categoryLabel(p.venue_category)}
+                    {categoryEmoji(p.venue_category)} {catLabel(p.venue_category)}
                     {p.venue_district ? ` · ${p.venue_district}` : p.venue_city ? ` · ${p.venue_city}` : ''}
                   </Text>
                   <View style={s.cardStatsRow}>
                     {p.is_open_now === true && (
                       <View style={s.miniOpen}>
                         <View style={s.openDot} />
-                        <Text style={s.miniOpenText}>Ouvert</Text>
+                        <Text style={s.miniOpenText}>{t('trending.openShort')}</Text>
                       </View>
                     )}
                     {p.distance_km != null && (
@@ -323,7 +335,7 @@ function PromosList({
                       </Text>
                     )}
                     {p.valid_until && (
-                      <Text style={s.statSubtle}>Jusqu'au {new Date(p.valid_until).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</Text>
+                      <Text style={s.statSubtle}>{t('trending.until', { date: new Date(p.valid_until).toLocaleDateString(intl, { day: '2-digit', month: 'short' }) })}</Text>
                     )}
                   </View>
                 </View>
@@ -342,8 +354,9 @@ function PromosList({
 // ============================================================================
 function EventsList({ data, c, onPress }: { data: CurrentEvent[]; c: ColorPalette; onPress: (eventId: string) => void }) {
   const s = useMemo(() => makeStyles(c), [c]);
+  const { t, intl } = useI18n();
   if (data.length === 0) {
-    return <EmptyState c={c} title="Aucun événement en cours" hint="Les soirées, concerts et grands événements apparaîtront ici quand ils démarrent." />;
+    return <EmptyState c={c} title={t('trending.noEventTitle')} hint={t('trending.noEventHint')} />;
   }
   return (
     <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
@@ -362,23 +375,23 @@ function EventsList({ data, c, onPress }: { data: CurrentEvent[]; c: ColorPalett
             {e.is_happening ? (
               <View style={s.liveBadge}>
                 <View style={s.liveDot} />
-                <Text style={s.liveBadgeText}>EN COURS</Text>
+                <Text style={s.liveBadgeText}>{t('trending.live')}</Text>
               </View>
             ) : (
               <View style={[s.liveBadge, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
                 <Ionicons name="time-outline" size={11} color="#fff" />
-                <Text style={s.liveBadgeText}>BIENTÔT</Text>
+                <Text style={s.liveBadgeText}>{t('trending.soon')}</Text>
               </View>
             )}
           </View>
           <View style={s.cardBody}>
             <Text style={s.cardName} numberOfLines={2}>{e.title}</Text>
             <Text style={s.cardMeta} numberOfLines={1}>
-              {e.venue_name ? `📍 ${e.venue_name}` : e.city ? `📍 ${e.city}` : '📍 Lieu à confirmer'}
+              {e.venue_name ? `📍 ${e.venue_name}` : e.city ? `📍 ${e.city}` : `📍 ${t('trending.tbc')}`}
             </Text>
             <View style={s.cardStatsRow}>
               <Text style={s.statSubtle}>
-                {e.is_happening ? `Jusqu'à ${formatTimeFR(e.ends_at)}` : `Démarre ${formatRelativeFR(e.starts_at)}`}
+                {e.is_happening ? t('trending.untilTime', { time: formatTime(e.ends_at, intl) }) : t('trending.startsAt', { when: formatRelative(e.starts_at, intl, t) })}
               </Text>
             </View>
           </View>
@@ -404,20 +417,18 @@ function EmptyState({ c, title, hint }: { c: ColorPalette; title: string; hint: 
 // ============================================================================
 // Helpers date
 // ============================================================================
-function formatTimeFR(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+function formatTime(iso: string, intl: string): string {
+  return new Date(iso).toLocaleTimeString(intl, { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatRelativeFR(iso: string): string {
+function formatRelative(iso: string, intl: string, t: (k: TKey, p?: Record<string, string | number>) => string): string {
   const d = new Date(iso).getTime();
-  const now = Date.now();
-  const diffMin = Math.round((d - now) / 60000);
-  if (diffMin <= 0) return "à l'instant";
-  if (diffMin < 60) return `dans ${diffMin} min`;
+  const diffMin = Math.round((d - Date.now()) / 60000);
+  if (diffMin <= 0) return t('trending.now');
+  if (diffMin < 60) return t('trending.inMin', { n: diffMin });
   const h = Math.floor(diffMin / 60);
-  if (h < 24) return `dans ${h} h`;
-  return new Date(iso).toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  if (h < 24) return t('trending.inHours', { n: h });
+  return new Date(iso).toLocaleString(intl, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 function makeStyles(c: ColorPalette) {

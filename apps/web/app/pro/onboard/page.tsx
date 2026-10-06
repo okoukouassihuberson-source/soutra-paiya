@@ -227,10 +227,10 @@ export default function ProOnboardPage() {
                 className={[
                   'flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition',
                   step === n
-                    ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30'
+                    ? 'bg-primary-500 text-night shadow-lg shadow-primary-500/30'
                     : step > n
                       ? 'bg-emerald-500 text-white'
-                      : 'bg-neutral-200 text-neutral-500',
+                      : 'bg-neutral-200 text-neutral-600',
                 ].join(' ')}
               >
                 {step > n ? '✓' : n}
@@ -253,7 +253,7 @@ export default function ProOnboardPage() {
           {step === 1 && (
             <section>
               <h2 className="font-display text-xl font-bold text-dark">Tes informations</h2>
-              <p className="mt-1 text-sm text-neutral-500">
+              <p className="mt-1 text-sm text-neutral-600">
                 Comment doit-on t&apos;appeler ?
               </p>
               <div className="mt-5 space-y-4">
@@ -282,12 +282,12 @@ export default function ProOnboardPage() {
               <h2 className="font-display text-xl font-bold text-dark">
                 Quelle activité exerces-tu ?
               </h2>
-              <p className="mt-1 text-sm text-neutral-500">
+              <p className="mt-1 text-sm text-neutral-600">
                 On adapte ton dashboard automatiquement à ton métier.
               </p>
 
               <div className="mt-5">
-                <label className="mb-1 block text-xs font-medium text-neutral-500">
+                <label className="mb-1 block text-xs font-medium text-neutral-600">
                   Catégorie de l&apos;établissement
                 </label>
                 <select
@@ -352,7 +352,7 @@ export default function ProOnboardPage() {
               <h2 className="font-display text-xl font-bold text-dark">
                 Présente ton établissement
               </h2>
-              <p className="mt-1 text-sm text-neutral-500">
+              <p className="mt-1 text-sm text-neutral-600">
                 Juste les infos essentielles — tu pourras enrichir ensuite.
               </p>
               <div className="mt-5 space-y-4">
@@ -384,7 +384,7 @@ export default function ProOnboardPage() {
                   />
                 </div>
               </div>
-              <p className="mt-4 text-xs text-neutral-500">
+              <p className="mt-4 text-xs text-neutral-600">
                 💡 Une photo de couverture par défaut sera ajoutée selon ton activité.
                 Tu pourras la remplacer dans Paramètres.
               </p>
@@ -397,7 +397,7 @@ export default function ProOnboardPage() {
               <h2 className="font-display text-xl font-bold text-dark">
                 On y est presque !
               </h2>
-              <p className="mt-1 text-sm text-neutral-500">
+              <p className="mt-1 text-sm text-neutral-600">
                 Voici ce qu&apos;on va créer — vérifie et confirme.
               </p>
 
@@ -455,7 +455,7 @@ export default function ProOnboardPage() {
                 type="button"
                 onClick={next}
                 disabled={!canGoNext}
-                className="rounded-xl bg-primary-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-500/30 transition hover:bg-primary-600 disabled:opacity-50 disabled:shadow-none"
+                className="rounded-xl bg-primary-500 px-6 py-2.5 text-sm font-semibold text-night shadow-lg shadow-primary-500/30 transition hover:bg-primary-400 disabled:opacity-50 disabled:shadow-none"
               >
                 Continuer →
               </button>
@@ -464,7 +464,7 @@ export default function ProOnboardPage() {
                 type="button"
                 onClick={finalize}
                 disabled={submitting}
-                className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-600 disabled:opacity-50"
+                className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-700 disabled:opacity-50"
               >
                 {submitting ? 'Création…' : 'Lancer mon établissement 🚀'}
               </button>
@@ -473,7 +473,7 @@ export default function ProOnboardPage() {
         </div>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-xs text-neutral-400">
+        <p className="mt-6 text-center text-xs text-neutral-600">
           Étape {step} sur 4 · Aucune carte bancaire requise · Modification possible à tout moment
         </p>
       </div>
@@ -498,7 +498,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-neutral-500">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-neutral-600">{label}</label>
       <input
         type="text"
         value={value}
@@ -506,9 +506,9 @@ function Field({
         placeholder={placeholder}
         autoFocus={autoFocus}
         disabled={disabled}
-        className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none disabled:bg-neutral-50 disabled:text-neutral-500"
+        className="w-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark transition focus:border-primary-500 focus:outline-none disabled:bg-neutral-50 disabled:text-neutral-600"
       />
-      {hint && <p className="mt-1 text-xs text-neutral-400">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-neutral-600">{hint}</p>}
     </div>
   );
 }
@@ -516,7 +516,7 @@ function Field({
 function RecapRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <dt className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wider text-neutral-600">{label}</dt>
       <dd className="text-right text-sm font-medium text-dark">{value || '—'}</dd>
     </div>
   );

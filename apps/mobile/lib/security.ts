@@ -4,6 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 const BIOMETRIC_KEY = 'soutra.biometricEnabled';
 
@@ -67,8 +68,8 @@ export async function setBiometricEnabled(on: boolean): Promise<void> {
 export async function authenticateBiometric(): Promise<boolean> {
   try {
     const res = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Confirme ton identité',
-      cancelLabel: 'Utiliser le PIN',
+      promptMessage: tr('sys.bioPrompt'),
+      cancelLabel: tr('sys.bioCancel'),
       disableDeviceFallback: true,
     });
     return res.success;

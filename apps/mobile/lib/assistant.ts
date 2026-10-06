@@ -3,6 +3,7 @@
  */
 
 import { invokeEdge } from './edge';
+import { currentLocale } from '@/lib/i18n';
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -13,5 +14,5 @@ export type AssistantReply = {
 };
 
 export async function askAssistant(messages: ChatMessage[]): Promise<AssistantReply> {
-  return invokeEdge<AssistantReply>('chatbot', { messages });
+  return invokeEdge<AssistantReply>('chatbot', { messages, locale: currentLocale() });
 }

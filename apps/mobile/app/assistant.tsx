@@ -9,6 +9,7 @@ import { askAssistant, type ChatMessage } from '@/lib/assistant';
 import { parseSiaIntent } from '@/lib/sia-intents';
 import { siaSpeak, siaStopSpeaking, isTtsAvailable } from '@/lib/sia-tts';
 import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/VoiceSearchSheet';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * SIA — Soutra Intelligent Assistant.
@@ -26,20 +27,12 @@ import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/Voic
  *   4. Réponse affichée + lue vocalement (siaSpeak) si TTS activé
  */
 
-const SUGGESTIONS = [
-  'SIA, ouvre mon wallet',
-  'SIA, montre les hôtels',
-  'SIA, affiche ma fidélité',
-  'Comment recharger mon wallet ?',
-];
-
-const WELCOME: ChatMessage = {
-  role: 'assistant',
-  content: 'Salut, moi c\'est SIA — Soutra Intelligent Assistant. Tape ou parle pour me poser une question, ou dis-moi "SIA ouvre…" pour naviguer.',
-};
-
 export default function Assistant() {
   const router = useRouter();
+  const { t } = useI18n();
+  const SUGGESTIONS = t('sia.suggestions').split('|');
+  const welcomeRef = useRef<ChatMessage>({ role: 'assistant', content: t('sia.welcome') });
+  const WELCOME = welcomeRef.current;
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -84,11 +77,11 @@ export default function Assistant() {
       if (ttsOn) siaSpeak(res.reply);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 30);
     } catch (err: any) {
-      const msg = err?.message ?? 'Échec de la requête';
+      const msg = err?.message ?? t('sia.requestFail');
       // Retire le dernier message user pour permettre un réessai propre.
       setMessages((prev) => prev.slice(0, -1));
       setInput(body);
-      Alert.alert('SIA indisponible', msg);
+      Alert.alert(t('sia.unavailable'), msg);
     } finally {
       setSending(false);
     }
@@ -102,8 +95,8 @@ export default function Assistant() {
   const toggleTts = useCallback(() => {
     if (!isTtsAvailable()) {
       Alert.alert(
-        'Voix non disponible',
-        'Le moteur de synthèse vocale n\'est pas embarqué dans cette version. Tu auras la voix de SIA au prochain build.',
+        t('sia.noVoiceTitle'),
+        t('sia.noVoiceBody'),
       );
       return;
     }
@@ -112,9 +105,9 @@ export default function Assistant() {
   }, [ttsOn]);
 
   function resetConversation() {
-    Alert.alert('Réinitialiser ?', 'Tu vas perdre la conversation en cours.', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Réinitialiser', style: 'destructive', onPress: () => {
+    Alert.alert(t('sia.resetTitle'), t('sia.resetBody'), [
+      { text: t('sia.cancel'), style: 'cancel' },
+      { text: t('sia.reset'), style: 'destructive', onPress: () => {
         siaStopSpeaking();
         setMessages([WELCOME]);
       }},
@@ -127,7 +120,7 @@ export default function Assistant() {
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader
         title="🎙️ SIA"
-        subtitle="Soutra Intelligent Assistant"
+        subtitle={t('sia.subtitle')}
         trailing={(
           <View style={{ flexDirection: 'row', gap: spacing.xs }}>
             <Pressable onPress={toggleTts} hitSlop={10} style={[s.iconBtn, ttsOn && s.iconBtnActive]}>
@@ -180,7 +173,7 @@ export default function Assistant() {
 
           {showSuggestions && (
             <View style={s.suggestionsWrap}>
-              <Text style={s.suggestionsTitle}>Essaie</Text>
+              <Text style={s.suggestionsTitle}>{t('sia.tryIt')}</Text>
               <View style={s.suggestions}>
                 {SUGGESTIONS.map((q) => (
                   <Pressable
@@ -215,7 +208,7 @@ export default function Assistant() {
           <TextInput
             value={input}
             onChangeText={(v) => v.length <= 4000 && setInput(v)}
-            placeholder="Parle ou tape… (ex: SIA ouvre mon wallet)"
+            placeholder={t('sia.placeholder')}
             placeholderTextColor={colors.neutral[400]}
             style={s.input}
             multiline
@@ -240,7 +233,6 @@ export default function Assistant() {
         visible={voiceOpen}
         onClose={() => setVoiceOpen(false)}
         onResult={onVoiceResult}
-        locale="fr-FR"
       />
     </SafeAreaView>
   );

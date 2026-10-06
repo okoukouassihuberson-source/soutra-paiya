@@ -110,14 +110,14 @@ export function ShopProductsTab({ venueId }: { venueId: string }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl font-bold text-neutral-900">Catalogue produits</h2>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-neutral-600">
             {products.length} produit{products.length > 1 ? 's' : ''} ·{' '}
             {products.filter((p) => p.status === 'active').length} actif{products.filter((p) => p.status === 'active').length > 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={() => setCreating(true)}
-          className="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary-500/30 transition hover:bg-primary-600 active:scale-[0.98]"
+          className="rounded-full bg-primary-500 px-5 py-2.5 text-sm font-bold text-night shadow-lg shadow-primary-500/30 transition hover:bg-primary-400 active:scale-[0.98]"
         >
           + Ajouter un produit
         </button>
@@ -126,13 +126,13 @@ export function ShopProductsTab({ venueId }: { venueId: string }) {
       {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
         {loading ? (
-          <div className="p-12 text-center text-neutral-500">Chargement…</div>
+          <div className="p-12 text-center text-neutral-600">Chargement…</div>
         ) : products.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-sm text-neutral-500">Aucun produit pour l&apos;instant.</p>
+            <p className="text-sm text-neutral-600">Aucun produit pour l&apos;instant.</p>
             <button
               onClick={() => setCreating(true)}
-              className="mt-4 rounded-full bg-primary-500 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-primary-600"
+              className="mt-4 rounded-full bg-primary-500 px-5 py-2.5 text-sm font-bold text-night shadow-md transition hover:bg-primary-400"
             >
               Créer mon premier produit
             </button>
@@ -141,7 +141,7 @@ export function ShopProductsTab({ venueId }: { venueId: string }) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-200 bg-neutral-50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                <tr className="border-b border-neutral-200 bg-neutral-50 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
                   <th className="px-4 py-3">Produit</th>
                   <th className="px-4 py-3">Catégorie</th>
                   <th className="px-4 py-3 text-right">Prix</th>
@@ -163,7 +163,7 @@ export function ShopProductsTab({ venueId }: { venueId: string }) {
                         )}
                         <div>
                           <p className="font-semibold text-neutral-900">{p.name}</p>
-                          {p.sku && <p className="text-[10px] font-mono text-neutral-400">SKU: {p.sku}</p>}
+                          {p.sku && <p className="text-[10px] font-mono text-neutral-600">SKU: {p.sku}</p>}
                         </div>
                       </div>
                     </td>
@@ -171,7 +171,7 @@ export function ShopProductsTab({ venueId }: { venueId: string }) {
                     <td className="px-4 py-3 text-right font-mono font-semibold">{formatXOF(p.price_xof)}</td>
                     <td className="px-4 py-3 text-right">
                       {p.stock_quantity == null ? (
-                        <span className="text-xs text-neutral-500">illimité</span>
+                        <span className="text-xs text-neutral-600">illimité</span>
                       ) : (
                         <span className={`font-mono ${p.stock_quantity === 0 ? 'text-red-500' : p.stock_quantity < 5 ? 'text-amber-500' : 'text-neutral-700'}`}>
                           {p.stock_quantity}
@@ -197,7 +197,7 @@ export function ShopProductsTab({ venueId }: { venueId: string }) {
                         </button>
                         <button
                           onClick={() => handleDelete(p)}
-                          className="rounded-lg px-2.5 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                          className="rounded-lg px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50"
                         >
                           Suppr
                         </button>
@@ -320,7 +320,7 @@ function ProductFormModal({
             <h3 className="font-display text-xl font-bold text-neutral-900">
               {product ? 'Modifier le produit' : 'Nouveau produit'}
             </h3>
-            <button type="button" onClick={onClose} className="rounded-full p-2 text-neutral-500 hover:bg-neutral-100">
+            <button type="button" onClick={onClose} className="rounded-full p-2 text-neutral-600 hover:bg-neutral-100">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -375,7 +375,7 @@ function ProductFormModal({
                   type="number" inputMode="numeric" min={0}
                   value={stock} onChange={(e) => setStock(e.target.value)}
                   disabled={stockUnlimited}
-                  className="flex-1 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 font-mono text-sm disabled:bg-neutral-100 disabled:text-neutral-400 focus:border-primary-500 focus:outline-none"
+                  className="flex-1 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 font-mono text-sm disabled:bg-neutral-100 disabled:text-neutral-600 focus:border-primary-500 focus:outline-none"
                   placeholder="42"
                 />
                 <label className="flex items-center gap-1.5 text-xs text-neutral-600">
@@ -423,7 +423,7 @@ function ProductFormModal({
           </button>
           <button
             type="submit" disabled={saving}
-            className="rounded-2xl bg-primary-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary-500/30 transition hover:bg-primary-600 disabled:opacity-50"
+            className="rounded-2xl bg-primary-500 px-6 py-3 text-sm font-bold text-night shadow-lg shadow-primary-500/30 transition hover:bg-primary-400 disabled:opacity-50"
           >
             {saving ? 'Enregistrement…' : product ? 'Enregistrer' : 'Créer le produit'}
           </button>
@@ -537,7 +537,7 @@ function PhotosUploader({
   return (
     <div>
       {error && (
-        <p className="mb-2 text-xs font-semibold text-red-600">⚠ {error}</p>
+        <p className="mb-2 text-xs font-semibold text-red-700">⚠ {error}</p>
       )}
       <div className="flex flex-wrap gap-2">
         {photos.map((url, i) => (
@@ -551,7 +551,7 @@ function PhotosUploader({
               }`}
             />
             {i === 0 && (
-              <span className="absolute left-1 top-1 rounded-full bg-primary-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white shadow">
+              <span className="absolute left-1 top-1 rounded-full bg-primary-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-night shadow">
                 Principale
               </span>
             )}
@@ -603,7 +603,7 @@ function PhotosUploader({
               </>
             ) : (
               <>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-500">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-600">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   <circle cx="8.5" cy="8.5" r="1.5" />
                   <polyline points="21 15 16 10 5 21" />
@@ -614,11 +614,11 @@ function PhotosUploader({
           </label>
         )}
       </div>
-      <p className="mt-2 text-[11px] text-neutral-500">
+      <p className="mt-2 text-[11px] text-neutral-600">
         {photos.length}/{MAX_PHOTOS} photos · max {MAX_PHOTO_SIZE_MB} Mo/image · la 1<sup>re</sup> est la photo principale (cliquer ⭐ pour la changer)
       </p>
       {!productId && photos.length > 0 && (
-        <p className="mt-1 text-[11px] text-amber-600">
+        <p className="mt-1 text-[11px] text-amber-700">
           ⚠ Photos uploadées avant création — elles seront rattachées au produit à l&apos;enregistrement.
         </p>
       )}
@@ -682,7 +682,7 @@ function VariantsEditor({
                 <button
                   type="button"
                   onClick={() => removeVariant(i)}
-                  className="rounded-lg p-1.5 text-red-600 transition hover:bg-red-50"
+                  className="rounded-lg p-1.5 text-red-700 transition hover:bg-red-50"
                   title="Supprimer cette variante"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -713,7 +713,7 @@ function VariantsEditor({
           )}
         </div>
       )}
-      <p className="mt-2 text-[11px] text-neutral-500">
+      <p className="mt-2 text-[11px] text-neutral-600">
         Max 3 variantes par produit. Le client pourra choisir une valeur de chaque sur la fiche produit.
       </p>
     </div>

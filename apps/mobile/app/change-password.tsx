@@ -16,8 +16,10 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, passwordSchema } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
+import { useI18n } from '@/lib/i18n';
 
 export default function ChangePassword() {
+  const { t } = useI18n();
   const router = useRouter();
   const [pw, setPw] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -35,12 +37,12 @@ export default function ChangePassword() {
       const { error } = await supabase.auth.updateUser({ password: pw });
       if (error) throw new Error(error.message);
       Alert.alert(
-        'Mot de passe modifié',
-        'Ton nouveau mot de passe est actif.',
+        t('acct.pw.doneTitle'),
+        t('acct.pw.doneBody'),
         [{ text: 'OK', onPress: () => router.back() }],
       );
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Modification impossible.');
+      Alert.alert(t('acct.error'), err?.message ?? t('acct.pw.fail'));
     } finally {
       setSaving(false);
     }
@@ -56,7 +58,7 @@ export default function ChangePassword() {
           <Pressable hitSlop={10} onPress={() => router.back()} disabled={saving}>
             <Ionicons name="chevron-back" size={28} color={colors.dark} />
           </Pressable>
-          <Text style={s.headerTitle}>Changer le mot de passe</Text>
+          <Text style={s.headerTitle}>{t('acct.pw.title')}</Text>
           <View style={{ width: 28 }} />
         </View>
 
@@ -64,13 +66,13 @@ export default function ChangePassword() {
           contentContainerStyle={{ padding: spacing.lg }}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={s.label}>Nouveau mot de passe</Text>
+          <Text style={s.label}>{t('acct.pw.newLabel')}</Text>
           <View style={s.inputRow}>
             <TextInput
               style={s.input}
               value={pw}
               onChangeText={setPw}
-              placeholder="8 caractères minimum"
+              placeholder={t('acct.pw.min8')}
               placeholderTextColor={colors.neutral[400]}
               secureTextEntry={!show}
               editable={!saving}
@@ -85,16 +87,16 @@ export default function ChangePassword() {
             </Pressable>
           </View>
           {pw.length > 0 && !pwOk && (
-            <Text style={s.errorHint}>8 caractères minimum.</Text>
+            <Text style={s.errorHint}>{t('acct.pw.min8Hint')}</Text>
           )}
 
-          <Text style={s.label}>Confirme le mot de passe</Text>
+          <Text style={s.label}>{t('acct.pw.confirm')}</Text>
           <View style={s.inputRow}>
             <TextInput
               style={s.input}
               value={confirm}
               onChangeText={setConfirm}
-              placeholder="Retape le mot de passe"
+              placeholder={t('acct.pw.retype')}
               placeholderTextColor={colors.neutral[400]}
               secureTextEntry={!show}
               editable={!saving}
@@ -102,7 +104,7 @@ export default function ChangePassword() {
             />
           </View>
           {confirm.length > 0 && !match && (
-            <Text style={s.errorHint}>Les mots de passe ne correspondent pas.</Text>
+            <Text style={s.errorHint}>{t('acct.pw.mismatch')}</Text>
           )}
 
           <Pressable
@@ -117,7 +119,7 @@ export default function ChangePassword() {
             {saving ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={s.btnText}>Enregistrer</Text>
+              <Text style={s.btnText}>{t('acct.save')}</Text>
             )}
           </Pressable>
         </ScrollView>

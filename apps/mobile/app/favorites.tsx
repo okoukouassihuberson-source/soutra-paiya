@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatVenuePriceLabel } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n';
 
 interface FavVenue {
   id: string;
@@ -20,6 +21,7 @@ interface FavVenue {
 }
 
 export default function Favorites() {
+  const { t } = useI18n();
   const router = useRouter();
   const { user } = useAuth();
   const sb = supabase as any;
@@ -53,7 +55,7 @@ export default function Favorites() {
       .eq('user_id', user.id)
       .eq('venue_id', venueId);
     if (error) {
-      Alert.alert('Erreur', 'Suppression impossible.');
+      Alert.alert(t('favs.error'), t('favs.delFail'));
       void load();
     }
   }
@@ -64,7 +66,7 @@ export default function Favorites() {
         <Pressable hitSlop={10} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </Pressable>
-        <Text style={s.headerTitle}>Mes favoris</Text>
+        <Text style={s.headerTitle}>{t('favs.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -73,9 +75,9 @@ export default function Favorites() {
       ) : venues.length === 0 ? (
         <View style={s.center}>
           <Ionicons name="heart-outline" size={48} color={colors.neutral[300]} />
-          <Text style={s.emptyTitle}>Aucun favori</Text>
+          <Text style={s.emptyTitle}>{t('favs.empty')}</Text>
           <Text style={s.emptyText}>
-            Ajoute des lieux avec le cœur depuis leur fiche.
+            {t('favs.emptyBody')}
           </Text>
         </View>
       ) : (

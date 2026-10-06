@@ -5,8 +5,10 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { setPaymentPin } from '@/lib/security';
+import { useI18n } from '@/lib/i18n';
 
 export default function SecurityPin() {
+  const { t } = useI18n();
   const router = useRouter();
   const [step, setStep] = useState<'enter' | 'confirm'>('enter');
   const [first, setFirst] = useState('');
@@ -38,12 +40,12 @@ export default function SecurityPin() {
       setSaving(true);
       await setPaymentPin(value);
       Alert.alert(
-        'Code PIN enregistré 🔒',
-        'Ton PIN sécurise désormais tes envois et paiements.',
+        t('pin.savedTitle'),
+        t('pin.savedBody'),
         [{ text: 'OK', onPress: () => router.back() }],
       );
     } catch (err: any) {
-      setError(err?.message ?? 'Enregistrement impossible');
+      setError(err?.message ?? t('pin.saveFail'));
       reset();
     } finally {
       setSaving(false);
@@ -64,7 +66,7 @@ export default function SecurityPin() {
         <Pressable hitSlop={10} onPress={() => router.back()} disabled={saving}>
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </Pressable>
-        <Text style={s.headerTitle}>Code PIN de paiement</Text>
+        <Text style={s.headerTitle}>{t('pin.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -73,10 +75,10 @@ export default function SecurityPin() {
           <Ionicons name="lock-closed" size={28} color={colors.primary[500]} />
         </View>
         <Text style={s.title}>
-          {step === 'enter' ? 'Choisis un code à 4 chiffres' : 'Confirme ton code'}
+          {step === 'enter' ? t('pin.choose') : t('pin.confirm')}
         </Text>
         <Text style={s.subtitle}>
-          Ce code te sera demandé pour valider tes envois d'argent.
+          {t('pin.hint')}
         </Text>
 
         <View style={s.dots}>

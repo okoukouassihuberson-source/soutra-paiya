@@ -8,7 +8,7 @@ Ce guide s'applique **à un environnement de préproduction** (projet Supabase +
 - [ ] Comptes de test GeniusPay (mode sandbox) et clé Anthropic de test.
 
 ## 2. Déploiement (dans cet ordre)
-1. **Migrations** : `supabase db push` (0082 → 0095). Chacune est testée dans une transaction unique. Si l'une échoue, la base reste dans l'état précédent : corriger avant de continuer.
+1. **Migrations** : `supabase db push` (0082 → 0096). Chacune est testée dans une transaction unique. Si l'une échoue, la base reste dans l'état précédent : corriger avant de continuer.
 2. **Points d'attention des migrations**
    - `0089` planifie `notify-dispatch` toutes les 15 min via pg_cron / pg_net. L'URL du projet y est écrite en dur (comme `0050`) : **vérifier qu'elle pointe sur la préproduction**, sinon replanifier. Le réglage `app.settings.service_role_key` doit exister ; sans pg_cron/pg_net, appeler `notify-dispatch` depuis un cron externe.
    - `0093` crée le bucket public `tourism-media` (5 Mo, JPEG/PNG/WebP) : vérifier dans Storage qu'il existe.

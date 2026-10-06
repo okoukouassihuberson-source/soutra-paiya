@@ -4,6 +4,7 @@
 import { invokeEdge } from './edge';
 import { supabase } from './supabase';
 import { lookupRecipient } from './wallet';
+import { tr } from '@/lib/i18n';
 
 export type RequestStatus = 'pending' | 'accepted' | 'declined' | 'cancelled';
 export type RequestAction = 'accept' | 'decline' | 'cancel';
@@ -19,10 +20,10 @@ export async function createPaymentRequest(params: {
 }): Promise<{ payerName: string }> {
   const payer = await lookupRecipient(params.payerPhone);
   if (!payer) {
-    throw new Error('Aucun compte Soutra-Playce avec ce numéro');
+    throw new Error(tr('sys.reqNoAccount'));
   }
   if (payer.id === params.requesterId) {
-    throw new Error("Tu ne peux pas te demander de l'argent à toi-même");
+    throw new Error(tr('sys.reqSelf'));
   }
   const { error } = await (supabase as any).from('payment_requests').insert({
     requester_id: params.requesterId,

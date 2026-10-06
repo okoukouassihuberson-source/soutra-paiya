@@ -5,7 +5,9 @@
 // ============================================================================
 import type { Activity, ActivitySlot, Destination, Trip, TripItineraryDay, TripPackage, TripScope } from '@soutra/shared';
 import { supabase } from './supabase';
-import { tr, type TKey } from './i18n';
+import { tr, intlLocale, type TKey } from './i18n';
+import { cachedQuery } from './query-cache';
+import { fetchPublicProfiles } from './profile-names';
 
 const db = supabase as any;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -66,19 +68,27 @@ export async function getActivity(slug: string): Promise<{ activity: Activity; s
   const [{ data: slots }, { data: reviews }] = await Promise.all([
     db.from('activity_slots').select('*').eq('activity_id', activity.id).eq('status', 'open')
       .gt('starts_at', new Date(Date.now() + 3600_000).toISOString()).order('starts_at').limit(40),
-    db.from('activity_reviews').select('id, rating, comment, created_at, profiles(full_name)')
+    db.from('activity_reviews').select('id, rating, comment, created_at, user_id')
       .eq('activity_id', activity.id).eq('status', 'published').order('created_at', { ascending: false }).limit(20),
   ]);
+  const names = await fetchPublicProfiles((reviews ?? []).map((r: any) => r.user_id));
   return {
     activity: activity as Activity, slots: (slots ?? []) as ActivitySlot[],
-    reviews: (reviews ?? []).map((r: any) => ({ id: r.id, rating: r.rating, comment: r.comment, created_at: r.created_at, author: r.profiles?.full_name ?? null })),
+    reviews: (reviews ?? []).map((r: any) => ({ id: r.id, rating: r.rating, comment: r.comment, created_at: r.created_at, author: names.get(r.user_id)?.full_name ?? null })),
   };
 }
 
-export async function listDestinations(limit = 40): Promise<Destination[]> {
-  const { data, error } = await db.from('destinations').select('*').eq('is_published', true).order('name').limit(limit);
-  if (error) throw error;
-  return (data ?? []) as Destination[];
+export type DestinationCard = Pick<Destination, 'id' | 'slug' | 'name' | 'kind' | 'country_code' | 'tagline' | 'cover_url' | 'is_featured' | 'i18n'>;
+const DEST_CARD = 'id, slug, name, kind, country_code, tagline, cover_url, is_featured, i18n';
+
+/** Liste des destinations : colonnes d'affichage seulement, cache 10 min + copie hors ligne. */
+export async function listDestinations(limit = 40): Promise<DestinationCard[]> {
+  const { data } = await cachedQuery<DestinationCard[]>(`destinations:${limit}`, async () => {
+    const { data, error } = await db.from('destinations').select(DEST_CARD).eq('is_published', true).order('name').limit(limit);
+    if (error) throw error;
+    return (data ?? []) as DestinationCard[];
+  }, { ttlMs: 10 * 60_000 });
+  return data;
 }
 
 // --- Offres ---------------------------------------------------------------
@@ -100,7 +110,7 @@ export async function listOffersForTarget(kind: 'trip' | 'activity', target: str
   return (data ?? []) as Offer[];
 }
 export const offerValueLabel = (o: Pick<Offer, 'discount_type' | 'discount_value'>) =>
-  o.discount_type === 'percent' ? tr('offer.percentOff', { n: o.discount_value }) : tr('offer.fixedOff', { n: new Intl.NumberFormat('fr-FR').format(o.discount_value) });
+  o.discount_type === 'percent' ? tr('offer.percentOff', { n: o.discount_value }) : tr('offer.fixedOff', { n: new Intl.NumberFormat(intlLocale()).format(o.discount_value) });
 
 const PROMO_CODES = ['PROMO_NOT_FOUND', 'PROMO_NOT_APPLICABLE', 'PROMO_INACTIVE', 'PROMO_NOT_STARTED', 'PROMO_EXPIRED', 'PROMO_PARTICIPANTS', 'PROMO_TOO_LATE', 'PROMO_TOO_EARLY', 'PROMO_RATE_LIMITED', 'PROMO_EXHAUSTED', 'PROMO_ALREADY_USED', 'NOT_AUTHENTICATED'];
 /** Message localisé d'un code d'erreur promo (`PROMO_*`), ou le message générique. */

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing } from '@soutra/shared';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * /split-bill — écran placeholder. L'implémentation complète (création de
@@ -16,24 +17,23 @@ import { ScreenHeader } from '@/components/ScreenHeader';
  */
 export default function SplitBillPlaceholder() {
   const router = useRouter();
+  const { t } = useI18n();
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <ScreenHeader title="Split Note" subtitle="Découpe la note entre amis" />
+      <ScreenHeader title={t('splitView.soon')} subtitle={t('splitView.soonSub')} />
       <View style={s.body}>
         <View style={s.card}>
           <View style={s.iconWrap}>
             <Ionicons name="people" size={44} color={colors.primary[500]} />
           </View>
-          <Text style={s.title}>Bientôt disponible</Text>
+          <Text style={s.title}>{t('splitView.soonTitle')}</Text>
           <Text style={s.text}>
-            La découpe d&apos;addition entre amis arrive dans la prochaine
-            mise à jour. En attendant, tu peux utiliser « Demander » pour
-            réclamer ta part à chacun manuellement.
+            {t('splitView.soonBody')}
           </Text>
           <Pressable style={s.cta} onPress={() => router.replace('/requests')}>
             <Ionicons name="arrow-forward" size={16} color="#fff" />
-            <Text style={s.ctaText}>Ouvrir Demander</Text>
+            <Text style={s.ctaText}>{t('splitView.openRequest')}</Text>
           </Pressable>
         </View>
       </View>

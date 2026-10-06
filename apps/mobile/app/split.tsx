@@ -13,6 +13,8 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, radius, spacing, formatXOF } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
+import { useI18n } from '@/lib/i18n';
+import { fetchPublicProfiles } from '@/lib/profile-names';
 
 interface SplitRequest {
   id: string;
@@ -29,14 +31,15 @@ interface Split {
   payment_requests: SplitRequest[];
 }
 
-const STATUS: Record<string, { label: string; color: string }> = {
-  accepted: { label: 'Payé', color: colors.success },
-  pending: { label: 'En attente', color: colors.neutral[500] },
-  declined: { label: 'Refusé', color: colors.danger },
-  cancelled: { label: 'Annulé', color: colors.neutral[500] },
+const STATUS: Record<string, { key: 'paid' | 'pending' | 'declined' | 'cancelled'; color: string }> = {
+  accepted: { key: 'paid', color: colors.success },
+  pending: { key: 'pending', color: colors.neutral[500] },
+  declined: { key: 'declined', color: colors.danger },
+  cancelled: { key: 'cancelled', color: colors.neutral[500] },
 };
 
 export default function SplitDetail() {
+  const { t } = useI18n();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [split, setSplit] = useState<Split | null>(null);
@@ -52,14 +55,19 @@ export default function SplitDetail() {
       const { data, error } = await (supabase as any)
         .from('bill_splits')
         .select(
-          'id, title, total_xof, created_at, payment_requests(id, payer_id, amount_xof, status, payer:profiles!payer_id(full_name))',
+          'id, title, total_xof, created_at, payment_requests(id, payer_id, amount_xof, status)',
         )
         .eq('id', id)
         .maybeSingle();
       if (error) {
         console.error('[split] load:', error);
       } else {
-        setSplit(data as Split | null);
+        const sp = data as Split | null;
+        if (sp?.payment_requests?.length) {
+          const names = await fetchPublicProfiles(sp.payment_requests.map((r) => r.payer_id));
+          sp.payment_requests = sp.payment_requests.map((r) => ({ ...r, payer: names.get(r.payer_id) ?? null }));
+        }
+        setSplit(sp);
       }
     } catch (err) {
       console.error('[split] unexpected:', err);
@@ -106,11 +114,11 @@ export default function SplitDetail() {
           <Pressable hitSlop={10} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={colors.dark} />
           </Pressable>
-          <Text style={s.headerTitle}>Partage</Text>
+          <Text style={s.headerTitle}>{t('splitView.title')}</Text>
           <View style={{ width: 28 }} />
         </View>
         <View style={s.center}>
-          <Text style={s.emptyText}>Partage introuvable.</Text>
+          <Text style={s.emptyText}>{t('splitView.notFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -126,7 +134,7 @@ export default function SplitDetail() {
         <Pressable hitSlop={10} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.dark} />
         </Pressable>
-        <Text style={s.headerTitle}>Suivi du partage</Text>
+        <Text style={s.headerTitle}>{t('splitView.tracking')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -143,13 +151,13 @@ export default function SplitDetail() {
         }
       >
         <View style={s.summaryCard}>
-          <Text style={s.splitTitle}>{split.title || 'Partage d\'addition'}</Text>
+          <Text style={s.splitTitle}>{split.title || t('splitView.defaultTitle')}</Text>
           <Text style={s.splitTotal}>{formatXOF(split.total_xof)}</Text>
           <View style={s.progressLine}>
             <Text style={s.progressText}>
-              {paid.length}/{reqs.length} ont payé
+              {t('splitView.paidOf', { paid: paid.length, total: reqs.length })}
             </Text>
-            <Text style={s.collected}>{formatXOF(collected)} collecté</Text>
+            <Text style={s.collected}>{t('splitView.collected', { amount: formatXOF(collected) })}</Text>
           </View>
           <View style={s.barTrack}>
             <View
@@ -161,14 +169,14 @@ export default function SplitDetail() {
           </View>
         </View>
 
-        <Text style={s.section}>Participants</Text>
+        <Text style={s.section}>{t('splitView.participants')}</Text>
         {reqs.map((r) => {
           const st = STATUS[r.status] ?? STATUS.pending;
           return (
             <View key={r.id} style={s.row}>
               <View style={{ flex: 1 }}>
-                <Text style={s.rowName}>{r.payer?.full_name || 'Participant'}</Text>
-                <Text style={[s.rowStatus, { color: st.color }]}>{st.label}</Text>
+                <Text style={s.rowName}>{r.payer?.full_name || t('splitView.participant')}</Text>
+                <Text style={[s.rowStatus, { color: st.color }]}>{t(`splitView.${st.key}` as const)}</Text>
               </View>
               <Text style={s.rowAmount}>{formatXOF(r.amount_xof)}</Text>
             </View>

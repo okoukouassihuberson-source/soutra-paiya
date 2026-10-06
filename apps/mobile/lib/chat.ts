@@ -6,6 +6,7 @@
  */
 
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 export type ChatListItem = {
   chat_id: string;
@@ -58,10 +59,10 @@ export async function listMessages(chatId: string, opts?: { before?: string; lim
 export async function sendMessage(chatId: string, body: string): Promise<ChatMessage> {
   const text = body.trim();
   if (!text) throw new Error('Message vide.');
-  if (text.length > 4000) throw new Error('Message trop long (4000 caractères max).');
+  if (text.length > 4000) throw new Error(tr('sys.msgTooLong'));
 
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
-  if (authErr || !user) throw new Error('Session expirée.');
+  if (authErr || !user) throw new Error(tr('sys.sessionExpired'));
 
   const { data, error } = await (supabase as any)
     .from('messages')

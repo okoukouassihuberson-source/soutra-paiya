@@ -30,8 +30,8 @@ const PIE_COLORS = ['#f97316', '#3b82f6', '#10b981', '#a855f7', '#ef4444', '#6b7
 function CustomTooltip({ active, payload, label, formatter }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-3 shadow-2xl">
-      {label && <p className="mb-1 text-xs text-neutral-500">{label}</p>}
+    <div className="rounded-xl border border-neutral-300 bg-white px-4 py-3 shadow-2xl">
+      {label && <p className="mb-1 text-xs text-neutral-600">{label}</p>}
       {payload.map((p: any, i: number) => (
         <p key={i} className="text-sm font-medium" style={{ color: p.color }}>
           {p.name}: {formatter ? formatter(p.value) : p.value.toLocaleString('fr-FR')}
@@ -60,9 +60,9 @@ export function RevenueAreaChart({ data, height = 240 }: Props<{ day: string; re
             <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-        <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} />
-        <YAxis tick={{ fontSize: 10, fill: '#737373' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+        <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+        <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
         <Tooltip content={<CustomTooltip formatter={(v: number) => formatXOF(v)} />} />
         <Area type="monotone" dataKey="revenue" stroke="#f97316" fill="url(#revGrad)" strokeWidth={2} />
       </AreaChart>
@@ -115,9 +115,9 @@ export function RevenueFeeAreaChart({ data, height = 280 }: Props<{ day: string;
             <stop offset="100%" stopColor="#a855f7" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-        <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} />
-        <YAxis tick={{ fontSize: 10, fill: '#737373' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+        <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+        <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
         <Tooltip content={<CustomTooltip formatter={(v: number) => formatXOF(v)} />} />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
         <Area type="monotone" dataKey="revenue" name="Revenus" stroke="#f97316" fill="url(#revGrad2)" strokeWidth={2} />
@@ -131,9 +131,9 @@ export function UserGrowthBar({ data, height = 280 }: Props<{ day: string; nouve
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-        <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} />
-        <YAxis tick={{ fontSize: 10, fill: '#737373' }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+        <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+        <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
         <Tooltip content={<CustomTooltip />} />
         <Bar dataKey="nouveaux" name="Nouveaux" fill="#3b82f6" radius={[4, 4, 0, 0]} />
       </BarChart>
@@ -151,9 +151,9 @@ export function ResaPerDayArea({ data, height = 280 }: Props<{ day: string; rese
             <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-        <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} />
-        <YAxis tick={{ fontSize: 10, fill: '#737373' }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+        <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+        <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
         <Tooltip content={<CustomTooltip />} />
         <Area type="monotone" dataKey="reservations" stroke="#10b981" fill="url(#resaGrad)" strokeWidth={2} />
       </AreaChart>
@@ -165,9 +165,9 @@ export function VenueCategoryBar({ data, height = 280 }: Props<{ name: string; c
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} layout="vertical">
-        <CartesianGrid strokeDasharray="3 3" stroke="#262626" horizontal={false} />
-        <XAxis type="number" tick={{ fontSize: 10, fill: '#737373' }} />
-        <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#737373' }} width={100} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" horizontal={false} />
+        <XAxis type="number" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+        <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} width={100} />
         <Tooltip content={<CustomTooltip />} />
         <Bar dataKey="count" name="Venues" fill="#f97316" radius={[0, 4, 4, 0]} />
       </BarChart>
@@ -179,9 +179,9 @@ export function RevenueByProviderBar({ data, height = 280 }: Props<{ name: strin
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-        <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#737373' }} />
-        <YAxis tick={{ fontSize: 10, fill: '#737373' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" />
+        <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+        <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
         <Tooltip content={<CustomTooltip formatter={(v: number) => formatXOF(v)} />} />
         <Bar dataKey="value" name="Revenus" fill="#10b981" radius={[4, 4, 0, 0]} />
       </BarChart>
@@ -197,9 +197,9 @@ export function UsersByCityBar({ data, height = 280 }: Props<{ name: string; cou
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} layout="vertical">
-        <CartesianGrid strokeDasharray="3 3" stroke="#262626" horizontal={false} />
-        <XAxis type="number" tick={{ fontSize: 10, fill: '#737373' }} />
-        <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#737373' }} width={120} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--n-200))" horizontal={false} />
+        <XAxis type="number" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} />
+        <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'rgb(var(--n-600))' }} width={120} />
         <Tooltip content={<CustomTooltip />} />
         <Bar dataKey="count" name="Utilisateurs" fill="#3b82f6" radius={[0, 4, 4, 0]} />
       </BarChart>

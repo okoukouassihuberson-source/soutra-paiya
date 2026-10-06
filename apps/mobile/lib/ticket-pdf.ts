@@ -18,6 +18,7 @@ import * as Sharing from 'expo-sharing';
 import { Alert, Platform } from 'react-native';
 import QRCode from 'qrcode';
 import { formatXOF } from '@soutra/shared';
+import { tr, currentLocale, type TKey } from '@/lib/i18n';
 
 const TICKET_QR_TYPE = 'soutraticket';
 
@@ -33,7 +34,7 @@ export interface TicketPdfPayload {
   // Métadonnées d'affichage
   title: string;         // venue name
   subtitle?: string;     // adresse / district
-  date: string;          // date lisible (déjà formatée en français)
+  date: string;          // date lisible (déjà formatée dans la langue de l'app)
   status: string;        // libellé statut
   amountXof: number;
   // Détails contextuels par type (optionnels)
@@ -68,12 +69,7 @@ async function buildQrSvg(payloadJson: string): Promise<string> {
   });
 }
 
-const KIND_LABEL: Record<TicketKind, string> = {
-  reservation: 'Réservation',
-  order: 'Commande',
-  booking: 'Séjour hôtel',
-  event: 'Billet événement',
-};
+const kindLabelFor = (k: TicketKind): string => tr(`ticketPdf.${k}` as TKey);
 
 const KIND_ACCENT: Record<TicketKind, string> = {
   reservation: '#f97316',
@@ -88,7 +84,7 @@ const KIND_ACCENT: Record<TicketKind, string> = {
  */
 function buildTicketHtml(payload: TicketPdfPayload, qrSvg: string): string {
   const accent = KIND_ACCENT[payload.kind];
-  const kindLabel = KIND_LABEL[payload.kind];
+  const kindLabel = kindLabelFor(payload.kind);
   const details = (payload.detailsLines ?? [])
     .map(
       (l) => `
@@ -101,10 +97,10 @@ function buildTicketHtml(payload: TicketPdfPayload, qrSvg: string): string {
     .join('');
 
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="${currentLocale()}">
   <head>
     <meta charset="utf-8" />
-    <title>Ticket Soutra-Playce — ${escapeHtml(kindLabel)}</title>
+    <title>${escapeHtml(tr('ticketPdf.docTitle', { kind: kindLabel }))}</title>
     <style>
       @page { size: A4; margin: 20mm; }
       * { box-sizing: border-box; }
@@ -241,28 +237,27 @@ function buildTicketHtml(payload: TicketPdfPayload, qrSvg: string): string {
       <div class="qr-block">
         <div class="qr-svg">${qrSvg}</div>
         <div class="qr-info">
-          <div class="label">Code de validation</div>
+          <div class="label">${escapeHtml(tr('ticketPdf.code'))}</div>
           <div class="code">${escapeHtml(payload.code.toUpperCase().slice(0, 12))}</div>
           <p class="hint">
-            Présente ce ticket (écran ou papier) au personnel du lieu.
-            Le QR est scanné pour valider l'entrée / la remise.
+            ${escapeHtml(tr('ticketPdf.hint'))}
           </p>
         </div>
       </div>
 
       <table class="details">
-        <tr><td class="lbl">Date</td><td class="val">${escapeHtml(payload.date)}</td></tr>
-        <tr><td class="lbl">Statut</td><td class="val">${escapeHtml(payload.status)}</td></tr>
+        <tr><td class="lbl">${escapeHtml(tr('ticketPdf.date'))}</td><td class="val">${escapeHtml(payload.date)}</td></tr>
+        <tr><td class="lbl">${escapeHtml(tr('ticketPdf.status'))}</td><td class="val">${escapeHtml(payload.status)}</td></tr>
         ${details}
         <tr class="amount-row">
-          <td class="lbl">Total</td>
+          <td class="lbl">${escapeHtml(tr('ticketPdf.total'))}</td>
           <td class="val">${escapeHtml(formatXOF(payload.amountXof))}</td>
         </tr>
       </table>
 
       <div class="footer">
-        Ticket émis par Soutra-Playce · ID ${escapeHtml(payload.id.slice(0, 8))}<br />
-        En cas de problème : support@soutra-paiya.com
+        ${escapeHtml(tr('ticketPdf.footer', { id: payload.id.slice(0, 8) }))}<br />
+        ${escapeHtml(tr('ticketPdf.support'))}
       </div>
     </div>
   </body>
@@ -295,23 +290,23 @@ export async function exportTicketPdf(payload: TicketPdfPayload): Promise<string
     if (canShare) {
       await Sharing.shareAsync(uri, {
         mimeType: 'application/pdf',
-        dialogTitle: 'Ticket Soutra-Playce',
+        dialogTitle: tr('ticketPdf.share'),
         UTI: 'com.adobe.pdf',
       });
     } else {
       Alert.alert(
-        'PDF généré',
+        tr('ticketPdf.done'),
         Platform.OS === 'web'
-          ? 'Ouvre le fichier depuis ton navigateur.'
-          : `Fichier sauvegardé : ${uri}`,
+          ? tr('ticketPdf.web')
+          : tr('ticketPdf.saved', { uri }),
       );
     }
     return uri;
   } catch (err) {
     console.error('[ticket-pdf] export error:', err);
     Alert.alert(
-      'Erreur',
-      err instanceof Error ? err.message : 'Impossible de générer le ticket PDF.',
+      tr('ticketPdf.error'),
+      err instanceof Error ? err.message : tr('ticketPdf.fail'),
     );
     return null;
   }

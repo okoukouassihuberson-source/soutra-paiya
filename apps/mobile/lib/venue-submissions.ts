@@ -3,6 +3,7 @@
 // (migration 0040). RPCs : submit / list_my.
 // ============================================================================
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 export type SubmissionStatus =
   | 'pending'
@@ -11,12 +12,12 @@ export type SubmissionStatus =
   | 'rejected'
   | 'duplicate';
 
-export const SUBMISSION_STATUS_META: Record<SubmissionStatus, { label: string; color: string; icon: string }> = {
-  pending:   { label: 'En attente', color: '#F59E0B', icon: '⏳' },
-  reviewing: { label: 'En examen',  color: '#3B82F6', icon: '🔎' },
-  approved:  { label: 'Approuvée',  color: '#10B981', icon: '✅' },
-  rejected:  { label: 'Refusée',    color: '#EF4444', icon: '❌' },
-  duplicate: { label: 'Doublon',    color: '#A855F7', icon: '👯' },
+export const SUBMISSION_STATUS_META: Record<SubmissionStatus, { readonly label: string; color: string; icon: string }> = {
+  pending:   { get label() { return tr('submissionStatus.pending'); }, color: '#F59E0B', icon: '⏳' },
+  reviewing: { get label() { return tr('submissionStatus.reviewing'); },  color: '#3B82F6', icon: '🔎' },
+  approved:  { get label() { return tr('submissionStatus.approved'); },  color: '#10B981', icon: '✅' },
+  rejected:  { get label() { return tr('submissionStatus.rejected'); },    color: '#EF4444', icon: '❌' },
+  duplicate: { get label() { return tr('submissionStatus.duplicate'); },    color: '#A855F7', icon: '👯' },
 };
 
 export interface SubmitVenueParams {

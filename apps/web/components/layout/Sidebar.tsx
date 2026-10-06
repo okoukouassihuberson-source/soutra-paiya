@@ -46,7 +46,7 @@ export function Sidebar({
             <span className="text-sm font-extrabold tracking-tight text-dark">
               Soutra-Playce
             </span>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
               {appLabel}
             </span>
           </div>
@@ -56,10 +56,14 @@ export function Sidebar({
       {/* Items */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
-          {navItems.map((item) => {
+          {navItems.map((item, idx) => {
             const active = isActiveNav(item.href, pathname, item.match);
+            const heading = item.group && item.group !== navItems[idx - 1]?.group ? item.group : null;
             return (
               <li key={item.id}>
+                {heading && (
+                  <p className={cn('px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-600', idx > 0 ? 'pt-4' : 'pt-0')}>{heading}</p>
+                )}
                 <Link
                   href={item.href}
                   onClick={onItemClick}
@@ -75,7 +79,7 @@ export function Sidebar({
                     aria-hidden
                     className={cn(
                       'flex h-7 w-7 items-center justify-center rounded-lg',
-                      active ? 'bg-primary-500 text-white' : 'bg-neutral-100 text-neutral-500 group-hover:text-dark',
+                      active ? 'bg-primary-500 text-night' : 'bg-neutral-100 text-neutral-600 group-hover:text-dark',
                     )}
                   >
                     {item.icon}
@@ -96,7 +100,7 @@ export function Sidebar({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-dark">{user.name}</p>
               {user.subtitle && (
-                <p className="truncate text-xs text-neutral-500">{user.subtitle}</p>
+                <p className="truncate text-xs text-neutral-600">{user.subtitle}</p>
               )}
             </div>
           </div>

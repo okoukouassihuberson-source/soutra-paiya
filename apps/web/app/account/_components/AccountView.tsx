@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase';
+import { ThemeSelect } from '@/components/ThemeSelect';
 
 /* ─────────────────────────────────────────────────── *
  *  TYPES                                              *
@@ -81,7 +82,7 @@ interface LoyaltyStats {
 }
 
 const PLAN_STYLES: Record<PlanCode, { ribbon: string; text: string; accent: string }> = {
-  free:           { ribbon: 'from-neutral-200 to-neutral-100',    text: 'text-neutral-700', accent: 'text-neutral-500' },
+  free:           { ribbon: 'from-neutral-200 to-neutral-100',    text: 'text-neutral-700', accent: 'text-neutral-600' },
   standard:       { ribbon: 'from-primary-500 to-amber-500',      text: 'text-white',       accent: 'text-primary-100' },
   pro:            { ribbon: 'from-blue-500 to-purple-600',        text: 'text-white',       accent: 'text-blue-100' },
   premium:        { ribbon: 'from-purple-500 to-amber-500',       text: 'text-white',       accent: 'text-purple-100' },
@@ -89,19 +90,21 @@ const PLAN_STYLES: Record<PlanCode, { ribbon: string; text: string; accent: stri
 };
 
 const STATUS_META: Record<Subscription['status'], { label: string; tone: string }> = {
-  active:    { label: 'Actif',       tone: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' },
-  trialing:  { label: 'Période d\'essai', tone: 'bg-blue-500/15 text-blue-700 dark:text-blue-400' },
-  past_due:  { label: 'Paiement échoué', tone: 'bg-amber-500/15 text-amber-700 dark:text-amber-400' },
-  cancelled: { label: 'Résilié',     tone: 'bg-neutral-500/15 text-neutral-600 dark:text-neutral-400' },
-  expired:   { label: 'Expiré',      tone: 'bg-red-500/15 text-red-700 dark:text-red-400' },
+  active:    { label: 'Actif',       tone: 'bg-emerald-500/15 text-emerald-700 ' },
+  trialing:  { label: 'Période d\'essai', tone: 'bg-blue-500/15 text-blue-700 ' },
+  past_due:  { label: 'Paiement échoué', tone: 'bg-amber-500/15 text-amber-800 ' },
+  cancelled: { label: 'Résilié',     tone: 'bg-neutral-500/15 text-neutral-600 ' },
+  expired:   { label: 'Expiré',      tone: 'bg-red-500/15 text-red-700 ' },
 };
 
 const TX_STATUS: Record<Transaction['status'], { label: string; tone: string }> = {
-  pending:  { label: 'En cours', tone: 'bg-amber-500/15 text-amber-700 dark:text-amber-400' },
-  success:  { label: 'Payée',    tone: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' },
-  failed:   { label: 'Échouée',  tone: 'bg-red-500/15 text-red-700 dark:text-red-400' },
-  reversed: { label: 'Remboursée', tone: 'bg-purple-500/15 text-purple-700 dark:text-purple-400' },
+  pending:  { label: 'En cours', tone: 'bg-amber-500/15 text-amber-800 ' },
+  success:  { label: 'Payée',    tone: 'bg-emerald-500/15 text-emerald-700 ' },
+  failed:   { label: 'Échouée',  tone: 'bg-red-500/15 text-red-700 ' },
+  reversed: { label: 'Remboursée', tone: 'bg-purple-500/15 text-purple-700 ' },
 };
+
+const ROLE_LABEL: Record<string, string> = { admin: 'Administrateur', organizer: 'Organisateur', venue_owner: 'Propriétaire', guide: 'Guide', staff: 'Staff' };
 
 /* ─────────────────────────────────────────────────── *
  *  MAIN VIEW                                          *
@@ -199,8 +202,19 @@ export function AccountView({
     }
   }, [sb, currentSub, flash, router]);
 
+  const role = profile?.role ?? 'user';
+  const shortcuts: { href: string; icon: string; label: string; hint: string }[] = [
+    { href: '/mes-voyages', icon: '🧳', label: 'Mes voyages', hint: 'Réservations et billets' },
+    { href: '/mes-activites', icon: '🎯', label: 'Mes activités', hint: 'Créneaux réservés' },
+    { href: '/loyalty', icon: '⭐', label: 'Fidélité', hint: 'Points et avantages' },
+    { href: '/notifications/preferences', icon: '🔔', label: 'Notifications', hint: 'Choisir ce que je reçois' },
+    ...(['organizer', 'venue_owner', 'guide', 'admin'].includes(role) ? [{ href: '/organisateur', icon: '📈', label: 'Espace organisateur', hint: 'Voyages, activités, stats' }] : []),
+    ...(['venue_owner', 'admin'].includes(role) ? [{ href: '/pro', icon: '🏪', label: 'Espace Pro', hint: 'Mon établissement' }] : []),
+    ...(role === 'admin' ? [{ href: '/admin', icon: '🛡️', label: 'Administration', hint: 'Centre de contrôle' }] : []),
+  ];
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-white">
+    <div className="relative min-h-screen overflow-x-hidden bg-neutral-50 text-neutral-900 ">
       {/* Background subtil */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-32 left-1/2 h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary-500/10 via-purple-500/5 to-amber-500/5 blur-[100px]" />
@@ -209,8 +223,7 @@ export function AccountView({
       {/* Toast */}
       {toast && (
         <div
-          className={`fixed left-1/2 top-6 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur-xl ${
-            toast.ok ? 'bg-emerald-500/95 text-white' : 'bg-red-500/95 text-white'
+          className={`fixed left-1/2 top-6 z-[100] flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold shadow-2xl backdrop-blur-xl ${ toast.ok ? 'bg-emerald-500/95 text-white' : 'bg-red-500/95 text-white'
           }`}
         >
           <span>{toast.ok ? '✓' : '⚠'}</span>
@@ -221,42 +234,62 @@ export function AccountView({
       <main className="relative mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
         {/* ═══════════ HEADER ═══════════ */}
         <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
-              Mon compte
-            </p>
-            <h1 className="mt-2 font-display text-3xl font-black tracking-tight sm:text-4xl">
-              {profile?.full_name || 'Bienvenue'}
-            </h1>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-              {profile?.phone && <>📞 {profile.phone}</>}
-              {profile?.email && <> · ✉ {profile.email}</>}
-            </p>
+          <div className="flex items-center gap-4">
+            <span aria-hidden className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary-500 font-display text-2xl font-black text-night">
+              {(profile?.full_name || profile?.phone || '?').trim().charAt(0).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wider text-primary-700">Mon compte</p>
+              <h1 className="mt-1 truncate font-display text-3xl font-black tracking-tight sm:text-4xl">
+                {profile?.full_name || 'Bienvenue'}
+              </h1>
+              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-neutral-600">
+                {profile?.phone && <span>📞 {profile.phone}</span>}
+                {profile?.email && <span>✉ {profile.email}</span>}
+                {ROLE_LABEL[profile?.role ?? ''] && <span className="rounded-full bg-neutral-200 px-2.5 py-0.5 text-xs font-bold text-neutral-800">{ROLE_LABEL[profile?.role ?? '']}</span>}
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
               href="/"
-              className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-600"
+              className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 transition hover:border-neutral-400 "
             >
               ← Accueil
             </Link>
             <button
               onClick={handleSignOut}
               disabled={signingOut}
-              className="rounded-full border border-red-500/30 bg-red-500/5 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
+              className="rounded-full border border-red-500/30 bg-red-500/5 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-500/10 disabled:opacity-50 "
             >
               {signingOut ? 'Déconnexion…' : 'Se déconnecter'}
             </button>
           </div>
         </header>
 
+        {/* ═══════════ MON ESPACE (raccourcis) ═══════════ */}
+        <section aria-labelledby="acc-shortcuts" className="mb-12">
+          <h2 id="acc-shortcuts" className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-600">Mon espace</h2>
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {shortcuts.map((t) => (
+              <li key={t.href}>
+                <Link href={t.href} className="group flex h-full flex-col gap-1 rounded-2xl border border-neutral-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-primary-500 hover:shadow-md">
+                  <span aria-hidden className="text-2xl">{t.icon}</span>
+                  <span className="font-display text-base font-bold text-dark group-hover:text-primary-700">{t.label}</span>
+                  <span className="text-xs text-neutral-600">{t.hint}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* ═══════════ ABONNEMENT COURANT ═══════════ */}
         <section className="mb-12">
-          <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-500">
+          <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-600">
             Abonnement actuel
           </h2>
 
-          <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm ">
             {/* Ribbon plan */}
             {currentPlan && (
               <div className={`bg-gradient-to-r ${PLAN_STYLES[currentPlan.code].ribbon} px-6 py-5 sm:px-8 sm:py-6`}>
@@ -315,7 +348,7 @@ export function AccountView({
                   {currentSub.cancel_at_period_end && (
                     <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
                       <span className="text-xl">⚠️</span>
-                      <div className="text-sm text-amber-700 dark:text-amber-300">
+                      <div className="text-sm text-amber-700 ">
                         <strong>Résiliation programmée.</strong> Ton abonnement {currentPlan?.display_name} reste actif jusqu&apos;au{' '}
                         <strong>{formatDate(currentSub.current_period_end)}</strong>, puis basculera sur le plan Free.
                       </div>
@@ -325,7 +358,7 @@ export function AccountView({
                   {currentSub.status === 'past_due' && (
                     <div className="mt-6 flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/5 p-4">
                       <span className="text-xl">⚠️</span>
-                      <div className="text-sm text-red-700 dark:text-red-300">
+                      <div className="text-sm text-red-700 ">
                         <strong>Paiement échoué.</strong> Renouvelle ton paiement pour conserver tes avantages.
                       </div>
                     </div>
@@ -341,7 +374,7 @@ export function AccountView({
                     {isActivePaid && (
                       <button
                         onClick={() => setConfirmOpen(true)}
-                        className="rounded-2xl border border-red-500/40 bg-red-500/5 px-5 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-500/10 dark:text-red-400"
+                        className="rounded-2xl border border-red-500/40 bg-red-500/5 px-5 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-500/10 "
                       >
                         Résilier
                       </button>
@@ -349,7 +382,7 @@ export function AccountView({
                     {currentSub.cancel_at_period_end && (
                       <Link
                         href="/subscribe"
-                        className="rounded-2xl border border-emerald-500/40 bg-emerald-500/5 px-5 py-2.5 text-sm font-bold text-emerald-600 transition hover:bg-emerald-500/10 dark:text-emerald-400"
+                        className="rounded-2xl border border-emerald-500/40 bg-emerald-500/5 px-5 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-500/10 "
                       >
                         Réactiver mon abonnement
                       </Link>
@@ -369,7 +402,7 @@ export function AccountView({
                 </>
               ) : (
                 <div className="py-6 text-center">
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <p className="text-sm text-neutral-600 ">
                     Tu utilises actuellement le <strong>plan Free</strong>. Découvre les avantages Premium :
                     accès VVIP, concierge dédié.
                   </p>
@@ -388,46 +421,46 @@ export function AccountView({
         {/* ═══════════ FIDÉLITÉ ═══════════ */}
         {loyaltyStats?.ok && (
           <section className="mb-12">
-            <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-500">
+            <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-600">
               Fidélité
             </h2>
-            <div className="overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 dark:from-amber-500/15 dark:via-neutral-900/80 dark:to-amber-500/5">
+            <div className="overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-white to-amber-500/5 ">
               <div className="grid grid-cols-1 gap-px bg-amber-500/10 sm:grid-cols-3">
                 {/* Solde de points */}
-                <div className="bg-white p-6 dark:bg-neutral-900">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                <div className="bg-white p-6 ">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700 ">
                     Solde de points
                   </p>
-                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-neutral-900 dark:text-white">
+                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-neutral-900 ">
                     {loyaltyStats.points_balance.toLocaleString('fr-FR')} pts
                   </p>
-                  <p className="mt-1 text-xs text-neutral-500">
+                  <p className="mt-1 text-xs text-neutral-600">
                     {loyaltyStats.points_lifetime.toLocaleString('fr-FR')} pts gagnés au total
                   </p>
                 </div>
 
                 {/* Sur 30j */}
-                <div className="bg-white p-6 dark:bg-neutral-900">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                <div className="bg-white p-6 ">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                     {loyaltyStats.window_days} derniers jours
                   </p>
-                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-neutral-900 dark:text-white">
+                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-neutral-900 ">
                     {loyaltyStats.period_points.toLocaleString('fr-FR')} pts
                   </p>
-                  <p className="mt-1 text-xs text-neutral-500">
+                  <p className="mt-1 text-xs text-neutral-600">
                     {loyaltyStats.period_count} gain{loyaltyStats.period_count > 1 ? 's' : ''}
                   </p>
                 </div>
 
                 {/* Niveau */}
-                <div className="bg-white p-6 dark:bg-neutral-900">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                <div className="bg-white p-6 ">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">
                     Ton niveau
                   </p>
-                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-amber-600 dark:text-amber-400">
+                  <p className="mt-2 font-display text-3xl font-black tracking-tight text-amber-700 ">
                     {loyaltyStats.level.emoji} {loyaltyStats.level.label}
                   </p>
-                  <p className="mt-1 text-xs text-neutral-500">
+                  <p className="mt-1 text-xs text-neutral-600">
                     {loyaltyStats.next_level ? (
                       <>{loyaltyStats.next_level.points_remaining.toLocaleString('fr-FR')} pts avant {loyaltyStats.next_level.label}</>
                     ) : (
@@ -437,9 +470,9 @@ export function AccountView({
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-amber-500/10 bg-white/40 px-6 py-3 text-xs text-neutral-600 dark:bg-neutral-950/40 dark:text-neutral-400">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-amber-500/10 bg-white/40 px-6 py-3 text-xs text-neutral-600 ">
                 <span>🏆 Échange tes points contre des récompenses partenaires.</span>
-                <Link href="/loyalty" className="font-bold text-primary-600 dark:text-primary-400 hover:underline">
+                <Link href="/loyalty" className="font-bold text-primary-600 hover:underline">
                   Voir le programme →
                 </Link>
               </div>
@@ -447,18 +480,25 @@ export function AccountView({
           </section>
         )}
 
-        {/* ═══════════ HISTORIQUE PAIEMENTS ═══════════ */}
-        <section className="mb-12">
-          <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-500">
+        {/* Historiques : repliés par défaut (rarement consultés) */}
+        <details className="group mb-12 rounded-2xl border border-neutral-200 bg-white open:shadow-sm">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 font-display text-base font-bold marker:hidden">
+            <span>Historique des paiements et abonnements</span>
+            <span aria-hidden className="text-neutral-600 transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="border-t border-neutral-200 px-5 pb-2 pt-6">
+        
+        <section className="mb-8">
+          <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-600">
             Historique des paiements ({transactionHistory.length})
           </h2>
-          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white ">
             {transactionHistory.length === 0 ? (
-              <div className="px-6 py-12 text-center text-sm text-neutral-500">
+              <div className="px-6 py-12 text-center text-sm text-neutral-600">
                 Aucune transaction Premium pour l&apos;instant.
               </div>
             ) : (
-              <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              <ul className="divide-y divide-neutral-100 ">
                 {transactionHistory.map((tx) => {
                   const planCode = tx.metadata?.plan_code as PlanCode | undefined;
                   const planName = planCode ? plansByCode.get(planCode)?.display_name : null;
@@ -469,15 +509,15 @@ export function AccountView({
                         <p className="truncate text-sm font-semibold">
                           {planName || tx.description || 'Abonnement Soutra-Playce'}
                           {billingPeriod && (
-                            <span className="ml-2 text-xs font-normal text-neutral-500">
+                            <span className="ml-2 text-xs font-normal text-neutral-600">
                               ({billingPeriod === 'monthly' ? 'Mensuel' : 'Annuel'})
                             </span>
                           )}
                         </p>
-                        <p className="mt-0.5 text-xs text-neutral-500">
+                        <p className="mt-0.5 text-xs text-neutral-600">
                           {formatDateTime(tx.created_at)}
                           {tx.provider_ref && (
-                            <span className="ml-2 font-mono text-[10px] text-neutral-400">
+                            <span className="ml-2 font-mono text-[10px] text-neutral-600">
                               ref {tx.provider_ref.slice(0, 18)}…
                             </span>
                           )}
@@ -498,7 +538,7 @@ export function AccountView({
                           rel="noopener noreferrer"
                           aria-label="Télécharger la facture PDF"
                           title="Télécharger la facture PDF"
-                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 transition hover:border-primary-500/40 hover:bg-primary-500/5 hover:text-primary-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:border-primary-500/40 dark:hover:text-primary-400"
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 transition hover:border-primary-500/40 hover:bg-primary-500/5 hover:text-primary-600 "
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -515,14 +555,14 @@ export function AccountView({
           </div>
         </section>
 
-        {/* ═══════════ HISTORIQUE ABONNEMENTS (si > 1) ═══════════ */}
+        
         {subscriptionHistory.length > 1 && (
-          <section className="mb-12">
-            <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-500">
+          <section className="mb-8">
+            <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-600">
               Historique des abonnements ({subscriptionHistory.length})
             </h2>
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-              <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white ">
+              <ul className="divide-y divide-neutral-100 ">
                 {subscriptionHistory.map((sub) => {
                   const plan = plansByCode.get(sub.plan_code);
                   return (
@@ -530,11 +570,11 @@ export function AccountView({
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold">
                           {plan?.display_name || sub.plan_code}
-                          <span className="ml-2 text-xs font-normal text-neutral-500">
+                          <span className="ml-2 text-xs font-normal text-neutral-600">
                             ({sub.billing_period === 'monthly' ? 'Mensuel' : 'Annuel'})
                           </span>
                         </p>
-                        <p className="mt-0.5 text-xs text-neutral-500">
+                        <p className="mt-0.5 text-xs text-neutral-600">
                           Du {formatDate(sub.current_period_start)} au {formatDate(sub.current_period_end)}
                         </p>
                       </div>
@@ -549,13 +589,25 @@ export function AccountView({
           </section>
         )}
 
+          </div>
+        </details>
+
+        {/* ═══════════ APPARENCE ═══════════ */}
+        <section aria-labelledby="acc-theme" className="mb-12">
+          <h2 id="acc-theme" className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-600">Apparence</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4">
+            <p className="text-sm text-neutral-700">Clair, sombre, ou selon le réglage de votre appareil.</p>
+            <ThemeSelect />
+          </div>
+        </section>
+
         {/* ═══════════ INFOS COMPTE ═══════════ */}
         <section>
-          <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-500">
+          <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-neutral-600">
             Informations du compte
           </h2>
-          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-            <dl className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white ">
+            <dl className="divide-y divide-neutral-100 ">
               <Row label="Nom complet" value={profile?.full_name || '—'} />
               <Row label="Téléphone" value={profile?.phone || '—'} mono />
               <Row label="Email" value={profile?.email || '—'} />
@@ -565,14 +617,13 @@ export function AccountView({
               <Row
                 label="KYC"
                 value={
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                    profile?.kyc_status === 'verified'
-                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold ${ profile?.kyc_status === 'verified'
+                      ? 'bg-emerald-500/15 text-emerald-700 '
                       : profile?.kyc_status === 'pending'
-                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+                      ? 'bg-amber-500/15 text-amber-800 '
                       : profile?.kyc_status === 'rejected'
-                      ? 'bg-red-500/15 text-red-700 dark:text-red-400'
-                      : 'bg-neutral-500/15 text-neutral-600 dark:text-neutral-400'
+                      ? 'bg-red-500/15 text-red-700 '
+                      : 'bg-neutral-500/15 text-neutral-600 '
                   }`}>
                     {profile?.kyc_status === 'verified' ? '✓ Vérifié'
                       : profile?.kyc_status === 'pending' ? 'En attente'
@@ -597,25 +648,25 @@ export function AccountView({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="animate-sheet-slide-up max-h-[100dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border border-neutral-200 bg-white p-6 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 sm:max-h-[90vh] sm:rounded-3xl sm:p-8"
+            className="animate-sheet-slide-up max-h-[100dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border border-neutral-200 bg-white p-6 shadow-2xl sm:max-h-[90vh] sm:rounded-3xl sm:p-8"
           >
-            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-700 sm:hidden" />
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300 sm:hidden" />
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-3xl text-red-500">
               ⚠
             </div>
             <h3 className="text-center font-display text-xl font-black">Résilier l&apos;abonnement ?</h3>
-            <p className="mt-3 text-center text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-3 text-center text-sm text-neutral-600 ">
               Ton abonnement <strong>{currentPlan.display_name}</strong> restera actif jusqu&apos;au{' '}
               <strong>{formatDate(currentSub.current_period_end)}</strong>. Tu pourras le réactiver à tout moment d&apos;ici là.
             </p>
-            <p className="mt-2 text-center text-xs text-neutral-500">
+            <p className="mt-2 text-center text-xs text-neutral-600">
               Pas de remboursement immédiat — tu profites de ce que tu as payé jusqu&apos;à la fin de la période.
             </p>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 onClick={() => setConfirmOpen(false)}
                 disabled={cancelling}
-                className="rounded-2xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+                className="rounded-2xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50 "
               >
                 Garder mon abonnement
               </button>
@@ -662,19 +713,19 @@ function AutoRenewBlock({
 
   if (!hasAuthorization) {
     return (
-      <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-4 dark:border-neutral-800 dark:bg-neutral-950/60">
+      <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50/60 p-4 ">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-200/60 dark:bg-neutral-800">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-500">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-200/60 ">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-600">
               <path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
               <line x1="1" y1="10" x2="23" y2="10" />
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+            <p className="text-sm font-semibold text-neutral-700 ">
               Renouvellement automatique
             </p>
-            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-500">
+            <p className="mt-1 text-xs text-neutral-600 ">
               Disponible uniquement pour les paiements par carte. Avec Mobile
               Money, tu reçois un rappel à J-7 et J-1 pour renouveler en 1 clic.
             </p>
@@ -685,11 +736,10 @@ function AutoRenewBlock({
   }
 
   return (
-    <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950/60">
+    <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4 ">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-            enabled ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-neutral-200 text-neutral-500 dark:bg-neutral-800'
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${ enabled ? 'bg-emerald-500/15 text-emerald-700 ' : 'bg-neutral-200 text-neutral-600 '
           }`}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="23 4 23 10 17 10" />
@@ -698,21 +748,21 @@ function AutoRenewBlock({
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+            <p className="text-sm font-semibold text-neutral-800 ">
               Renouvellement automatique
             </p>
-            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="mt-1 text-xs text-neutral-600 ">
               {enabled ? (
                 <>Sera prélevé le {formatDate(sub.current_period_end)} sur ta carte</>
               ) : (
                 <>Tu devras renouveler manuellement</>
               )}
               {sub.last_card_brand && sub.last_card_last4 && (
-                <> · <strong className="text-neutral-700 dark:text-neutral-300 capitalize">{sub.last_card_brand}</strong> •••• {sub.last_card_last4}</>
+                <> · <strong className="text-neutral-700 capitalize">{sub.last_card_brand}</strong> •••• {sub.last_card_last4}</>
               )}
             </p>
             {sub.last_renew_outcome && sub.last_renew_outcome !== 'success' && (
-              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+              <p className="mt-1 text-xs text-amber-700 ">
                 Dernière tentative : {sub.last_renew_outcome}
               </p>
             )}
@@ -724,13 +774,11 @@ function AutoRenewBlock({
           aria-checked={enabled}
           disabled={saving}
           onClick={() => onChange(!enabled)}
-          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition disabled:opacity-50 ${
-            enabled ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-700'
+          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition disabled:opacity-50 ${ enabled ? 'bg-emerald-500' : 'bg-neutral-300 '
           }`}
         >
           <span
-            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${
-              enabled ? 'translate-x-6' : 'translate-x-1'
+            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${ enabled ? 'translate-x-6' : 'translate-x-1'
             }`}
           />
         </button>
@@ -744,9 +792,9 @@ function StatBlock({
 }: { label: string; value: React.ReactNode; sub?: string }) {
   return (
     <div>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">{label}</p>
+      <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-600">{label}</p>
       <div className="mt-1.5">{value}</div>
-      {sub && <p className="mt-0.5 text-[11px] text-neutral-500">{sub}</p>}
+      {sub && <p className="mt-0.5 text-[11px] text-neutral-600">{sub}</p>}
     </div>
   );
 }
@@ -756,7 +804,7 @@ function Row({
 }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 sm:px-6">
-      <dt className="text-sm text-neutral-600 dark:text-neutral-400">{label}</dt>
+      <dt className="text-sm text-neutral-600 ">{label}</dt>
       <dd className={`text-sm font-semibold ${mono ? 'font-mono' : ''}`}>{value}</dd>
     </div>
   );

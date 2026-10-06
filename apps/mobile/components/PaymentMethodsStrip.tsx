@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { typography, radius, spacing, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
 import { PaymentLogo, type PaymentMethodName } from './PaymentLogo';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Strip horizontal des moyens de paiement acceptés par un venue.
@@ -29,6 +30,7 @@ const KNOWN_METHODS: PaymentMethodName[] = [
 ];
 
 export function PaymentMethodsStrip({ methods, variant = 'pre-pay', title }: Props) {
+  const { t } = useI18n();
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
 
@@ -53,7 +55,7 @@ export function PaymentMethodsStrip({ methods, variant = 'pre-pay', title }: Pro
         <View style={s.venueCardHeader}>
           <Ionicons name="shield-checkmark" size={14} color={c.success[700]} />
           <Text style={s.venueCardTitle}>
-            {title ?? 'Moyens de paiement acceptés'}
+            {title ?? t('ui.paymentMethods')}
           </Text>
         </View>
         <ScrollView
@@ -92,7 +94,7 @@ export function PaymentMethodsStrip({ methods, variant = 'pre-pay', title }: Pro
         ))}
       </ScrollView>
       <Text style={s.prePayHint}>
-        Cryptage de bout en bout · paiement instantané
+        {t('ui.encryption')}
       </Text>
     </View>
   );

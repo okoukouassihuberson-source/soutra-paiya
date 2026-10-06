@@ -12,7 +12,7 @@ export function OfferCard({ offer, withTarget = false }: { offer: PublicOffer; w
     <>
       <div className="flex items-start justify-between gap-3">
         <span className="rounded-full bg-secondary-100 px-3 py-1 text-xs font-bold text-secondary-700">{i.t(`offer.kind.${offer.kind}` as 'offer.kind.discount')}</span>
-        <span className="font-display text-2xl font-extrabold text-primary-600">{offerValue(offer, i)}</span>
+        <span className="font-display text-2xl font-extrabold text-primary-700">{offerValue(offer, i)}</span>
       </div>
       <h3 className="mt-3 font-display text-lg font-bold text-dark">{title}</h3>
       {desc && <p className="mt-1 text-sm text-neutral-600">{desc}</p>}

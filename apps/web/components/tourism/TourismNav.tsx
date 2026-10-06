@@ -3,6 +3,10 @@ import { getI18n } from '@/lib/i18n/server';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileDock } from '@/components/home/MobileDock';
+import { CompareBar } from './CompareUi';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { CommandPalette } from '@/components/search/CommandPalette';
+import { AssistantDock } from './AssistantDock';
 
 /** Barre de navigation publique tourisme (desktop) + barre inférieure (mobile). */
 export function TourismNav() {
@@ -28,15 +32,19 @@ export function TourismNav() {
             ))}
           </nav>
           <div className="flex items-center gap-2 text-sm">
+            <CommandPalette />
+            <ThemeToggle className="max-[359px]:hidden" />
             <LanguageSwitcher />
             <NotificationBell />
             <Link href={lp('/organisateur')} className="hidden whitespace-nowrap font-medium text-neutral-600 hover:text-primary-700 2xl:inline">{t('nav.organizer')}</Link>
             <Link href={lp('/mes-voyages')} className="hidden whitespace-nowrap font-medium text-neutral-600 hover:text-primary-700 xl:inline">{t('nav.myTrips')}</Link>
-            <Link href={lp('/login')} className="whitespace-nowrap rounded-full bg-primary-500 px-4 py-2 font-semibold text-night hover:bg-primary-400">{t('nav.myAccount')}</Link>
+            <Link href={lp('/login')} className="hidden whitespace-nowrap rounded-full bg-primary-500 px-4 py-2 font-semibold text-night hover:bg-primary-400 xl:inline-flex">{t('nav.myAccount')}</Link>
           </div>
         </div>
       </header>
       <MobileDock />
+      <AssistantDock />
+      <CompareBar />
     </>
   );
 }

@@ -2,6 +2,7 @@ import { Component, type ReactNode } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { tr } from '@/lib/i18n';
 
 /**
  * Error Boundary global de l'app mobile.
@@ -56,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     const message =
       this.props.fallbackMessage ||
-      "Une erreur est survenue. Réessaie ou redémarre l'application.";
+      tr('ui.errGeneric');
 
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -64,19 +65,19 @@ export class ErrorBoundary extends Component<Props, State> {
           <View style={styles.iconWrap}>
             <Ionicons name="alert-circle" size={64} color="#dc2626" />
           </View>
-          <Text style={styles.title}>Oups</Text>
+          <Text style={styles.title}>{tr('ui.oops')}</Text>
           <Text style={styles.message}>{message}</Text>
 
           <Pressable
             onPress={this.handleReset}
             style={({ pressed }) => [styles.btn, pressed && { opacity: 0.85 }]}
           >
-            <Text style={styles.btnText}>Réessayer</Text>
+            <Text style={styles.btnText}>{tr('ui.retry')}</Text>
           </Pressable>
 
           {__DEV__ && this.state.error && (
             <View style={styles.devBox}>
-              <Text style={styles.devLabel}>DEV — détail technique</Text>
+              <Text style={styles.devLabel}>{tr('ui.devDetail')}</Text>
               <Text style={styles.devText}>
                 {this.state.error.name}: {this.state.error.message}
               </Text>

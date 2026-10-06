@@ -3,6 +3,7 @@
 // ============================================================================
 import { supabase } from './supabase';
 import { lookupRecipient } from './wallet';
+import { tr } from '@/lib/i18n';
 
 export interface SplitParticipant {
   phone: string;
@@ -21,7 +22,7 @@ export async function createSplit(params: {
   for (const p of params.participants) {
     const user = await lookupRecipient(p.phone);
     if (!user) {
-      throw new Error(`Numéro non inscrit sur Soutra-Playce : ${p.phone}`);
+      throw new Error(tr('sys.splitNotRegistered', { phone: p.phone }));
     }
     resolved.push({ payer_id: user.id, amount: p.amountXof });
   }
@@ -33,11 +34,11 @@ export async function createSplit(params: {
   });
 
   if (error) {
-    let msg = error.message || 'Création du partage impossible';
+    let msg = error.message || tr('sys.splitFail');
     if (/SELF_PARTICIPANT/i.test(msg)) {
-      msg = "Tu ne peux pas t'inclure comme participant";
+      msg = tr('sys.splitSelf');
     } else if (/INVALID/i.test(msg)) {
-      msg = 'Montant invalide';
+      msg = tr('sys.splitInvalid');
     }
     throw new Error(msg);
   }

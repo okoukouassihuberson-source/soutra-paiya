@@ -35,14 +35,14 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
           error && 'border-danger focus-within:border-danger focus-within:ring-red-500/20',
         )}
       >
-        {leftIcon && <span aria-hidden className="text-neutral-400">{leftIcon}</span>}
+        {leftIcon && <span aria-hidden className="text-neutral-600">{leftIcon}</span>}
         <input
           ref={ref}
           id={inputId}
           aria-invalid={!!error}
           aria-describedby={describedBy}
           className={cn(
-            'min-w-0 flex-1 bg-transparent py-3 text-base text-dark placeholder:text-neutral-400',
+            'min-w-0 flex-1 bg-transparent py-3 text-base text-dark placeholder:text-neutral-600',
             'outline-none disabled:opacity-50',
             className,
           )}
@@ -53,7 +53,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
       {error ? (
         <p id={`${inputId}-error`} className="mt-1.5 text-xs font-medium text-danger">{error}</p>
       ) : hint ? (
-        <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-neutral-500">{hint}</p>
+        <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-neutral-600">{hint}</p>
       ) : null}
     </div>
   );

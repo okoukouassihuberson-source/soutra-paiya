@@ -29,8 +29,8 @@ export function BottomNav({ items, pathname }: Props) {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-semibold transition-colors',
-                  active ? 'text-primary-600' : 'text-neutral-500 active:text-dark',
+                  'flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-semibold transition-colors',
+                  active ? 'text-primary-700' : 'text-neutral-600 active:text-dark',
                 )}
               >
                 <span
@@ -42,7 +42,7 @@ export function BottomNav({ items, pathname }: Props) {
                 >
                   {item.icon}
                 </span>
-                <span className="truncate">{item.label}</span>
+                <span className="max-w-full truncate">{item.shortLabel ?? item.label}</span>
               </Link>
             </li>
           );

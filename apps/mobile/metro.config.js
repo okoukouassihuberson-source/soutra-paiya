@@ -1,17 +1,6 @@
-// Metro config monorepo : permet de résoudre les workspace packages (@soutra/shared)
+// Configuration Metro : valeurs par défaut d'Expo. Depuis le SDK 52, Expo détecte seul le monorepo pnpm
+// (watchFolders, nodeModulesPaths). Ne pas surcharger resolver.disableHierarchicalLookup : cela empêche
+// un paquet de retrouver sa propre copie imbriquée d'une dépendance et peut charger la mauvaise version.
 const { getDefaultConfig } = require('expo/metro-config');
-const path = require('path');
 
-const projectRoot = __dirname;
-const workspaceRoot = path.resolve(projectRoot, '../..');
-
-const config = getDefaultConfig(projectRoot);
-
-config.watchFolders = [workspaceRoot];
-config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, 'node_modules'),
-  path.resolve(workspaceRoot, 'node_modules'),
-];
-config.resolver.disableHierarchicalLookup = true;
-
-module.exports = config;
+module.exports = getDefaultConfig(__dirname);

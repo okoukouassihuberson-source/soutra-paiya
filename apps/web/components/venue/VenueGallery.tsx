@@ -69,7 +69,7 @@ export function VenueGallery({ cover, gallery, videos, alt = 'Photo' }: Props) {
   if (media.length === 0) {
     return (
       <div className="flex aspect-[16/9] w-full items-center justify-center rounded-2xl bg-neutral-100">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-400">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-600">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
           <circle cx="8.5" cy="8.5" r="1.5" />
           <polyline points="21 15 16 10 5 21" />

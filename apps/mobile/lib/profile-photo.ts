@@ -14,6 +14,8 @@ import { decode } from 'base64-arraybuffer';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
+import { compressAsset } from './image-compress';
 
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5 Mo après compression
 
@@ -21,45 +23,43 @@ const AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5 Mo après compression
 export async function pickAvatarFromGallery(): Promise<ImagePicker.ImagePickerAsset | null> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert('Permission requise', 'Autorise l\'accès à tes photos pour choisir un avatar.');
+    Alert.alert(tr('sys.permTitle'), tr('sys.permAvatar'));
     return null;
   }
   const r = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    base64: true,
     quality: 0.6,
     allowsEditing: true,
     aspect: [1, 1], // recadrage carré -> compatible avec l'affichage rond
   });
   if (r.canceled || !r.assets[0]) return null;
-  return validateOrAlert(r.assets[0]);
+  return validateOrAlert(await compressAsset(r.assets[0], { maxSide: 512 }));
 }
 
 /** Demande la permission caméra et ouvre l'appareil photo. */
 export async function pickAvatarFromCamera(): Promise<ImagePicker.ImagePickerAsset | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert('Permission requise', 'Autorise la caméra pour prendre un avatar.');
+    Alert.alert(tr('sys.permTitle'), tr('sys.permAvatarCam'));
     return null;
   }
   const r = await ImagePicker.launchCameraAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    base64: true,
     quality: 0.6,
     allowsEditing: true,
     aspect: [1, 1],
   });
   if (r.canceled || !r.assets[0]) return null;
-  return validateOrAlert(r.assets[0]);
+  return validateOrAlert(await compressAsset(r.assets[0], { maxSide: 512 }));
 }
 
 function validateOrAlert(asset: ImagePicker.ImagePickerAsset): ImagePicker.ImagePickerAsset | null {
   if (asset.fileSize && asset.fileSize > AVATAR_MAX_BYTES) {
-    Alert.alert('Image trop lourde', 'Choisis une image de moins de 5 Mo.');
+    Alert.alert(tr('sys.bigTitle'), tr('sys.big5'));
     return null;
   }
   if (!asset.base64) {
-    Alert.alert('Erreur', 'Impossible de lire l\'image. Réessaie.');
+    Alert.alert(tr('sys.error'), tr('sys.readFail'));
     return null;
   }
   return asset;

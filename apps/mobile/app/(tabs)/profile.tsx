@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Skeleton } from '@/components/Skeleton';
 import { useColors, useTheme, type ThemeMode } from '@/lib/theme';
 import { useI18n, tr, type TKey } from '@/lib/i18n';
+import { ORGANIZER_ROLES } from '@/lib/organizer';
 
 interface ProfileRow {
   id: string;
@@ -157,8 +158,19 @@ export default function Profile() {
             badge="Pro"
             badgeColor={c.primary[500]}
             onPress={() => router.push('/pro' as any)}
-            last
+            last={!ORGANIZER_ROLES.includes(profile?.role ?? '')}
           />
+          {ORGANIZER_ROLES.includes(profile?.role ?? '') && (
+            <MenuItem
+              c={c}
+              icon="airplane-outline"
+              label={t('org.menu')}
+              badge="Pro"
+              badgeColor={c.primary[500]}
+              onPress={() => router.push('/organizer' as any)}
+              last
+            />
+          )}
         </View>
 
         {/* Apparence */}

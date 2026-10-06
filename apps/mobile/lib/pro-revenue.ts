@@ -5,6 +5,7 @@
 // (ou admin). Un user qui n'est pas owner reçoit l'erreur 'NOT_OWNER'.
 // ============================================================================
 import { supabase } from './supabase';
+import { tr } from '@/lib/i18n';
 
 export interface ProSummary {
   gross_xof: number;
@@ -56,24 +57,24 @@ export interface ProVenue {
   status: string;
 }
 
-export const PRO_KIND_META: Record<string, { label: string; emoji: string; color: string }> = {
-  reservation_commission_pct:   { label: 'Commission réservation',  emoji: '🍽️', color: '#3B82F6' },
-  reservation_commission_fixed: { label: 'Commission résa (fixe)',  emoji: '🍽️', color: '#3B82F6' },
-  service_fee_pct:              { label: 'Frais de service',        emoji: '💼', color: '#A855F7' },
-  service_fee_fixed:            { label: 'Frais de service (fixe)', emoji: '💼', color: '#A855F7' },
-  payment_commission:           { label: 'Commission paiement',     emoji: '💳', color: '#10B981' },
-  subscription_commission:      { label: 'Commission abonnement',   emoji: '📅', color: '#F59E0B' },
-  ticket_commission:            { label: 'Commission billetterie',  emoji: '🎟️', color: '#EC4899' },
-  marketplace_commission:       { label: 'Commission marketplace',  emoji: '🛍️', color: '#F43F5E' },
-  affiliation_commission:       { label: 'Commission affiliation',  emoji: '🤝', color: '#06B6D4' },
-  user_cashback:                { label: 'Ristourne utilisateur (historique)', emoji: '🎁', color: '#22C55E' },
-  loyalty_bonus:                { label: 'Bonus fidélité',          emoji: '⭐', color: '#EAB308' },
-  featured_listing:             { label: 'Mise en avant',           emoji: '⬆️', color: '#6366F1' },
-  advertising:                  { label: 'Publicité',               emoji: '📣', color: '#6366F1' },
-  account_verification:         { label: 'Vérification compte',     emoji: '✅', color: '#14B8A6' },
-  venue_certification:          { label: 'Certification venue',     emoji: '🏅', color: '#14B8A6' },
-  event_publication:            { label: 'Publication événement',   emoji: '📅', color: '#DB2777' },
-  promo_publication:            { label: 'Publication promo',       emoji: '🏷️', color: '#DB2777' },
+export const PRO_KIND_META: Record<string, { readonly label: string; emoji: string; color: string }> = {
+  reservation_commission_pct:   { get label() { return tr('proKind.reservation_commission_pct'); },  emoji: '🍽️', color: '#3B82F6' },
+  reservation_commission_fixed: { get label() { return tr('proKind.reservation_commission_fixed'); },  emoji: '🍽️', color: '#3B82F6' },
+  service_fee_pct:              { get label() { return tr('proKind.service_fee_pct'); },        emoji: '💼', color: '#A855F7' },
+  service_fee_fixed:            { get label() { return tr('proKind.service_fee_fixed'); }, emoji: '💼', color: '#A855F7' },
+  payment_commission:           { get label() { return tr('proKind.payment_commission'); },     emoji: '💳', color: '#10B981' },
+  subscription_commission:      { get label() { return tr('proKind.subscription_commission'); },   emoji: '📅', color: '#F59E0B' },
+  ticket_commission:            { get label() { return tr('proKind.ticket_commission'); },  emoji: '🎟️', color: '#EC4899' },
+  marketplace_commission:       { get label() { return tr('proKind.marketplace_commission'); },  emoji: '🛍️', color: '#F43F5E' },
+  affiliation_commission:       { get label() { return tr('proKind.affiliation_commission'); },  emoji: '🤝', color: '#06B6D4' },
+  user_cashback:                { get label() { return tr('proKind.user_cashback'); }, emoji: '🎁', color: '#22C55E' },
+  loyalty_bonus:                { get label() { return tr('proKind.loyalty_bonus'); },          emoji: '⭐', color: '#EAB308' },
+  featured_listing:             { get label() { return tr('proKind.featured_listing'); },           emoji: '⬆️', color: '#6366F1' },
+  advertising:                  { get label() { return tr('proKind.advertising'); },               emoji: '📣', color: '#6366F1' },
+  account_verification:         { get label() { return tr('proKind.account_verification'); },     emoji: '✅', color: '#14B8A6' },
+  venue_certification:          { get label() { return tr('proKind.venue_certification'); },     emoji: '🏅', color: '#14B8A6' },
+  event_publication:            { get label() { return tr('proKind.event_publication'); },   emoji: '📅', color: '#DB2777' },
+  promo_publication:            { get label() { return tr('proKind.promo_publication'); },       emoji: '🏷️', color: '#DB2777' },
 };
 
 function isoFromNowMinusDays(days: number): string {

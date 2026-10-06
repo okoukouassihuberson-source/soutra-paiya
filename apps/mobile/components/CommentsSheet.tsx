@@ -6,6 +6,8 @@ import { colors, typography, radius, spacing } from '@soutra/shared';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { listComments, createComment, deleteComment, type Comment } from '@/lib/comments';
+import { timeAgo } from '@/lib/time-ago';
+import { useI18n } from '@/lib/i18n';
 
 type Props = {
   postId: string | null;
@@ -15,6 +17,7 @@ type Props = {
 };
 
 export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props) {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +31,7 @@ export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props
       const data = await listComments(postId);
       setComments(data);
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Chargement impossible.');
+      Alert.alert(t('comments.error'), err?.message ?? t('comments.loadFail'));
     } finally {
       setLoading(false);
     }
@@ -73,23 +76,23 @@ export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props
       onCountChange?.(postId, +1);
     } catch (err: any) {
       setBody(text);
-      Alert.alert('Erreur', err?.message ?? 'Envoi échoué.');
+      Alert.alert(t('comments.error'), err?.message ?? t('comments.sendFail'));
     } finally {
       setSending(false);
     }
   }
 
   async function handleDelete(c: Comment) {
-    Alert.alert('Supprimer ce commentaire ?', 'Cette action est définitive.', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('comments.delTitle'), t('comments.delBody'), [
+      { text: t('comments.cancel'), style: 'cancel' },
       {
-        text: 'Supprimer', style: 'destructive', onPress: async () => {
+        text: t('comments.delete'), style: 'destructive', onPress: async () => {
           try {
             await deleteComment(c.id);
             setComments((prev) => prev.filter((x) => x.id !== c.id));
             if (postId) onCountChange?.(postId, -1);
           } catch (err: any) {
-            Alert.alert('Erreur', err?.message ?? 'Suppression impossible.');
+            Alert.alert(t('comments.error'), err?.message ?? t('comments.delFail'));
           }
         },
       },
@@ -103,7 +106,7 @@ export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props
         <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
           <View style={s.handle} />
           <View style={s.header}>
-            <Text style={s.title}>Commentaires</Text>
+            <Text style={s.title}>{t('comments.title')}</Text>
             <Pressable onPress={onClose} hitSlop={10}>
               <Ionicons name="close" size={24} color={colors.dark} />
             </Pressable>
@@ -115,7 +118,7 @@ export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props
             ) : comments.length === 0 ? (
               <View style={s.center}>
                 <Ionicons name="chatbubble-outline" size={48} color={colors.neutral[300]} />
-                <Text style={s.emptyText}>Pas encore de commentaire. Sois le premier.</Text>
+                <Text style={s.emptyText}>{t('comments.empty')}</Text>
               </View>
             ) : (
               <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
@@ -125,12 +128,12 @@ export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props
                       {c.author?.avatar_url ? (
                         <Image source={{ uri: c.author.avatar_url }} style={s.avatarImg} />
                       ) : (
-                        <Text style={s.avatarTxt}>{(c.author?.full_name || c.author?.phone || '?').charAt(0).toUpperCase()}</Text>
+                        <Text style={s.avatarTxt}>{(c.author?.full_name || '?').charAt(0).toUpperCase()}</Text>
                       )}
                     </View>
                     <View style={{ flex: 1 }}>
                       <View style={s.rowTop}>
-                        <Text style={s.author}>{c.author?.full_name || c.author?.phone || 'Anonyme'}</Text>
+                        <Text style={s.author}>{c.author?.full_name || 'Anonyme'}</Text>
                         <Text style={s.time}>{relativeTime(c.created_at)}</Text>
                       </View>
                       <Text style={s.body}>{c.body}</Text>
@@ -149,7 +152,7 @@ export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props
               <TextInput
                 value={body}
                 onChangeText={(v) => v.length <= 1000 && setBody(v)}
-                placeholder="Écris un commentaire…"
+                placeholder={t('comments.placeholder')}
                 placeholderTextColor={colors.neutral[400]}
                 style={s.input}
                 multiline
@@ -166,15 +169,7 @@ export function CommentsSheet({ postId, visible, onClose, onCountChange }: Props
 }
 
 function relativeTime(iso: string): string {
-  const d = new Date(iso);
-  const diff = Math.max(0, Date.now() - d.getTime());
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'à l\'instant';
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} h`;
-  const days = Math.floor(h / 24);
-  return `${days} j`;
+  return timeAgo(iso, { prefix: false, until: 'daysOnly' });
 }
 
 const s = StyleSheet.create({

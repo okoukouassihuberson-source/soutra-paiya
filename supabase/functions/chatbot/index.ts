@@ -40,6 +40,9 @@ Style de réponse :
 - n'évoque aucune fonctionnalité qui n'est pas mentionnée ci-dessus (pas de fonctionnalité "premium" fictive, pas de "Soutra Pro+", etc.).
 - pour les questions sensibles (litige, fraude, perte d'argent) : invite à contacter support@soutra.ci.`;
 
+// L'app est en anglais : la consigne de langue prime sur « en français » ci-dessus.
+const EN_ADDENDUM = `\n\nLANGUAGE OVERRIDE: the user's app is set to English. Answer in clear, friendly English (1-3 short sentences), whatever the style notes above say about French. Understand French and Ivorian French input.`;
+
 type Msg = { role: "user" | "assistant"; content: string };
 
 Deno.serve(async (req) => {
@@ -64,9 +67,11 @@ Deno.serve(async (req) => {
   const model = Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL;
 
   // Body parse + validation.
-  let body: { messages?: Msg[] } | null = null;
+  let body: { messages?: Msg[]; locale?: string } | null = null;
   try { body = await req.json(); } catch { /* noop */ }
   const messages = Array.isArray(body?.messages) ? body!.messages : [];
+  // Langue de l'app : liste blanche (jamais de texte libre injecté dans le prompt système).
+  const systemPrompt = body?.locale === "en" ? SYSTEM_PROMPT + EN_ADDENDUM : SYSTEM_PROMPT;
   if (messages.length === 0) {
     return jsonResponse({ error: "Aucun message fourni" }, 400);
   }
@@ -97,7 +102,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model,
         max_tokens: MAX_TOKENS,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: trimmed,
       }),
     });

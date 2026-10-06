@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Alert, Image, TextInput } from 'react-native';
+import { FlatList, View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Alert, Image, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import QRCode from 'react-native-qrcode-svg';
@@ -39,14 +39,21 @@ export default function TourismBookingsScreen() {
     <SafeAreaView style={s.safe} edges={['top']}>
       <ScreenHeader title={t('my.title')} subtitle={tn('my.count', items.length)} />
       {loading ? <View style={s.center}><ActivityIndicator color={c.primary[500]} /></View> : (
-        <ScrollView contentContainerStyle={{ paddingVertical: spacing.md, paddingBottom: spacing['2xl'] }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}>
-          {items.length === 0 && (
+        <FlatList
+          data={items}
+          keyExtractor={(b) => `${b.kind}-${b.id}`}
+          extraData={open}
+          initialNumToRender={6}
+          windowSize={7}
+          contentContainerStyle={{ paddingVertical: spacing.md, paddingBottom: spacing['2xl'] }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
+          ListEmptyComponent={(
             <View style={s.emptyWrap}>
               <Text style={s.empty}>{t('my.empty')}</Text>
               <Pressable onPress={() => router.push('/voyages')} style={s.cta}><Text style={s.ctaText}>{t('my.discover')}</Text></Pressable>
             </View>
           )}
-          {items.map((b) => {
+          renderItem={({ item: b }) => {
             const st = b.kind === 'trip' && b.status === 'confirmed' && b.paid_xof < b.total_xof
               ? { label: t('book.status.depositPaid'), color: '#f59e0b' }
               : bookingStatus(b.status);
@@ -55,7 +62,7 @@ export default function TourismBookingsScreen() {
             const ticket = (b.status === 'confirmed' || b.status === 'paid' || b.status === 'used') && b.qr_token;
             const canPay = !expired && (b.status === 'pending' || (b.kind === 'trip' && b.status === 'confirmed' && b.paid_xof < b.total_xof));
             return (
-              <View key={`${b.kind}-${b.id}`} style={s.card}>
+              <View style={s.card}>
                 <Pressable onPress={() => setOpen(expanded ? null : `${b.kind}-${b.id}`)} accessibilityRole="button" accessibilityState={{ expanded }} style={s.row}>
                   {b.cover_url ? <Image source={{ uri: b.cover_url }} style={s.thumb} /> : <View style={[s.thumb, { backgroundColor: c.neutral[100] }]} />}
                   <View style={{ flex: 1, gap: 2 }}>
@@ -87,8 +94,8 @@ export default function TourismBookingsScreen() {
                 )}
               </View>
             );
-          })}
-        </ScrollView>
+          }}
+        />
       )}
     </SafeAreaView>
   );

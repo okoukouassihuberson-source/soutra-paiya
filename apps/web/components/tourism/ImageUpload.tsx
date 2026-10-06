@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabase';
 
 const MAX_SIDE = 1600;
-const input = 'w-full rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-white placeholder:text-neutral-600';
+const input = 'w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-dark placeholder:text-neutral-600';
 
 /** Redimensionne (côté max 1600 px) et recompresse en JPEG pour économiser la bande passante mobile. */
 async function shrink(file: File): Promise<Blob> {
@@ -56,10 +56,10 @@ function Picker({ label, multiple, onUrls }: { label: string; multiple?: boolean
                if (urls.length) onUrls(urls);
              }} />
       <button type="button" disabled={busy} onClick={() => ref.current?.click()}
-              className="rounded-lg border border-neutral-700 px-3 py-1.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-800 disabled:opacity-60">
+              className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold text-neutral-900 hover:bg-neutral-100 disabled:opacity-60">
         {busy ? 'Téléversement…' : `📷 ${label}`}
       </button>
-      {err && <span role="alert" className="ml-2 text-xs text-red-400">{err}</span>}
+      {err && <span role="alert" className="ml-2 text-xs text-red-700">{err}</span>}
     </div>
   );
 }
@@ -68,7 +68,7 @@ function Picker({ label, multiple, onUrls }: { label: string; multiple?: boolean
 export function ImageField({ name, label, defaultValue, className = '' }: { name: string; label: string; defaultValue?: string | null; className?: string }) {
   const [url, setUrl] = useState(defaultValue ?? '');
   return (
-    <div className={`block text-xs font-semibold text-neutral-400 ${className}`}>
+    <div className={`block text-xs font-semibold text-neutral-700 ${className}`}>
       <label>{label}<input name={name} type="url" value={url} onChange={(e) => setUrl(e.target.value)} className={`${input} mt-1`} /></label>
       <div className="flex items-center gap-3">
         <Picker label="Téléverser une image" onUrls={(u) => setUrl(u[0])} />
@@ -82,7 +82,7 @@ export function ImageField({ name, label, defaultValue, className = '' }: { name
 export function GalleryField({ name, label, defaultValue, className = '' }: { name: string; label: string; defaultValue?: string[] | null; className?: string }) {
   const [text, setText] = useState((defaultValue ?? []).join('\n'));
   return (
-    <div className={`block text-xs font-semibold text-neutral-400 ${className}`}>
+    <div className={`block text-xs font-semibold text-neutral-700 ${className}`}>
       <label>{label}<textarea name={name} rows={3} value={text} onChange={(e) => setText(e.target.value)} className={`${input} mt-1`} /></label>
       <Picker label="Ajouter des images" multiple onUrls={(u) => setText((t) => [...t.split('\n').map((x) => x.trim()).filter(Boolean), ...u].join('\n'))} />
     </div>

@@ -70,12 +70,12 @@ export function BookingForm({ tripId, basePrice, packages, seatsLeft, cta }: {
       </label>
       <PromoField value={code} onChange={setCode} preview={preview} />
       <PriceSummary preview={preview} fallback={unit * n} label={t('booking.total')} />
-      <button disabled={busy} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-white hover:bg-primary-600 disabled:opacity-60">
+      <button disabled={busy} className="w-full rounded-xl bg-primary-500 py-3 font-semibold text-night hover:bg-primary-400 disabled:opacity-60">
         {busy ? t('booking.booking') : cta}
       </button>
       {msg && (msg.text === 'login'
-        ? <p className="text-sm text-danger">{t('booking.loginPrompt')}<Link className="underline" href="/login">{t('common.signIn')}</Link></p>
-        : <p role="status" className={`text-sm ${msg.ok ? 'text-success' : 'text-danger'}`}>{msg.text}</p>)}
+        ? <p className="text-sm text-red-700">{t('booking.loginPrompt')}<Link className="underline" href="/login">{t('common.signIn')}</Link></p>
+        : <p role="status" className={`text-sm ${msg.ok ? 'text-success' : 'text-red-700'}`}>{msg.text}</p>)}
       {bookingId && <Link href={lp(`/mes-voyages/${bookingId}`)} className="block rounded-xl bg-emerald-600 py-3 text-center font-semibold text-white">{t('booking.payAndTicket')}</Link>}
     </form>
   );

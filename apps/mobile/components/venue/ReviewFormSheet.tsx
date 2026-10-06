@@ -31,6 +31,7 @@ import { useI18n } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { StarRatingInput } from './StarRatingInput';
+import { compressAsset } from '@/lib/image-compress';
 import {
   listMyReviewableVisits,
   submitReview,
@@ -114,12 +115,11 @@ export function ReviewFormSheet({ visible, onClose, venueId, venueName, editingR
     }
     const r = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      base64: true,
       quality: 0.7,
       allowsEditing: false,
     });
     if (r.canceled || !r.assets[0]) return;
-    const asset = r.assets[0];
+    const asset = await compressAsset(r.assets[0]);
     if (asset.fileSize && asset.fileSize > 8 * 1024 * 1024) {
       Alert.alert(t('review.bigTitle'), t('review.bigBody'));
       return;

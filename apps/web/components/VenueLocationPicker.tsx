@@ -193,14 +193,15 @@ export default function VenueLocationPicker({ initialLat, initialLng, onSave }: 
   return (
     <div className="space-y-3">
       {/* Barre de recherche d'adresse */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <input
           type="text"
+          aria-label="Adresse de l'établissement"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } }}
           placeholder="Cherche une adresse (ex. Rue des Jardins, Cocody)"
-          className="flex-1 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none"
+          className="min-w-0 flex-1 basis-full rounded-xl border border-neutral-200 px-4 py-2.5 text-sm text-dark focus:border-primary-500 focus:outline-none sm:basis-0"
         />
         <button
           type="button"
@@ -311,7 +312,7 @@ export default function VenueLocationPicker({ initialLat, initialLng, onSave }: 
         {saving ? 'Sauvegarde…' : 'Enregistrer la position GPS'}
       </button>
 
-      <p className="text-xs text-neutral-400">
+      <p className="text-xs text-neutral-600">
         Astuce : déplace le pin sur la carte pour ajuster manuellement. Le pin doit être dans
         l'enceinte de ton établissement — c'est cette position qui sera utilisée pour les itinéraires
         des clients.

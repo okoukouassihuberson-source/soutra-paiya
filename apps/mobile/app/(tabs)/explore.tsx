@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View, Text, TextInput, StyleSheet, Pressable, Image, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,10 @@ import { MapboxMap, type MapVenue, ABIDJAN } from '@/components/MapboxMap';
 import { QuickVenueSheet, type QuickVenue } from '@/components/QuickVenueSheet';
 import { TabHeader } from '@/components/TabHeader';
 import { VenueCardSkeleton } from '@/components/Skeleton';
+import { RemoteImage } from '@/components/RemoteImage';
+import { StateView } from '@/components/StateView';
+import { cachedQuery } from '@/lib/query-cache';
+import { onReconnect } from '@/lib/net';
 import { VoiceSearchSheet, isVoiceRecognitionAvailable } from '@/components/VoiceSearchSheet';
 import { useColors } from '@/lib/theme';
 import { useI18n, tr, type TKey } from '@/lib/i18n';
@@ -65,6 +69,12 @@ export default function Explore() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [staleData, setStaleData] = useState(false);
+  // Rendu progressif : 30 cartes puis « Voir plus » (moins de vues et d'images en mémoire sur les téléphones modestes).
+  const PAGE = 30;
+  const [visible, setVisible] = useState(PAGE);
+  const nearMeRef = useRef(false);
   const [selectedChip, setSelectedChip] = useState<string>('all');
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,8 +97,11 @@ export default function Explore() {
   // Fiche rapide (PR5 audit UX) : ouverte au tap sur un marqueur carte.
   const [quickVenue, setQuickVenue] = useState<Venue | null>(null);
 
+  // Chargement initial UNE fois (cache + dédoublonnage) ; reprise automatique au retour du réseau.
   useEffect(() => {
     loadVenues();
+    return onReconnect(() => { if (!nearMeRef.current) loadVenues(true); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // PR5 audit UX : "Au chargement, demander autorisation GPS, récupérer
@@ -120,35 +133,34 @@ export default function Explore() {
     return () => { active = false; };
   }, []);
 
-  // Si « près de moi » est actif ou si les filtres changent, on recharge.
+  // « Près de moi » : nouvelle requête serveur seulement quand ce mode est actif (position / rayon / ouvert maintenant).
+  // Quand il est désactivé, la liste complète revient du cache : aucune requête supplémentaire.
   useEffect(() => {
-    if (nearMe && userPos) {
-      loadNearby(userPos.lat, userPos.lng, radiusKm, openNow);
-    } else if (!nearMe) {
-      loadVenues();
-    }
+    nearMeRef.current = nearMe;
+    if (nearMe && userPos) loadNearby(userPos.lat, userPos.lng, radiusKm, openNow);
+    else if (!nearMe) loadVenues();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nearMe, radiusKm, openNow, userPos]);
+  }, [nearMe, radiusKm, openNow, nearMe ? userPos : null]);
 
-  async function loadVenues() {
+  async function loadVenues(force = false) {
     try {
-      // Vue `venues_public` : filtrée à status=active, lat/lng projetés
-      // depuis le point PostGIS. Source de vérité unique pour la carte.
-      const { data, error } = await supabase
-        .from('venues_public')
-        .select('id, name, slug, category, cover_url, avg_price_xof, rating_avg, rating_count, district, city, lat, lng, popularity_score')
-        .order('rating_avg', { ascending: false });
-
-      if (error) {
-        console.error('[explore] load venues error:', error);
-        Alert.alert(t('explore.error'), t('explore.loadFail'));
-        setVenues([]);
-      } else {
-        setVenues((data ?? []) as Venue[]);
-      }
+      // Vue `venues_public` : filtrée à status=active, lat/lng projetés depuis le point PostGIS. Colonnes limitées au
+      // strict nécessaire ; résultat mis en cache (5 min) et conservé hors ligne.
+      const { data, stale } = await cachedQuery<Venue[]>('venues_public:list', async () => {
+        const { data, error } = await supabase
+          .from('venues_public')
+          .select('id, name, slug, category, cover_url, avg_price_xof, rating_avg, rating_count, district, city, lat, lng, popularity_score')
+          .order('rating_avg', { ascending: false })
+          .limit(300);
+        if (error) throw error;
+        return (data ?? []) as Venue[];
+      }, { force });
+      setVenues(data);
+      setStaleData(stale);
+      setLoadError(false);
     } catch (err) {
-      console.error('[explore] unexpected error:', err);
-      setVenues([]);
+      if (__DEV__) console.warn('[explore] chargement des lieux :', (err as Error)?.message);
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -167,11 +179,12 @@ export default function Explore() {
     });
     setNearMeLoading(false);
     if (error) {
-      console.error('[explore] nearby RPC error:', error);
-      Alert.alert(t('explore.error'), error.message || t('explore.nearbyFail'));
+      if (__DEV__) console.warn('[explore] nearby RPC :', error.message);
+      Alert.alert(t('explore.error'), t('explore.nearbyFail'));
       return;
     }
     setVenues((data || []) as Venue[]);
+    setVisible(PAGE);
   }
 
   async function toggleNearMe() {
@@ -200,6 +213,7 @@ export default function Explore() {
   }
 
   const selectedCategory = CHIPS.find((c) => c.id === selectedChip)?.category;
+  useEffect(() => { setVisible(PAGE); }, [selectedChip, searchQuery, sortByPopularity]);
   const filteredVenues = useMemo(() => {
     const filtered = venues.filter((v) => {
       if (selectedCategory && v.category !== selectedCategory) return false;
@@ -250,7 +264,8 @@ export default function Explore() {
             refreshing={refreshing}
             onRefresh={() => {
               setRefreshing(true);
-              loadVenues();
+              if (nearMe && userPos) loadNearby(userPos.lat, userPos.lng, radiusKm, openNow).finally(() => setRefreshing(false));
+              else loadVenues(true);
             }}
           />
         }
@@ -436,7 +451,10 @@ export default function Explore() {
               )}
             </View>
 
-            {filteredVenues.length === 0 ? (
+            {staleData && <Text style={s.sectionHint} accessibilityLiveRegion="polite">{t('sys.staleData')}</Text>}
+            {loadError && venues.length === 0 ? (
+              <StateView kind="error" onRetry={() => { setLoading(true); setLoadError(false); loadVenues(true); }} />
+            ) : filteredVenues.length === 0 ? (
               <View style={s.empty}>
                 <View style={s.emptyIconWrap}>
                   <Ionicons name="search-outline" size={48} color={palette.primary[400]} />
@@ -457,7 +475,7 @@ export default function Explore() {
                 )}
               </View>
             ) : (
-              filteredVenues.map((v, idx) => {
+              filteredVenues.slice(0, visible).map((v, idx) => {
                 const isFeatured = idx === 0 && (v.rating_avg ?? 0) >= 4.5;
                 return (
                   <Pressable
@@ -470,13 +488,7 @@ export default function Explore() {
                     onPress={() => goToVenue(v.id)}
                   >
                     <View style={s.cardImgWrap}>
-                      {v.cover_url ? (
-                        <Image source={{ uri: v.cover_url }} style={s.cardImg} />
-                      ) : (
-                        <View style={[s.cardImg, s.cardImgPlaceholder]}>
-                          <Ionicons name="image-outline" size={36} color={palette.neutral[400]} />
-                        </View>
-                      )}
+                      <RemoteImage uri={v.cover_url} style={s.cardImg} />
                       {isFeatured && (
                         <View style={s.featuredBadge}>
                           <Ionicons name="flame" size={11} color="#fff" />
@@ -525,6 +537,11 @@ export default function Explore() {
                 );
               })
             )}
+            {filteredVenues.length > visible && (
+              <Pressable onPress={() => setVisible((n) => n + PAGE)} accessibilityRole="button" style={[s.emptyBtn, { alignSelf: "center" }]}>
+                <Text style={s.emptyBtnText}>{t('sys.showMore', { n: filteredVenues.length - visible })}</Text>
+              </Pressable>
+            )}
           </>
         )}
       </ScrollView>
@@ -533,7 +550,6 @@ export default function Explore() {
         visible={voiceOpen}
         onClose={() => setVoiceOpen(false)}
         onResult={(text) => { setSearchQuery(text); setVoiceOpen(false); }}
-        locale="fr-FR"
       />
 
       {/* Fiche rapide flottante au tap sur marqueur carte (PR5 audit UX) */}

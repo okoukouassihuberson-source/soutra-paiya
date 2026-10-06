@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { typography, radius, spacing, LOYALTY_LEVELS, type ColorPalette } from '@soutra/shared';
 import { useColors } from '@/lib/theme';
+import { useI18n, type TKey } from '@/lib/i18n';
 
 /**
  * LoyaltyLevelCard — gamification Bronze → Diamant du programme de fidélité.
@@ -12,9 +13,6 @@ import { useColors } from '@/lib/theme';
  * get_my_loyalty_stats plutôt qu'un calcul purement client-side.
  */
 
-function fmtPoints(n: number): string {
-  return `${Math.round(n).toLocaleString('fr-FR')} pts`;
-}
 
 interface Props {
   pointsLifetime: number;
@@ -22,6 +20,8 @@ interface Props {
 }
 
 export function LoyaltyLevelCard({ pointsLifetime, loading = false }: Props) {
+  const { t, intl } = useI18n();
+  const fmtPoints = (n: number) => t('ui.pts', { n: Math.round(n).toLocaleString(intl) });
   const c = useColors();
   const s = useMemo(() => makeStyles(c), [c]);
 
@@ -58,14 +58,14 @@ export function LoyaltyLevelCard({ pointsLifetime, loading = false }: Props) {
       <View style={s.header}>
         <View style={[s.badge, { backgroundColor: current.color + '20', borderColor: current.color }]}>
           <Text style={s.badgeEmoji}>{current.emoji}</Text>
-          <Text style={[s.badgeLabel, { color: current.color }]}>{current.label}</Text>
+          <Text style={[s.badgeLabel, { color: current.color }]}>{t(`ui.level.${current.code}` as TKey)}</Text>
         </View>
         {next ? (
           <Text style={s.nextHint}>
-            Prochain niveau : <Text style={[s.nextLabel, { color: next.color }]}>{next.emoji} {next.label}</Text>
+            {t('ui.nextLevel')} <Text style={[s.nextLabel, { color: next.color }]}>{next.emoji} {t(`ui.level.${next.code}` as TKey)}</Text>
           </Text>
         ) : (
-          <Text style={s.maxedHint}>Niveau maximum atteint 🎉</Text>
+          <Text style={s.maxedHint}>{t('ui.maxLevel')}</Text>
         )}
       </View>
 
@@ -85,11 +85,11 @@ export function LoyaltyLevelCard({ pointsLifetime, loading = false }: Props) {
         <Text style={s.barFooterCurrent}>{fmtPoints(pointsLifetime)}</Text>
         {next && (
           <Text style={s.barFooterRemaining}>
-            {fmtPoints(remaining)} pour passer {next.label}
+            {t('ui.toLevel', { pts: fmtPoints(remaining), level: t(`ui.level.${next.code}` as TKey) })}
           </Text>
         )}
         {!next && (
-          <Text style={s.barFooterRemaining}>Tu es au sommet 👑</Text>
+          <Text style={s.barFooterRemaining}>{t('ui.atTop')}</Text>
         )}
       </View>
 
@@ -111,7 +111,7 @@ export function LoyaltyLevelCard({ pointsLifetime, loading = false }: Props) {
                 <Text style={s.lvlEmoji}>{reached ? lvl.emoji : '🔒'}</Text>
               </View>
               <Text style={[s.lvlLabel, reached && { color: c.dark, fontWeight: '700' }]} numberOfLines={1}>
-                {lvl.label}
+                {t(`ui.level.${lvl.code}` as TKey)}
               </Text>
             </View>
           );

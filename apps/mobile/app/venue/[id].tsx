@@ -185,7 +185,7 @@ export default function VenueDetail() {
     }
     try {
       const [venueRes, coordsRes] = await Promise.all([
-        supabase.from('venues').select('*').eq('id', id).maybeSingle(),
+        supabase.from('venues').select('id, slug, name, category, description, cover_url, gallery_urls, video_urls, tour_360_url, address, city, phone, whatsapp, email, opening_hours, avg_price_xof, amenities, payment_methods, rating_avg, rating_count').eq('id', id).maybeSingle(),
         (supabase as any).rpc('get_venue_location', { p_venue_id: id }),
       ]);
 
@@ -365,7 +365,7 @@ export default function VenueDetail() {
             <View style={[s.claimBadge, { borderColor: CLAIM_STATUS_META[myClaimStatus].color }]}>
               <Text style={{ fontSize: 14 }}>{CLAIM_STATUS_META[myClaimStatus].icon}</Text>
               <Text style={[s.claimBadgeText, { color: CLAIM_STATUS_META[myClaimStatus].color }]}>
-                Revendication : {CLAIM_STATUS_META[myClaimStatus].label}
+                {t('claimStatus.label', { status: CLAIM_STATUS_META[myClaimStatus].label })}
               </Text>
             </View>
           )}

@@ -44,12 +44,12 @@ export function PromoField({ value, onChange, preview }: {
                autoComplete="off" maxLength={40}
                className="w-full rounded-xl border border-neutral-300 px-3 py-2 uppercase" />
         <button type="button" onClick={() => onChange(draft.trim())}
-                className="whitespace-nowrap rounded-xl border border-primary-500 px-4 text-sm font-semibold text-primary-600 hover:bg-primary-50">
+                className="whitespace-nowrap rounded-xl border border-primary-500 px-4 text-sm font-semibold text-primary-700 hover:bg-primary-50">
           {t('promo.apply')}
         </button>
       </div>
       <div aria-live="polite" className="text-sm">
-        {err && value && <p className="text-danger">{t(`promo.err.${err}` as 'promo.err.generic') === `promo.err.${err}` ? t('promo.err.generic') : t(`promo.err.${err}` as 'promo.err.generic')}</p>}
+        {err && value && <p className="text-red-700">{t(`promo.err.${err}` as 'promo.err.generic') === `promo.err.${err}` ? t('promo.err.generic') : t(`promo.err.${err}` as 'promo.err.generic')}</p>}
         {!err && preview?.offer && preview.discount_xof > 0 && (
           <p className="font-medium text-success">
             {t(value && preview.offer.code ? 'promo.applied' : 'promo.auto', { title: preview.offer.title, amount: fmtXOF(preview.discount_xof) })}
@@ -74,7 +74,7 @@ export function PriceSummary({ preview, fallback, label }: { preview: PricePrevi
       )}
       <div className="mt-1 flex items-center justify-between">
         <span className="text-sm text-neutral-600">{label}</span>
-        <span className="text-xl font-bold text-primary-600">{fmtXOF(preview ? preview.total_xof : fallback)}</span>
+        <span className="text-xl font-bold text-primary-700">{fmtXOF(preview ? preview.total_xof : fallback)}</span>
       </div>
     </div>
   );

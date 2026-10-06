@@ -141,7 +141,7 @@ export function ShopOrdersTab({ venueId }: { venueId: string }) {
 
       <div>
         <h2 className="font-display text-2xl font-bold text-neutral-900">Commandes reçues</h2>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-neutral-600">
           {orders.length} commande{orders.length > 1 ? 's' : ''} ·{' '}
           {counts.confirmed + counts.preparing + counts.ready} à traiter
         </p>
@@ -166,12 +166,12 @@ export function ShopOrdersTab({ venueId }: { venueId: string }) {
 
       {/* List */}
       {loading ? (
-        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-500">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center text-neutral-600">
           Chargement…
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
-          <p className="text-sm text-neutral-500">Aucune commande dans ce filtre.</p>
+          <p className="text-sm text-neutral-600">Aucune commande dans ce filtre.</p>
         </div>
       ) : (
         <ul className="space-y-3">
@@ -201,15 +201,15 @@ export function ShopOrdersTab({ venueId }: { venueId: string }) {
                     </div>
                     <p className="mt-1.5 text-sm font-semibold text-neutral-900">
                       {o.contact_name || 'Client'}
-                      {o.contact_phone && <span className="ml-1 font-mono text-xs text-neutral-500">· {o.contact_phone}</span>}
+                      {o.contact_phone && <span className="ml-1 font-mono text-xs text-neutral-600">· {o.contact_phone}</span>}
                     </p>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-neutral-600">
                       {o.items_count} article{o.items_count > 1 ? 's' : ''} · {formatRelativeTime(o.created_at)}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-mono font-bold text-neutral-900">{formatXOF(o.total_xof)}</p>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`mt-1 ml-auto text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`mt-1 ml-auto text-neutral-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}>
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
                   </div>
@@ -219,7 +219,7 @@ export function ShopOrdersTab({ venueId }: { venueId: string }) {
                 {isOpen && (
                   <div className="border-t border-neutral-100 bg-neutral-50/50 p-4">
                     {/* Items */}
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-500">Articles</p>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Articles</p>
                     <ul className="mb-4 space-y-1.5">
                       {o.items.map((it, i) => (
                         <li key={i} className="flex items-start gap-3 text-sm">
@@ -227,7 +227,7 @@ export function ShopOrdersTab({ venueId }: { venueId: string }) {
                           <div className="min-w-0 flex-1">
                             <p className="font-medium">{it.name}</p>
                             {it.variant && (
-                              <p className="text-xs text-neutral-500">
+                              <p className="text-xs text-neutral-600">
                                 {Object.entries(it.variant).map(([k, v]) => `${k}: ${v}`).join(' · ')}
                               </p>
                             )}
@@ -278,7 +278,7 @@ export function ShopOrdersTab({ venueId }: { venueId: string }) {
                         <button
                           onClick={() => handleStatusChange(o.id, next.next)}
                           disabled={actionLoading === o.id}
-                          className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-600 disabled:opacity-50"
+                          className="rounded-full bg-emerald-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
                         >
                           → {next.label}
                         </button>
@@ -287,7 +287,7 @@ export function ShopOrdersTab({ venueId }: { venueId: string }) {
                         <button
                           onClick={() => handleCancel(o.id)}
                           disabled={actionLoading === o.id}
-                          className="rounded-full border border-red-300 bg-white px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                          className="rounded-full border border-red-300 bg-white px-4 py-2 text-xs font-bold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                         >
                           Annuler
                         </button>
