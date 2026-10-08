@@ -5,6 +5,7 @@ import { formatTripDates, seatsLeft } from '@soutra/shared';
 import { getTrip } from '@/lib/tourism';
 import { TourismNav } from '@/components/tourism/TourismNav';
 import { BookingForm } from './_components/BookingForm';
+import { TripDetails } from './_components/TripDetails';
 import { RecentTracker } from '@/components/tourism/RecentlyViewed';
 import { TripGallery } from '@/components/tourism/TripGallery';
 import { TripStickyBar } from '@/components/tourism/TripStickyBar';
@@ -32,13 +33,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-const Row = ({ k, v }: { k: string; v?: string | null }) => v ? (
-  <div className="flex gap-3 border-b border-neutral-100 py-2 text-sm"><dt className="w-32 shrink-0 font-semibold text-neutral-600">{k}</dt><dd className="text-dark">{v}</dd></div>
-) : null;
-
 export default async function TripPage({ params }: { params: { slug: string } }) {
   const i = getI18n();
-  const { t, lp, field, list } = i;
+  const { t, lp, field } = i;
   const r = await getTrip(params.slug);
   if (!r) notFound();
   const { trip, days, packages, destination } = r;
@@ -50,8 +47,6 @@ export default async function TripPage({ params }: { params: { slug: string } })
   const title = field(trip, 'title') ?? trip.title;
   const summary = field(trip, 'summary');
   const description = field(trip, 'description');
-  const conditions = field(trip, 'conditions');
-  const inclusions = list(trip, 'inclusions'), exclusions = list(trip, 'exclusions'), activities = list(trip, 'activities');
 
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'TouristTrip', name: title,
@@ -79,47 +74,12 @@ export default async function TripPage({ params }: { params: { slug: string } })
         </div>
 
         <div className="mx-auto mt-6 grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[1fr_380px] lg:px-8">
-          <div className="space-y-8">
+          <div className="min-w-0 space-y-8">
             {description && <p className="whitespace-pre-line text-neutral-700">{description}</p>}
 
-            <section aria-labelledby="infos"><h2 id="infos" className="mb-2 font-display text-xl font-bold">{t('trip.info')}</h2>
-              <dl>
-                <Row k={t('trip.dates')} v={formatTripDates(trip.starts_on, trip.ends_on, i.intl)} />
-                <Row k={t('trip.departure')} v={trip.departure_point && trip.departure_time ? t('trip.departureAt', { place: trip.departure_point, time: trip.departure_time.slice(0, 5) }) : (trip.departure_point ?? trip.departure_time?.slice(0, 5))} />
-                <Row k={t('trip.return')} v={trip.return_time?.slice(0, 5)} />
-                <Row k={t('trip.transport')} v={field(trip, 'transport')} /><Row k={t('trip.flight')} v={field(trip, 'flight_info')} />
-                <Row k={t('trip.lodging')} v={field(trip, 'lodging')} /><Row k={t('trip.hotel')} v={field(trip, 'hotel_info')} />
-                <Row k={t('trip.transfer')} v={field(trip, 'transfer_info')} /><Row k={t('trip.meals')} v={field(trip, 'meals')} />
-                <Row k={t('trip.insurance')} v={field(trip, 'insurance_info')} /><Row k={t('trip.visa')} v={field(trip, 'visa_info')} />
-                <Row k={t('trip.seats')} v={t('trip.seatsValue', { left, total: trip.seats_total })} />
-              </dl>
-            </section>
-
-            {(inclusions.length > 0 || activities.length > 0 || exclusions.length > 0) && (
-              <section className="grid gap-6 sm:grid-cols-2">
-                {inclusions.length > 0 && <div><h2 className="mb-2 font-display text-xl font-bold">{t('common.included')}</h2><ul className="space-y-1 text-sm">{inclusions.map((x) => <li key={x}>✅ {x}</li>)}</ul></div>}
-                {activities.length > 0 && <div><h2 className="mb-2 font-display text-xl font-bold">{t('trip.activities')}</h2><ul className="space-y-1 text-sm">{activities.map((x) => <li key={x}>🎯 {x}</li>)}</ul></div>}
-                {exclusions.length > 0 && <div><h2 className="mb-2 font-display text-xl font-bold">{t('common.notIncluded')}</h2><ul className="space-y-1 text-sm">{exclusions.map((x) => <li key={x}>➖ {x}</li>)}</ul></div>}
-              </section>
-            )}
-
-            {days.length > 0 && (
-              <section><h2 className="mb-3 font-display text-xl font-bold">{t('trip.program')}</h2>
-                <ol className="space-y-4 border-l-2 border-primary-200 pl-5">
-                  {days.map((d) => (
-                    <li key={d.id}>
-                      <p className="text-xs font-bold uppercase text-primary-700">{t('trip.day', { n: d.day_number })}</p>
-                      <h3 className="font-semibold">{field(d as any, 'title') ?? d.title}</h3>
-                      {d.stops.length > 0 && <p className="text-sm text-neutral-500">{d.stops.join(' → ')}</p>}
-                      {field(d as any, 'description') && <p className="mt-1 text-sm text-neutral-700">{field(d as any, 'description')}</p>}
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
+            <TripDetails i={i} trip={trip} days={days} left={left} />
 
             <OffersBlock offers={offers} />
-            {conditions && <section><h2 className="mb-2 font-display text-xl font-bold">{t('common.conditions')}</h2><p className="whitespace-pre-line text-sm text-neutral-700">{conditions}</p></section>}
             {destination && <Link href={lp(`/destinations/${destination.slug}`)} className="inline-block font-semibold text-primary-700 underline">{t('trip.explore', { name: field(destination as any, 'name') ?? destination.name })}</Link>}
           </div>
 
